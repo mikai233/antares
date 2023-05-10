@@ -41,6 +41,9 @@ dependencyResolutionManagement {
             library("api", "org.slf4j:slf4j-api:2.0.7")
             library("logback", "ch.qos.logback:logback-classic:1.4.7")
         }
+        create("tool") {
+            library("jetcd", "io.etcd:jetcd-core:0.7.5")
+        }
     }
 }
 include("common")

@@ -14,6 +14,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
     implementation(akka.cluster)
     implementation(kt.reflect)
+    implementation(tool.jetcd)
 }
 
 tasks.test {
