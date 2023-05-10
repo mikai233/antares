@@ -1,7 +1,9 @@
 package com.mikai233.core.components
 
-interface Component {
-    fun init()
+import com.mikai233.core.Server
 
-    fun shutdown()
+interface Component {
+    fun init(server: Server)
+
+    fun shutdown(server: Server)
 }

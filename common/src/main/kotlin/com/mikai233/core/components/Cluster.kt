@@ -1,6 +1,7 @@
 package com.mikai233.core.components
 
 import akka.actor.typed.ActorSystem
+import com.mikai233.core.Server
 import com.mikai233.ext.logger
 
 /**
@@ -18,11 +19,11 @@ class Cluster<T>(val role: Role, val host: String, val port: UShort) : Component
 
     lateinit var system: ActorSystem<T>
 
-    override fun init() {
+    override fun init(server: Server) {
         TODO("Not yet implemented")
     }
 
-    override fun shutdown() {
+    override fun shutdown(server: Server) {
         TODO("Not yet implemented")
     }
 }

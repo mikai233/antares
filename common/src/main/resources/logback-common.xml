@@ -1,0 +1,22 @@
+<included>
+    <property name="CONSOLE_LOG_PATTERN"
+              value="%green(%date{yyyy-MM-dd HH:mm:ss}) %highlight(%-5level) %yellow([%thread]) %boldMagenta(%logger{50}) %highlight(%msg%n)"/>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+            <!--            <pattern>%highlight(%date{ISO8601}|%level|%logger{0}|%thread| - %msg) %n</pattern>-->
+        </encoder>
+    </appender>
+    <appender name="ASYNC_STDOUT" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <appender-ref ref="STDOUT"/>
+    </appender>
+    <logger name="org.apache.zookeeper.ClientCnxn" level="info"/>
+    <logger name="io.netty" level="info"/>
+    <logger name="akka.serialization" level="debug"/>
+    <root level="info">
+        <appender-ref ref="ASYNC_STDOUT"/>
+        <!--        <appender-ref ref="FILE"/>-->
+    </root>
+</included>

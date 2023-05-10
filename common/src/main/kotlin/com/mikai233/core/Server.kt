@@ -1,7 +1,7 @@
 package com.mikai233.core
 
 import com.mikai233.core.components.Component
-import com.mikai233.core.components.config.EtcdConfigCenter
+import com.mikai233.core.components.config.ZookeeperConfigCenter
 import kotlin.reflect.KClass
 
 /**
@@ -38,20 +38,24 @@ open class Server {
     fun start() {
         check(state == State.Uninitialized)
         state = State.Initializing
-        componentsOrder.mapNotNull(components::get).forEach(Component::init)
+        componentsOrder.mapNotNull(components::get).forEach { component ->
+            component.init(this)
+        }
     }
 
     fun stop() {
         check(state == State.Running)
         state = State.ShuttingDown
-        componentsOrder.reversed().mapNotNull(components::get).forEach(Component::shutdown)
+        componentsOrder.reversed().mapNotNull(components::get).forEach { component ->
+            component.init(this)
+        }
     }
 }
 
 fun main() {
     val s = Server()
     s.components {
-        component { EtcdConfigCenter() }
+        component { ZookeeperConfigCenter() }
     }
     s.start()
 }

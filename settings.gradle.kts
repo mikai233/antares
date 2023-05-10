@@ -11,6 +11,10 @@ val scalaVersion = "2.13"
 val ktorClientVersion = "2.3.0"
 val ktorServerVersion = "2.3.0"
 
+val jacksonVersion = "2.15.0"
+
+val curatorVersion = "5.5.0"
+
 dependencyResolutionManagement {
     versionCatalogs {
         create("kt") {
@@ -18,6 +22,7 @@ dependencyResolutionManagement {
             library("stdlib", "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion")
             library("jdk8", "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
             library("reflect", "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion")
+            bundle("common", listOf("stdlib", "jdk8", "reflect"))
         }
         create("ktor") {
 //            library("client.core", "io.ktor:ktor-client-core:$ktorClientVersion")
@@ -43,6 +48,13 @@ dependencyResolutionManagement {
         }
         create("tool") {
             library("jetcd", "io.etcd:jetcd-core:0.7.5")
+            library("curator.framework", "org.apache.curator:curator-framework:$curatorVersion")
+            library("curator.recipes", "org.apache.curator:curator-recipes:$curatorVersion")
+            library("curator.async", "org.apache.curator:curator-x-async:$curatorVersion")
+            bundle("curator", listOf("curator.framework", "curator.recipes", "curator.async"))
+            library("jackson.databind", "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
+            library("jackson.kotlin", "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
+            bundle("jackson", listOf("jackson.databind", "jackson.kotlin"))
         }
     }
 }

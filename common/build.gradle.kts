@@ -13,8 +13,13 @@ dependencies {
     testImplementation(platform("org.junit:junit-bom:5.9.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     implementation(akka.cluster)
-    implementation(kt.reflect)
-    implementation(tool.jetcd)
+    implementation(kt.bundles.common)
+    implementation(ktx.core)
+    runtimeOnly(ktx.core.jvm)
+    implementation(tool.bundles.curator)
+    runtimeOnly(log.logback)
+    implementation(log.api)
+    implementation(tool.bundles.jackson)
 }
 
 tasks.test {
