@@ -1,7 +1,7 @@
 package com.mikai233.core
 
 import com.mikai233.core.components.Component
-import com.mikai233.core.components.config.ZookeeperConfigCenter
+import java.util.*
 import kotlin.reflect.KClass
 
 /**
@@ -10,9 +10,16 @@ import kotlin.reflect.KClass
  * @date 2023/5/9
  */
 open class Server {
-    var state: State = State.Uninitialized
+    private var state: State = State.Uninitialized
+        set(value) {
+            field = value
+            eventListeners[value]?.forEach {
+                it(field)
+            }
+        }
     val components: HashMap<KClass<out Component>, Component> = hashMapOf()
     val componentsOrder: MutableList<KClass<out Component>> = mutableListOf()
+    private val eventListeners: EnumMap<State, MutableList<(State) -> Unit>> = EnumMap(State::class.java)
 
     inner class ComponentBuilder {
         inline fun <reified C : Component> component(block: Server.() -> C) {
@@ -35,27 +42,15 @@ open class Server {
         block.invoke(builder)
     }
 
-    fun start() {
-        check(state == State.Uninitialized)
-        state = State.Initializing
+    fun initComponents() {
         componentsOrder.mapNotNull(components::get).forEach { component ->
             component.init(this)
         }
     }
 
-    fun stop() {
-        check(state == State.Running)
-        state = State.ShuttingDown
+    fun shutdownComponents() {
         componentsOrder.reversed().mapNotNull(components::get).forEach { component ->
-            component.init(this)
+            component.shutdown()
         }
     }
-}
-
-fun main() {
-    val s = Server()
-    s.components {
-        component { ZookeeperConfigCenter() }
-    }
-    s.start()
 }

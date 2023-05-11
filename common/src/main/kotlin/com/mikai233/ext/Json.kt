@@ -19,12 +19,20 @@ object Json {
         return mapper.readValue(src, T::class.java)
     }
 
-    inline fun <reified T> toJsonString(value: T): String {
-        return mapper.writeValueAsString(value)
+    inline fun <reified T> toJsonString(value: T, pretty: Boolean = false): String {
+        return if (pretty) {
+            mapper.writerWithDefaultPrettyPrinter().writeValueAsString(value)
+        } else {
+            mapper.writeValueAsString(value)
+        }
     }
 
-    inline fun <reified T> toJsonBytes(value: T): ByteArray {
-        return mapper.writeValueAsBytes(value)
+    inline fun <reified T> toJsonBytes(value: T, pretty: Boolean = false): ByteArray {
+        return if (pretty) {
+            mapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(value)
+        } else {
+            mapper.writeValueAsBytes(value)
+        }
     }
 
     inline fun <reified T> deepCopy(value: T): T {

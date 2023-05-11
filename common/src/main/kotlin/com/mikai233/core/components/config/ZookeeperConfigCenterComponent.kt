@@ -12,7 +12,7 @@ import org.apache.curator.retry.ExponentialBackoffRetry
 import org.apache.curator.x.async.AsyncCuratorFramework
 
 
-class ZookeeperConfigCenter(private val connectionString: String = "localhost:2181") : Component, ConfigCenter {
+class ZookeeperConfigCenterComponent(private val connectionString: String = "localhost:2181") : Component, ConfigCenter {
     lateinit var client: CuratorFramework
         private set
 
@@ -23,7 +23,7 @@ class ZookeeperConfigCenter(private val connectionString: String = "localhost:21
 
     override fun addConfig(config: Config) {
         val path = config.path()
-        val value = Json.toJsonBytes(config)
+        val value = Json.toJsonBytes(config, true)
         if (client.checkExists().forPath(path) == null) {
             client.create().creatingParentsIfNeeded().forPath(path, value)
         } else {
@@ -42,10 +42,16 @@ class ZookeeperConfigCenter(private val connectionString: String = "localhost:21
     override fun watchConfig(path: String, onUpdate: (ChildData, ChildData) -> Unit) {
         val cache = CuratorCache.builder(client, path).build().apply {
             listenable().addListener(CuratorCacheListener { type, oldData, data ->
-                if (type == CuratorCacheListener.Type.NODE_CHANGED) {
-                    onUpdate(oldData, data)
+                when (type) {
+                    CuratorCacheListener.Type.NODE_CREATED,
+                    CuratorCacheListener.Type.NODE_CHANGED -> {
+                        onUpdate(oldData, data)
+                    }
+
+                    else -> Unit
                 }
             })
+            start()
         }
         cacheMap.remove(path)?.close()
         cacheMap[path] = cache
@@ -67,23 +73,10 @@ class ZookeeperConfigCenter(private val connectionString: String = "localhost:21
         asyncClient = AsyncCuratorFramework.wrap(client)
     }
 
-    override fun shutdown(server: Server) {
+    override fun shutdown() {
         cacheMap.values.forEach(CuratorCache::close)
         if (this::client.isInitialized) {
             client.close()
         }
     }
-}
-
-fun main() {
-    val server = Server()
-    server.components {
-        component { ZookeeperConfigCenter() }
-        component { ServerConfigs() }
-    }
-    server.start()
-    val zk: ZookeeperConfigCenter = server.component()
-    zk.addConfig(AkkaConfig("hello"))
-    zk.addConfig(AkkaConfig("world"))
-    Thread.sleep(10000)
 }

@@ -60,3 +60,5 @@ dependencyResolutionManagement {
 }
 include("common")
 include("gate")
+include("tools")
+include("home")
