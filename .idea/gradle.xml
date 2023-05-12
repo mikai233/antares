@@ -10,8 +10,12 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/common" />
             <option value="$PROJECT_DIR$/gate" />
+            <option value="$PROJECT_DIR$/global" />
             <option value="$PROJECT_DIR$/home" />
+            <option value="$PROJECT_DIR$/proto" />
+            <option value="$PROJECT_DIR$/shared" />
             <option value="$PROJECT_DIR$/tools" />
+            <option value="$PROJECT_DIR$/world" />
           </set>
         </option>
       </GradleProjectSettings>

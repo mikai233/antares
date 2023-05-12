@@ -15,6 +15,20 @@ dependencies {
 
 subprojects {
     apply(plugin = "kotlin")
+
+    if (project.name == "proto") {
+        kotlin {
+            sourceSets.main {
+                kotlin.srcDir("build/generated/source/proto/main/kotlin")
+                kotlin.srcDir("src/main/proto")
+            }
+        }
+        java {
+            sourceSets.main {
+                java.srcDir("build/generated/source/proto/main/java")
+            }
+        }
+    }
 }
 
 tasks.test {

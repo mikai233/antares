@@ -1,7 +1,3 @@
-plugins {
-    id("java")
-}
-
 group = "com.mikai233"
 version = "1.0-SNAPSHOT"
 
@@ -10,10 +6,13 @@ repositories {
 }
 
 dependencies {
-    testImplementation(platform("org.junit:junit-bom:5.9.1"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation(platform(test.junit.bom))
+    testImplementation(test.junit.jupiter)
     implementation(project(":common"))
+    implementation(project(":shared"))
     implementation(akka.actor)
+    implementation(ktx.core)
+    runtimeOnly(ktx.core.jvm)
 }
 
 tasks.test {

@@ -10,8 +10,8 @@ repositories {
 }
 
 dependencies {
-    testImplementation(platform("org.junit:junit-bom:5.9.1"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation(platform(test.junit.bom))
+    testImplementation(test.junit.jupiter)
     implementation(akka.cluster)
     implementation(akka.slf4j)
     implementation(kt.bundles.common)
@@ -21,6 +21,7 @@ dependencies {
     runtimeOnly(log.logback)
     implementation(log.api)
     implementation(tool.bundles.jackson)
+    implementation(tool.jackson.protobuf)
 }
 
 tasks.test {

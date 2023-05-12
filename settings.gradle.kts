@@ -15,6 +15,10 @@ val jacksonVersion = "2.15.0"
 
 val curatorVersion = "5.5.0"
 
+val junitVersion = "5.9.3"
+
+val protobufVersion = "3.23.0"
+
 dependencyResolutionManagement {
     versionCatalogs {
         create("kt") {
@@ -47,6 +51,8 @@ dependencyResolutionManagement {
             library("logback", "ch.qos.logback:logback-classic:1.4.7")
         }
         create("tool") {
+            version("protobuf", protobufVersion)
+
             library("jetcd", "io.etcd:jetcd-core:0.7.5")
             library("curator.framework", "org.apache.curator:curator-framework:$curatorVersion")
             library("curator.recipes", "org.apache.curator:curator-recipes:$curatorVersion")
@@ -54,7 +60,17 @@ dependencyResolutionManagement {
             bundle("curator", listOf("curator.framework", "curator.recipes", "curator.async"))
             library("jackson.databind", "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
             library("jackson.kotlin", "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
+            library("jackson.protobuf", "com.fasterxml.jackson.dataformat:jackson-dataformat-protobuf:$jacksonVersion")
             bundle("jackson", listOf("jackson.databind", "jackson.kotlin"))
+            library("reflections", "org.reflections:reflections:0.10.2")
+            library("protoc", "com.google.protobuf:protoc:$protobufVersion")
+            plugin("protobuf", "com.google.protobuf").version("0.9.3")
+            library("protobuf.java.util", "com.google.protobuf:protobuf-java-util:$protobufVersion")
+            library("protobuf.kotlin", "com.google.protobuf:protobuf-kotlin:$protobufVersion")
+        }
+        create("test") {
+            library("junit.bom", "org.junit:junit-bom:$junitVersion")
+            library("junit.jupiter", "org.junit.jupiter:junit-jupiter:$junitVersion")
         }
     }
 }
@@ -62,3 +78,7 @@ include("common")
 include("gate")
 include("tools")
 include("home")
+include("proto")
+include("global")
+include("world")
+include("shared")
