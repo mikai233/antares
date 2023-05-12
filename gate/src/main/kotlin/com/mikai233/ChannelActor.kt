@@ -8,6 +8,7 @@ import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
 import com.mikai233.common.core.actor.safeActorCoroutine
+import com.mikai233.common.ext.actorLogger
 import com.mikai233.shared.message.ChannelMessage
 import com.mikai233.shared.message.RunnableMessage
 import com.mikai233.shared.message.SayHello
@@ -19,7 +20,7 @@ class ChannelActor(private val context: ActorContext<ChannelMessage>) : Abstract
     private val runnableAdapter = context.messageAdapter(Runnable::class.java) { RunnableMessage(it::run) }
     private val coroutine = runnableAdapter.safeActorCoroutine()
 
-    private val logger = context.log
+    private val logger = actorLogger()
     private var count = 0
 
     init {
@@ -70,5 +71,5 @@ class ChannelActor(private val context: ActorContext<ChannelMessage>) : Abstract
 }
 
 fun main() {
-    val system = ActorSystem.create(ChannelActor.setup(), "test")
+    ActorSystem.create(ChannelActor.setup(), "test")
 }
