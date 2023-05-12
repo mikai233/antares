@@ -77,7 +77,7 @@ dependencyResolutionManagement {
 include("common")
 include("gate")
 include("tools")
-include("home")
+include("player")
 include("proto")
 include("global")
 include("world")

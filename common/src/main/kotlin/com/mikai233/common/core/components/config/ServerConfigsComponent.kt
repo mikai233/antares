@@ -1,5 +1,7 @@
 package com.mikai233.common.core.components.config
 
+import com.mikai233.common.conf.GlobalEnv
+import com.mikai233.common.core.Server
 import com.mikai233.common.core.components.Component
 import com.mikai233.common.core.components.Role
 import com.mikai233.common.ext.logger
@@ -13,13 +15,13 @@ import com.typesafe.config.ConfigFactory
  */
 class ServerConfigsComponent(private val role: Role, private val port: Int) : Component {
     private val logger = logger()
-    private lateinit var server: com.mikai233.common.core.Server
+    private lateinit var server: Server
     private lateinit var zookeeperConfigCenterComponent: ZookeeperConfigCenterComponent
     private lateinit var selfNode: Node
     lateinit var akkaSystemName: String
         private set
 
-    override fun init(server: com.mikai233.common.core.Server) {
+    override fun init(server: Server) {
         this.server = server
         zookeeperConfigCenterComponent = server.component()
         initSelfNode()
@@ -65,7 +67,7 @@ class ServerConfigsComponent(private val role: Role, private val port: Int) : Co
     }
 
     private fun initSelfNode() {
-        val path = "${Host(com.mikai233.common.conf.GlobalEnv.machineIp).path()}/${role.name.lowercase()}:${port}"
+        val path = "${Host(GlobalEnv.machineIp).path()}/${role.name.lowercase()}:${port}"
         selfNode = zookeeperConfigCenterComponent.getConfigEx(path)
     }
 

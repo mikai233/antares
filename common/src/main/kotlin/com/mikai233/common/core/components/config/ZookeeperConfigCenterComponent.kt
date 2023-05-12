@@ -1,5 +1,6 @@
 package com.mikai233.common.core.components.config
 
+import com.mikai233.common.core.Server
 import com.mikai233.common.core.components.Component
 import com.mikai233.common.ext.Json
 import org.apache.curator.framework.CuratorFramework
@@ -13,12 +14,8 @@ import org.apache.curator.x.async.AsyncCuratorFramework
 
 class ZookeeperConfigCenterComponent(private val connectionString: String = "localhost:2181") : Component,
     ConfigCenter {
-    lateinit var client: CuratorFramework
-        private set
-
-    lateinit var asyncClient: AsyncCuratorFramework
-        private set
-
+    private lateinit var client: CuratorFramework
+    private lateinit var asyncClient: AsyncCuratorFramework
     private val cacheMap: HashMap<String, CuratorCache> = hashMapOf()
 
     override fun addConfig(config: Config) {
@@ -61,7 +58,7 @@ class ZookeeperConfigCenterComponent(private val connectionString: String = "loc
         return client.children.forPath(path)
     }
 
-    override fun init(server: com.mikai233.common.core.Server) {
+    override fun init(server: Server) {
         val retryPolicy = ExponentialBackoffRetry(1000, 3)
         client = CuratorFrameworkFactory.builder()
             .connectString(connectionString)

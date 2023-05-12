@@ -1,13 +1,15 @@
 package com.mikai233
 
 import akka.actor.typed.javadsl.Behaviors
+import com.mikai233.common.core.Launcher
+import com.mikai233.common.core.Server
 import com.mikai233.common.core.components.Cluster
 import com.mikai233.common.core.components.Role
 import com.mikai233.common.core.components.config.ServerConfigsComponent
 import com.mikai233.common.core.components.config.ZookeeperConfigCenterComponent
 
-class Gate(private val port: Int) : com.mikai233.common.core.Launcher {
-    private val server: com.mikai233.common.core.Server = com.mikai233.common.core.Server()
+class Gate(private val port: Int) : Launcher {
+    private val server: Server = Server()
 
     init {
         server.components {

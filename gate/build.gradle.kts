@@ -8,11 +8,12 @@ repositories {
 dependencies {
     testImplementation(platform(test.junit.bom))
     testImplementation(test.junit.jupiter)
-    implementation(project(":common"))
-    implementation(project(":shared"))
     implementation(akka.actor)
     implementation(ktx.core)
     runtimeOnly(ktx.core.jvm)
+    implementation(project(":common"))
+    implementation(project(":shared"))
+    implementation(project(":proto"))
 }
 
 tasks.test {
