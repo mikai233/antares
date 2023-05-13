@@ -1,7 +1,8 @@
-package com.mikai233.common.core.components.config
+package com.mikai233.common.core.components
 
 import com.mikai233.common.core.Server
-import com.mikai233.common.core.components.Component
+import com.mikai233.common.core.components.config.Config
+import com.mikai233.common.core.components.config.ConfigCenter
 import com.mikai233.common.ext.Json
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.CuratorFrameworkFactory
@@ -21,7 +22,7 @@ class ZookeeperConfigCenterComponent(private val connectionString: String = "loc
     override fun addConfig(config: Config) {
         val path = config.path()
         val value = Json.toJsonBytes(config, true)
-        if (client.checkExists().forPath(path) == null) {
+        if (exists(path).not()) {
             client.create().creatingParentsIfNeeded().forPath(path, value)
         } else {
             client.setData().forPath(path, value)
@@ -56,6 +57,10 @@ class ZookeeperConfigCenterComponent(private val connectionString: String = "loc
 
     override fun getChildren(path: String): List<String> {
         return client.children.forPath(path)
+    }
+
+    override fun exists(path: String): Boolean {
+        return client.checkExists().forPath(path) != null
     }
 
     override fun init(server: Server) {

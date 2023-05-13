@@ -8,7 +8,12 @@ repositories {
 dependencies {
     testImplementation(platform(test.junit.bom))
     testImplementation(test.junit.jupiter)
+    implementation(tool.reflections)
+    implementation(tool.protobuf.kotlin)
+    implementation(kt.reflect)
+    implementation(akka.cluster)
     implementation(project(":common"))
+    implementation(project(":proto"))
 }
 
 tasks.test {

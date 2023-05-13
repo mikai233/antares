@@ -23,6 +23,8 @@ dependencies {
     implementation(tool.bundles.jackson)
     implementation(tool.jackson.protobuf)
     implementation(tool.reflections)
+    implementation(tool.protobuf.kotlin)
+    implementation(tool.bcprov)
 }
 
 tasks.test {

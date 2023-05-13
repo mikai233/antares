@@ -18,16 +18,8 @@ class ServerHosts(val systemName: String) : Config {
     }
 }
 
-data class Host(val address: String) : Config {
-
+data class Node(val host: String, val role: Role, val port: Int, val seed: Boolean) : Config {
     override fun path(): String {
-        return "${ServerHosts.PATH}/$address"
-    }
-}
-
-data class Node(val host: Host, val role: Role, val port: Int, val seed: Boolean) :
-    Config {
-    override fun path(): String {
-        return "${host.path()}/${role.name.lowercase()}:${port}"
+        return nodePath(host, role, port)
     }
 }

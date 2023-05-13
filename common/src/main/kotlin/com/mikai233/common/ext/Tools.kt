@@ -3,6 +3,7 @@ package com.mikai233.common.ext
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.CuratorFrameworkFactory
 import org.apache.curator.retry.ExponentialBackoffRetry
+import org.slf4j.LoggerFactory
 import java.net.Inet4Address
 import java.net.NetworkInterface
 
@@ -28,4 +29,21 @@ fun buildSimpleZkClient(connectionString: String): CuratorFramework {
         .connectionTimeoutMs(5000)
         .retryPolicy(retryPolicy)
         .build()
+}
+
+enum class Platform {
+    Windows, MacOS, Linux, Unknown
+}
+
+fun getPlatform(): Platform {
+    val os = System.getProperty("os.name")
+    return when {
+        os.contains("Windows", true) -> Platform.Windows
+        os.contains("Mac OS", true) -> Platform.MacOS
+        os.contains("Linux", true) -> Platform.Linux
+        else -> {
+            LoggerFactory.getLogger("ToolsKt").warn("unknown os:{}", os)
+            Platform.Unknown
+        }
+    }
 }

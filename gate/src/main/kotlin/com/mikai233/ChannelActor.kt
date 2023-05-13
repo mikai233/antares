@@ -9,14 +9,11 @@ import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
 import com.mikai233.common.core.actor.safeActorCoroutine
 import com.mikai233.common.ext.actorLogger
-import com.mikai233.shared.message.ChannelMessage
-import com.mikai233.shared.message.RunnableMessage
-import com.mikai233.shared.message.SayHello
-import com.mikai233.shared.message.SayWorld
+import com.mikai233.shared.message.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-class ChannelActor(private val context: ActorContext<ChannelMessage>) : AbstractBehavior<ChannelMessage>(context) {
+class ChannelActor(context: ActorContext<ChannelMessage>) : AbstractBehavior<ChannelMessage>(context) {
     private val runnableAdapter = context.messageAdapter(Runnable::class.java) { RunnableMessage(it::run) }
     private val coroutine = runnableAdapter.safeActorCoroutine()
 
@@ -61,6 +58,9 @@ class ChannelActor(private val context: ActorContext<ChannelMessage>) : Abstract
                 is RunnableMessage -> {
                     it.run()
                 }
+
+                is ClientMessage -> TODO()
+                is GracefulShutdown -> TODO()
             }
             Behaviors.same()
         }.onSignal(Terminated::class.java) {

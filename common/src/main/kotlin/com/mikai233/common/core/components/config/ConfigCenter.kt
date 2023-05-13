@@ -9,6 +9,7 @@ interface ConfigCenter {
     fun deleteConfig(path: String)
     fun watchConfig(path: String, onUpdate: (ChildData, ChildData) -> Unit)
     fun getChildren(path: String): List<String>
+    fun exists(path: String): Boolean
 }
 
 inline fun <reified C : Config> ConfigCenter.getConfigEx(path: String): C {

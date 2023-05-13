@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package com.mikai233.protocol;
+
+message LoginReq{
+  int32 id = 1;
+}
+
+message LoginResp{
+
+}
+
+message AB{
+
+}

@@ -69,6 +69,9 @@ dependencyResolutionManagement {
             plugin("protobuf", "com.google.protobuf").version("0.9.3")
             library("protobuf.java.util", "com.google.protobuf:protobuf-java-util:$protobufVersion")
             library("protobuf.kotlin", "com.google.protobuf:protobuf-kotlin:$protobufVersion")
+            library("netty", "io.netty:netty-all:4.1.92.Final")
+            library("lz4", "org.lz4:lz4-java:1.8.0")
+            library("bcprov", "org.bouncycastle:bcprov-jdk15on:1.70")
         }
         create("test") {
             library("junit.bom", "org.junit:junit-bom:$junitVersion")

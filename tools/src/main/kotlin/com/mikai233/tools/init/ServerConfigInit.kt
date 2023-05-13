@@ -3,10 +3,10 @@ package com.mikai233.tools.init
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.Server
 import com.mikai233.common.core.components.Role
-import com.mikai233.common.core.components.config.Host
+import com.mikai233.common.core.components.ZookeeperConfigCenterComponent
+import com.mikai233.common.core.components.config.NettyConfig
 import com.mikai233.common.core.components.config.Node
 import com.mikai233.common.core.components.config.ServerHosts
-import com.mikai233.common.core.components.config.ZookeeperConfigCenterComponent
 
 private var PORT_ALLOC = 2333
 fun nextPort() = PORT_ALLOC++
@@ -16,10 +16,11 @@ fun main() {
     configCenter.init(server)
     with(configCenter) {
         createServerHosts("stardust")
+        createNettyConfig()
     }
 }
 
-private fun createServerNodes(host: Host): List<Node> {
+private fun createServerNodes(host: String): List<Node> {
     return listOf(
         Node(host, Role.Player, nextPort(), true),
         Node(host, Role.Gate, nextPort(), true),
@@ -31,10 +32,12 @@ private fun createServerNodes(host: Host): List<Node> {
 private fun ZookeeperConfigCenterComponent.createServerHosts(systemName: String) {
     val serverHosts = ServerHosts(systemName)
     addConfig(serverHosts)
-    val ip = GlobalEnv.machineIp
-    val host = Host(ip)
-    addConfig(host)
-    createServerNodes(host).forEach { node ->
+    createServerNodes(GlobalEnv.MachineIp).forEach { node ->
         addConfig(node)
     }
+}
+
+private fun ZookeeperConfigCenterComponent.createNettyConfig() {
+    val nettyConfig = NettyConfig(GlobalEnv.MachineIp, 6666)
+    addConfig(nettyConfig)
 }

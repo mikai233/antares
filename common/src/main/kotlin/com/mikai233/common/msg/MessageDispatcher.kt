@@ -17,7 +17,7 @@ data class MessageFunction(
     val func: KFunction<*>,
 )
 
-class MessageDispatcher<M : Any>(val message: KClass<M>, vararg packages: String) {
+class MessageDispatcher<M : Any>(private val message: KClass<M>, vararg packages: String) {
     private val logger = logger()
     private val packages = packages.toSet()
     private var handlers: Map<KClass<out MessageHandler>, MessageHandler>

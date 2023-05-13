@@ -1,8 +1,9 @@
 package com.mikai233.shared.message
 
+import com.mikai233.common.msg.Message
 import com.mikai233.common.serde.InternalMessage
 
-sealed interface ChannelMessage : InternalMessage
+sealed interface ChannelMessage : Message
 
 object SayHello : ChannelMessage
 
@@ -12,4 +13,14 @@ data class RunnableMessage(private val block: () -> Unit) : Runnable, ChannelMes
     override fun run() {
         block()
     }
+}
+
+sealed interface PlayerMessage : Message {
+    var playerId: Long
+}
+
+sealed interface InternalPlayerMessage : PlayerMessage, InternalMessage
+
+sealed interface WorldMessage : InternalMessage {
+    var worldId: Long
 }

@@ -1,0 +1,8 @@
+syntax = "proto3";
+import "proto_login.proto";
+
+package com.mikai233.protocol;
+
+message MessageClientToServer{
+  LoginReq login_req = 10001;
+}

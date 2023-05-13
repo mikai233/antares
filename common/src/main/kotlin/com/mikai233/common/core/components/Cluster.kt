@@ -3,7 +3,6 @@ package com.mikai233.common.core.components
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import com.mikai233.common.core.Server
-import com.mikai233.common.core.components.config.ServerConfigsComponent
 
 /**
  * @author mikai233
@@ -21,12 +20,13 @@ interface ClusterMessage
 
 open class Cluster<T : ClusterMessage>(private val behavior: Behavior<T>) : Component {
     private lateinit var server: Server
-    private lateinit var system: ActorSystem<T>
-    private lateinit var serverConfigsComponent: ServerConfigsComponent
+    lateinit var system: ActorSystem<T>
+        private set
+    private lateinit var nodeConfigsComponent: NodeConfigsComponent
 
     override fun init(server: Server) {
         this.server = server
-        serverConfigsComponent = server.component()
+        nodeConfigsComponent = server.component()
         startActorSystem()
         afterStartActorSystem()
     }
@@ -34,8 +34,8 @@ open class Cluster<T : ClusterMessage>(private val behavior: Behavior<T>) : Comp
     private fun startActorSystem() {
         system = ActorSystem.create(
             behavior,
-            serverConfigsComponent.akkaSystemName,
-            serverConfigsComponent.retrieveAkkaConfig()
+            nodeConfigsComponent.akkaSystemName,
+            nodeConfigsComponent.retrieveAkkaConfig()
         )
     }
 

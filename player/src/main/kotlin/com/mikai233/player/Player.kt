@@ -1,12 +1,12 @@
-package com.mikai233.home
+package com.mikai233.player
 
 import akka.actor.typed.javadsl.Behaviors
 import com.mikai233.common.core.Launcher
 import com.mikai233.common.core.Server
 import com.mikai233.common.core.components.Cluster
+import com.mikai233.common.core.components.NodeConfigsComponent
 import com.mikai233.common.core.components.Role
-import com.mikai233.common.core.components.config.ServerConfigsComponent
-import com.mikai233.common.core.components.config.ZookeeperConfigCenterComponent
+import com.mikai233.common.core.components.ZookeeperConfigCenterComponent
 
 class Player(private val port: Int) : Launcher {
     private val server: Server = Server()
@@ -17,10 +17,10 @@ class Player(private val port: Int) : Launcher {
                 ZookeeperConfigCenterComponent()
             }
             component {
-                ServerConfigsComponent(Role.Player, port)
+                NodeConfigsComponent(Role.Player, port)
             }
             component {
-                Cluster<HomeMessage>(Behaviors.empty())
+                Cluster<PlayerSystemMessage>(Behaviors.empty())
             }
         }
     }
