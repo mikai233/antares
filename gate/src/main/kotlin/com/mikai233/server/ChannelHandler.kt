@@ -3,9 +3,9 @@ package com.mikai233.server
 import akka.actor.typed.ActorRef
 import com.google.protobuf.GeneratedMessageV3
 import com.mikai233.Gate
-import com.mikai233.GateSystemMessage
 import com.mikai233.SpawnChannelActorAns
-import com.mikai233.common.core.components.Cluster
+import com.mikai233.SpawnChannelActorAsk
+import com.mikai233.common.core.State
 import com.mikai233.common.ext.logger
 import com.mikai233.common.ext.syncAsk
 import com.mikai233.shared.message.ChannelMessage
@@ -35,15 +35,14 @@ class ChannelHandler(private val gate: Gate) : ChannelInboundHandlerAdapter() {
     }
 
     override fun channelActive(ctx: ChannelHandlerContext) {
-//        if (Gate.serverState == ServerState.Up) {
-//            spawnChannelActor(ctx).let { actorRef ->
-//                ctx.channel().attr(actorKey).set(actorRef)
-//            }
-//        } else {
-//            logger.debug("GateServer is not the Up state, current state is:{}, channel now closed", Gate.serverState)
-//            ctx.close()
-//        }
-
+        val state = gate.server.serverState()
+        if (state == State.Running) {
+            val actorRef = spawnChannelActor(ctx)
+            ctx.channel().attr(actorKey).set(actorRef)
+        } else {
+            logger.warn("gate is not running, current state:{}, channel will close", state)
+            ctx.close()
+        }
     }
 
     override fun channelInactive(ctx: ChannelHandlerContext) {
@@ -59,19 +58,10 @@ class ChannelHandler(private val gate: Gate) : ChannelInboundHandlerAdapter() {
     }
 
     private fun spawnChannelActor(ctx: ChannelHandlerContext): ActorRef<ChannelMessage> {
-        val cluster: Cluster<GateSystemMessage> = gate.server.component()
-        syncAsk<GateSystemMessage, SpawnChannelActorAns>(cluster.system, cluster.system.scheduler()) {
-//            SpawnChannelActorAsk(ctx, it)
-            TODO()
+        val system = gate.system()
+        val spawnChannelActorAns: SpawnChannelActorAns = syncAsk(system, system.scheduler()) {
+            SpawnChannelActorAsk(ctx, it)
         }
-        TODO()
-//        val options = BackoffOpts.onStop(
-//            ChannelActor.props(ctx),
-//            ChannelActor::class.simpleName,
-//            1.seconds.toJavaDuration(),
-//            5.seconds.toJavaDuration(),
-//            0.5
-//        )
-//        return Gate.actorSystem.actorOf(options.props())
+        return spawnChannelActorAns.channelActor
     }
 }

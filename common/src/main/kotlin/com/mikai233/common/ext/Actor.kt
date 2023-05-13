@@ -1,7 +1,6 @@
 package com.mikai233.common.ext
 
 import akka.actor.typed.ActorRef
-import akka.actor.typed.ActorSystem
 import akka.actor.typed.Scheduler
 import akka.actor.typed.javadsl.AbstractBehavior
 import akka.actor.typed.javadsl.AskPattern
@@ -15,26 +14,27 @@ inline fun <reified T> AbstractBehavior<T>.actorLogger(): Logger {
     return context.log
 }
 
-suspend fun <Req, Resp> ActorRef<Req>.ask(
-    system: ActorSystem<Void>,
-    requestFunction: (ActorRef<Resp>) -> Req,
-    timeout: Duration = 3.minutes
-): Resp {
-    return AskPattern.ask<Req, Resp>(
-        this,
-        { replyTo -> requestFunction(replyTo) },
-        timeout.toJavaDuration(),
-        system.scheduler()
-    ).await()
-}
-
-fun <Req, Resp> syncAsk(
-    target: ActorRef<Req>,
+suspend fun <Req : M, Resp, M> ask(
+    target: ActorRef<M>,
     scheduler: Scheduler,
     timeout: Duration = 3.minutes,
     requestFunction: (ActorRef<Resp>) -> Req
 ): Resp {
-    val completionStage = AskPattern.ask<Req, Resp>(
+    return AskPattern.ask<M, Resp>(
+        target,
+        { replyTo -> requestFunction(replyTo) },
+        timeout.toJavaDuration(),
+        scheduler,
+    ).await()
+}
+
+fun <Req : M, Resp, M> syncAsk(
+    target: ActorRef<M>,
+    scheduler: Scheduler,
+    timeout: Duration = 3.minutes,
+    requestFunction: (ActorRef<Resp>) -> Req
+): Resp {
+    val completionStage = AskPattern.ask<M, Resp>(
         target,
         { replyTo -> requestFunction(replyTo) },
         timeout.toJavaDuration(),

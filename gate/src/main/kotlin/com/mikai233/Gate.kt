@@ -12,8 +12,6 @@ import com.mikai233.common.core.components.NodeConfigsComponent
 import com.mikai233.common.core.components.Role
 import com.mikai233.common.core.components.ZookeeperConfigCenterComponent
 import com.mikai233.common.ext.actorLogger
-import com.mikai233.common.ext.syncAsk
-import kotlin.time.Duration.Companion.seconds
 
 class Gate(private val port: Int) : Launcher {
     val server: Server = Server()
@@ -32,8 +30,9 @@ class Gate(private val port: Int) : Launcher {
             return newReceiveBuilder().onMessage(GateSystemMessage::class.java) { message ->
                 when (message) {
                     is SpawnChannelActorAsk -> {
-                        logger.info("{}", message)
-                        message.replyTo.tell(SpawnChannelActorAns("world hello"))
+                        val actorRef = context.spawn(ChannelActor.setup(message.ctx), message.ctx.name())
+                        logger.debug("spawn channel actor:{}", message.ctx.name())
+                        message.replyTo.tell(SpawnChannelActorAns(actorRef))
                     }
                 }
                 Behaviors.same()
@@ -67,9 +66,4 @@ fun main(args: Array<String>) {
     val port = 2334
     val gate = Gate(port)
     gate.launch()
-    val system = gate.system()
-    val resp = syncAsk<GateSystemMessage, SpawnChannelActorAns>(system, system.scheduler(), 3.seconds) {
-        SpawnChannelActorAsk("hello world", it)
-    }
-    println(resp)
 }

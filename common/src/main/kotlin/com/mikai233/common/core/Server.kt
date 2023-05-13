@@ -53,4 +53,6 @@ open class Server {
             component.shutdown()
         }
     }
+
+    fun serverState() = state
 }
