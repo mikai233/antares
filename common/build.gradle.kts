@@ -22,6 +22,7 @@ dependencies {
     implementation(log.api)
     implementation(tool.bundles.jackson)
     implementation(tool.jackson.protobuf)
+    implementation(tool.reflections)
 }
 
 tasks.test {

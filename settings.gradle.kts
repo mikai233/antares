@@ -23,6 +23,8 @@ dependencyResolutionManagement {
     versionCatalogs {
         create("kt") {
             plugin("jvm", "org.jetbrains.kotlin.jvm").version(kotlinVersion)
+            plugin("allopen", "org.jetbrains.kotlin.plugin.allopen").version(kotlinVersion)
+            plugin("noarg", "org.jetbrains.kotlin.plugin.noarg").version(kotlinVersion)
             library("stdlib", "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion")
             library("jdk8", "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
             library("reflect", "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion")

@@ -1,5 +1,7 @@
 plugins {
     @Suppress("DSL_SCOPE_VIOLATION") alias(kt.plugins.jvm)
+    @Suppress("DSL_SCOPE_VIOLATION") alias(kt.plugins.allopen)
+    @Suppress("DSL_SCOPE_VIOLATION") alias(kt.plugins.noarg)
 }
 
 group = "com.mikai233"
@@ -15,6 +17,16 @@ dependencies {
 
 subprojects {
     apply(plugin = "kotlin")
+    apply(plugin = "kotlin-allopen")
+    apply(plugin = "kotlin-noarg")
+
+    allOpen {
+        annotation("com.mikai233.common.annotation.AllOpen")
+    }
+    noArg {
+        invokeInitializers = true
+        annotation("com.mikai233.common.annotation.NoArg")
+    }
 
     if (project.name == "proto") {
         kotlin {
