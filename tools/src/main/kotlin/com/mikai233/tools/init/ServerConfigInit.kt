@@ -1,7 +1,6 @@
 package com.mikai233.tools.init
 
 import com.mikai233.common.conf.GlobalEnv
-import com.mikai233.common.core.Server
 import com.mikai233.common.core.components.Role
 import com.mikai233.common.core.components.ZookeeperConfigCenterComponent
 import com.mikai233.common.core.components.config.NettyConfig
@@ -11,9 +10,8 @@ import com.mikai233.common.core.components.config.ServerHosts
 private var PORT_ALLOC = 2333
 fun nextPort() = PORT_ALLOC++
 fun main() {
-    val server = Server()
     val configCenter = ZookeeperConfigCenterComponent()
-    configCenter.init(server)
+    configCenter.init()
     with(configCenter) {
         createServerHosts("stardust")
         createNettyConfig()
