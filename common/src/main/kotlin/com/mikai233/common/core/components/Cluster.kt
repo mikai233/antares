@@ -3,6 +3,7 @@ package com.mikai233.common.core.components
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import com.mikai233.common.core.Server
+import com.mikai233.common.msg.Message
 
 /**
  * @author mikai233
@@ -16,16 +17,14 @@ enum class Role {
     Global,
 }
 
-interface ClusterMessage
+interface ClusterMessage : Message
 
-open class Cluster<T : ClusterMessage>(private val behavior: Behavior<T>) : Component {
-    private lateinit var server: Server
+open class Cluster<T : ClusterMessage>(private val server: Server, private val behavior: Behavior<T>) : Component {
     lateinit var system: ActorSystem<T>
         private set
     private lateinit var nodeConfigsComponent: NodeConfigsComponent
 
-    override fun init(server: Server) {
-        this.server = server
+    override fun init() {
         nodeConfigsComponent = server.component()
         startActorSystem()
         afterStartActorSystem()

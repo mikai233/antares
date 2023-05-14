@@ -1,6 +1,5 @@
 package com.mikai233.common.core.components
 
-import com.mikai233.common.core.Server
 import com.mikai233.common.core.components.config.Config
 import com.mikai233.common.core.components.config.ConfigCenter
 import com.mikai233.common.ext.Json
@@ -63,7 +62,7 @@ class ZookeeperConfigCenterComponent(private val connectionString: String = "loc
         return client.checkExists().forPath(path) != null
     }
 
-    override fun init(server: Server) {
+    override fun init() {
         val retryPolicy = ExponentialBackoffRetry(1000, 3)
         client = CuratorFrameworkFactory.builder()
             .connectString(connectionString)

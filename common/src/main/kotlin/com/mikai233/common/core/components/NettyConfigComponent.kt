@@ -6,12 +6,10 @@ import com.mikai233.common.core.components.config.NettyConfig
 import com.mikai233.common.core.components.config.getConfigEx
 import com.mikai233.common.core.components.config.serverNetty
 
-class NettyConfigComponent : Component {
-    private lateinit var server: Server
+class NettyConfigComponent(private val server: Server) : Component {
     private lateinit var configCenter: ZookeeperConfigCenterComponent
     private lateinit var nettyConfig: NettyConfig
-    override fun init(server: Server) {
-        this.server = server
+    override fun init() {
         configCenter = server.component()
         initNettyConfig()
     }
@@ -20,7 +18,5 @@ class NettyConfigComponent : Component {
         nettyConfig = configCenter.getConfigEx(serverNetty(GlobalEnv.MachineIp))
     }
 
-    override fun shutdown() {
-        TODO("Not yet implemented")
-    }
+    override fun shutdown() = Unit
 }

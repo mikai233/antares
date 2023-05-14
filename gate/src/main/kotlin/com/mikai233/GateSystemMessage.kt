@@ -8,7 +8,7 @@ import io.netty.channel.ChannelHandlerContext
 sealed interface GateSystemMessage : ClusterMessage {
 }
 
-data class SpawnChannelActorAsk(val ctx: ChannelHandlerContext, val replyTo: ActorRef<SpawnChannelActorAns>) :
+data class SpawnChannelActorReq(val ctx: ChannelHandlerContext, val replyTo: ActorRef<SpawnChannelActorResp>) :
     GateSystemMessage
 
-data class SpawnChannelActorAns(val channelActor: ActorRef<ChannelMessage>)
+data class SpawnChannelActorResp(val channelActor: ActorRef<ChannelMessage>)

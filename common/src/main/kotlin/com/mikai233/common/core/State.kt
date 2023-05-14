@@ -5,4 +5,5 @@ enum class State {
     Initializing,
     Running,
     ShuttingDown,
+    Stopped,
 }

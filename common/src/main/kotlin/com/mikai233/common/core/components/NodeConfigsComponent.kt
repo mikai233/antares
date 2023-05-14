@@ -12,16 +12,14 @@ import com.typesafe.config.ConfigFactory
  * @email dreamfever2017@yahoo.com
  * @date 2023/5/11
  */
-class NodeConfigsComponent(private val role: Role, private val port: Int) : Component {
+class NodeConfigsComponent(private val server: Server, private val role: Role, private val port: Int) : Component {
     private val logger = logger()
-    private lateinit var server: Server
     private lateinit var configCenter: ZookeeperConfigCenterComponent
     private lateinit var selfNode: Node
     lateinit var akkaSystemName: String
         private set
 
-    override fun init(server: Server) {
-        this.server = server
+    override fun init() {
         configCenter = server.component()
         initSelfNode()
         initSysName()

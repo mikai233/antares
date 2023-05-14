@@ -7,13 +7,11 @@ import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
 import com.mikai233.common.core.Launcher
 import com.mikai233.common.core.Server
-import com.mikai233.common.core.components.Cluster
-import com.mikai233.common.core.components.NodeConfigsComponent
-import com.mikai233.common.core.components.Role
-import com.mikai233.common.core.components.ZookeeperConfigCenterComponent
+import com.mikai233.common.core.components.*
 import com.mikai233.common.ext.actorLogger
+import com.mikai233.server.NettyServer
 
-class Gate(private val port: Int) : Launcher {
+class GateNode(private val port: Int) : Launcher {
     val server: Server = Server()
 
     class ChannelActorGuardian(context: ActorContext<GateSystemMessage>) :
@@ -29,10 +27,10 @@ class Gate(private val port: Int) : Launcher {
         override fun createReceive(): Receive<GateSystemMessage> {
             return newReceiveBuilder().onMessage(GateSystemMessage::class.java) { message ->
                 when (message) {
-                    is SpawnChannelActorAsk -> {
+                    is SpawnChannelActorReq -> {
                         val actorRef = context.spawn(ChannelActor.setup(message.ctx), message.ctx.name())
                         logger.debug("spawn channel actor:{}", message.ctx.name())
-                        message.replyTo.tell(SpawnChannelActorAns(actorRef))
+                        message.replyTo.tell(SpawnChannelActorResp(actorRef))
                     }
                 }
                 Behaviors.same()
@@ -46,10 +44,16 @@ class Gate(private val port: Int) : Launcher {
                 ZookeeperConfigCenterComponent()
             }
             component {
-                NodeConfigsComponent(Role.Gate, port)
+                NodeConfigsComponent(this, Role.Gate, port)
             }
             component {
-                Cluster(ChannelActorGuardian.setup())
+                Cluster(this, ChannelActorGuardian.setup())
+            }
+            component {
+                NettyConfigComponent(this)
+            }
+            component {
+                NettyServer(this@GateNode)
             }
         }
     }
@@ -64,6 +68,6 @@ class Gate(private val port: Int) : Launcher {
 fun main(args: Array<String>) {
 //    val port = args[0].toUShort()
     val port = 2334
-    val gate = Gate(port)
-    gate.launch()
+    val gateNode = GateNode(port)
+    gateNode.launch()
 }

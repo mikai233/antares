@@ -8,7 +8,7 @@ import com.mikai233.common.core.components.NodeConfigsComponent
 import com.mikai233.common.core.components.Role
 import com.mikai233.common.core.components.ZookeeperConfigCenterComponent
 
-class Player(private val port: Int) : Launcher {
+class PlayerNode(private val port: Int) : Launcher {
     private val server: Server = Server()
 
     init {
@@ -17,10 +17,10 @@ class Player(private val port: Int) : Launcher {
                 ZookeeperConfigCenterComponent()
             }
             component {
-                NodeConfigsComponent(Role.Player, port)
+                NodeConfigsComponent(this, Role.Player, port)
             }
             component {
-                Cluster<PlayerSystemMessage>(Behaviors.empty())
+                Cluster<PlayerSystemMessage>(this, Behaviors.empty())
             }
         }
     }
@@ -33,6 +33,6 @@ class Player(private val port: Int) : Launcher {
 fun main(args: Array<String>) {
 //    val port = args[0].toUShort()
     val port = 2333
-    val player = Player(port)
-    player.launch()
+    val playerNode = PlayerNode(port)
+    playerNode.launch()
 }

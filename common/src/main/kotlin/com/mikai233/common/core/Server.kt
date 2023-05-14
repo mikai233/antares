@@ -43,15 +43,11 @@ open class Server {
     }
 
     fun initComponents() {
-        componentsOrder.mapNotNull(components::get).forEach { component ->
-            component.init(this)
-        }
+        componentsOrder.mapNotNull(components::get).forEach(Component::init)
     }
 
     fun shutdownComponents() {
-        componentsOrder.reversed().mapNotNull(components::get).forEach { component ->
-            component.shutdown()
-        }
+        componentsOrder.reversed().mapNotNull(components::get).forEach(Component::shutdown)
     }
 
     fun serverState() = state

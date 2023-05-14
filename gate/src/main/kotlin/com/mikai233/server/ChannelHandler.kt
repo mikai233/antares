@@ -2,9 +2,9 @@ package com.mikai233.server
 
 import akka.actor.typed.ActorRef
 import com.google.protobuf.GeneratedMessageV3
-import com.mikai233.Gate
-import com.mikai233.SpawnChannelActorAns
-import com.mikai233.SpawnChannelActorAsk
+import com.mikai233.GateNode
+import com.mikai233.SpawnChannelActorReq
+import com.mikai233.SpawnChannelActorResp
 import com.mikai233.common.core.State
 import com.mikai233.common.ext.logger
 import com.mikai233.common.ext.syncAsk
@@ -17,7 +17,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter
 import io.netty.util.AttributeKey
 
 @ChannelHandler.Sharable
-class ChannelHandler(private val gate: Gate) : ChannelInboundHandlerAdapter() {
+class ChannelHandler(private val gateNode: GateNode) : ChannelInboundHandlerAdapter() {
     companion object {
         const val CHANNEL_ACTOR_KEY = "CHANNEL_ACTOR_KEY"
     }
@@ -35,7 +35,7 @@ class ChannelHandler(private val gate: Gate) : ChannelInboundHandlerAdapter() {
     }
 
     override fun channelActive(ctx: ChannelHandlerContext) {
-        val state = gate.server.serverState()
+        val state = gateNode.server.serverState()
         if (state == State.Running) {
             val actorRef = spawnChannelActor(ctx)
             ctx.channel().attr(actorKey).set(actorRef)
@@ -58,10 +58,10 @@ class ChannelHandler(private val gate: Gate) : ChannelInboundHandlerAdapter() {
     }
 
     private fun spawnChannelActor(ctx: ChannelHandlerContext): ActorRef<ChannelMessage> {
-        val system = gate.system()
-        val spawnChannelActorAns: SpawnChannelActorAns = syncAsk(system, system.scheduler()) {
-            SpawnChannelActorAsk(ctx, it)
+        val system = gateNode.system()
+        val resp: SpawnChannelActorResp = syncAsk(system, system.scheduler()) {
+            SpawnChannelActorReq(ctx, it)
         }
-        return spawnChannelActorAns.channelActor
+        return resp.channelActor
     }
 }
