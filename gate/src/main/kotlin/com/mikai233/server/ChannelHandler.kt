@@ -26,15 +26,17 @@ class ChannelHandler(private val gateNode: GateNode) : ChannelInboundHandlerAdap
     private val logger = logger()
 
     private fun tell(ctx: ChannelHandlerContext, message: ChannelMessage) {
-        val channelActor: ActorRef<ChannelMessage>? = ctx.channel().attr(actorKey).get()
-        if (channelActor == null) {
+        val channelActorRef: ActorRef<ChannelMessage>? = ctx.channel().attr(actorKey).get()
+        if (channelActorRef == null) {
             logger.warn("failed to send message:{} to channel actor because of channel actor not found", message)
         } else {
-            channelActor.tell(message)
+            channelActorRef.tell(message)
         }
     }
 
     override fun channelActive(ctx: ChannelHandlerContext) {
+        val actorRef = spawnChannelActor(ctx)
+        ctx.channel().attr(actorKey).set(actorRef)
         val state = gateNode.server.serverState()
         if (state == State.Running) {
             val actorRef = spawnChannelActor(ctx)
@@ -59,8 +61,9 @@ class ChannelHandler(private val gateNode: GateNode) : ChannelInboundHandlerAdap
 
     private fun spawnChannelActor(ctx: ChannelHandlerContext): ActorRef<ChannelMessage> {
         val system = gateNode.system()
+        val player = gateNode.player()
         val resp: SpawnChannelActorResp = syncAsk(system, system.scheduler()) {
-            SpawnChannelActorReq(ctx, it)
+            SpawnChannelActorReq(ctx, it, player)
         }
         return resp.channelActor
     }

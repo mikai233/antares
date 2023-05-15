@@ -21,16 +21,17 @@ import com.fasterxml.jackson.dataformat.protobuf.schema.ProtobufSchema
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.mikai233.common.ext.logger
 import com.mikai233.common.msg.Message
+import org.reflections.Reflections
 import kotlin.reflect.KClass
 
 object JacksonProtobufSerdeMessage {
     val logger = logger()
     private var isInitialized = false
-    private val Messages: MutableList<KClass<out Message>> = mutableListOf()
+    private val Messages: MutableList<KClass<out InternalMessage>> = mutableListOf()
 
 
     @Synchronized
-    fun init(messages: List<KClass<out Message>>) {
+    fun init(messages: List<KClass<out InternalMessage>>) {
         if (isInitialized) {
             logger.info("already initialized, ignore")
             return
@@ -39,7 +40,13 @@ object JacksonProtobufSerdeMessage {
         Messages.addAll(messages)
     }
 
-    fun getMessages(): List<KClass<out Message>> = Messages
+    fun getMessages(): List<KClass<out InternalMessage>> = Messages
+}
+
+fun initProtobufMeta(pkg: String = "com.mikai233.shared.message") {
+    val allInternalMessages =
+        Reflections(pkg).getSubTypesOf(InternalMessage::class.java).filter { !it.isInterface }.map { it.kotlin }
+    JacksonProtobufSerdeMessage.init(allInternalMessages)
 }
 
 class JacksonProtobufSerializer(private val system: ExtendedActorSystem) : JSerializer() {
@@ -55,7 +62,7 @@ class JacksonProtobufSerializer(private val system: ExtendedActorSystem) : JSeri
         init(JacksonProtobufSerdeMessage.getMessages())
     }
 
-    fun init(messages: List<KClass<out Message>>) {
+    fun init(messages: List<KClass<out InternalMessage>>) {
         messages.forEach { message ->
             val clazz = message.java
             val schema = mapper.generateSchemaFor(clazz)

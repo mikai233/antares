@@ -12,8 +12,7 @@ repositories {
 dependencies {
     testImplementation(platform(test.junit.bom))
     testImplementation(test.junit.jupiter)
-    implementation(akka.cluster)
-    implementation(akka.slf4j)
+    implementation(akka.bundles.common)
     implementation(kt.bundles.common)
     implementation(ktx.core)
     runtimeOnly(ktx.core.jvm)
@@ -24,7 +23,9 @@ dependencies {
     implementation(tool.jackson.protobuf)
     implementation(tool.reflections)
     implementation(tool.protobuf.kotlin)
+    implementation(tool.protobuf.java.util)
     implementation(tool.bcprov)
+    implementation(tool.kryo)
 }
 
 tasks.test {

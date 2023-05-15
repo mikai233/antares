@@ -1,5 +1,6 @@
 package com.mikai233.common.ext
 
+import com.google.protobuf.util.JsonFormat
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.CuratorFrameworkFactory
 import org.apache.curator.retry.ExponentialBackoffRetry
@@ -47,3 +48,6 @@ fun getPlatform(): Platform {
         }
     }
 }
+
+fun protobufJsonPrinter(): JsonFormat.Printer =
+    JsonFormat.printer().omittingInsignificantWhitespace().includingDefaultValueFields()

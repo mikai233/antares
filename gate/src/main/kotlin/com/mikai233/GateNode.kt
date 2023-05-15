@@ -9,6 +9,7 @@ import com.mikai233.common.core.Launcher
 import com.mikai233.common.core.Server
 import com.mikai233.common.core.components.*
 import com.mikai233.common.ext.actorLogger
+import com.mikai233.component.Sharding
 import com.mikai233.server.NettyServer
 
 class GateNode(private val port: Int) : Launcher {
@@ -28,7 +29,9 @@ class GateNode(private val port: Int) : Launcher {
             return newReceiveBuilder().onMessage(GateSystemMessage::class.java) { message ->
                 when (message) {
                     is SpawnChannelActorReq -> {
-                        val actorRef = context.spawn(ChannelActor.setup(message.ctx), message.ctx.name())
+                        val actorRef = context.spawnAnonymous(Behaviors.setup {
+                            ChannelActor(it, message.ctx, message.player)
+                        })
                         logger.debug("spawn channel actor:{}", message.ctx.name())
                         message.replyTo.tell(SpawnChannelActorResp(actorRef))
                     }
@@ -55,10 +58,15 @@ class GateNode(private val port: Int) : Launcher {
             component {
                 NettyServer(this@GateNode)
             }
+            component {
+                Sharding(this)
+            }
         }
     }
 
     fun system() = server.component<Cluster<GateSystemMessage>>().system
+
+    fun player() = server.component<Sharding>().playerActorRef
 
     override fun launch() {
         server.initComponents()

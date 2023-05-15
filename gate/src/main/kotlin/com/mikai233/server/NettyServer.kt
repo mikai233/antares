@@ -67,7 +67,7 @@ class NettyServer(private val gate: GateNode) : Component {
     }
 
     override fun shutdown() {
-
+        stop()
     }
 
     private fun initNettyConfig() {
@@ -85,10 +85,14 @@ class NettyServer(private val gate: GateNode) : Component {
             } catch (e: Exception) {
                 logger.error("", e)
             } finally {
-                bossGroup.shutdownGracefully()
-                workGroup.shutdownGracefully()
+                stop()
             }
         }
+    }
+
+    fun stop() {
+        bossGroup.shutdownGracefully().sync()
+        workGroup.shutdownGracefully().sync()
     }
 
     private fun startServer(): List<ChannelFuture> {

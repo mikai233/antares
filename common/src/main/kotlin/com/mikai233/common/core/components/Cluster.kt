@@ -17,6 +17,11 @@ enum class Role {
     Global,
 }
 
+enum class ShardEntityType {
+    PlayerActor,
+    WorldActor,
+}
+
 interface ClusterMessage : Message
 
 open class Cluster<T : ClusterMessage>(private val server: Server, private val behavior: Behavior<T>) : Component {

@@ -1,19 +1,21 @@
 package com.mikai233
 
-import akka.actor.typed.Behavior
+import akka.actor.typed.ActorRef
 import akka.actor.typed.javadsl.AbstractBehavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
+import com.google.protobuf.GeneratedMessageV3
 import com.mikai233.common.core.actor.safeActorCoroutine
 import com.mikai233.common.ext.actorLogger
-import com.mikai233.shared.message.ChannelMessage
-import com.mikai233.shared.message.ClientMessage
-import com.mikai233.shared.message.GracefulShutdown
-import com.mikai233.shared.message.RunnableMessage
+import com.mikai233.shared.message.*
 import io.netty.channel.ChannelHandlerContext
 
-class ChannelActor(context: ActorContext<ChannelMessage>, val handlerContext: ChannelHandlerContext) :
+class ChannelActor(
+    context: ActorContext<ChannelMessage>,
+    private val handlerContext: ChannelHandlerContext,
+    private val player: ActorRef<PlayerMessage>
+) :
     AbstractBehavior<ChannelMessage>(context) {
     private val runnableAdapter = context.messageAdapter(Runnable::class.java) { RunnableMessage(it::run) }
     private val coroutine = runnableAdapter.safeActorCoroutine()
@@ -24,14 +26,7 @@ class ChannelActor(context: ActorContext<ChannelMessage>, val handlerContext: Ch
 
     init {
         logger.info("{} preStart", context.self)
-    }
-
-    companion object {
-        fun setup(handlerContext: ChannelHandlerContext): Behavior<ChannelMessage> {
-            return Behaviors.setup {
-                ChannelActor(it, handlerContext)
-            }
-        }
+        player.tell(PlayerLogin(112233, context.self.narrow()))
     }
 
     override fun createReceive(): Receive<ChannelMessage> {
@@ -46,16 +41,24 @@ class ChannelActor(context: ActorContext<ChannelMessage>, val handlerContext: Ch
                     logger.debug("{} {}", context.self, message)
                     return@onMessage Behaviors.stopped()
                 }
+
+                is Test -> {
+                    logger.info("{}", message)
+                }
             }
             Behaviors.same()
         }.build()
     }
 
-    private fun tellPlayer(message: ClientMessage) {
-
+    private fun tellPlayer(message: InternalPlayerMessage) {
+        player.tell(message)
     }
 
     private fun tellWorld(message: ClientMessage) {
 
+    }
+
+    private fun write(message: GeneratedMessageV3) {
+        handlerContext.writeAndFlush(message)
     }
 }

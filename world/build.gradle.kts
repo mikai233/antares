@@ -8,6 +8,7 @@ repositories {
 dependencies {
     testImplementation(platform(test.junit.bom))
     testImplementation(test.junit.jupiter)
+    implementation(akka.bundles.common)
 }
 
 tasks.test {

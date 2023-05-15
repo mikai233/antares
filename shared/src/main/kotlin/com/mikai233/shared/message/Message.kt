@@ -5,11 +5,7 @@ import com.mikai233.common.serde.InternalMessage
 
 sealed interface ChannelMessage : Message
 
-data class RunnableMessage(private val block: () -> Unit) : Runnable, ChannelMessage {
-    override fun run() {
-        block()
-    }
-}
+sealed interface InternalChannelMessage : ChannelMessage, InternalMessage
 
 sealed interface PlayerMessage : Message {
     var playerId: Long

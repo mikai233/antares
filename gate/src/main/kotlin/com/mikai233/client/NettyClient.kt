@@ -50,9 +50,13 @@ class NettyClient(
             } catch (e: Exception) {
                 logger.error("", e)
             } finally {
-                bossGroup.shutdownGracefully()
+                stop()
             }
         }
+    }
+
+    fun stop() {
+        bossGroup.shutdownGracefully().sync()
     }
 
     private fun startClient(): ChannelFuture {

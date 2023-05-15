@@ -7,6 +7,7 @@ import com.mikai233.common.core.components.Cluster
 import com.mikai233.common.core.components.NodeConfigsComponent
 import com.mikai233.common.core.components.Role
 import com.mikai233.common.core.components.ZookeeperConfigCenterComponent
+import com.mikai233.player.component.Sharding
 
 class PlayerNode(private val port: Int) : Launcher {
     private val server: Server = Server()
@@ -21,6 +22,9 @@ class PlayerNode(private val port: Int) : Launcher {
             }
             component {
                 Cluster<PlayerSystemMessage>(this, Behaviors.empty())
+            }
+            component {
+                Sharding(this)
             }
         }
     }

@@ -47,6 +47,7 @@ dependencyResolutionManagement {
             library("sharding", "com.typesafe.akka:akka-cluster-sharding-typed_$scalaVersion:$akkaVersion")
             library("slf4j", "com.typesafe.akka:akka-slf4j_$scalaVersion:$akkaVersion")
             library("stream", "com.typesafe.akka:akka-stream-typed_$scalaVersion:$akkaVersion")
+            bundle("common", listOf("actor", "cluster", "sharding", "slf4j"))
         }
         create("log") {
             library("api", "org.slf4j:slf4j-api:2.0.7")
@@ -72,6 +73,7 @@ dependencyResolutionManagement {
             library("netty", "io.netty:netty-all:4.1.92.Final")
             library("lz4", "org.lz4:lz4-java:1.8.0")
             library("bcprov", "org.bouncycastle:bcprov-jdk15on:1.70")
+            library("kryo", "io.altoo:akka-kryo-serialization-typed_$scalaVersion:2.5.0")
         }
         create("test") {
             library("junit.bom", "org.junit:junit-bom:$junitVersion")

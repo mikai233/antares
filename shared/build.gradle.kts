@@ -11,7 +11,7 @@ dependencies {
     implementation(tool.reflections)
     implementation(tool.protobuf.kotlin)
     implementation(kt.reflect)
-    implementation(akka.cluster)
+    implementation(akka.bundles.common)
     implementation(project(":common"))
     implementation(project(":proto"))
 }

@@ -1,6 +1,5 @@
 package com.mikai233.codec
 
-import com.mikai233.common.ext.toByteArray
 import io.netty.channel.ChannelHandler
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.MessageToMessageCodec
@@ -9,17 +8,18 @@ import net.jpountz.lz4.LZ4Factory
 import net.jpountz.lz4.LZ4FastDecompressor
 
 @ChannelHandler.Sharable
-class LZ4Codec : MessageToMessageCodec<Pair<Int, ByteArray>, ByteArray>() {
-
-    override fun encode(ctx: ChannelHandlerContext, msg: ByteArray, out: MutableList<Any>) {
-        val compressed = compressor().compress(msg)
-        out.add(msg.size.toByteArray() + msg)
+class LZ4Codec : MessageToMessageCodec<Packet, Packet>() {
+    override fun encode(ctx: ChannelHandlerContext, msg: Packet, out: MutableList<Any>) {
+        val body = compressor().compress(msg.body)
+        msg.body = body
+        out.add(msg)
     }
 
-    override fun decode(ctx: ChannelHandlerContext, msg: Pair<Int, ByteArray>, out: MutableList<Any>) {
-        val originLen = msg.first
-        val decompressed = decompressor().decompress(msg.second, originLen)
-        out.add(msg.second)
+    override fun decode(ctx: ChannelHandlerContext, msg: Packet, out: MutableList<Any>) {
+        val body = ByteArray(msg.originLen)
+        decompressor().decompress(msg.body, body)
+        msg.body = body
+        out.add(msg)
     }
 
     private fun compressor(): LZ4Compressor {
