@@ -3,7 +3,7 @@ package com.mikai233.server
 import com.mikai233.GateNode
 import com.mikai233.GateSystemMessage
 import com.mikai233.common.conf.GlobalEnv
-import com.mikai233.common.core.components.Cluster
+import com.mikai233.common.core.components.AkkaSystem
 import com.mikai233.common.core.components.Component
 import com.mikai233.common.core.components.ZookeeperConfigCenterComponent
 import com.mikai233.common.core.components.config.NettyConfig
@@ -30,7 +30,7 @@ import kotlin.concurrent.thread
 class NettyServer(private val gate: GateNode) : Component {
     private val logger = logger()
     private val server = gate.server
-    private lateinit var cluster: Cluster<GateSystemMessage>
+    private lateinit var akka: AkkaSystem<GateSystemMessage>
     private val name: String = "netty-server"
     private val bossGroup: EventLoopGroup
     private val workGroup: EventLoopGroup
@@ -60,7 +60,7 @@ class NettyServer(private val gate: GateNode) : Component {
     }
 
     override fun init() {
-        cluster = server.component()
+        akka = server.component()
         configCenter = server.component()
         initNettyConfig()
         start()
@@ -90,7 +90,7 @@ class NettyServer(private val gate: GateNode) : Component {
         }
     }
 
-    fun stop() {
+    private fun stop() {
         bossGroup.shutdownGracefully().sync()
         workGroup.shutdownGracefully().sync()
     }

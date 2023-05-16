@@ -1,6 +1,6 @@
 package com.mikai233.player
 
-import com.mikai233.common.core.components.ClusterMessage
+import com.mikai233.common.core.components.GuardianMessage
 
-interface PlayerSystemMessage : ClusterMessage {
+interface PlayerSystemMessage : GuardianMessage {
 }

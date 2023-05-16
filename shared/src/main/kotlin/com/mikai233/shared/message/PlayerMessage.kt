@@ -3,18 +3,14 @@ package com.mikai233.shared.message
 import akka.actor.typed.ActorRef
 import com.google.protobuf.GeneratedMessageV3
 
-data class ClientToPlayerMessage(val message: GeneratedMessageV3, override var playerId: Long) : PlayerMessage
+data class PlayerProtobufEnvelope(val message: GeneratedMessageV3) : SerdePlayerMessage
 
-data class PlayerRunnableMessage(override var playerId: Long, private val block: () -> Unit) : Runnable,
-    InternalPlayerMessage {
+data class PlayerRunnable(private val block: () -> Unit) : Runnable, PlayerMessage {
     override fun run() {
         block()
     }
 }
 
-object StopPlayer : PlayerMessage {
-    override var playerId: Long = 0
-}
+object StopPlayer : SerdePlayerMessage
 
-data class PlayerLogin(override var playerId: Long, val channelActor: ActorRef<InternalChannelMessage>) :
-    InternalPlayerMessage
+data class PlayerLogin(val channelActor: ActorRef<SerdeChannelMessage>) : SerdePlayerMessage

@@ -4,14 +4,14 @@ package com.mikai233.common.test.msg
 
 import com.mikai233.common.annotation.AllOpen
 import com.mikai233.common.ext.logger
+import com.mikai233.common.msg.Message
 import com.mikai233.common.msg.MessageHandler
-import com.mikai233.common.serde.InternalMessage
 
 object HandlerCtx
 
-data class TestMessageA(val name: String) : InternalMessage
+data class TestMessageA(val name: String) : Message
 
-data class TestMessageB(val name: String, val age: Int) : InternalMessage
+data class TestMessageB(val name: String, val age: Int) : Message
 
 @AllOpen
 class MessageHandlerA : MessageHandler {

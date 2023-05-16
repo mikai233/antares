@@ -1,36 +1,33 @@
 package com.mikai233
 
-import akka.actor.typed.Behavior
 import akka.actor.typed.javadsl.AbstractBehavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
+import com.mikai233.common.conf.GlobalProto
 import com.mikai233.common.core.Launcher
 import com.mikai233.common.core.Server
+import com.mikai233.common.core.State
 import com.mikai233.common.core.components.*
 import com.mikai233.common.ext.actorLogger
 import com.mikai233.component.Sharding
+import com.mikai233.protocol.MsgCs
+import com.mikai233.protocol.MsgSc
 import com.mikai233.server.NettyServer
 
 class GateNode(private val port: Int) : Launcher {
     val server: Server = Server()
 
-    class ChannelActorGuardian(context: ActorContext<GateSystemMessage>) :
+    class ChannelActorGuardian(context: ActorContext<GateSystemMessage>, private val gateNode: GateNode) :
         AbstractBehavior<GateSystemMessage>(context) {
         private val logger = actorLogger()
-
-        companion object {
-            fun setup(): Behavior<GateSystemMessage> {
-                return Behaviors.setup(::ChannelActorGuardian)
-            }
-        }
 
         override fun createReceive(): Receive<GateSystemMessage> {
             return newReceiveBuilder().onMessage(GateSystemMessage::class.java) { message ->
                 when (message) {
                     is SpawnChannelActorReq -> {
                         val actorRef = context.spawnAnonymous(Behaviors.setup {
-                            ChannelActor(it, message.ctx, message.player)
+                            ChannelActor(it, message.ctx, gateNode.playerActorRef())
                         })
                         logger.debug("spawn channel actor:{}", message.ctx.name())
                         message.replyTo.tell(SpawnChannelActorResp(actorRef))
@@ -42,6 +39,7 @@ class GateNode(private val port: Int) : Launcher {
     }
 
     init {
+        GlobalProto.init(MsgCs.MessageClientToServer.getDescriptor(), MsgSc.MessageServerToClient.getDescriptor())
         server.components {
             component {
                 ZookeeperConfigCenterComponent()
@@ -50,7 +48,9 @@ class GateNode(private val port: Int) : Launcher {
                 NodeConfigsComponent(this, Role.Gate, port)
             }
             component {
-                Cluster(this, ChannelActorGuardian.setup())
+                AkkaSystem(this, Behaviors.setup<GateSystemMessage> {
+                    ChannelActorGuardian(it, this@GateNode)
+                })
             }
             component {
                 NettyConfigComponent(this)
@@ -64,12 +64,14 @@ class GateNode(private val port: Int) : Launcher {
         }
     }
 
-    fun system() = server.component<Cluster<GateSystemMessage>>().system
+    fun system() = server.component<AkkaSystem<GateSystemMessage>>().system
 
-    fun player() = server.component<Sharding>().playerActorRef
+    fun playerActorRef() = server.component<Sharding>().playerActorRef
 
     override fun launch() {
+        server.state = State.Initializing
         server.initComponents()
+        server.state = State.Running
     }
 }
 

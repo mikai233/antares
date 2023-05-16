@@ -2,28 +2,30 @@ package com.mikai233.player.component
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.javadsl.Behaviors
-import com.mikai233.common.core.Server
-import com.mikai233.common.core.components.Cluster
+import akka.cluster.sharding.typed.ShardingEnvelope
+import com.mikai233.common.core.components.AkkaSystem
 import com.mikai233.common.core.components.Component
 import com.mikai233.common.core.components.Role
 import com.mikai233.common.core.components.ShardEntityType
 import com.mikai233.common.ext.startSharding
 import com.mikai233.player.PlayerActor
+import com.mikai233.player.PlayerNode
 import com.mikai233.player.PlayerSystemMessage
-import com.mikai233.shared.message.PlayerMessage
 import com.mikai233.shared.message.PlayerMessageExtractor
+import com.mikai233.shared.message.SerdePlayerMessage
 import com.mikai233.shared.message.StopPlayer
 
-class Sharding(private val server: Server) : Component {
-    private lateinit var cluster: Cluster<PlayerSystemMessage>
-    lateinit var playerActorRef: ActorRef<PlayerMessage>
+class Sharding(private val playerNode: PlayerNode) : Component {
+    private lateinit var akka: AkkaSystem<PlayerSystemMessage>
+    private val server = playerNode.server
+    lateinit var playerActorRef: ActorRef<ShardingEnvelope<SerdePlayerMessage>>
     override fun init() {
-        cluster = server.component()
+        akka = server.component()
         startSharding()
     }
 
     private fun startSharding() {
-        val system = cluster.system
+        val system = akka.system
         playerActorRef = system.startSharding(
             ShardEntityType.PlayerActor.name,
             Role.Player,
@@ -31,7 +33,7 @@ class Sharding(private val server: Server) : Component {
             StopPlayer
         ) { entityCtx ->
             Behaviors.setup { ctx ->
-                PlayerActor(ctx, entityCtx.entityId.toLong())
+                PlayerActor(ctx, entityCtx.entityId.toLong(), playerNode)
             }
         }
     }

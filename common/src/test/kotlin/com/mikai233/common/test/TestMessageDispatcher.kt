@@ -1,8 +1,8 @@
 package com.mikai233.common.test
 
 import com.mikai233.common.annotation.AllOpen
+import com.mikai233.common.msg.Message
 import com.mikai233.common.msg.MessageDispatcher
-import com.mikai233.common.serde.InternalMessage
 import com.mikai233.common.test.msg.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -18,7 +18,7 @@ class TestMessageDispatcher {
 
     @Test
     fun testDispatchMessage() {
-        val dispatcher = MessageDispatcher(InternalMessage::class, "com.mikai233.common.test.msg")
+        val dispatcher = MessageDispatcher(Message::class, "com.mikai233.common.test.msg")
         with(dispatcher) {
             dispatch(TestMessageA::class, HandlerCtx, TestMessageA("hello"))
             dispatch(TestMessageB::class, HandlerCtx, TestMessageB("world", 18))
@@ -30,7 +30,7 @@ class TestMessageDispatcher {
 
     @Test
     fun testUpdateHandler() {
-        val dispatcher = MessageDispatcher(InternalMessage::class, "com.mikai233.common.test.msg")
+        val dispatcher = MessageDispatcher(Message::class, "com.mikai233.common.test.msg")
         with(dispatcher) {
             dispatch(TestMessageA::class, HandlerCtx, TestMessageA("hello"))
             updateHandler(MessageHandlerA::class, MessageHandlerAFix())

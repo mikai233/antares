@@ -1,6 +1,7 @@
 package com.mikai233.common.core
 
 import com.mikai233.common.core.components.Component
+import com.mikai233.common.ext.logger
 import java.util.*
 import kotlin.reflect.KClass
 
@@ -10,9 +11,14 @@ import kotlin.reflect.KClass
  * @date 2023/5/9
  */
 open class Server {
-    private var state: State = State.Uninitialized
+    private val logger = logger()
+
+    @Volatile
+    var state: State = State.Uninitialized
         set(value) {
+            val previousState = field
             field = value
+            logger.info("state change from:{} to:{}", previousState, field)
             eventListeners[value]?.forEach {
                 it(field)
             }
@@ -49,6 +55,4 @@ open class Server {
     fun shutdownComponents() {
         componentsOrder.reversed().mapNotNull(components::get).forEach(Component::shutdown)
     }
-
-    fun serverState() = state
 }

@@ -27,11 +27,11 @@ import kotlin.reflect.KClass
 object JacksonProtobufSerdeMessage {
     val logger = logger()
     private var isInitialized = false
-    private val Messages: MutableList<KClass<out InternalMessage>> = mutableListOf()
+    private val Messages: MutableList<KClass<out SerdeMessage>> = mutableListOf()
 
 
     @Synchronized
-    fun init(messages: List<KClass<out InternalMessage>>) {
+    fun init(messages: List<KClass<out SerdeMessage>>) {
         if (isInitialized) {
             logger.info("already initialized, ignore")
             return
@@ -40,12 +40,12 @@ object JacksonProtobufSerdeMessage {
         Messages.addAll(messages)
     }
 
-    fun getMessages(): List<KClass<out InternalMessage>> = Messages
+    fun getMessages(): List<KClass<out SerdeMessage>> = Messages
 }
 
 fun initProtobufMeta(pkg: String = "com.mikai233.shared.message") {
     val allInternalMessages =
-        Reflections(pkg).getSubTypesOf(InternalMessage::class.java).filter { !it.isInterface }.map { it.kotlin }
+        Reflections(pkg).getSubTypesOf(SerdeMessage::class.java).filter { !it.isInterface }.map { it.kotlin }
     JacksonProtobufSerdeMessage.init(allInternalMessages)
 }
 
@@ -62,7 +62,7 @@ class JacksonProtobufSerializer(private val system: ExtendedActorSystem) : JSeri
         init(JacksonProtobufSerdeMessage.getMessages())
     }
 
-    fun init(messages: List<KClass<out InternalMessage>>) {
+    fun init(messages: List<KClass<out SerdeMessage>>) {
         messages.forEach { message ->
             val clazz = message.java
             val schema = mapper.generateSchemaFor(clazz)
@@ -85,7 +85,7 @@ class JacksonProtobufSerializer(private val system: ExtendedActorSystem) : JSeri
     override fun fromBinaryJava(bytes: ByteArray, manifest: Class<*>): Any {
         val name = manifest.name
         val reader = getReader(name)
-        return reader.readValue<InternalMessage>(bytes)
+        return reader.readValue<SerdeMessage>(bytes)
     }
 
     override fun identifier(): Int {

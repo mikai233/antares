@@ -35,10 +35,8 @@ class ChannelHandler(private val gateNode: GateNode) : ChannelInboundHandlerAdap
     }
 
     override fun channelActive(ctx: ChannelHandlerContext) {
-        val actorRef = spawnChannelActor(ctx)
-        ctx.channel().attr(actorKey).set(actorRef)
-        val state = gateNode.server.serverState()
-        if (state == State.Running) {
+        val state = gateNode.server.state
+        if (gateNode.server.state == State.Running) {
             val actorRef = spawnChannelActor(ctx)
             ctx.channel().attr(actorKey).set(actorRef)
         } else {
@@ -61,10 +59,9 @@ class ChannelHandler(private val gateNode: GateNode) : ChannelInboundHandlerAdap
 
     private fun spawnChannelActor(ctx: ChannelHandlerContext): ActorRef<ChannelMessage> {
         val system = gateNode.system()
-        val player = gateNode.player()
         val resp: SpawnChannelActorResp = syncAsk(system, system.scheduler()) {
-            SpawnChannelActorReq(ctx, it, player)
+            SpawnChannelActorReq(ctx, it)
         }
-        return resp.channelActor
+        return resp.channelActorRef
     }
 }

@@ -8,12 +8,12 @@ import io.altoo.akka.serialization.kryo.serializer.scala.ScalaKryo
 import org.reflections.Reflections
 
 object KryoMapper {
-    val mapper: Map<Int, Class<out InternalMessage>>
+    val mapper: Map<Int, Class<out SerdeMessage>>
 
     init {
         val allInternalMessages =
-            Reflections("com.mikai233.common.msg")
-                .getSubTypesOf(InternalMessage::class.java)
+            Reflections("com.mikai233.shared.message")
+                .getSubTypesOf(SerdeMessage::class.java)
                 .asSequence()
                 .filter { !it.isInterface }
                 .sortedBy { it.name }
@@ -28,7 +28,7 @@ class XKryoInitializer : DefaultKryoInitializer() {
     override fun preInit(kryo: ScalaKryo, system: ExtendedActorSystem) {
         kryo.setDefaultSerializer(FieldSerializer::class.java)
         KryoMapper.mapper.forEach { (id, clazz) ->
-            logger.info("register class:{} with id:{}", clazz, id)
+            logger.info("register {} with id:{}", clazz, id)
             kryo.register(clazz, id)
         }
     }

@@ -1,23 +1,28 @@
 package com.mikai233
 
 import akka.actor.typed.ActorRef
+import akka.actor.typed.PostStop
 import akka.actor.typed.javadsl.AbstractBehavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
+import akka.cluster.sharding.typed.ShardingEnvelope
 import com.google.protobuf.GeneratedMessageV3
 import com.mikai233.common.core.actor.safeActorCoroutine
 import com.mikai233.common.ext.actorLogger
+import com.mikai233.common.ext.runnableAdapter
+import com.mikai233.common.ext.shardingEnvelope
+import com.mikai233.protocol.loginReq
 import com.mikai233.shared.message.*
 import io.netty.channel.ChannelHandlerContext
 
 class ChannelActor(
     context: ActorContext<ChannelMessage>,
     private val handlerContext: ChannelHandlerContext,
-    private val player: ActorRef<PlayerMessage>
+    private val playerActorRef: ActorRef<ShardingEnvelope<SerdePlayerMessage>>
 ) :
     AbstractBehavior<ChannelMessage>(context) {
-    private val runnableAdapter = context.messageAdapter(Runnable::class.java) { RunnableMessage(it::run) }
+    private val runnableAdapter = runnableAdapter { ChannelRunnable(it::run) }
     private val coroutine = runnableAdapter.safeActorCoroutine()
     private val logger = actorLogger()
     private var playerId: Long = 0L
@@ -26,32 +31,40 @@ class ChannelActor(
 
     init {
         logger.info("{} preStart", context.self)
-        player.tell(PlayerLogin(112233, context.self.narrow()))
+        playerActorRef.tell(ShardingEnvelope("112233", PlayerLogin(context.self.narrow())))
+        playerActorRef.tell(shardingEnvelope(112233.toString(), PlayerProtobufEnvelope(loginReq { id = 112233 })))
     }
 
     override fun createReceive(): Receive<ChannelMessage> {
         return newReceiveBuilder().onMessage(ChannelMessage::class.java) { message ->
             when (message) {
-                is RunnableMessage -> {
+                is ChannelRunnable -> {
                     message.run()
                 }
 
                 is ClientMessage -> TODO()
                 is GracefulShutdown -> {
-                    logger.debug("{} {}", context.self, message)
+                    logger.info("{} {}", context.self, message)
                     return@onMessage Behaviors.stopped()
                 }
 
                 is Test -> {
                     logger.info("{}", message)
                 }
+
+                is ChannelProtobufEnvelope -> {
+                    logger.info("{}", message)
+                }
             }
+            Behaviors.same()
+        }.onSignal(PostStop::class.java) {
+            logger.info("{}", it)
             Behaviors.same()
         }.build()
     }
 
-    private fun tellPlayer(message: InternalPlayerMessage) {
-        player.tell(message)
+    private fun tellPlayer(playerId: Long, message: SerdePlayerMessage) {
+        playerActorRef.tell(ShardingEnvelope("$playerId", message))
     }
 
     private fun tellWorld(message: ClientMessage) {
