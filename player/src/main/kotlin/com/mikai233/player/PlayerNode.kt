@@ -8,6 +8,7 @@ import com.mikai233.common.core.components.AkkaSystem
 import com.mikai233.common.core.components.NodeConfigsComponent
 import com.mikai233.common.core.components.Role
 import com.mikai233.common.core.components.ZookeeperConfigCenterComponent
+import com.mikai233.player.component.MessageDispatchers
 import com.mikai233.player.component.Sharding
 import com.mikai233.protocol.MsgCs
 import com.mikai233.protocol.MsgSc
@@ -18,6 +19,9 @@ class PlayerNode(private val port: Int) : Launcher {
     init {
         GlobalProto.init(MsgCs.MessageClientToServer.getDescriptor(), MsgSc.MessageServerToClient.getDescriptor())
         server.components {
+            component {
+                MessageDispatchers()
+            }
             component {
                 ZookeeperConfigCenterComponent()
             }
