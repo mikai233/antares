@@ -12,7 +12,12 @@ import com.typesafe.config.ConfigFactory
  * @email dreamfever2017@yahoo.com
  * @date 2023/5/11
  */
-class NodeConfigsComponent(private val server: Server, private val role: Role, private val port: Int) : Component {
+class NodeConfigsComponent(
+    private val server: Server,
+    private val role: Role,
+    private val port: Int,
+    private val sameJvm: Boolean
+) : Component {
     private val logger = logger()
     private lateinit var configCenter: ZookeeperConfigCenterComponent
     private lateinit var selfNode: Node
@@ -40,6 +45,9 @@ class NodeConfigsComponent(private val server: Server, private val role: Role, p
             },
             "akka.cluster.auto-down-unreachable-after" to "off",
         )
+        if (sameJvm) {
+            configs["akka.cluster.jmx.multi-mbeans-in-same-jvm"] = "on"
+        }
         val centerConfig = ConfigFactory.parseMap(configs)
         val roleConfig = ConfigFactory.load("${node.role.name}.conf")
         return centerConfig.withFallback(roleConfig)
@@ -63,7 +71,7 @@ class NodeConfigsComponent(private val server: Server, private val role: Role, p
     }
 
     private fun initSelfNode() {
-        val path = nodePath(GlobalEnv.MachineIp, role, port)
+        val path = nodePath(GlobalEnv.machineIp, role, port)
         selfNode = configCenter.getConfigEx(path)
     }
 

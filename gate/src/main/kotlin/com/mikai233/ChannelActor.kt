@@ -1,6 +1,5 @@
 package com.mikai233
 
-import akka.actor.typed.ActorRef
 import akka.actor.typed.PostStop
 import akka.actor.typed.javadsl.AbstractBehavior
 import akka.actor.typed.javadsl.ActorContext
@@ -19,7 +18,7 @@ import io.netty.channel.ChannelHandlerContext
 class ChannelActor(
     context: ActorContext<ChannelMessage>,
     private val handlerContext: ChannelHandlerContext,
-    private val playerActorRef: ActorRef<ShardingEnvelope<SerdePlayerMessage>>
+    private val gateNode: GateNode,
 ) :
     AbstractBehavior<ChannelMessage>(context) {
     private val runnableAdapter = runnableAdapter { ChannelRunnable(it::run) }
@@ -28,6 +27,7 @@ class ChannelActor(
     private var playerId: Long = 0L
     private var birthWorldId: Long = 0L
     private var worldId: Long = 0L
+    private val playerActorRef = gateNode.playerActorRef()
 
     init {
         logger.info("{} preStart", context.self)
@@ -64,7 +64,7 @@ class ChannelActor(
     }
 
     private fun tellPlayer(playerId: Long, message: SerdePlayerMessage) {
-        playerActorRef.tell(ShardingEnvelope("$playerId", message))
+        playerActorRef.tell(shardingEnvelope("$playerId", message))
     }
 
     private fun tellWorld(message: ClientMessage) {

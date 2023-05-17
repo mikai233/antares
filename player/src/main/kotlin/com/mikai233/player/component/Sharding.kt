@@ -33,7 +33,9 @@ class Sharding(private val playerNode: PlayerNode) : Component {
             StopPlayer
         ) { entityCtx ->
             Behaviors.setup { ctx ->
-                PlayerActor(ctx, entityCtx.entityId.toLong(), playerNode)
+                Behaviors.withStash(100) { buffer ->
+                    PlayerActor(ctx, buffer, entityCtx.entityId.toLong(), playerNode)
+                }
             }
         }
     }

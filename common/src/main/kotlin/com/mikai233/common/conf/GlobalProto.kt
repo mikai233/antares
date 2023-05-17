@@ -16,10 +16,10 @@ private typealias ParserMap = MutableMap<Int, MessageParser>
 object GlobalProto {
     private val logger = logger()
     private var initDone = false
-    private val Client2ServerParser: ParserMap = mutableMapOf()
-    private val Client2ServerMessage: MessageMap = mutableMapOf()
-    private val Server2ClientParser: ParserMap = mutableMapOf()
-    private val Server2ClientMessage: MessageMap = mutableMapOf()
+    private val client2ServerParser: ParserMap = mutableMapOf()
+    private val client2ServerMessage: MessageMap = mutableMapOf()
+    private val server2ClientParser: ParserMap = mutableMapOf()
+    private val server2ClientMessage: MessageMap = mutableMapOf()
 
     @Synchronized
     fun init(
@@ -34,10 +34,10 @@ object GlobalProto {
         val allParsers = scanAllProtoParser(pkg)
         val (clientMessage, clientParser) = generateMessageMap(allParsers, clientDescriptors)
         val (serverMessage, serverParser) = generateMessageMap(allParsers, serverDescriptors)
-        Client2ServerParser.putAll(clientParser)
-        Client2ServerMessage.putAll(clientMessage)
-        Server2ClientParser.putAll(serverParser)
-        Server2ClientMessage.putAll(serverMessage)
+        client2ServerParser.putAll(clientParser)
+        client2ServerMessage.putAll(clientMessage)
+        server2ClientParser.putAll(serverParser)
+        server2ClientMessage.putAll(serverMessage)
         checkReqResp()
         logger.info("init client message map and server message map done")
         initDone = true
@@ -83,7 +83,7 @@ object GlobalProto {
 
     private fun checkReqResp() {
         val incorrectMessage = mutableSetOf<String>()
-        Client2ServerMessage.forEach { (key, _) ->
+        client2ServerMessage.forEach { (key, _) ->
             val simpleName = kotlin.requireNotNull(key.simpleName) { "$key simple name not found" }
             if (simpleName.endsWith("Req").not()) {
                 val qualifiedName = requireNotNull(key.qualifiedName) { "$key qualified name not found" }
@@ -92,7 +92,7 @@ object GlobalProto {
         }
         check(incorrectMessage.isEmpty()) { "client to server message:${incorrectMessage} should end with Req" }
         incorrectMessage.clear()
-        Server2ClientMessage.forEach { (key, _) ->
+        server2ClientMessage.forEach { (key, _) ->
             val simpleName = kotlin.requireNotNull(key.simpleName) { "$key simple name not found" }
             if ((simpleName.endsWith("Resp") || simpleName.endsWith("Notify")).not()) {
                 val qualifiedName = requireNotNull(key.qualifiedName) { "$key qualified name not found" }
@@ -100,8 +100,8 @@ object GlobalProto {
             }
         }
         check(incorrectMessage.isEmpty()) { "server to client message should end with Resp or Notify" }
-        val clientReq = Client2ServerMessage
-        val serverResp = Server2ClientMessage.filterKeys {
+        val clientReq = client2ServerMessage
+        val serverResp = server2ClientMessage.filterKeys {
             val simpleName = kotlin.requireNotNull(it.simpleName) { "$it simple name not found" }
             simpleName.endsWith("Resp")
         }
@@ -112,18 +112,18 @@ object GlobalProto {
     }
 
     fun getClientMessageId(message: Message): Int {
-        return requireNotNull(Client2ServerMessage[message]) { "client message:${message} proto number not found" }
+        return requireNotNull(client2ServerMessage[message]) { "client message:${message} proto number not found" }
     }
 
     fun getClientMessageParser(protoNumber: Int): MessageParser {
-        return requireNotNull(Client2ServerParser[protoNumber]) { "client proto number:${protoNumber} message parser not found" }
+        return requireNotNull(client2ServerParser[protoNumber]) { "client proto number:${protoNumber} message parser not found" }
     }
 
     fun getServerMessageId(message: Message): Int {
-        return requireNotNull(Server2ClientMessage[message]) { "server message:${message} proto number not found" }
+        return requireNotNull(server2ClientMessage[message]) { "server message:${message} proto number not found" }
     }
 
     fun getServerMessageParser(protoNumber: Int): MessageParser {
-        return requireNotNull(Server2ClientParser[protoNumber]) { "server proto number:${protoNumber} message parser not found" }
+        return requireNotNull(server2ClientParser[protoNumber]) { "server proto number:${protoNumber} message parser not found" }
     }
 }

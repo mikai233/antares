@@ -1,6 +1,6 @@
 @file:Suppress("UnstableApiUsage")
 
-rootProject.name = "akka-game-server"
+rootProject.name = "antares"
 
 val kotlinVersion = "1.8.20"
 val kotlinxVersion = "1.7.0"
@@ -89,3 +89,4 @@ include("proto")
 include("global")
 include("world")
 include("shared")
+include("stardust")

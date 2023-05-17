@@ -14,3 +14,5 @@ data class PlayerRunnable(private val block: () -> Unit) : Runnable, PlayerMessa
 object StopPlayer : SerdePlayerMessage
 
 data class PlayerLogin(val channelActor: ActorRef<SerdeChannelMessage>) : SerdePlayerMessage
+
+object PlayerInitDone : PlayerMessage

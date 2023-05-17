@@ -13,7 +13,7 @@ import com.mikai233.player.component.Sharding
 import com.mikai233.protocol.MsgCs
 import com.mikai233.protocol.MsgSc
 
-class PlayerNode(private val port: Int) : Launcher {
+class PlayerNode(private val port: Int = 2333, private val sameJvm: Boolean = false) : Launcher {
     val server: Server = Server()
 
     init {
@@ -26,7 +26,7 @@ class PlayerNode(private val port: Int) : Launcher {
                 ZookeeperConfigCenterComponent()
             }
             component {
-                NodeConfigsComponent(this, Role.Player, port)
+                NodeConfigsComponent(this, Role.Player, port, sameJvm)
             }
             component {
                 AkkaSystem<PlayerSystemMessage>(this, Behaviors.empty())
@@ -46,7 +46,5 @@ class PlayerNode(private val port: Int) : Launcher {
 
 fun main(args: Array<String>) {
 //    val port = args[0].toUShort()
-    val port = 2333
-    val playerNode = PlayerNode(port)
-    playerNode.launch()
+    PlayerNode().launch()
 }

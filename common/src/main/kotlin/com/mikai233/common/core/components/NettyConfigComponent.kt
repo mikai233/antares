@@ -15,7 +15,7 @@ class NettyConfigComponent(private val server: Server) : Component {
     }
 
     private fun initNettyConfig() {
-        nettyConfig = configCenter.getConfigEx(serverNetty(GlobalEnv.MachineIp))
+        nettyConfig = configCenter.getConfigEx(serverNetty(GlobalEnv.machineIp))
     }
 
     override fun shutdown() = Unit

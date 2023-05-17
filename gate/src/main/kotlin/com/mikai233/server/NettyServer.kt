@@ -71,7 +71,7 @@ class NettyServer(private val gate: GateNode) : Component {
     }
 
     private fun initNettyConfig() {
-        nettyConfig = configCenter.getConfigEx(serverNetty(GlobalEnv.MachineIp))
+        nettyConfig = configCenter.getConfigEx(serverNetty(GlobalEnv.machineIp))
     }
 
     private fun start(): Thread {

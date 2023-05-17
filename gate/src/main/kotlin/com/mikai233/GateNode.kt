@@ -15,7 +15,7 @@ import com.mikai233.protocol.MsgCs
 import com.mikai233.protocol.MsgSc
 import com.mikai233.server.NettyServer
 
-class GateNode(private val port: Int) : Launcher {
+class GateNode(private val port: Int = 2334, private val sameJvm: Boolean = false) : Launcher {
     val server: Server = Server()
 
     class ChannelActorGuardian(context: ActorContext<GateSystemMessage>, private val gateNode: GateNode) :
@@ -26,9 +26,8 @@ class GateNode(private val port: Int) : Launcher {
             return newReceiveBuilder().onMessage(GateSystemMessage::class.java) { message ->
                 when (message) {
                     is SpawnChannelActorReq -> {
-                        val actorRef = context.spawnAnonymous(Behaviors.setup {
-                            ChannelActor(it, message.ctx, gateNode.playerActorRef())
-                        })
+                        val actorRef =
+                            context.spawnAnonymous(Behaviors.setup { ChannelActor(it, message.ctx, gateNode) })
                         logger.debug("spawn channel actor:{}", message.ctx.name())
                         message.replyTo.tell(SpawnChannelActorResp(actorRef))
                     }
@@ -45,7 +44,7 @@ class GateNode(private val port: Int) : Launcher {
                 ZookeeperConfigCenterComponent()
             }
             component {
-                NodeConfigsComponent(this, Role.Gate, port)
+                NodeConfigsComponent(this, Role.Gate, port, sameJvm)
             }
             component {
                 AkkaSystem(this, Behaviors.setup<GateSystemMessage> {
@@ -77,7 +76,5 @@ class GateNode(private val port: Int) : Launcher {
 
 fun main(args: Array<String>) {
 //    val port = args[0].toUShort()
-    val port = 2334
-    val gateNode = GateNode(port)
-    gateNode.launch()
+    GateNode().launch()
 }

@@ -30,12 +30,12 @@ private fun createServerNodes(host: String): List<Node> {
 private fun ZookeeperConfigCenterComponent.createServerHosts(systemName: String) {
     val serverHosts = ServerHosts(systemName)
     addConfig(serverHosts)
-    createServerNodes(GlobalEnv.MachineIp).forEach { node ->
+    createServerNodes(GlobalEnv.machineIp).forEach { node ->
         addConfig(node)
     }
 }
 
 private fun ZookeeperConfigCenterComponent.createNettyConfig() {
-    val nettyConfig = NettyConfig(GlobalEnv.MachineIp, 6666)
+    val nettyConfig = NettyConfig(GlobalEnv.machineIp, 6666)
     addConfig(nettyConfig)
 }

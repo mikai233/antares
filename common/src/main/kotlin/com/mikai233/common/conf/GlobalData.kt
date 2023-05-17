@@ -1,5 +1,7 @@
 package com.mikai233.common.conf
 
+import com.mikai233.common.core.Server
+
 object GlobalData {
-    val Servers: MutableList<com.mikai233.common.core.Server> = mutableListOf()
+    val servers: MutableList<Server> = mutableListOf()
 }
