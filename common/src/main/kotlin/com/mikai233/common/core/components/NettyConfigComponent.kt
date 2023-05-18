@@ -7,7 +7,7 @@ import com.mikai233.common.core.components.config.getConfigEx
 import com.mikai233.common.core.components.config.serverNetty
 
 class NettyConfigComponent(private val server: Server) : Component {
-    private lateinit var configCenter: ZookeeperConfigCenterComponent
+    private lateinit var configCenter: ZookeeperConfigCenter
     private lateinit var nettyConfig: NettyConfig
     override fun init() {
         configCenter = server.component()

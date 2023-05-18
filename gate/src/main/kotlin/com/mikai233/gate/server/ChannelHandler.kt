@@ -1,13 +1,13 @@
-package com.mikai233.server
+package com.mikai233.gate.server
 
 import akka.actor.typed.ActorRef
 import com.google.protobuf.GeneratedMessageV3
-import com.mikai233.GateNode
-import com.mikai233.SpawnChannelActorReq
-import com.mikai233.SpawnChannelActorResp
 import com.mikai233.common.core.State
 import com.mikai233.common.ext.logger
 import com.mikai233.common.ext.syncAsk
+import com.mikai233.gate.GateNode
+import com.mikai233.gate.SpawnChannelActorReq
+import com.mikai233.gate.SpawnChannelActorResp
 import com.mikai233.shared.message.ChannelMessage
 import com.mikai233.shared.message.ClientMessage
 import com.mikai233.shared.message.GracefulShutdown

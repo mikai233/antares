@@ -1,4 +1,4 @@
-package com.mikai233.codec
+package com.mikai233.gate.codec
 
 import com.mikai233.common.crypto.TEA
 import io.netty.buffer.ByteBuf

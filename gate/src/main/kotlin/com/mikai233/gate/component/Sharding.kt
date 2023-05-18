@@ -1,14 +1,14 @@
-package com.mikai233.component
+package com.mikai233.gate.component
 
 import akka.actor.typed.ActorRef
 import akka.cluster.sharding.typed.ShardingEnvelope
-import com.mikai233.GateSystemMessage
 import com.mikai233.common.core.Server
 import com.mikai233.common.core.components.AkkaSystem
 import com.mikai233.common.core.components.Component
 import com.mikai233.common.core.components.Role
 import com.mikai233.common.core.components.ShardEntityType
 import com.mikai233.common.ext.startShardingProxy
+import com.mikai233.gate.GateSystemMessage
 import com.mikai233.shared.message.PlayerMessageExtractor
 import com.mikai233.shared.message.SerdePlayerMessage
 

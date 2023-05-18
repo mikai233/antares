@@ -2,6 +2,7 @@ plugins {
     @Suppress("DSL_SCOPE_VIOLATION") alias(kt.plugins.jvm)
     @Suppress("DSL_SCOPE_VIOLATION") alias(kt.plugins.allopen)
     @Suppress("DSL_SCOPE_VIOLATION") alias(kt.plugins.noarg)
+    @Suppress("DSL_SCOPE_VIOLATION") alias(tool.plugins.detekt)
 }
 
 group = "com.mikai233"
@@ -19,6 +20,7 @@ subprojects {
     apply(plugin = "kotlin")
     apply(plugin = "kotlin-allopen")
     apply(plugin = "kotlin-noarg")
+    apply(plugin = "io.gitlab.arturbosch.detekt")
 
     allOpen {
         annotation("com.mikai233.common.annotation.AllOpen")

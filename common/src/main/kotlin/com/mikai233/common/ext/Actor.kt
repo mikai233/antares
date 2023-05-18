@@ -4,9 +4,11 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.Scheduler
-import akka.actor.typed.javadsl.AbstractBehavior
-import akka.actor.typed.javadsl.AskPattern
-import akka.actor.typed.javadsl.Behaviors
+import akka.actor.typed.javadsl.*
+import akka.actor.typed.receptionist.Receptionist
+import akka.actor.typed.receptionist.ServiceKey
+import akka.cluster.routing.ClusterRouterGroup
+import akka.cluster.routing.ClusterRouterGroupSettings
 import akka.cluster.sharding.ShardCoordinator
 import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.ShardingMessageExtractor
@@ -14,6 +16,7 @@ import akka.cluster.sharding.typed.javadsl.ClusterSharding
 import akka.cluster.sharding.typed.javadsl.Entity
 import akka.cluster.sharding.typed.javadsl.EntityContext
 import akka.cluster.sharding.typed.javadsl.EntityTypeKey
+import akka.routing.BroadcastGroup
 import com.mikai233.common.core.components.Role
 import kotlinx.coroutines.future.await
 import org.slf4j.Logger
@@ -112,4 +115,25 @@ inline fun <reified M, N> ActorSystem<*>.startShardingProxy(
 
 inline fun <reified M> shardingEnvelope(entityId: String, message: M): ShardingEnvelope<M> {
     return ShardingEnvelope(entityId, message)
+}
+
+fun <T> ActorSystem<*>.registerService(key: ServiceKey<T>, service: ActorRef<T>) {
+    receptionist().tell(Receptionist.register(key, service))
+}
+
+fun <T> ActorSystem<*>.deregisterService(key: ServiceKey<T>, service: ActorRef<T>) {
+    receptionist().tell(Receptionist.deregister(key, service))
+}
+
+fun <M> ActorContext<*>.startBroadcastClusterRouterGroup(
+    routeesPaths: Set<String>,
+    useRoles: Set<Role>,
+    totalInstances: Int = 10000
+): ActorRef<M> {
+    val group = ClusterRouterGroup(
+        BroadcastGroup(routeesPaths),
+        ClusterRouterGroupSettings(totalInstances, routeesPaths, true, useRoles.map { it.name }.toSet())
+    )
+    val ref = Adapter.actorOf(this, group.props())
+    return Adapter.toTyped<M>(ref)
 }

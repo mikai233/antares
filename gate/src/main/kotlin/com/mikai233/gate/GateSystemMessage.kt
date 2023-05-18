@@ -1,4 +1,4 @@
-package com.mikai233
+package com.mikai233.gate
 
 import akka.actor.typed.ActorRef
 import com.mikai233.common.core.components.GuardianMessage

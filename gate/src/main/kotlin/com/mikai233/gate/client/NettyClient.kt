@@ -1,4 +1,4 @@
-package com.mikai233.client
+package com.mikai233.gate.client
 
 import com.mikai233.common.ext.Platform
 import com.mikai233.common.ext.getPlatform

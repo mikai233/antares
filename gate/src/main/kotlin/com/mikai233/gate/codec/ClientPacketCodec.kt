@@ -1,12 +1,10 @@
-package com.mikai233.codec
+package com.mikai233.gate.codec
 
-import com.mikai233.common.ext.logger
 import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.ByteToMessageCodec
 
-class ServerPacketCodec : ByteToMessageCodec<Packet>() {
-    private val logger = logger()
+class ClientPacketCodec : ByteToMessageCodec<Packet>() {
     private var packetIndex = 0
     override fun encode(ctx: ChannelHandlerContext, msg: Packet, out: ByteBuf) {
         with(out) {
@@ -16,6 +14,7 @@ class ServerPacketCodec : ByteToMessageCodec<Packet>() {
             writeInt(msg.originLen)
             writeBytes(msg.body)
         }
+        packetIndex = ++packetIndex % 65535
     }
 
     override fun decode(ctx: ChannelHandlerContext, `in`: ByteBuf, out: MutableList<Any>) {
@@ -25,20 +24,15 @@ class ServerPacketCodec : ByteToMessageCodec<Packet>() {
             return
         }
         val packetLen = `in`.readInt()
-        if (packetLen - Packet.PACKET_LEN > `in`.readableBytes()) {
+        if (packetLen > `in`.readableBytes()) {
             `in`.resetReaderIndex()
             return
         }
-        val clientPacketIndex = `in`.readInt()
-        if (packetIndex != clientPacketIndex) {
-            logger.error("client packet index:{}!= server packet index:{}", clientPacketIndex, packetIndex)
-            ctx.close()
-        }
+        `in`.readInt()//index
         val protoId = `in`.readInt()
         val originLen = `in`.readInt()
         val body = ByteArray(packetLen - Packet.HEADER_LEN)
         `in`.readBytes(body)
         out.add(Packet(packetIndex, protoId, originLen, body))
-        packetIndex = ++packetIndex % 65535
     }
 }

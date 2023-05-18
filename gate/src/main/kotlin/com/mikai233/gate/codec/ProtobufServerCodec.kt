@@ -1,4 +1,4 @@
-package com.mikai233.codec
+package com.mikai233.gate.codec
 
 import com.google.protobuf.GeneratedMessageV3
 import com.mikai233.common.conf.GlobalProto

@@ -12,7 +12,7 @@ import org.apache.curator.retry.ExponentialBackoffRetry
 import org.apache.curator.x.async.AsyncCuratorFramework
 
 
-class ZookeeperConfigCenterComponent(private val connectionString: String = "localhost:2181") : Component,
+class ZookeeperConfigCenter(private val connectionString: String = "localhost:2181") : Component,
     ConfigCenter {
     private lateinit var client: CuratorFramework
     private lateinit var asyncClient: AsyncCuratorFramework

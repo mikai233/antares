@@ -1,4 +1,4 @@
-package com.mikai233.codec
+package com.mikai233.gate.codec
 
 /**
  * @param index

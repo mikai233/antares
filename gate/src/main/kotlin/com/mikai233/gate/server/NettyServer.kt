@@ -1,17 +1,17 @@
-package com.mikai233.server
+package com.mikai233.gate.server
 
-import com.mikai233.GateNode
-import com.mikai233.GateSystemMessage
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.components.AkkaSystem
 import com.mikai233.common.core.components.Component
-import com.mikai233.common.core.components.ZookeeperConfigCenterComponent
+import com.mikai233.common.core.components.ZookeeperConfigCenter
 import com.mikai233.common.core.components.config.NettyConfig
 import com.mikai233.common.core.components.config.getConfigEx
 import com.mikai233.common.core.components.config.serverNetty
 import com.mikai233.common.ext.Platform
 import com.mikai233.common.ext.getPlatform
 import com.mikai233.common.ext.logger
+import com.mikai233.gate.GateNode
+import com.mikai233.gate.GateSystemMessage
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.ChannelFuture
 import io.netty.channel.ChannelOption
@@ -35,7 +35,7 @@ class NettyServer(private val gate: GateNode) : Component {
     private val bossGroup: EventLoopGroup
     private val workGroup: EventLoopGroup
     private lateinit var nettyConfig: NettyConfig
-    private lateinit var configCenter: ZookeeperConfigCenterComponent
+    private lateinit var configCenter: ZookeeperConfigCenter
 
     init {
         when (getPlatform()) {

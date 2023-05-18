@@ -14,3 +14,7 @@ sealed interface SerdePlayerMessage : PlayerMessage, SerdeMessage
 sealed interface WorldMessage : Message
 
 sealed interface SerdeWorldMessage : WorldMessage, SerdeMessage
+
+sealed interface ScriptMessage : Message
+
+sealed interface SerdeScriptMessage : ScriptMessage, SerdeMessage

@@ -19,6 +19,10 @@ val junitVersion = "5.9.3"
 
 val protobufVersion = "3.23.0"
 
+val atomicfuVersion = "0.20.2"
+
+val datetimeVersion = "0.4.0"
+
 dependencyResolutionManagement {
     versionCatalogs {
         create("kt") {
@@ -39,6 +43,10 @@ dependencyResolutionManagement {
         create("ktx") {
             library("core", "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxVersion")
             library("core.jvm", "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$kotlinxVersion")
+            library("atomicfu", "org.jetbrains.kotlinx:atomicfu:$atomicfuVersion")
+            library("atomicfu.jvm", "org.jetbrains.kotlinx:atomicfu-jvm:$atomicfuVersion")
+            library("datetime", "org.jetbrains.kotlinx:kotlinx-datetime:$datetimeVersion")
+            library("datetime.jvm", "org.jetbrains.kotlinx:kotlinx-datetime-jvm:$datetimeVersion")
         }
         create("akka") {
             library("actor", "com.typesafe.akka:akka-actor-typed_$scalaVersion:$akkaVersion")
@@ -74,6 +82,7 @@ dependencyResolutionManagement {
             library("lz4", "org.lz4:lz4-java:1.8.0")
             library("bcprov", "org.bouncycastle:bcprov-jdk15on:1.70")
             library("kryo", "io.altoo:akka-kryo-serialization-typed_$scalaVersion:2.5.0")
+            plugin("detekt", "io.gitlab.arturbosch.detekt").version("1.23.0-RC3")
         }
         create("test") {
             library("junit.bom", "org.junit:junit-bom:$junitVersion")

@@ -1,4 +1,4 @@
-package com.mikai233.codec
+package com.mikai233.gate.codec
 
 import com.mikai233.common.ext.logger
 import io.netty.channel.ChannelDuplexHandler

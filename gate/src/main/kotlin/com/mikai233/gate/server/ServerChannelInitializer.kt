@@ -1,10 +1,10 @@
-package com.mikai233.server
+package com.mikai233.gate.server
 
-import com.mikai233.GateNode
-import com.mikai233.codec.ExceptionHandler
-import com.mikai233.codec.LZ4Codec
-import com.mikai233.codec.ProtobufServerCodec
-import com.mikai233.codec.ServerPacketCodec
+import com.mikai233.gate.GateNode
+import com.mikai233.gate.codec.ExceptionHandler
+import com.mikai233.gate.codec.LZ4Codec
+import com.mikai233.gate.codec.ProtobufServerCodec
+import com.mikai233.gate.codec.ServerPacketCodec
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.socket.SocketChannel
 import io.netty.handler.ssl.SslContext
