@@ -27,12 +27,12 @@ class ChannelActor(
     private var playerId: Long = 0L
     private var birthWorldId: Long = 0L
     private var worldId: Long = 0L
-    private val playerActorRef = gateNode.playerActorRef()
+    private val playerActor = gateNode.playerActor()
 
     init {
         logger.info("{} preStart", context.self)
-        playerActorRef.tell(ShardingEnvelope("112233", PlayerLogin(context.self.narrow())))
-        playerActorRef.tell(shardingEnvelope(112233.toString(), PlayerProtobufEnvelope(loginReq { id = 112233 })))
+        playerActor.tell(ShardingEnvelope("112233", PlayerLogin(context.self.narrow())))
+        playerActor.tell(shardingEnvelope(112233.toString(), PlayerProtobufEnvelope(loginReq { id = 112233 })))
     }
 
     override fun createReceive(): Receive<ChannelMessage> {
@@ -64,7 +64,7 @@ class ChannelActor(
     }
 
     private fun tellPlayer(playerId: Long, message: SerdePlayerMessage) {
-        playerActorRef.tell(shardingEnvelope("$playerId", message))
+        playerActor.tell(shardingEnvelope("$playerId", message))
     }
 
     private fun tellWorld(message: ClientMessage) {

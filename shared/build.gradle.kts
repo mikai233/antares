@@ -12,6 +12,7 @@ dependencies {
     implementation(tool.protobuf.kotlin)
     implementation(kt.reflect)
     implementation(akka.bundles.common)
+    implementation(tool.caffeine)
     implementation(project(":common"))
     implementation(project(":proto"))
 }

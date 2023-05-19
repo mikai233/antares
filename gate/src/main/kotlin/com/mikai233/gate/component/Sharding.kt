@@ -14,7 +14,7 @@ import com.mikai233.shared.message.SerdePlayerMessage
 
 class Sharding(private val server: Server) : Component {
     private lateinit var akka: AkkaSystem<GateSystemMessage>
-    lateinit var playerActorRef: ActorRef<ShardingEnvelope<SerdePlayerMessage>>
+    lateinit var playerActor: ActorRef<ShardingEnvelope<SerdePlayerMessage>>
         private set
 
     override fun init() {
@@ -24,7 +24,7 @@ class Sharding(private val server: Server) : Component {
 
     private fun startSharding() {
         val system = akka.system
-        playerActorRef = system.startShardingProxy(
+        playerActor = system.startShardingProxy(
             ShardEntityType.PlayerActor.name,
             Role.Player,
             PlayerMessageExtractor(1000)

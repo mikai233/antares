@@ -8,6 +8,7 @@ import com.mikai233.common.core.actor.safeActorCoroutine
 import com.mikai233.common.ext.actorLogger
 import com.mikai233.common.ext.runnableAdapter
 import com.mikai233.player.component.MessageDispatchers
+import com.mikai233.player.component.ScriptSupport
 import com.mikai233.shared.message.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -15,7 +16,7 @@ import kotlinx.coroutines.delay
 class PlayerActor(
     context: ActorContext<PlayerMessage>,
     private val buffer: StashBuffer<PlayerMessage>,
-    private val playerId: Long,
+    val playerId: Long,
     val playerNode: PlayerNode
 ) :
     AbstractBehavior<PlayerMessage>(context) {
@@ -25,6 +26,7 @@ class PlayerActor(
     private lateinit var channelActorRef: ActorRef<SerdeChannelMessage>
     private val protobufDispatcher = playerNode.server.component<MessageDispatchers>().protobufDispatcher
     private val internalDispatcher = playerNode.server.component<MessageDispatchers>().internalDispatcher
+    private val localScriptActor = playerNode.server.component<ScriptSupport>().localScriptActor
     lateinit var timerScheduler: TimerScheduler<PlayerMessage>
         private set
 
@@ -52,6 +54,10 @@ class PlayerActor(
                 is PlayerLogin,
                 is PlayerProtobufEnvelope -> {
                     buffer.stash(message)
+                }
+
+                is ExecutePlayerScript -> {
+                    message.script.invoke(this)
                 }
             }
             Behaviors.same()
@@ -88,6 +94,8 @@ class PlayerActor(
                         }
                         return@onMessage stopping()
                     }
+
+                    is ExecutePlayerScript -> TODO()
                 }
                 Behaviors.same()
             }.build()
@@ -106,6 +114,9 @@ class PlayerActor(
                 is PlayerProtobufEnvelope -> return@onMessage Behaviors.unhandled()
 
                 StopPlayer -> return@onMessage Behaviors.stopped()
+                is ExecutePlayerScript -> {
+                    message.script.invoke(this)
+                }
             }
             Behaviors.same()
         }.build()

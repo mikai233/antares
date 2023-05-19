@@ -83,6 +83,7 @@ dependencyResolutionManagement {
             library("bcprov", "org.bouncycastle:bcprov-jdk15on:1.70")
             library("kryo", "io.altoo:akka-kryo-serialization-typed_$scalaVersion:2.5.0")
             plugin("detekt", "io.gitlab.arturbosch.detekt").version("1.23.0-RC3")
+            library("caffeine", "com.github.ben-manes.caffeine:caffeine:3.1.6")
         }
         create("test") {
             library("junit.bom", "org.junit:junit-bom:$junitVersion")

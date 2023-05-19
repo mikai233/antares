@@ -51,3 +51,5 @@ fun getPlatform(): Platform {
 
 fun protobufJsonPrinter(): JsonFormat.Printer =
     JsonFormat.printer().omittingInsignificantWhitespace().includingDefaultValueFields()
+
+fun unixTimestamp() = System.currentTimeMillis()

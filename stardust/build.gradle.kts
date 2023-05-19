@@ -1,5 +1,5 @@
 plugins {
-
+    java
 }
 
 group = "com.mikai233"

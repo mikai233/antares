@@ -77,7 +77,7 @@ class GateNode(private val port: Int = 2334, private val sameJvm: Boolean = fals
 
     fun system() = server.component<AkkaSystem<GateSystemMessage>>().system
 
-    fun playerActorRef() = server.component<Sharding>().playerActorRef
+    fun playerActor() = server.component<Sharding>().playerActor
 
     override fun launch() {
         server.state = State.Initializing

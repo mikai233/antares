@@ -18,7 +18,7 @@ import com.mikai233.shared.message.StopPlayer
 class Sharding(private val playerNode: PlayerNode) : Component {
     private lateinit var akka: AkkaSystem<PlayerSystemMessage>
     private val server = playerNode.server
-    lateinit var playerActorRef: ActorRef<ShardingEnvelope<SerdePlayerMessage>>
+    lateinit var playerActor: ActorRef<ShardingEnvelope<SerdePlayerMessage>>
     override fun init() {
         akka = server.component()
         startSharding()
@@ -26,7 +26,7 @@ class Sharding(private val playerNode: PlayerNode) : Component {
 
     private fun startSharding() {
         val system = akka.system
-        playerActorRef = system.startSharding(
+        playerActor = system.startSharding(
             ShardEntityType.PlayerActor.name,
             Role.Player,
             PlayerMessageExtractor(1000),
@@ -38,9 +38,5 @@ class Sharding(private val playerNode: PlayerNode) : Component {
                 }
             }
         }
-    }
-
-    override fun shutdown() {
-
     }
 }

@@ -13,10 +13,4 @@ import com.mikai233.shared.message.PlayerMessage
 class MessageDispatchers : Component {
     val protobufDispatcher = MessageDispatcher(GeneratedMessageV3::class, "com.mikai233.player.handler")
     val internalDispatcher = MessageDispatcher(PlayerMessage::class, "com.mikai233.player.handler")
-
-    override fun init() {
-    }
-
-    override fun shutdown() {
-    }
 }

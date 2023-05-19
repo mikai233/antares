@@ -82,8 +82,4 @@ class NodeConfigsComponent(
     private fun getAllSeedNodes() = getAllNodes().values.flatten().filter { it.seed }
 
     private fun formatSeedNode(systemName: String, host: String, port: Int) = "akka://$systemName@$host:$port"
-
-    override fun shutdown() {
-
-    }
 }

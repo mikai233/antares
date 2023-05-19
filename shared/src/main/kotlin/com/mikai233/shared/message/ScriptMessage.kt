@@ -1,43 +1,50 @@
 package com.mikai233.shared.message
 
+import akka.actor.typed.ActorRef
+import com.mikai233.common.annotation.AllOpen
 import com.mikai233.common.core.components.Role
 import com.mikai233.shared.script.ScriptType
 
-data class NodeRoleScript(val role: Role, val type: ScriptType, val body: ByteArray) : SerdeScriptMessage {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
+@AllOpen
+sealed class Script(val name: String, val type: ScriptType, val body: ByteArray) : SerdeScriptMessage
 
-        other as NodeRoleScript
-
-        if (role != other.role) return false
-        if (type != other.type) return false
-        return body.contentEquals(other.body)
-    }
-
-    override fun hashCode(): Int {
-        var result = role.hashCode()
-        result = 31 * result + type.hashCode()
-        result = 31 * result + body.contentHashCode()
-        return result
+class NodeRoleScript(
+    override val name: String,
+    override val type: ScriptType,
+    override val body: ByteArray,
+    val role: Role
+) : Script(name, type, body) {
+    override fun toString(): String {
+        return "NodeRoleScript(name='$name', type=$type, role=$role)"
     }
 }
 
-data class NodeScript(val type: ScriptType, val body: ByteArray) : SerdeScriptMessage {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as NodeScript
-
-        if (type != other.type) return false
-        return body.contentEquals(other.body)
-    }
-
-    override fun hashCode(): Int {
-        var result = type.hashCode()
-        result = 31 * result + body.contentHashCode()
-        return result
+class NodeScript(override val name: String, override val type: ScriptType, override val body: ByteArray) :
+    Script(name, type, body) {
+    override fun toString(): String {
+        return "NodeScript(name='$name', type=$type)"
     }
 }
 
+class PlayerActorScript(
+    override val name: String,
+    override val type: ScriptType,
+    override val body: ByteArray,
+    val replyTo: ActorRef<PlayerMessage>
+) : Script(name, type, body) {
+    override fun toString(): String {
+        return "PlayerActorScript(name='$name', type=$type, replyTo=$replyTo)"
+    }
+}
+
+class WorldActorScript(
+    override val name: String,
+    override val type: ScriptType,
+    override val body: ByteArray,
+    val replyTo: ActorRef<WorldMessage>
+) :
+    Script(name, type, body) {
+    override fun toString(): String {
+        return "WorldActorScript(name='$name', type=$type, replyTo=$replyTo)"
+    }
+}
