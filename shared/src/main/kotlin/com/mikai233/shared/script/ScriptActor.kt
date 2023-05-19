@@ -9,6 +9,7 @@ import akka.cluster.typed.Cluster
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.mikai233.common.conf.GlobalEnv
+import com.mikai233.common.core.Launcher
 import com.mikai233.common.ext.actorLogger
 import com.mikai233.shared.message.*
 import java.io.File
@@ -19,7 +20,8 @@ import kotlin.reflect.full.primaryConstructor
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.toJavaDuration
 
-class ScriptActor(context: ActorContext<ScriptMessage>) : AbstractBehavior<ScriptMessage>(context) {
+class ScriptActor(context: ActorContext<ScriptMessage>, private val node: Launcher) :
+    AbstractBehavior<ScriptMessage>(context) {
     private val logger = actorLogger()
     private val selfMember: Member
     private val classCache: Cache<String, KClass<*>> = Caffeine.newBuilder()
@@ -70,8 +72,8 @@ class ScriptActor(context: ActorContext<ScriptMessage>) : AbstractBehavior<Scrip
     }
 
     private fun handleNodeScript(message: NodeScript) {
-        val script = instanceScript<NodeScriptFunction>(message)
-        script.invoke()
+        val script = instanceScript<NodeScriptFunction<in Launcher>>(message)
+        script.invoke(node)
     }
 
     private fun handlePlayerActorScript(message: PlayerActorScript) {

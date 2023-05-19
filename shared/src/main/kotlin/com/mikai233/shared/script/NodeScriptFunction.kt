@@ -1,3 +1,5 @@
 package com.mikai233.shared.script
 
-interface NodeScriptFunction : Function0<Unit>
+import com.mikai233.common.core.Launcher
+
+interface NodeScriptFunction<T : Launcher> : Function1<T, Unit>
