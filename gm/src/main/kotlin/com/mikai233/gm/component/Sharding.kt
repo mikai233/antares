@@ -1,4 +1,4 @@
-package com.mikai233.gate.component
+package com.mikai233.gm.component
 
 import akka.actor.typed.ActorRef
 import akka.cluster.sharding.typed.ShardingEnvelope
@@ -8,13 +8,13 @@ import com.mikai233.common.core.components.Component
 import com.mikai233.common.core.components.Role
 import com.mikai233.common.core.components.ShardEntityType
 import com.mikai233.common.ext.startShardingProxy
-import com.mikai233.gate.GateSystemMessage
+import com.mikai233.gm.GmSystemMessage
 import com.mikai233.shared.PlayerShardNum
 import com.mikai233.shared.message.PlayerMessageExtractor
 import com.mikai233.shared.message.SerdePlayerMessage
 
 class Sharding(private val server: Server) : Component {
-    private lateinit var akka: AkkaSystem<GateSystemMessage>
+    private lateinit var akka: AkkaSystem<GmSystemMessage>
     lateinit var playerActor: ActorRef<ShardingEnvelope<SerdePlayerMessage>>
         private set
 

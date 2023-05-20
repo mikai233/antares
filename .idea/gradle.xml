@@ -11,6 +11,7 @@
             <option value="$PROJECT_DIR$/common" />
             <option value="$PROJECT_DIR$/gate" />
             <option value="$PROJECT_DIR$/global" />
+            <option value="$PROJECT_DIR$/gm" />
             <option value="$PROJECT_DIR$/player" />
             <option value="$PROJECT_DIR$/proto" />
             <option value="$PROJECT_DIR$/shared" />

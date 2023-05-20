@@ -45,10 +45,10 @@ class ScriptActor(context: ActorContext<ScriptMessage>, private val node: Launch
             logger.info("{} handle {}", selfMember.address(), message)
             try {
                 when (message) {
-                    is NodeRoleScript -> handleNodeRoleScript(message)
-                    is NodeScript -> handleNodeScript(message)
-                    is PlayerActorScript -> handlePlayerActorScript(message)
-                    is WorldActorScript -> handleWorldActorScript(message)
+                    is ExecuteNodeRoleScript -> handleNodeRoleScript(message)
+                    is ExecuteNodeScript -> handleNodeScript(message)
+                    is CompilePlayerActorScript -> handlePlayerActorScript(message)
+                    is CompileWorldActorScript -> handleWorldActorScript(message)
                 }
             } catch (throwable: Throwable) {
                 logger.error("{} handle {}", selfMember.address(), message, throwable)
@@ -57,10 +57,11 @@ class ScriptActor(context: ActorContext<ScriptMessage>, private val node: Launch
         }.build()
     }
 
-    private fun handleNodeRoleScript(message: NodeRoleScript) {
+    private fun handleNodeRoleScript(message: ExecuteNodeRoleScript) {
         val targetRole = message.role.name
         if (selfMember.hasRole(targetRole)) {
-            handleNodeScript(NodeScript(message.name, message.type, message.body))
+            val script = instanceScript<NodeScriptFunction<in Launcher>>(message.script)
+            script.invoke(node)
         } else {
             logger.error(
                 "incorrect role script:{} route to member:{} with role:{}",
@@ -71,18 +72,18 @@ class ScriptActor(context: ActorContext<ScriptMessage>, private val node: Launch
         }
     }
 
-    private fun handleNodeScript(message: NodeScript) {
-        val script = instanceScript<NodeScriptFunction<in Launcher>>(message)
+    private fun handleNodeScript(message: ExecuteNodeScript) {
+        val script = instanceScript<NodeScriptFunction<in Launcher>>(message.script)
         script.invoke(node)
     }
 
-    private fun handlePlayerActorScript(message: PlayerActorScript) {
-        val script = instanceScript<ActorScriptFunction<AbstractBehavior<*>>>(message)
+    private fun handlePlayerActorScript(message: CompilePlayerActorScript) {
+        val script = instanceScript<ActorScriptFunction<AbstractBehavior<*>>>(message.script)
         message.replyTo.tell(ExecutePlayerScript(script))
     }
 
-    private fun handleWorldActorScript(message: WorldActorScript) {
-        val script = instanceScript<ActorScriptFunction<AbstractBehavior<*>>>(message)
+    private fun handleWorldActorScript(message: CompileWorldActorScript) {
+        val script = instanceScript<ActorScriptFunction<AbstractBehavior<*>>>(message.script)
         message.replyTo.tell(ExecuteWorldScript(script))
     }
 

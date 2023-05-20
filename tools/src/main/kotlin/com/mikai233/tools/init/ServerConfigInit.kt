@@ -23,7 +23,9 @@ private fun createServerNodes(host: String): List<Node> {
         Node(host, Role.Player, nextPort(), true),
         Node(host, Role.Gate, nextPort(), true),
         Node(host, Role.Global, nextPort(), false),
-        Node(host, Role.World, nextPort(), false)
+        Node(host, Role.World, nextPort(), false),
+        Node(host, Role.Player, nextPort(), true),
+        Node(host, Role.Gm, nextPort(), false)
     )
 }
 

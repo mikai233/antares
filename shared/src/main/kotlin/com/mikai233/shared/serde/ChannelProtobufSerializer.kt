@@ -14,7 +14,7 @@ class ChannelProtobufSerializer : JSerializer() {
 
     override fun toBinary(o: Any): ByteArray {
         o as ChannelProtobufEnvelope
-        return protoMsgToPacket(o.message, false)
+        return protoMsgToPacket(o.inner, false)
     }
 
     override fun includeManifest(): Boolean {

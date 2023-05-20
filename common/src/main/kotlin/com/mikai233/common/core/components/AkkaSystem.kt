@@ -21,6 +21,7 @@ enum class Role {
     Gate,
     World,
     Global,
+    Gm,
 }
 
 enum class ShardEntityType {

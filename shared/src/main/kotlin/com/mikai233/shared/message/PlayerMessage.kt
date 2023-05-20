@@ -4,6 +4,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.javadsl.AbstractBehavior
 import com.google.protobuf.GeneratedMessageV3
 import com.mikai233.shared.script.ActorScriptFunction
+import com.mikai233.shared.script.Script
 
 data class PlayerProtobufEnvelope(val message: GeneratedMessageV3) : SerdePlayerMessage
 
@@ -16,6 +17,8 @@ data class PlayerRunnable(private val block: () -> Unit) : Runnable, PlayerMessa
 object StopPlayer : SerdePlayerMessage
 
 data class PlayerLogin(val channelActor: ActorRef<SerdeChannelMessage>) : SerdePlayerMessage
+
+data class PlayerScript(val script: Script) : SerdePlayerMessage
 
 object PlayerInitDone : PlayerMessage
 

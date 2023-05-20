@@ -11,6 +11,7 @@ import com.mikai233.common.ext.startSharding
 import com.mikai233.player.PlayerActor
 import com.mikai233.player.PlayerNode
 import com.mikai233.player.PlayerSystemMessage
+import com.mikai233.shared.PlayerShardNum
 import com.mikai233.shared.message.PlayerMessageExtractor
 import com.mikai233.shared.message.SerdePlayerMessage
 import com.mikai233.shared.message.StopPlayer
@@ -29,7 +30,7 @@ class Sharding(private val playerNode: PlayerNode) : Component {
         playerActor = system.startSharding(
             ShardEntityType.PlayerActor.name,
             Role.Player,
-            PlayerMessageExtractor(1000),
+            PlayerMessageExtractor(PlayerShardNum),
             StopPlayer
         ) { entityCtx ->
             Behaviors.setup { ctx ->

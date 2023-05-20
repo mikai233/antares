@@ -6,6 +6,6 @@ import com.mikai233.shared.message.ScriptMessage
 
 sealed interface PlayerSystemMessage : GuardianMessage
 
-data class LocalScriptActorReq(val replyTo: ActorRef<LocalScriptActorResp>) : PlayerSystemMessage
+data class SpawnScriptActorReq(val replyTo: ActorRef<SpawnScriptActorResp>) : PlayerSystemMessage
 
-data class LocalScriptActorResp(val scriptActor: ActorRef<ScriptMessage>)
+data class SpawnScriptActorResp(val scriptActor: ActorRef<ScriptMessage>)

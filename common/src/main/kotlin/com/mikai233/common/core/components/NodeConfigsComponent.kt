@@ -20,7 +20,8 @@ class NodeConfigsComponent(
 ) : Component {
     private val logger = logger()
     private lateinit var configCenter: ZookeeperConfigCenter
-    private lateinit var selfNode: Node
+    lateinit var selfNode: Node
+        private set
     lateinit var akkaSystemName: String
         private set
 

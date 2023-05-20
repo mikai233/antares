@@ -59,6 +59,10 @@ class PlayerActor(
                 is ExecutePlayerScript -> {
                     message.script.invoke(this)
                 }
+
+                is PlayerScript -> {
+                    localScriptActor.tell(CompilePlayerActorScript(message.script, context.self))
+                }
             }
             Behaviors.same()
         }.build()
@@ -95,7 +99,13 @@ class PlayerActor(
                         return@onMessage stopping()
                     }
 
-                    is ExecutePlayerScript -> TODO()
+                    is ExecutePlayerScript -> {
+                        message.script.invoke(this)
+                    }
+
+                    is PlayerScript -> {
+                        localScriptActor.tell(CompilePlayerActorScript(message.script, context.self))
+                    }
                 }
                 Behaviors.same()
             }.build()
@@ -116,6 +126,10 @@ class PlayerActor(
                 StopPlayer -> return@onMessage Behaviors.stopped()
                 is ExecutePlayerScript -> {
                     message.script.invoke(this)
+                }
+
+                is PlayerScript -> {
+                    localScriptActor.tell(CompilePlayerActorScript(message.script, context.self))
                 }
             }
             Behaviors.same()

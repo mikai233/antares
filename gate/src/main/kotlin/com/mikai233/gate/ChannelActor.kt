@@ -42,7 +42,7 @@ class ChannelActor(
                     message.run()
                 }
 
-                is ClientMessage -> TODO()
+                is ClientMessage -> handleClientMessage(message)
                 is GracefulShutdown -> {
                     logger.info("{} {}", context.self, message)
                     return@onMessage Behaviors.stopped()
@@ -73,5 +73,13 @@ class ChannelActor(
 
     private fun write(message: GeneratedMessageV3) {
         handlerContext.writeAndFlush(message)
+    }
+
+    private fun handleClientMessage(message: ClientMessage) {
+        if (playerId > 0) {
+            tellPlayer(playerId, PlayerProtobufEnvelope(message.inner))
+        } else {
+            logger.warn("try to send protobuf message to uninitialized playerId")
+        }
     }
 }
