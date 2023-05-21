@@ -1,7 +1,7 @@
 package com.mikai233.player.component
 
 import com.google.protobuf.GeneratedMessageV3
-import com.mikai233.common.core.components.Component
+import com.mikai233.common.core.component.Component
 import com.mikai233.common.msg.MessageDispatcher
 import com.mikai233.shared.message.BusinessPlayerMessage
 

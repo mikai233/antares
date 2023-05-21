@@ -1,6 +1,6 @@
 package com.mikai233.player.script
 
-import com.mikai233.common.core.components.Role
+import com.mikai233.common.core.component.Role
 import com.mikai233.player.PlayerNode
 import com.mikai233.shared.script.NodeRoleScriptFunction
 import kotlin.Unit

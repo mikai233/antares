@@ -1,7 +1,7 @@
 package com.mikai233.gate
 
 import akka.actor.typed.ActorRef
-import com.mikai233.common.core.components.GuardianMessage
+import com.mikai233.common.core.component.GuardianMessage
 import com.mikai233.shared.message.ChannelMessage
 import com.mikai233.shared.message.ScriptMessage
 import io.netty.channel.ChannelHandlerContext

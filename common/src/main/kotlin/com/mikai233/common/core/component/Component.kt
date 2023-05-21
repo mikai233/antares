@@ -1,4 +1,4 @@
-package com.mikai233.common.core.components
+package com.mikai233.common.core.component
 
 interface Component {
     fun init() = Unit

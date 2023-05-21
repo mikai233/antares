@@ -10,7 +10,7 @@ import com.mikai233.common.conf.GlobalProto
 import com.mikai233.common.core.Launcher
 import com.mikai233.common.core.Server
 import com.mikai233.common.core.State
-import com.mikai233.common.core.components.*
+import com.mikai233.common.core.component.*
 import com.mikai233.common.ext.actorLogger
 import com.mikai233.common.ext.registerService
 import com.mikai233.gate.component.GateSharding

@@ -1,7 +1,7 @@
 package com.mikai233.gm
 
 import akka.actor.typed.ActorRef
-import com.mikai233.common.core.components.GuardianMessage
+import com.mikai233.common.core.component.GuardianMessage
 import com.mikai233.shared.message.ScriptMessage
 import com.mikai233.shared.message.SerdeScriptMessage
 

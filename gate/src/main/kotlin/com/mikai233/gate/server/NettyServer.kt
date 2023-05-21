@@ -1,12 +1,12 @@
 package com.mikai233.gate.server
 
 import com.mikai233.common.conf.GlobalEnv
-import com.mikai233.common.core.components.AkkaSystem
-import com.mikai233.common.core.components.Component
-import com.mikai233.common.core.components.ZookeeperConfigCenter
-import com.mikai233.common.core.components.config.NettyConfig
-import com.mikai233.common.core.components.config.getConfigEx
-import com.mikai233.common.core.components.config.serverNetty
+import com.mikai233.common.core.component.AkkaSystem
+import com.mikai233.common.core.component.Component
+import com.mikai233.common.core.component.ZookeeperConfigCenter
+import com.mikai233.common.core.component.config.NettyConfig
+import com.mikai233.common.core.component.config.getConfigEx
+import com.mikai233.common.core.component.config.serverNetty
 import com.mikai233.common.ext.Platform
 import com.mikai233.common.ext.getPlatform
 import com.mikai233.common.ext.logger

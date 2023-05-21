@@ -12,3 +12,5 @@ data class WorldRunnable(private val block: () -> Unit) : Runnable, WorldMessage
 }
 
 object StopWorld : SerdeWorldMessage
+
+object WakeupGameWorld : SerdeWorldMessage

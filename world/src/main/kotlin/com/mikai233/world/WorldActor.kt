@@ -1,15 +1,12 @@
 package com.mikai233.world
 
-import akka.actor.typed.javadsl.AbstractBehavior
-import akka.actor.typed.javadsl.ActorContext
-import akka.actor.typed.javadsl.Receive
-import akka.actor.typed.javadsl.StashBuffer
+import akka.actor.typed.PostStop
+import akka.actor.typed.javadsl.*
 import com.mikai233.common.core.actor.ActorCoroutine
 import com.mikai233.common.core.actor.safeActorCoroutine
 import com.mikai233.common.ext.actorLogger
 import com.mikai233.common.ext.runnableAdapter
-import com.mikai233.shared.message.WorldMessage
-import com.mikai233.shared.message.WorldRunnable
+import com.mikai233.shared.message.*
 import com.mikai233.world.component.WorldActorMessageDispatchers
 
 class WorldActor(
@@ -24,7 +21,27 @@ class WorldActor(
     private val protobufDispatcher = worldNode.server.component<WorldActorMessageDispatchers>().protobufDispatcher
 
     //    private val internalDispatcher = worldNode.server.component<WorldActorMessageDispatchers>().internalDispatcher
+    init {
+        logger.info("{} preStart", worldId)
+    }
+
     override fun createReceive(): Receive<WorldMessage> {
-        return newReceiveBuilder().build()
+        return newReceiveBuilder().onMessage(WorldMessage::class.java) { message ->
+            when (message) {
+                is ExecuteWorldScript -> TODO()
+                StopWorld -> return@onMessage Behaviors.stopped()
+                WakeupGameWorld -> {
+
+                }
+
+                is WorldRunnable -> {
+                    message.run()
+                }
+            }
+            Behaviors.same()
+        }.onSignal(PostStop::class.java) { message ->
+            logger.info("{} {}", worldId, message)
+            Behaviors.same()
+        }.build()
     }
 }

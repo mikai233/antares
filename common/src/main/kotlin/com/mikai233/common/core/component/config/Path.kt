@@ -1,9 +1,10 @@
-package com.mikai233.common.core.components.config
+package com.mikai233.common.core.component.config
 
-import com.mikai233.common.core.components.Role
+import com.mikai233.common.core.component.Role
 
 const val ROOT = "/antares"
 const val NETTY_PATH = "$ROOT/netty"
+const val GAME_WORLD = "$ROOT/game_world"
 
 fun serverHostsPath() = ServerHosts.PATH
 
@@ -14,3 +15,5 @@ fun nodePath(host: String, role: Role, port: Int) = "${serverHostPath(host)}/${r
 fun nodePath(host: String, node: String) = "${serverHostPath(host)}/$node"
 
 fun serverNetty(host: String) = "$NETTY_PATH/$host"
+
+fun gameWorldPath(worldId: String) = "$GAME_WORLD/$worldId"

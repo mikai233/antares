@@ -10,10 +10,7 @@ import com.mikai233.common.conf.GlobalProto
 import com.mikai233.common.core.Launcher
 import com.mikai233.common.core.Server
 import com.mikai233.common.core.State
-import com.mikai233.common.core.components.AkkaSystem
-import com.mikai233.common.core.components.NodeConfigsComponent
-import com.mikai233.common.core.components.Role
-import com.mikai233.common.core.components.ZookeeperConfigCenter
+import com.mikai233.common.core.component.*
 import com.mikai233.common.ext.actorLogger
 import com.mikai233.common.ext.registerService
 import com.mikai233.protocol.MsgCs
@@ -23,6 +20,7 @@ import com.mikai233.shared.scriptActorServiceKey
 import com.mikai233.world.component.WorldActorMessageDispatchers
 import com.mikai233.world.component.WorldScriptSupport
 import com.mikai233.world.component.WorldSharding
+import com.mikai233.world.component.WorldWaker
 
 class WorldNode(private val port: Int = 2336, private val sameJvm: Boolean = false) : Launcher {
     val server = Server()
@@ -72,6 +70,12 @@ class WorldNode(private val port: Int = 2336, private val sameJvm: Boolean = fal
             }
             component {
                 WorldScriptSupport(this)
+            }
+            component {
+                WorldConfigComponent(this)
+            }
+            component {
+                WorldWaker(this@WorldNode)
             }
         }
     }

@@ -1,6 +1,6 @@
 package com.mikai233.common.core
 
-import com.mikai233.common.core.components.Component
+import com.mikai233.common.core.component.Component
 import com.mikai233.common.ext.logger
 import java.util.*
 import kotlin.reflect.KClass

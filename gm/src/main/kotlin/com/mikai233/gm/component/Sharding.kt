@@ -3,10 +3,10 @@ package com.mikai233.gm.component
 import akka.actor.typed.ActorRef
 import akka.cluster.sharding.typed.ShardingEnvelope
 import com.mikai233.common.core.Server
-import com.mikai233.common.core.components.AkkaSystem
-import com.mikai233.common.core.components.Component
-import com.mikai233.common.core.components.Role
-import com.mikai233.common.core.components.ShardEntityType
+import com.mikai233.common.core.component.AkkaSystem
+import com.mikai233.common.core.component.Component
+import com.mikai233.common.core.component.Role
+import com.mikai233.common.core.component.ShardEntityType
 import com.mikai233.common.ext.startShardingProxy
 import com.mikai233.gm.GmSystemMessage
 import com.mikai233.shared.PlayerShardNum

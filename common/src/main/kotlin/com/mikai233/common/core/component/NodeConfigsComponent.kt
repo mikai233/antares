@@ -1,8 +1,8 @@
-package com.mikai233.common.core.components
+package com.mikai233.common.core.component
 
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.Server
-import com.mikai233.common.core.components.config.*
+import com.mikai233.common.core.component.config.*
 import com.mikai233.common.ext.logger
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory

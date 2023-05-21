@@ -9,9 +9,9 @@ import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
 import com.mikai233.common.core.actor.ActorCoroutine
 import com.mikai233.common.core.actor.safeActorCoroutine
-import com.mikai233.common.core.components.Role
-import com.mikai233.common.core.components.ZookeeperConfigCenter
-import com.mikai233.common.core.components.config.*
+import com.mikai233.common.core.component.Role
+import com.mikai233.common.core.component.ZookeeperConfigCenter
+import com.mikai233.common.core.component.config.*
 import com.mikai233.common.ext.actorLogger
 import com.mikai233.common.ext.runnableAdapter
 import com.mikai233.common.ext.shardingEnvelope

@@ -2,8 +2,8 @@ package com.mikai233.player.component
 
 import akka.actor.typed.ActorRef
 import com.mikai233.common.core.Server
-import com.mikai233.common.core.components.AkkaSystem
-import com.mikai233.common.core.components.Component
+import com.mikai233.common.core.component.AkkaSystem
+import com.mikai233.common.core.component.Component
 import com.mikai233.common.ext.syncAsk
 import com.mikai233.player.PlayerSystemMessage
 import com.mikai233.player.SpawnScriptActorReq

@@ -1,4 +1,4 @@
-package com.mikai233.common.core.components.config
+package com.mikai233.common.core.component.config
 
 import com.mikai233.common.ext.Json
 import org.apache.curator.framework.recipes.cache.ChildData

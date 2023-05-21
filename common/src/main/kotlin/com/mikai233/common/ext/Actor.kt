@@ -10,6 +10,7 @@ import akka.actor.typed.receptionist.ServiceKey
 import akka.cluster.routing.ClusterRouterGroup
 import akka.cluster.routing.ClusterRouterGroupSettings
 import akka.cluster.sharding.ShardCoordinator
+import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.ShardingMessageExtractor
 import akka.cluster.sharding.typed.javadsl.ClusterSharding
@@ -17,7 +18,7 @@ import akka.cluster.sharding.typed.javadsl.Entity
 import akka.cluster.sharding.typed.javadsl.EntityContext
 import akka.cluster.sharding.typed.javadsl.EntityTypeKey
 import akka.routing.BroadcastGroup
-import com.mikai233.common.core.components.Role
+import com.mikai233.common.core.component.Role
 import kotlinx.coroutines.future.await
 import org.slf4j.Logger
 import kotlin.time.Duration
@@ -86,6 +87,7 @@ inline fun <reified M, N> ActorSystem<*>.startSharding(
     role: Role,
     extractor: ShardingMessageExtractor<ShardingEnvelope<out M>, M>,
     stopMessage: M,
+    shardingSettings: ClusterShardingSettings? = null,
     noinline builder: (EntityContext<M>) -> Behavior<M>
 ): ActorRef<ShardingEnvelope<N>> where N : M {
     val sharding = ClusterSharding.get(this)
@@ -95,6 +97,11 @@ inline fun <reified M, N> ActorSystem<*>.startSharding(
         .withMessageExtractor(extractor)
         .withAllocationStrategy(ShardCoordinator.LeastShardAllocationStrategy(10, 3))
         .withStopMessage(stopMessage)
+        .run {
+            shardingSettings?.let {
+                withSettings(shardingSettings)
+            } ?: this
+        }
     return sharding.init(entity).narrow()
 }
 

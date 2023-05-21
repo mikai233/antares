@@ -2,7 +2,7 @@ package com.mikai233.shared.message
 
 import akka.actor.typed.ActorRef
 import com.mikai233.common.annotation.AllOpen
-import com.mikai233.common.core.components.Role
+import com.mikai233.common.core.component.Role
 import com.mikai233.shared.script.Script
 
 @AllOpen

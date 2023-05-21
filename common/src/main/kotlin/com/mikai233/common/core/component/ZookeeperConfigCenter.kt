@@ -1,7 +1,7 @@
-package com.mikai233.common.core.components
+package com.mikai233.common.core.component
 
-import com.mikai233.common.core.components.config.Config
-import com.mikai233.common.core.components.config.ConfigCenter
+import com.mikai233.common.core.component.config.Config
+import com.mikai233.common.core.component.config.ConfigCenter
 import com.mikai233.common.ext.Json
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.CuratorFrameworkFactory

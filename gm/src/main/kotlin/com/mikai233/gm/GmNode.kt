@@ -13,10 +13,10 @@ import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.Launcher
 import com.mikai233.common.core.Server
 import com.mikai233.common.core.State
-import com.mikai233.common.core.components.AkkaSystem
-import com.mikai233.common.core.components.NodeConfigsComponent
-import com.mikai233.common.core.components.Role
-import com.mikai233.common.core.components.ZookeeperConfigCenter
+import com.mikai233.common.core.component.AkkaSystem
+import com.mikai233.common.core.component.NodeConfigsComponent
+import com.mikai233.common.core.component.Role
+import com.mikai233.common.core.component.ZookeeperConfigCenter
 import com.mikai233.common.ext.actorLogger
 import com.mikai233.common.ext.registerService
 import com.mikai233.common.ext.startBroadcastClusterRouterGroup

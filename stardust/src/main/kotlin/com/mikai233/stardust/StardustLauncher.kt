@@ -2,10 +2,10 @@ package com.mikai233.stardust
 
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.Launcher
-import com.mikai233.common.core.components.Role
-import com.mikai233.common.core.components.config.Node
-import com.mikai233.common.core.components.config.nodePath
-import com.mikai233.common.core.components.config.serverHostPath
+import com.mikai233.common.core.component.Role
+import com.mikai233.common.core.component.config.Node
+import com.mikai233.common.core.component.config.nodePath
+import com.mikai233.common.core.component.config.serverHostPath
 import com.mikai233.common.ext.Json
 import com.mikai233.common.ext.buildSimpleZkClient
 import com.mikai233.common.ext.logger
