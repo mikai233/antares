@@ -61,8 +61,12 @@ class MessageDispatcher<M : Any>(private val message: KClass<M>, vararg packages
     }
 
     fun dispatch(hint: KClass<out M>, vararg params: Any) {
-        val methodFun = requireNotNull(messages[hint]) { "no message handler for:${hint} was found" }
-        methodFun.func.call(methodFun.handler, *params)
+        val methodFun = messages[hint]
+        if (methodFun != null) {
+            methodFun.func.call(methodFun.handler, *params)
+        } else {
+            logger.error("no message handler for:{} was found", hint)
+        }
     }
 
     fun updateHandler(clazz: KClass<out MessageHandler>, newHandler: MessageHandler) {

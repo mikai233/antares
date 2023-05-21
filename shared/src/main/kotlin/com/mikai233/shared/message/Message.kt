@@ -11,6 +11,8 @@ sealed interface PlayerMessage : Message
 
 sealed interface SerdePlayerMessage : PlayerMessage, SerdeMessage
 
+sealed interface BusinessPlayerMessage : SerdePlayerMessage
+
 sealed interface WorldMessage : Message
 
 sealed interface SerdeWorldMessage : WorldMessage, SerdeMessage

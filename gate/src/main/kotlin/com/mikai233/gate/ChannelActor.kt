@@ -5,7 +5,6 @@ import akka.actor.typed.javadsl.AbstractBehavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
-import akka.cluster.sharding.typed.ShardingEnvelope
 import com.google.protobuf.GeneratedMessageV3
 import com.mikai233.common.core.actor.safeActorCoroutine
 import com.mikai233.common.ext.actorLogger
@@ -31,8 +30,12 @@ class ChannelActor(
 
     init {
         logger.info("{} preStart", context.self)
-        playerActor.tell(ShardingEnvelope("112233", PlayerLogin(context.self.narrow())))
-        playerActor.tell(shardingEnvelope(112233.toString(), PlayerProtobufEnvelope(loginReq { id = 112233 })))
+        playerActor.tell(
+            shardingEnvelope(
+                112233.toString(),
+                PlayerProtobufEnvelope(loginReq { id = 112233 }, context.self.narrow())
+            )
+        )
     }
 
     override fun createReceive(): Receive<ChannelMessage> {
@@ -77,7 +80,7 @@ class ChannelActor(
 
     private fun handleClientMessage(message: ClientMessage) {
         if (playerId > 0) {
-            tellPlayer(playerId, PlayerProtobufEnvelope(message.inner))
+            tellPlayer(playerId, PlayerProtobufEnvelope(message.inner, context.self.narrow()))
         } else {
             logger.warn("try to send protobuf message to uninitialized playerId")
         }

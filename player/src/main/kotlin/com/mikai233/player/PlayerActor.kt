@@ -2,7 +2,9 @@ package com.mikai233.player
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.actor.typed.Terminated
 import akka.actor.typed.javadsl.*
+import com.google.protobuf.GeneratedMessageV3
 import com.mikai233.common.core.actor.ActorCoroutine
 import com.mikai233.common.core.actor.safeActorCoroutine
 import com.mikai233.common.ext.actorLogger
@@ -23,7 +25,7 @@ class PlayerActor(
     private val logger = actorLogger()
     private val runnableAdapter = runnableAdapter { PlayerRunnable(it::run) }
     private val coroutine = ActorCoroutine(runnableAdapter.safeActorCoroutine())
-    private lateinit var channelActorRef: ActorRef<SerdeChannelMessage>
+    private var channelActor: ActorRef<SerdeChannelMessage>? = null
     private val protobufDispatcher = playerNode.server.component<MessageDispatchers>().protobufDispatcher
     private val internalDispatcher = playerNode.server.component<MessageDispatchers>().internalDispatcher
     private val localScriptActor = playerNode.server.component<ScriptSupport>().localScriptActor
@@ -50,18 +52,20 @@ class PlayerActor(
                     return@onMessage buffer.unstashAll(active())
                 }
 
-                is PlayerRunnable -> message.run()
-                is PlayerLogin,
-                is PlayerProtobufEnvelope -> {
+                is PlayerRunnable -> {
+                    message.run()
+                }
+
+                is BusinessPlayerMessage -> {
                     buffer.stash(message)
                 }
 
                 is ExecutePlayerScript -> {
-                    message.script.invoke(this)
+                    executePlayerScript(message)
                 }
 
                 is PlayerScript -> {
-                    localScriptActor.tell(CompilePlayerActorScript(message.script, context.self))
+                    compilePlayerScript(message)
                 }
             }
             Behaviors.same()
@@ -73,22 +77,13 @@ class PlayerActor(
             timerScheduler = timers
             newReceiveBuilder().onMessage(PlayerMessage::class.java) { message ->
                 when (message) {
-                    is PlayerProtobufEnvelope -> {
-                        val protoMessage = message.message
-                        protobufDispatcher.dispatch(protoMessage::class, this, protoMessage)
-                    }
+                    is PlayerProtobufEnvelope -> handlePlayerProtobufEnvelope(message)
 
                     is PlayerRunnable -> {
                         message.run()
                     }
 
-                    is PlayerLogin -> {
-                        logger.info("{}", message)
-                        channelActorRef = message.channelActor
-                        channelActorRef.tell(Test("hello"))
-                    }
-
-                    PlayerInitDone -> return@onMessage Behaviors.unhandled()
+                    PlayerInitDone -> return@onMessage Behaviors.ignore()
                     StopPlayer -> {
                         coroutine.cancelAll("StopPlayer")
                         coroutine.launch {
@@ -104,12 +99,31 @@ class PlayerActor(
                     }
 
                     is PlayerScript -> {
-                        localScriptActor.tell(CompilePlayerActorScript(message.script, context.self))
+                        compilePlayerScript(message)
                     }
+
+                    is BusinessPlayerMessage -> handleBusinessPlayerMessage(message)
+                }
+                Behaviors.same()
+            }.onSignal(Terminated::class.java) { terminated ->
+                val who = terminated.ref
+                if (who == channelActor) {
+                    channelActor = null
+                    logger.info("player:{} channel actor:{} terminated", playerId, who)
                 }
                 Behaviors.same()
             }.build()
         }
+    }
+
+    private fun handlePlayerProtobufEnvelope(message: PlayerProtobufEnvelope) {
+        bindChannelActor(message.channelActor)
+        val inner = message.inner
+        protobufDispatcher.dispatch(inner::class, this, inner)
+    }
+
+    private fun handleBusinessPlayerMessage(message: BusinessPlayerMessage) {
+        internalDispatcher.dispatch(message::class, this, message)
     }
 
     private fun stopping(): Behavior<PlayerMessage> {
@@ -120,19 +134,53 @@ class PlayerActor(
                 }
 
                 PlayerInitDone,
-                is PlayerLogin,
-                is PlayerProtobufEnvelope -> return@onMessage Behaviors.unhandled()
+                is PlayerProtobufEnvelope,
+                is BusinessPlayerMessage -> return@onMessage Behaviors.ignore()
 
                 StopPlayer -> return@onMessage Behaviors.stopped()
                 is ExecutePlayerScript -> {
-                    message.script.invoke(this)
+                    executePlayerScript(message)
                 }
 
                 is PlayerScript -> {
-                    localScriptActor.tell(CompilePlayerActorScript(message.script, context.self))
+                    compilePlayerScript(message)
                 }
             }
             Behaviors.same()
         }.build()
+    }
+
+    fun write(message: GeneratedMessageV3) {
+        val channel = channelActor
+        if (channel != null) {
+            val envelope = ChannelProtobufEnvelope(message)
+            channel.tell(envelope)
+        } else {
+            logger.warn("player:{} unable to write message to channel actor, because channel actor is null", playerId)
+        }
+    }
+
+    fun stop() {
+        context.self.tell(StopPlayer)
+    }
+
+    private fun bindChannelActor(incomingChannelActor: ActorRef<SerdeChannelMessage>) {
+        if (incomingChannelActor != channelActor) {
+            channelActor?.let {
+                context.unwatch(it)
+                logger.info("player:{} unbind old channel actor:{}", playerId, it)
+            }
+            channelActor = incomingChannelActor
+            context.watch(channelActor)
+            logger.info("player:{} bind new channel actor:{}", playerId, channelActor)
+        }
+    }
+
+    private fun compilePlayerScript(message: PlayerScript) {
+        localScriptActor.tell(CompilePlayerActorScript(message.script, context.self))
+    }
+
+    private fun executePlayerScript(message: ExecutePlayerScript) {
+        message.script.invoke(this)
     }
 }
