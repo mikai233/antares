@@ -84,6 +84,8 @@ dependencyResolutionManagement {
             library("kryo", "io.altoo:akka-kryo-serialization-typed_$scalaVersion:2.5.0")
             plugin("detekt", "io.gitlab.arturbosch.detekt").version("1.23.0-RC3")
             library("caffeine", "com.github.ben-manes.caffeine:caffeine:3.1.6")
+            library("groovy", "org.apache.groovy:groovy:4.0.12")
+            plugin("dokka", "org.jetbrains.dokka").version("1.8.10")
         }
         create("test") {
             library("junit.bom", "org.junit:junit-bom:$junitVersion")

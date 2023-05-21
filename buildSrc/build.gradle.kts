@@ -1,5 +1,5 @@
 plugins {
-    java
+    `kotlin-dsl`
 }
 
 repositories {
@@ -7,8 +7,7 @@ repositories {
 }
 
 dependencies {
-    testImplementation(platform(test.junit.bom))
-    testImplementation(test.junit.jupiter)
+
 }
 
 tasks.test {

@@ -51,26 +51,45 @@ fun ByteArray.toShort(offset: Int = 0): Short = (get(offset).toInt().shl(8) or g
 
 fun ByteArray.toShortLE(offset: Int = 0): Short = (get(offset).toInt() or get(offset + 1).toInt().shl(8)).toShort()
 
-fun ByteArray.toInt(offset: Int = 0): Int =
-    (get(offset).toUByte().toInt().shl(24) or get(offset + 1).toUByte().toInt().shl(16) or get(offset + 2).toUByte()
-        .toInt().shl(8) or get(offset + 3).toUByte().toInt())
+fun ByteArray.toInt(offset: Int = 0): Int {
+    return (get(offset).toUByte().toInt().shl(24) or
+            get(offset + 1).toUByte().toInt().shl(16) or
+            get(offset + 2).toUByte().toInt().shl(8) or
+            get(offset + 3).toUByte().toInt())
+}
 
-fun ByteArray.toIntLE(offset: Int = 0): Int =
-    (get(offset).toUByte().toInt() or get(offset + 1).toUByte().toInt().shl(8) or get(offset + 2).toUByte().toInt()
-        .shl(16) or get(offset + 3).toUByte().toInt().shl(24))
 
-fun ByteArray.toLong(offset: Int = 0): Long =
-    (get(offset).toUByte().toLong().shl(56) or get(offset + 1).toUByte().toLong().shl(48) or get(offset + 2).toUByte()
-        .toLong().shl(40) or get(offset + 3).toUByte().toLong().shl(32) or get(offset + 4).toUByte().toLong()
-        .shl(24) or get(offset + 5).toUByte().toLong().shl(16) or get(offset + 6).toUByte().toLong().shl(8) or get(
-        offset + 7
-    ).toUByte().toLong())
+fun ByteArray.toIntLE(offset: Int = 0): Int {
+    return (get(offset).toUByte().toInt() or
+            get(offset + 1).toUByte().toInt().shl(8) or
+            get(offset + 2).toUByte().toInt().shl(16) or
+            get(offset + 3).toUByte().toInt().shl(24))
+}
 
-fun ByteArray.toLongLE(offset: Int = 0): Long =
-    (get(offset).toUByte().toLong() or get(offset + 1).toUByte().toLong().shl(8) or get(offset + 2).toUByte().toLong()
-        .shl(16) or get(offset + 3).toUByte().toLong().shl(24) or get(offset + 4).toUByte().toLong().shl(32) or get(
-        offset + 5
-    ).toLong().shl(48) or get(offset + 6).toUByte().toLong().shl(56) or get(offset + 7).toUByte().toLong())
+
+fun ByteArray.toLong(offset: Int = 0): Long {
+    return (get(offset).toUByte().toLong().shl(56) or
+            get(offset + 1).toUByte().toLong().shl(48) or
+            get(offset + 2).toUByte().toLong().shl(40) or
+            get(offset + 3).toUByte().toLong().shl(32) or
+            get(offset + 4).toUByte().toLong().shl(24) or
+            get(offset + 5).toUByte().toLong().shl(16) or
+            get(offset + 6).toUByte().toLong().shl(8) or
+            get(offset + 7).toUByte().toLong())
+}
+
+
+fun ByteArray.toLongLE(offset: Int = 0): Long {
+    return (get(offset).toUByte().toLong() or
+            get(offset + 1).toUByte().toLong().shl(8) or
+            get(offset + 2).toUByte().toLong().shl(16) or
+            get(offset + 3).toUByte().toLong().shl(24) or
+            get(offset + 4).toUByte().toLong().shl(32) or
+            get(offset + 5).toUByte().toLong().shl(48) or
+            get(offset + 6).toUByte().toLong().shl(56) or
+            get(offset + 7).toUByte().toLong())
+}
+
 
 fun ByteArray.checkOffsetAndLength(offset: Int, length: Int) {
     require(offset >= 0) { "offset shouldn't be negative: $offset" }

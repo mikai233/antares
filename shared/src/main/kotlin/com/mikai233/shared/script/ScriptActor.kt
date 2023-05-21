@@ -12,11 +12,11 @@ import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.Launcher
 import com.mikai233.common.ext.actorLogger
 import com.mikai233.shared.message.*
+import groovy.lang.GroovyClassLoader
 import java.io.File
 import java.net.URLClassLoader
 import java.util.jar.JarFile
 import kotlin.reflect.KClass
-import kotlin.reflect.full.primaryConstructor
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.toJavaDuration
 
@@ -60,7 +60,7 @@ class ScriptActor(context: ActorContext<ScriptMessage>, private val node: Launch
     private fun handleNodeRoleScript(message: ExecuteNodeRoleScript) {
         val targetRole = message.role.name
         if (selfMember.hasRole(targetRole)) {
-            val script = instanceScript<NodeScriptFunction<in Launcher>>(message.script)
+            val script = instanceScript<NodeRoleScriptFunction<in Launcher>>(message.script)
             script.invoke(node)
         } else {
             logger.error(
@@ -100,25 +100,27 @@ class ScriptActor(context: ActorContext<ScriptMessage>, private val node: Launch
     }
 
     private fun loadClass(script: Script): KClass<*> {
-        val file = when (script.type) {
+        return when (script.type) {
             ScriptType.GroovyScript -> {
-                File.createTempFile(script.name, ".groovy")
+                val text = String(script.body)
+                GroovyClassLoader().parseClass(text).kotlin
             }
 
             ScriptType.KotlinScript -> {
-                File.createTempFile(script.name, ".jar")
+                val file = File.createTempFile(script.name, ".jar")
+                file.writeBytes(script.body)
+                val jarfile = JarFile(file)
+                val scriptName = jarfile.manifest.mainAttributes.getValue(ScriptClassName)
+                val loader = URLClassLoader(arrayOf(file.toURI().toURL()))
+                loader.loadClass(scriptName).kotlin
             }
         }
-        file.writeBytes(script.body)
-        val jarfile = JarFile(file)
-        val scriptName = jarfile.manifest.mainAttributes.getValue(ScriptClassName)
-        val loader = URLClassLoader(arrayOf(file.toURI().toURL()))
-        return loader.loadClass(scriptName).kotlin
     }
 
     private fun <T> instanceScript(script: Script): T {
         val scriptClass = loadClassWithCache(script)
-        val constructor = requireNotNull(scriptClass.primaryConstructor) { "$scriptClass primaryConstructor not found" }
+        val constructor =
+            requireNotNull(scriptClass.constructors.find { it.parameters.isEmpty() }) { "$scriptClass empty constructor not found" }
         @Suppress("UNCHECKED_CAST")
         return constructor.call() as T
     }

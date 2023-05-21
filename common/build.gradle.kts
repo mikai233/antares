@@ -2,9 +2,6 @@ plugins {
     java
 }
 
-group = "com.mikai233"
-version = "1.0-SNAPSHOT"
-
 repositories {
     mavenCentral()
 }
@@ -26,6 +23,7 @@ dependencies {
     implementation(tool.protobuf.java.util)
     implementation(tool.bcprov)
     implementation(tool.kryo)
+    implementation(tool.groovy)
 }
 
 tasks.test {

@@ -4,9 +4,6 @@ plugins {
     @Suppress("DSL_SCOPE_VIOLATION") alias(tool.plugins.protobuf)
 }
 
-group = "com.mikai233"
-version = "1.0-SNAPSHOT"
-
 repositories {
     mavenCentral()
 }

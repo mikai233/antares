@@ -1,6 +1,3 @@
-group = "com.mikai233"
-version = "1.0-SNAPSHOT"
-
 repositories {
     mavenCentral()
 }
@@ -13,6 +10,7 @@ dependencies {
     implementation(kt.reflect)
     implementation(akka.bundles.common)
     implementation(tool.caffeine)
+    implementation(tool.groovy)
     implementation(project(":common"))
     implementation(project(":proto"))
 }

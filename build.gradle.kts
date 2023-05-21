@@ -1,12 +1,12 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
     @Suppress("DSL_SCOPE_VIOLATION") alias(kt.plugins.jvm)
     @Suppress("DSL_SCOPE_VIOLATION") alias(kt.plugins.allopen)
     @Suppress("DSL_SCOPE_VIOLATION") alias(kt.plugins.noarg)
     @Suppress("DSL_SCOPE_VIOLATION") alias(tool.plugins.detekt)
+    @Suppress("DSL_SCOPE_VIOLATION") alias(tool.plugins.dokka)
 }
-
-group = "com.mikai233"
-version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
@@ -16,11 +16,21 @@ dependencies {
     testImplementation(kotlin("test"))
 }
 
+allprojects {
+    group = Version.PROJECT_GROUP
+    version = Version.PROJECT_VERSION
+
+    afterEvaluate {
+        configureJvmTarget()
+    }
+}
+
 subprojects {
     apply(plugin = "kotlin")
     apply(plugin = "kotlin-allopen")
     apply(plugin = "kotlin-noarg")
     apply(plugin = "io.gitlab.arturbosch.detekt")
+    apply(plugin = "org.jetbrains.dokka")
 
     allOpen {
         annotation("com.mikai233.common.annotation.AllOpen")
@@ -43,6 +53,32 @@ subprojects {
             }
         }
     }
+
+    sourceSets {
+        create("script") {
+            compileClasspath += main.get().run { compileClasspath + output }
+        }
+    }
+
+    tasks.register<Jar>("buildKotlinScript") {
+        group = "script"
+        val scriptClass: String by project
+        val classSimpleName = scriptClass.split(".").last()
+        archiveFileName.set("${rootProject.name}_${project.name}_${classSimpleName}.jar")
+        val script = sourceSets["script"]
+        manifest {
+            attributes("Script-Class" to scriptClass)
+        }
+        from(script.output)
+        include("com/mikai233/${project.name}/script/*")
+
+        doFirst {
+            val containsTarget = script.output.classesDirs.any {
+                it.walk().any { file -> file.name == "${classSimpleName}.class" }
+            }
+            check(containsTarget) { "cannot find ${scriptClass}.class in build dir" }
+        }
+    }
 }
 
 tasks.test {
@@ -51,4 +87,19 @@ tasks.test {
 
 kotlin {
     jvmToolchain(17)
+}
+
+fun Project.configureJvmTarget() {
+    tasks.withType<JavaCompile> {
+        with(options) {
+            encoding = "UTF-8"
+            isFork = true
+        }
+    }
+    tasks.withType<KotlinCompile> {
+        kotlinOptions {
+            jvmTarget = "17"
+            javaParameters = true
+        }
+    }
 }
