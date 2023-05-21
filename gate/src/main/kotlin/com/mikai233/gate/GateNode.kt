@@ -41,8 +41,8 @@ class GateNode(private val port: Int = 2334, private val sameJvm: Boolean = fals
         }
 
         private fun handleSpawnChannelActorReq(message: SpawnChannelActorReq) {
-            val actorRef =
-                context.spawnAnonymous(Behaviors.setup { ChannelActor(it, message.ctx, this@GateNode) })
+            val behavior = Behaviors.setup { ChannelActor(it, message.ctx, this@GateNode) }
+            val actorRef = context.spawnAnonymous(Behaviors.supervise(behavior).onFailure(SupervisorStrategy.resume()))
             logger.debug("spawn channel actor:{}", message.ctx.name())
             message.replyTo.tell(SpawnChannelActorResp(actorRef))
         }

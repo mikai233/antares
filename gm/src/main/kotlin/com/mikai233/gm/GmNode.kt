@@ -6,6 +6,9 @@ import akka.actor.typed.javadsl.AbstractBehavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
+import akka.cluster.typed.ClusterSingleton
+import akka.cluster.typed.ClusterSingletonSettings
+import akka.cluster.typed.SingletonActor
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.Launcher
 import com.mikai233.common.core.Server
@@ -27,22 +30,17 @@ import com.mikai233.shared.scriptActorServiceKey
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
-class GmNode(private val port: Int = 2335, private val sameJvm: Boolean = false) : Launcher {
+class GmNode(private val port: Int = 2339, private val sameJvm: Boolean = false) : Launcher {
     val server: Server = Server()
 
     inner class GmNodeGuardian(context: ActorContext<GmSystemMessage>) :
         AbstractBehavior<GmSystemMessage>(context) {
         private val logger = actorLogger()
         private val scriptProxyActor: ActorRef<ScriptProxyMessage>
+        private val singleton = ClusterSingleton.get(context.system)
 
         init {
-            //TODO singleton
-            //TODO restart strategy
-            scriptProxyActor = context.spawn(
-                Behaviors.supervise(Behaviors.setup { ScriptProxyActor(it, this@GmNode) })
-                    .onFailure(SupervisorStrategy.restart().withLimit(10, 10.seconds.toJavaDuration())),
-                "ScriptProxy"
-            )
+            scriptProxyActor = startScriptProxyActor()
         }
 
         override fun createReceive(): Receive<GmSystemMessage> {
@@ -70,6 +68,18 @@ class GmNode(private val port: Int = 2335, private val sameJvm: Boolean = false)
             message.replyTo.tell(SpawnScriptRouterResp(broadcastRouter))
         }
 
+        private fun startScriptProxyActor(): ActorRef<ScriptProxyMessage> {
+            val singletonSettings = ClusterSingletonSettings.create(context.system).withRole(Role.Gm.name)
+            val behavior = Behaviors.supervise(Behaviors.setup { ScriptProxyActor(it, this@GmNode) }).onFailure(
+                SupervisorStrategy.restartWithBackoff(
+                    1.seconds.toJavaDuration(),
+                    10.seconds.toJavaDuration(),
+                    0.5
+                )
+            )
+            val scriptProxyActor = SingletonActor.of(behavior, "ScriptProxyActor").withSettings(singletonSettings)
+            return singleton.init(scriptProxyActor)
+        }
     }
 
     init {
@@ -103,4 +113,8 @@ class GmNode(private val port: Int = 2335, private val sameJvm: Boolean = false)
         server.initComponents()
         server.state = State.Running
     }
+}
+
+fun main() {
+    GmNode().launch()
 }

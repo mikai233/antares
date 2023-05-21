@@ -2,7 +2,7 @@ package com.mikai233.common.core.components.config
 
 import com.mikai233.common.core.components.Role
 
-const val ROOT = "/game_server"
+const val ROOT = "/antares"
 const val NETTY_PATH = "$ROOT/netty"
 
 fun serverHostsPath() = ServerHosts.PATH

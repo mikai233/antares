@@ -23,7 +23,7 @@ import com.mikai233.protocol.MsgSc
 import com.mikai233.shared.script.ScriptActor
 import com.mikai233.shared.scriptActorServiceKey
 
-class PlayerNode(private val port: Int = 2333, private val sameJvm: Boolean = false) : Launcher {
+class PlayerNode(private val port: Int = 2337, private val sameJvm: Boolean = false) : Launcher {
     val server: Server = Server()
 
     inner class PlayerNodeGuardian(context: ActorContext<PlayerSystemMessage>) :

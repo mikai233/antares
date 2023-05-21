@@ -137,7 +137,7 @@ class ScriptProxyActor(context: ActorContext<ScriptProxyMessage>, private val gm
             logger.info("script service:{} updated to:{}", nodeKey, serverInstance)
         } else {
             scriptTargetNodeRef.remove(nodeKey)
-            logger.info("script service:{} unreachable", nodeKey)
+            logger.warn("script service:{} unreachable", nodeKey)
         }
     }
 }
