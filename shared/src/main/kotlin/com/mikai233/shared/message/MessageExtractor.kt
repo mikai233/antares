@@ -18,3 +18,18 @@ class PlayerMessageExtractor(private val numberOfShards: Int) :
         return message.message()
     }
 }
+
+class WorldMessageExtractor(private val numberOfShards: Int) :
+    ShardingMessageExtractor<ShardingEnvelope<out WorldMessage>, WorldMessage>() {
+    override fun entityId(message: ShardingEnvelope<out WorldMessage>): String {
+        return message.entityId()
+    }
+
+    override fun shardId(entityId: String): String {
+        return (abs(entityId.hashCode()) % numberOfShards).toString()
+    }
+
+    override fun unwrapMessage(message: ShardingEnvelope<out WorldMessage>): WorldMessage {
+        return message.message()
+    }
+}

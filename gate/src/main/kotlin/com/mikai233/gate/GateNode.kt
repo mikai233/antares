@@ -13,8 +13,8 @@ import com.mikai233.common.core.State
 import com.mikai233.common.core.components.*
 import com.mikai233.common.ext.actorLogger
 import com.mikai233.common.ext.registerService
+import com.mikai233.gate.component.GateSharding
 import com.mikai233.gate.component.ScriptSupport
-import com.mikai233.gate.component.Sharding
 import com.mikai233.gate.server.NettyServer
 import com.mikai233.protocol.MsgCs
 import com.mikai233.protocol.MsgSc
@@ -75,7 +75,7 @@ class GateNode(private val port: Int = 2334, private val sameJvm: Boolean = fals
                 NettyServer(this@GateNode)
             }
             component {
-                Sharding(this)
+                GateSharding(this)
             }
             component {
                 ScriptSupport(this)
@@ -85,7 +85,7 @@ class GateNode(private val port: Int = 2334, private val sameJvm: Boolean = fals
 
     fun system() = server.component<AkkaSystem<GateSystemMessage>>().system
 
-    fun playerActor() = server.component<Sharding>().playerActor
+    fun playerActor() = server.component<GateSharding>().playerActor
 
     override fun launch() {
         server.state = State.Initializing

@@ -10,7 +10,7 @@ import com.mikai233.shared.message.BusinessPlayerMessage
  * @email dreamfever2017@yahoo.com
  * @date 2023/5/17
  */
-class MessageDispatchers : Component {
+class PlayerActorDispatchers : Component {
     val protobufDispatcher = MessageDispatcher(GeneratedMessageV3::class, "com.mikai233.player.handler")
     val internalDispatcher = MessageDispatcher(BusinessPlayerMessage::class, "com.mikai233.player.handler")
 }

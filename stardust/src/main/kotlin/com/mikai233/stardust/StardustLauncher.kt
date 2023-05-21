@@ -12,6 +12,7 @@ import com.mikai233.common.ext.logger
 import com.mikai233.gate.GateNode
 import com.mikai233.gm.GmNode
 import com.mikai233.player.PlayerNode
+import com.mikai233.world.WorldNode
 import org.reflections.Reflections
 import java.util.*
 import kotlin.reflect.KClass
@@ -29,6 +30,7 @@ class StardustLauncher {
     init {
         roleNode[Role.Gate] = GateNode::class
         roleNode[Role.Player] = PlayerNode::class
+        roleNode[Role.World] = WorldNode::class
         roleNode[Role.Gm] = GmNode::class
         clazzToCtor = Reflections("com.mikai233").getSubTypesOf(Launcher::class.java).map {
             val clazz = it.kotlin

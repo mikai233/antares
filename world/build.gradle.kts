@@ -12,6 +12,7 @@ dependencies {
     implementation(akka.bundles.common)
     implementation(ktx.core)
     runtimeOnly(ktx.core.jvm)
+    implementation(tool.protobuf.kotlin)
     implementation(project(":common"))
     implementation(project(":shared"))
     implementation(project(":proto"))

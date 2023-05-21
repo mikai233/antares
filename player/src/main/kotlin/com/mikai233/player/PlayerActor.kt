@@ -9,8 +9,8 @@ import com.mikai233.common.core.actor.ActorCoroutine
 import com.mikai233.common.core.actor.safeActorCoroutine
 import com.mikai233.common.ext.actorLogger
 import com.mikai233.common.ext.runnableAdapter
-import com.mikai233.player.component.MessageDispatchers
-import com.mikai233.player.component.ScriptSupport
+import com.mikai233.player.component.PlayerActorDispatchers
+import com.mikai233.player.component.PlayerScriptSupport
 import com.mikai233.shared.message.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -26,9 +26,9 @@ class PlayerActor(
     private val runnableAdapter = runnableAdapter { PlayerRunnable(it::run) }
     private val coroutine = ActorCoroutine(runnableAdapter.safeActorCoroutine())
     private var channelActor: ActorRef<SerdeChannelMessage>? = null
-    private val protobufDispatcher = playerNode.server.component<MessageDispatchers>().protobufDispatcher
-    private val internalDispatcher = playerNode.server.component<MessageDispatchers>().internalDispatcher
-    private val localScriptActor = playerNode.server.component<ScriptSupport>().localScriptActor
+    private val protobufDispatcher = playerNode.server.component<PlayerActorDispatchers>().protobufDispatcher
+    private val internalDispatcher = playerNode.server.component<PlayerActorDispatchers>().internalDispatcher
+    private val localScriptActor = playerNode.server.component<PlayerScriptSupport>().localScriptActor
     lateinit var timerScheduler: TimerScheduler<PlayerMessage>
         private set
 

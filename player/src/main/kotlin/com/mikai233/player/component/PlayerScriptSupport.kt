@@ -10,7 +10,7 @@ import com.mikai233.player.SpawnScriptActorReq
 import com.mikai233.player.SpawnScriptActorResp
 import com.mikai233.shared.message.ScriptMessage
 
-class ScriptSupport(private val server: Server) : Component {
+class PlayerScriptSupport(private val server: Server) : Component {
     private lateinit var akkaSystem: AkkaSystem<PlayerSystemMessage>
     lateinit var localScriptActor: ActorRef<ScriptMessage>
         private set
