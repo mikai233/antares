@@ -56,7 +56,7 @@ class WorldSharding(private val worldNode: WorldNode) : Component {
         val system = akka.system
         playerActor = system.startShardingProxy(
             ShardEntityType.PlayerActor.name,
-            Role.World,
+            Role.Player,
             PlayerMessageExtractor(PlayerShardNum)
         )
     }

@@ -42,12 +42,10 @@ class ChannelActor(
 
     init {
         logger.info("{} preStart", context.self)
-        playerActor.tell(
-            shardingEnvelope(
-                112233.toString(),
-                PlayerProtobufEnvelope(loginReq { })
-            )
-        )
+        context.self.tell(ClientMessage(loginReq {
+            account = "mikai233"
+            worldId = 1000
+        }))
     }
 
     override fun createReceive(): Receive<ChannelMessage> {
@@ -111,7 +109,7 @@ class ChannelActor(
         return if (inner is LoginReq && state == State.Connected) {
             state = State.WaitForAuth
             worldId = inner.worldId
-            tellWorld(worldId, WorldProtobufEnvelope(inner))
+            tellWorld(worldId, PlayerLogin(inner, context.self.narrow()))
             waitForAuthResult()
         } else {
             logger.warn("unexpected protobuf message:{} at state:{}", protobufPrinter.print(inner), state)

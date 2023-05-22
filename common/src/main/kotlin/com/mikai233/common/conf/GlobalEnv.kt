@@ -8,6 +8,7 @@ object GlobalEnv {
 
     //    val machineIp: String = getenv("MACHINE_IP") ?: getMachineIp()
     val machineIp: String = "127.0.0.1"
+    val serverMode = ServerMode.DevMode
 
     const val loginPort = 6666
 }

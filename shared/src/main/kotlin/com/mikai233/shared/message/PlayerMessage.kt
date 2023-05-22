@@ -20,3 +20,5 @@ object PlayerInitDone : PlayerMessage
 data class ExecutePlayerScript(val script: ActorScriptFunction<in AbstractBehavior<*>>) : PlayerMessage
 
 data class PlayerProtobufEnvelope(val inner: GeneratedMessageV3) : BusinessPlayerMessage
+
+data class WHPlayerLogin(val account: String, val playerId: Long, val worldId: Long) : BusinessPlayerMessage

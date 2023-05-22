@@ -4,7 +4,7 @@ import com.mikai233.common.annotation.AllOpen
 import com.mikai233.common.ext.logger
 import com.mikai233.common.msg.MessageHandler
 import com.mikai233.player.PlayerActor
-import com.mikai233.protocol.ProtoLogin.LoginReq
+import com.mikai233.shared.message.WHPlayerLogin
 
 /**
  * @author mikai233
@@ -14,7 +14,7 @@ import com.mikai233.protocol.ProtoLogin.LoginReq
 @AllOpen
 class LoginHandler : MessageHandler {
     private val logger = logger()
-    fun handleLoginReq(player: PlayerActor, req: LoginReq) {
-        logger.info("{}", req)
+    fun handleWHPlayerLogin(player: PlayerActor, playerLogin: WHPlayerLogin) {
+        logger.info("{}", playerLogin)
     }
 }

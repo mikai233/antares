@@ -1,6 +1,8 @@
 package com.mikai233.common.ext
 
 import com.google.protobuf.util.JsonFormat
+import com.mikai233.common.conf.GlobalEnv
+import com.mikai233.common.conf.ServerMode
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.CuratorFrameworkFactory
 import org.apache.curator.retry.ExponentialBackoffRetry
@@ -53,3 +55,9 @@ fun protobufJsonPrinter(): JsonFormat.Printer =
     JsonFormat.printer().omittingInsignificantWhitespace().includingDefaultValueFields()
 
 fun unixTimestamp() = System.currentTimeMillis()
+
+fun invokeOnTargetMode(modes: Set<ServerMode>, block: () -> Unit) {
+    if (modes.contains(GlobalEnv.serverMode)) {
+        block.invoke()
+    }
+}

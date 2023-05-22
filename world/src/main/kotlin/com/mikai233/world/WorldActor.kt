@@ -9,6 +9,7 @@ import com.mikai233.common.ext.actorLogger
 import com.mikai233.common.ext.runnableAdapter
 import com.mikai233.shared.message.*
 import com.mikai233.world.component.WorldActorMessageDispatchers
+import com.mikai233.world.component.WorldSharding
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
@@ -25,6 +26,9 @@ class WorldActor(
     private val coroutine = ActorCoroutine(runnableAdapter.safeActorCoroutine())
     private val protobufDispatcher = worldNode.server.component<WorldActorMessageDispatchers>().protobufDispatcher
     private val internalDispatcher = worldNode.server.component<WorldActorMessageDispatchers>().internalDispatcher
+    val playerActor = worldNode.server.component<WorldSharding>().playerActor
+    val worldActor = worldNode.server.component<WorldSharding>().worldActor
+    val sessionManager = WorldSessionManager(this)
 
     init {
         logger.info("worldId:{} preStart", worldId)
@@ -117,7 +121,7 @@ class WorldActor(
 
                 WakeupGameWorld,
                 WorldInitDone,
-                is WorldProtobufEnvelope -> Unit
+                is BusinessWorldMessage -> Unit
             }
             Behaviors.same()
         }.build()

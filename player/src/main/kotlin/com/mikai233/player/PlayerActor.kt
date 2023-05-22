@@ -132,7 +132,6 @@ class PlayerActor(
                 }
 
                 PlayerInitDone,
-                is PlayerProtobufEnvelope,
                 is BusinessPlayerMessage -> Unit
 
                 StopPlayer -> return@onMessage Behaviors.stopped()
