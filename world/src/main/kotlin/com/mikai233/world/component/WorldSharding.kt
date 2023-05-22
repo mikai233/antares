@@ -43,7 +43,9 @@ class WorldSharding(private val worldNode: WorldNode) : Component {
         ) { entityCtx ->
             val behavior = Behaviors.setup<WorldMessage> { ctx ->
                 Behaviors.withStash(100) { buffer ->
-                    WorldActor(ctx, buffer, entityCtx.entityId.toLong(), worldNode)
+                    Behaviors.withTimers { timers ->
+                        WorldActor(ctx, buffer, timers, entityCtx.entityId.toLong(), worldNode)
+                    }
                 }
             }
             Behaviors.supervise(behavior).onFailure(SupervisorStrategy.resume())

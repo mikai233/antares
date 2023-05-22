@@ -13,6 +13,11 @@ data class ChannelRunnable(private val block: () -> Unit) : Runnable, ChannelMes
 
 data class ClientMessage(val inner: GeneratedMessageV3) : ChannelMessage
 
-data class GracefulShutdown(val reason: String) : ChannelMessage
+data class StopChannel(val reason: StopReason) : ChannelMessage
 
-data class Test(val name: String) : SerdeChannelMessage
+enum class StopReason {
+    ChannelInactive,
+    UnexpectedMessage,
+}
+
+data class ChannelExpired(val reason: Int) : SerdeChannelMessage

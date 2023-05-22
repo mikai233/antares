@@ -47,7 +47,6 @@ class ScriptProxyActor(context: ActorContext<ScriptProxyMessage>, private val gm
                 is ServiceList -> handleServiceList(message)
                 is ScriptRunnable -> message.run()
                 is DispatchScript -> handleDispatchScript(message)
-                is ExecuteScriptResult -> return@onMessage Behaviors.unhandled()
             }
             Behaviors.same()
         }.build()

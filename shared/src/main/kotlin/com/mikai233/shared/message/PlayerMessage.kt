@@ -1,6 +1,5 @@
 package com.mikai233.shared.message
 
-import akka.actor.typed.ActorRef
 import akka.actor.typed.javadsl.AbstractBehavior
 import com.google.protobuf.GeneratedMessageV3
 import com.mikai233.shared.script.ActorScriptFunction
@@ -20,5 +19,4 @@ object PlayerInitDone : PlayerMessage
 
 data class ExecutePlayerScript(val script: ActorScriptFunction<in AbstractBehavior<*>>) : PlayerMessage
 
-data class PlayerProtobufEnvelope(val inner: GeneratedMessageV3, val channelActor: ActorRef<SerdeChannelMessage>) :
-    BusinessPlayerMessage
+data class PlayerProtobufEnvelope(val inner: GeneratedMessageV3) : BusinessPlayerMessage

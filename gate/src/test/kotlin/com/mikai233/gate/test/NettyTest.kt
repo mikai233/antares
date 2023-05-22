@@ -22,7 +22,6 @@ import io.netty.channel.socket.nio.NioSocketChannel
 import io.netty.handler.logging.LogLevel
 import io.netty.handler.logging.LoggingHandler
 import org.junit.jupiter.api.Test
-import kotlin.random.Random
 
 class NettyTest {
     class FakeClientChannelHandler() : ChannelInboundHandlerAdapter() {
@@ -62,7 +61,7 @@ class NettyTest {
         val serverChannel = server.bind(6789).sync().channel()
         val clientChannel = client.connect("localhost", 6789).sync()
         repeat(10000) {
-            clientChannel.channel().writeAndFlush(loginReq { id = Random.nextInt() })
+            clientChannel.channel().writeAndFlush(loginReq { })
         }
 //        serverChannel.closeFuture().sync()
     }
@@ -114,6 +113,6 @@ class NettyTest {
     fun testClient() {
         val client = clientBootstrap()
         val channel = client.connect("localhost", 6666).sync().channel()
-        channel.writeAndFlush(loginReq { id = 2233 })
+        channel.writeAndFlush(loginReq { })
     }
 }

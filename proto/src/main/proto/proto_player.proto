@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package com.mikai233.protocol;
+
+message PlayerData{
+  int64 player_id = 1;
+  string nickname = 2;
+}

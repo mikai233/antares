@@ -23,7 +23,7 @@ dependencies {
     implementation(tool.protobuf.java.util)
     implementation(tool.bcprov)
     implementation(tool.kryo)
-    implementation(tool.groovy)
+    implementation(tool.groovy.all)
 }
 
 tasks.test {

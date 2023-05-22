@@ -18,6 +18,7 @@ import com.mikai233.gate.component.ScriptSupport
 import com.mikai233.gate.server.NettyServer
 import com.mikai233.protocol.MsgCs
 import com.mikai233.protocol.MsgSc
+import com.mikai233.shared.message.ChannelMessage
 import com.mikai233.shared.script.ScriptActor
 import com.mikai233.shared.scriptActorServiceKey
 
@@ -41,7 +42,13 @@ class GateNode(private val port: Int = 2334, private val sameJvm: Boolean = fals
         }
 
         private fun handleSpawnChannelActorReq(message: SpawnChannelActorReq) {
-            val behavior = Behaviors.setup { ChannelActor(it, message.ctx, this@GateNode) }
+            val behavior = Behaviors.setup<ChannelMessage> {
+                Behaviors.withTimers { timers ->
+                    Behaviors.withStash(100) { buffer ->
+                        ChannelActor(it, message.ctx, timers, buffer, this@GateNode)
+                    }
+                }
+            }
             val actorRef = context.spawnAnonymous(Behaviors.supervise(behavior).onFailure(SupervisorStrategy.resume()))
             logger.debug("spawn channel actor:{}", message.ctx.name())
             message.replyTo.tell(SpawnChannelActorResp(actorRef))
@@ -86,6 +93,8 @@ class GateNode(private val port: Int = 2334, private val sameJvm: Boolean = fals
     fun system() = server.component<AkkaSystem<GateSystemMessage>>().system
 
     fun playerActor() = server.component<GateSharding>().playerActor
+
+    fun worldActor() = server.component<GateSharding>().worldActor
 
     override fun launch() {
         server.state = State.Initializing

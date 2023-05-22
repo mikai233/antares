@@ -1,19 +1,19 @@
 package com.mikai233.shared.serde
 
 import akka.serialization.JSerializer
-import com.mikai233.shared.message.PlayerProtobufEnvelope
+import com.mikai233.shared.message.WorldProtobufEnvelope
 
-class PlayerProtobufSerializer : JSerializer() {
+class WorldProtobufSerializer : JSerializer() {
     override fun fromBinaryJava(bytes: ByteArray, manifest: Class<*>?): Any {
-        return PlayerProtobufEnvelope(packetToProtoMsg(bytes, true))
+        return WorldProtobufEnvelope(packetToProtoMsg(bytes, true))
     }
 
     override fun identifier(): Int {
-        return 247510507
+        return 476961363
     }
 
     override fun toBinary(o: Any): ByteArray {
-        o as PlayerProtobufEnvelope
+        o as WorldProtobufEnvelope
         return protoMsgToPacket(o.inner, true)
     }
 

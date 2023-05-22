@@ -11,9 +11,6 @@ sealed interface ScriptProxyMessage : Message
 
 sealed interface SerdeScriptProxyMessage : ScriptProxyMessage, SerdeMessage
 
-@AllOpen
-sealed class ExecuteScriptResult(val success: Boolean, val throwable: Throwable?) : SerdeScriptProxyMessage
-
 data class ServiceList(val inner: Receptionist.Listing) : ScriptProxyMessage
 
 data class ScriptRunnable(private val block: () -> Unit) : Runnable, ScriptProxyMessage {

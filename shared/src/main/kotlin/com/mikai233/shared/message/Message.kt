@@ -17,6 +17,8 @@ sealed interface WorldMessage : Message
 
 sealed interface SerdeWorldMessage : WorldMessage, SerdeMessage
 
+sealed interface BusinessWorldMessage : SerdeWorldMessage
+
 sealed interface ScriptMessage : Message
 
 sealed interface SerdeScriptMessage : ScriptMessage, SerdeMessage

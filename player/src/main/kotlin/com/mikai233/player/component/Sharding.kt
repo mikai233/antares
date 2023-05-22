@@ -38,7 +38,9 @@ class Sharding(private val playerNode: PlayerNode) : Component {
         ) { entityCtx ->
             val behavior = Behaviors.setup<PlayerMessage> { ctx ->
                 Behaviors.withStash(100) { buffer ->
-                    PlayerActor(ctx, buffer, entityCtx.entityId.toLong(), playerNode)
+                    Behaviors.withTimers { timers ->
+                        PlayerActor(ctx, buffer, timers, entityCtx.entityId.toLong(), playerNode)
+                    }
                 }
             }
             Behaviors.supervise(behavior).onFailure(SupervisorStrategy.resume())

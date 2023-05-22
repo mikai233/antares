@@ -2,14 +2,22 @@ syntax = "proto3";
 
 package com.mikai233.protocol;
 
+import "proto_player.proto";
+
 message LoginReq{
-  int32 id = 1;
+  string account = 1;
+  int64 world_id = 2;
 }
 
 message LoginResp{
-
+  LoginResult result = 1;
+  PlayerData player_data = 2;
 }
 
-message AB{
-
+enum LoginResult{
+  Success = 0;
+  RegisterLimit = 1;
+  WorldNotExists = 2;
+  WorldClosed = 3;
+  AccountBan = 4;
 }

@@ -10,7 +10,7 @@ dependencies {
     implementation(kt.reflect)
     implementation(akka.bundles.common)
     implementation(tool.caffeine)
-    implementation(tool.groovy)
+    implementation(tool.groovy.all)
     implementation(project(":common"))
     implementation(project(":proto"))
 }

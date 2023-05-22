@@ -2,6 +2,7 @@ package com.mikai233.player
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.actor.typed.PostStop
 import akka.actor.typed.Terminated
 import akka.actor.typed.javadsl.*
 import com.google.protobuf.GeneratedMessageV3
@@ -18,6 +19,7 @@ import kotlinx.coroutines.delay
 class PlayerActor(
     context: ActorContext<PlayerMessage>,
     private val buffer: StashBuffer<PlayerMessage>,
+    val timers: TimerScheduler<PlayerMessage>,
     val playerId: Long,
     val playerNode: PlayerNode
 ) :
@@ -29,8 +31,6 @@ class PlayerActor(
     private val protobufDispatcher = playerNode.server.component<PlayerActorDispatchers>().protobufDispatcher
     private val internalDispatcher = playerNode.server.component<PlayerActorDispatchers>().internalDispatcher
     private val localScriptActor = playerNode.server.component<PlayerScriptSupport>().localScriptActor
-    lateinit var timerScheduler: TimerScheduler<PlayerMessage>
-        private set
 
     init {
         logger.info("{} preStart", playerId)
@@ -73,51 +73,49 @@ class PlayerActor(
     }
 
     private fun active(): Behavior<PlayerMessage> {
-        return Behaviors.withTimers { timers ->
-            timerScheduler = timers
-            newReceiveBuilder().onMessage(PlayerMessage::class.java) { message ->
-                when (message) {
-                    is PlayerProtobufEnvelope -> handlePlayerProtobufEnvelope(message)
-
-                    is PlayerRunnable -> {
-                        message.run()
-                    }
-
-                    PlayerInitDone -> return@onMessage Behaviors.ignore()
-                    StopPlayer -> {
-                        coroutine.cancelAll("StopPlayer")
-                        coroutine.launch {
-                            logger.info("pretend stopping operation")
-                            delay(2000)
-                            context.self.tell(StopPlayer)
-                        }
-                        return@onMessage stopping()
-                    }
-
-                    is ExecutePlayerScript -> {
-                        message.script.invoke(this)
-                    }
-
-                    is PlayerScript -> {
-                        compilePlayerScript(message)
-                    }
-
-                    is BusinessPlayerMessage -> handleBusinessPlayerMessage(message)
+        return newReceiveBuilder().onMessage(PlayerMessage::class.java) { message ->
+            when (message) {
+                is PlayerProtobufEnvelope -> {
+                    handlePlayerProtobufEnvelope(message)
                 }
-                Behaviors.same()
-            }.onSignal(Terminated::class.java) { terminated ->
-                val who = terminated.ref
-                if (who == channelActor) {
-                    channelActor = null
-                    logger.info("player:{} channel actor:{} terminated", playerId, who)
+
+                is PlayerRunnable -> {
+                    message.run()
                 }
-                Behaviors.same()
-            }.build()
-        }
+
+                PlayerInitDone -> Unit
+                StopPlayer -> {
+                    coroutine.cancelAll("StopPlayer")
+                    coroutine.launch {
+                        logger.info("pretend stopping operation")
+                        delay(2000)
+                        context.self.tell(StopPlayer)
+                    }
+                    return@onMessage stopping()
+                }
+
+                is ExecutePlayerScript -> {
+                    message.script.invoke(this)
+                }
+
+                is PlayerScript -> {
+                    compilePlayerScript(message)
+                }
+
+                is BusinessPlayerMessage -> handleBusinessPlayerMessage(message)
+            }
+            Behaviors.same()
+        }.onSignal(Terminated::class.java) { terminated ->
+            val who = terminated.ref
+            if (who == channelActor) {
+                channelActor = null
+                logger.info("player:{} channel actor:{} terminated", playerId, who)
+            }
+            Behaviors.same()
+        }.build()
     }
 
     private fun handlePlayerProtobufEnvelope(message: PlayerProtobufEnvelope) {
-        bindChannelActor(message.channelActor)
         val inner = message.inner
         protobufDispatcher.dispatch(inner::class, this, inner)
     }
@@ -135,7 +133,7 @@ class PlayerActor(
 
                 PlayerInitDone,
                 is PlayerProtobufEnvelope,
-                is BusinessPlayerMessage -> return@onMessage Behaviors.ignore()
+                is BusinessPlayerMessage -> Unit
 
                 StopPlayer -> return@onMessage Behaviors.stopped()
                 is ExecutePlayerScript -> {
@@ -146,6 +144,9 @@ class PlayerActor(
                     compilePlayerScript(message)
                 }
             }
+            Behaviors.same()
+        }.onSignal(PostStop::class.java) { message ->
+            logger.info("player:{} {}", playerId, message)
             Behaviors.same()
         }.build()
     }

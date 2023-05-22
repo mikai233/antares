@@ -4,7 +4,7 @@ import com.mikai233.common.core.component.Role
 
 const val ROOT = "/antares"
 const val NETTY_PATH = "$ROOT/netty"
-const val GAME_WORLD = "$ROOT/game_world"
+const val GAME_WORLD = "$ROOT/game_worlds"
 
 fun serverHostsPath() = ServerHosts.PATH
 
