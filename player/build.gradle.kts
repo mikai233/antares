@@ -15,6 +15,7 @@ dependencies {
     runtimeOnly(ktx.core.jvm)
     implementation(tool.protobuf.kotlin)
     implementation(tool.groovy.all)
+    implementation(tool.bundles.koin)
     implementation(project(":common"))
     implementation(project(":shared"))
     implementation(project(":proto"))

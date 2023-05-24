@@ -12,7 +12,6 @@ fun nextPort() = PORT_ALLOC++
 
 fun main() {
     val configCenter = ZookeeperConfigCenter()
-    configCenter.init()
     with(configCenter) {
         createServerHosts("stardust")
         createNettyConfig()

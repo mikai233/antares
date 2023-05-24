@@ -6,7 +6,10 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import com.mikai233.common.core.Server
 import com.mikai233.common.core.State
+import com.mikai233.common.inject.XKoin
 import com.mikai233.common.msg.Message
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 import java.util.function.Supplier
@@ -31,13 +34,14 @@ enum class ShardEntityType {
 
 interface GuardianMessage : Message
 
-open class AkkaSystem<T : GuardianMessage>(private val server: Server, private val behavior: Behavior<T>) : Component {
+open class AkkaSystem<T : GuardianMessage>(private val koin: XKoin, private val behavior: Behavior<T>) :
+    KoinComponent by koin {
     lateinit var system: ActorSystem<T>
         private set
-    private lateinit var nodeConfigsComponent: NodeConfigsComponent
+    private val server: Server by inject()
+    private val nodeConfigsComponent: NodeConfigsComponent by inject()
 
-    override fun init() {
-        nodeConfigsComponent = server.component()
+    init {
         startActorSystem()
         afterStartActorSystem()
     }
@@ -75,9 +79,5 @@ open class AkkaSystem<T : GuardianMessage>(private val server: Server, private v
                 Done.done()
             }
         }
-    }
-
-    override fun shutdown() {
-
     }
 }

@@ -7,10 +7,13 @@ import com.mikai233.common.core.actor.ActorCoroutine
 import com.mikai233.common.core.actor.safeActorCoroutine
 import com.mikai233.common.ext.actorLogger
 import com.mikai233.common.ext.runnableAdapter
+import com.mikai233.common.inject.XKoin
 import com.mikai233.shared.message.*
-import com.mikai233.world.component.WorldActorMessageDispatchers
+import com.mikai233.world.component.WorldActorDispatchers
 import com.mikai233.world.component.WorldSharding
 import kotlinx.coroutines.delay
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
@@ -19,15 +22,17 @@ class WorldActor(
     private val buffer: StashBuffer<WorldMessage>,
     val timers: TimerScheduler<WorldMessage>,
     val worldId: Long,
-    val worldNode: WorldNode
-) : AbstractBehavior<WorldMessage>(context) {
+    private val koin: XKoin,
+) : AbstractBehavior<WorldMessage>(context), KoinComponent by koin {
     private val logger = actorLogger()
     private val runnableAdapter = runnableAdapter { WorldRunnable(it::run) }
     private val coroutine = ActorCoroutine(runnableAdapter.safeActorCoroutine())
-    private val protobufDispatcher = worldNode.server.component<WorldActorMessageDispatchers>().protobufDispatcher
-    private val internalDispatcher = worldNode.server.component<WorldActorMessageDispatchers>().internalDispatcher
-    val playerActor = worldNode.server.component<WorldSharding>().playerActor
-    val worldActor = worldNode.server.component<WorldSharding>().worldActor
+    private val dispatcher: WorldActorDispatchers by inject()
+    private val protobufDispatcher = dispatcher.protobufDispatcher
+    private val internalDispatcher = dispatcher.internalDispatcher
+    private val worldSharding by inject<WorldSharding>()
+    val playerActor = worldSharding.playerActor
+    val worldActor = worldSharding.worldActor
     val sessionManager = WorldSessionManager(this)
 
     init {

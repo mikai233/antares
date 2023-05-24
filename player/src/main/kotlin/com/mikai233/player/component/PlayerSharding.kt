@@ -5,31 +5,30 @@ import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.javadsl.Behaviors
 import akka.cluster.sharding.typed.ShardingEnvelope
 import com.mikai233.common.core.component.AkkaSystem
-import com.mikai233.common.core.component.Component
 import com.mikai233.common.core.component.Role
 import com.mikai233.common.core.component.ShardEntityType
 import com.mikai233.common.ext.startSharding
+import com.mikai233.common.inject.XKoin
 import com.mikai233.player.PlayerActor
-import com.mikai233.player.PlayerNode
 import com.mikai233.player.PlayerSystemMessage
 import com.mikai233.shared.PlayerShardNum
 import com.mikai233.shared.message.*
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
-class Sharding(private val playerNode: PlayerNode) : Component {
-    private lateinit var akka: AkkaSystem<PlayerSystemMessage>
-    private val server = playerNode.server
+class PlayerSharding(private val koin: XKoin) : KoinComponent by koin {
+    private val akkaSystem: AkkaSystem<PlayerSystemMessage> by inject()
     lateinit var playerActor: ActorRef<ShardingEnvelope<SerdePlayerMessage>>
         private set
     lateinit var worldActor: ActorRef<ShardingEnvelope<SerdeWorldMessage>>
         private set
 
-    override fun init() {
-        akka = server.component()
+    init {
         startSharding()
     }
 
     private fun startSharding() {
-        val system = akka.system
+        val system = akkaSystem.system
         playerActor = system.startSharding(
             ShardEntityType.PlayerActor.name,
             Role.Player,
@@ -39,7 +38,7 @@ class Sharding(private val playerNode: PlayerNode) : Component {
             val behavior = Behaviors.setup<PlayerMessage> { ctx ->
                 Behaviors.withStash(100) { buffer ->
                     Behaviors.withTimers { timers ->
-                        PlayerActor(ctx, buffer, timers, entityCtx.entityId.toLong(), playerNode)
+                        PlayerActor(ctx, buffer, timers, entityCtx.entityId.toLong(), koin)
                     }
                 }
             }

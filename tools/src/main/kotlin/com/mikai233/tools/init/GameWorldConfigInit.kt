@@ -12,7 +12,6 @@ import com.mikai233.common.core.component.config.WorldData
  */
 fun main() {
     val configCenter = ZookeeperConfigCenter()
-    configCenter.init()
     with(configCenter) {
         createGameWorld()
     }

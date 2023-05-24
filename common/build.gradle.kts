@@ -24,6 +24,7 @@ dependencies {
     implementation(tool.bcprov)
     implementation(tool.kryo)
     implementation(tool.groovy.all)
+    implementation(tool.bundles.koin)
 }
 
 tasks.test {

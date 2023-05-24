@@ -11,12 +11,22 @@ import org.apache.curator.framework.recipes.cache.CuratorCacheListener
 import org.apache.curator.retry.ExponentialBackoffRetry
 import org.apache.curator.x.async.AsyncCuratorFramework
 
-
-class ZookeeperConfigCenter(private val connectionString: String = "localhost:2181") : Component,
-    ConfigCenter {
-    private lateinit var client: CuratorFramework
-    private lateinit var asyncClient: AsyncCuratorFramework
+class ZookeeperConfigCenter(connectionString: String = "localhost:2181") : ConfigCenter, AutoCloseable {
+    private val client: CuratorFramework
+    private val asyncClient: AsyncCuratorFramework
     private val cacheMap: HashMap<String, CuratorCache> = hashMapOf()
+
+    init {
+        val retryPolicy = ExponentialBackoffRetry(1000, 3)
+        client = CuratorFrameworkFactory.builder()
+            .connectString(connectionString)
+            .sessionTimeoutMs(5000)
+            .connectionTimeoutMs(5000)
+            .retryPolicy(retryPolicy)
+            .build()
+        client.start()
+        asyncClient = AsyncCuratorFramework.wrap(client)
+    }
 
     override fun addConfig(config: Config) {
         val path = config.path()
@@ -62,22 +72,12 @@ class ZookeeperConfigCenter(private val connectionString: String = "localhost:21
         return client.checkExists().forPath(path) != null
     }
 
-    override fun init() {
-        val retryPolicy = ExponentialBackoffRetry(1000, 3)
-        client = CuratorFrameworkFactory.builder()
-            .connectString(connectionString)
-            .sessionTimeoutMs(5000)
-            .connectionTimeoutMs(5000)
-            .retryPolicy(retryPolicy)
-            .build()
-        client.start()
-        asyncClient = AsyncCuratorFramework.wrap(client)
+    override fun close() {
+        TODO("Not yet implemented")
     }
 
-    override fun shutdown() {
-        cacheMap.values.forEach(CuratorCache::close)
-        if (this::client.isInitialized) {
-            client.close()
-        }
-    }
+    //    override fun shutdown() {
+//        cacheMap.values.forEach(CuratorCache::close)
+//        client.close()
+//    }
 }

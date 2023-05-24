@@ -10,27 +10,31 @@ import com.mikai233.common.core.actor.ActorCoroutine
 import com.mikai233.common.core.actor.safeActorCoroutine
 import com.mikai233.common.ext.actorLogger
 import com.mikai233.common.ext.runnableAdapter
+import com.mikai233.common.inject.XKoin
 import com.mikai233.player.component.PlayerActorDispatchers
 import com.mikai233.player.component.PlayerScriptSupport
 import com.mikai233.shared.message.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
 class PlayerActor(
     context: ActorContext<PlayerMessage>,
     private val buffer: StashBuffer<PlayerMessage>,
     val timers: TimerScheduler<PlayerMessage>,
     val playerId: Long,
-    val playerNode: PlayerNode
-) :
-    AbstractBehavior<PlayerMessage>(context) {
+    private val koin: XKoin,
+) : AbstractBehavior<PlayerMessage>(context), KoinComponent by koin {
     private val logger = actorLogger()
     private val runnableAdapter = runnableAdapter { PlayerRunnable(it::run) }
     private val coroutine = ActorCoroutine(runnableAdapter.safeActorCoroutine())
     private var channelActor: ActorRef<SerdeChannelMessage>? = null
-    private val protobufDispatcher = playerNode.server.component<PlayerActorDispatchers>().protobufDispatcher
-    private val internalDispatcher = playerNode.server.component<PlayerActorDispatchers>().internalDispatcher
-    private val localScriptActor = playerNode.server.component<PlayerScriptSupport>().localScriptActor
+    private val dispatcher by inject<PlayerActorDispatchers>()
+    private val protobufDispatcher = dispatcher.protobufDispatcher
+    private val internalDispatcher = dispatcher.internalDispatcher
+    private val playerScriptSupport by inject<PlayerScriptSupport>()
+    private val localScriptActor = playerScriptSupport.localScriptActor
 
     init {
         logger.info("{} preStart", playerId)

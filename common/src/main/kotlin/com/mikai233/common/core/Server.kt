@@ -2,6 +2,8 @@ package com.mikai233.common.core
 
 import com.mikai233.common.core.component.Component
 import com.mikai233.common.ext.logger
+import com.mikai233.common.inject.XKoin
+import org.koin.core.component.KoinComponent
 import java.util.*
 import kotlin.reflect.KClass
 
@@ -10,7 +12,7 @@ import kotlin.reflect.KClass
  * @email dreamfever2017@yahoo.com
  * @date 2023/5/9
  */
-open class Server {
+open class Server(val koin: XKoin) : KoinComponent by koin {
     private val logger = logger()
 
     @Volatile
@@ -49,10 +51,10 @@ open class Server {
     }
 
     fun initComponents() {
-        componentsOrder.mapNotNull(components::get).forEach(Component::init)
+        getKoin().getAll<Component>().forEach(Component::init)
     }
 
     fun shutdownComponents() {
-        componentsOrder.reversed().mapNotNull(components::get).forEach(Component::shutdown)
+        getKoin().getAll<Component>().reversed().forEach(Component::shutdown)
     }
 }

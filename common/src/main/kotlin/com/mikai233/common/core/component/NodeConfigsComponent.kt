@@ -1,11 +1,13 @@
 package com.mikai233.common.core.component
 
 import com.mikai233.common.conf.GlobalEnv
-import com.mikai233.common.core.Server
 import com.mikai233.common.core.component.config.*
 import com.mikai233.common.ext.logger
+import com.mikai233.common.inject.XKoin
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
 /**
  * @author mikai233
@@ -13,20 +15,19 @@ import com.typesafe.config.ConfigFactory
  * @date 2023/5/11
  */
 class NodeConfigsComponent(
-    private val server: Server,
+    private val koin: XKoin,
     private val role: Role,
     private val port: Int,
-    private val sameJvm: Boolean
-) : Component {
+    private val sameJvm: Boolean,
+) : KoinComponent by koin {
     private val logger = logger()
-    private lateinit var configCenter: ZookeeperConfigCenter
+    private val configCenter: ZookeeperConfigCenter by inject()
     lateinit var selfNode: Node
         private set
     lateinit var akkaSystemName: String
         private set
 
-    override fun init() {
-        configCenter = server.component()
+    init {
         initSelfNode()
         initSysName()
     }

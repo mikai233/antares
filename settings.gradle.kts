@@ -87,6 +87,10 @@ dependencyResolutionManagement {
             library("groovy", "org.apache.groovy:groovy:4.0.12")
             library("groovy.all", "org.apache.groovy:groovy-all:4.0.12")
             plugin("dokka", "org.jetbrains.dokka").version("1.8.10")
+            library("kotlinpoet", "com.squareup:kotlinpoet:1.13.2")
+            library("koin", "io.insert-koin:koin-core-jvm:3.4.0")
+            library("koin.slf4j", "io.insert-koin:koin-logger-slf4j:3.4.0")
+            bundle("koin", listOf("koin", "koin.slf4j"))
         }
         create("test") {
             library("junit.bom", "org.junit:junit-bom:$junitVersion")

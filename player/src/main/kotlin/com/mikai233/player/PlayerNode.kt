@@ -16,16 +16,22 @@ import com.mikai233.common.core.component.Role
 import com.mikai233.common.core.component.ZookeeperConfigCenter
 import com.mikai233.common.ext.actorLogger
 import com.mikai233.common.ext.registerService
+import com.mikai233.common.inject.XKoin
 import com.mikai233.player.component.PlayerActorDispatchers
 import com.mikai233.player.component.PlayerScriptSupport
-import com.mikai233.player.component.Sharding
+import com.mikai233.player.component.PlayerSharding
 import com.mikai233.protocol.MsgCs
 import com.mikai233.protocol.MsgSc
 import com.mikai233.shared.script.ScriptActor
 import com.mikai233.shared.scriptActorServiceKey
+import org.koin.core.component.get
+import org.koin.dsl.koinApplication
+import org.koin.dsl.module
+import org.koin.logger.slf4jLogger
 
 class PlayerNode(private val port: Int = 2337, private val sameJvm: Boolean = false) : Launcher {
-    val server: Server = Server()
+    lateinit var koin: XKoin
+        private set
 
     inner class PlayerNodeGuardian(context: ActorContext<PlayerSystemMessage>) :
         AbstractBehavior<PlayerSystemMessage>(context) {
@@ -52,36 +58,33 @@ class PlayerNode(private val port: Int = 2337, private val sameJvm: Boolean = fa
 
     init {
         GlobalProto.init(MsgCs.MessageClientToServer.getDescriptor(), MsgSc.MessageServerToClient.getDescriptor())
-        server.components {
-            component {
-                PlayerActorDispatchers()
-            }
-            component {
-                ZookeeperConfigCenter()
-            }
-            component {
-                NodeConfigsComponent(this, Role.Player, port, sameJvm)
-            }
-            component {
-                AkkaSystem(this, Behaviors.supervise(Behaviors.setup {
-                    PlayerNodeGuardian(it)
-                }).onFailure(SupervisorStrategy.resume()))
-            }
-            component {
-                Sharding(this@PlayerNode)
-            }
-            component {
-                PlayerScriptSupport(this)
-            }
+        koinApplication {
+            this@PlayerNode.koin = XKoin(this)
+            slf4jLogger()
+            modules(serverModule())
         }
     }
 
-    fun playerActor() = server.component<Sharding>().playerActor
-
     override fun launch() {
+        val server = koin.get<Server>()
         server.state = State.Initializing
         server.initComponents()
         server.state = State.Running
+    }
+
+    private fun serverModule() = module(createdAtStart = true) {
+        single { this@PlayerNode }
+        single { Server(koin) }
+        single { PlayerActorDispatchers(koin) }
+        single { ZookeeperConfigCenter() }
+        single { NodeConfigsComponent(koin, Role.Player, port, sameJvm) }
+        single {
+            AkkaSystem(koin, Behaviors.supervise(Behaviors.setup {
+                PlayerNodeGuardian(it)
+            }).onFailure(SupervisorStrategy.resume()))
+        }
+        single { PlayerSharding(koin) }
+        single { PlayerScriptSupport(koin) }
     }
 }
 

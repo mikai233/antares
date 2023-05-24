@@ -12,6 +12,7 @@ dependencies {
     implementation(tool.reflections)
     implementation(kt.reflect)
     implementation(tool.bundles.curator)
+    implementation(tool.bundles.koin)
     implementation(project(":common"))
     implementation(project(":gate"))
     implementation(project(":player"))

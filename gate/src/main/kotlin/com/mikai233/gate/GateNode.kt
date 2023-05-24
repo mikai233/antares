@@ -13,6 +13,7 @@ import com.mikai233.common.core.State
 import com.mikai233.common.core.component.*
 import com.mikai233.common.ext.actorLogger
 import com.mikai233.common.ext.registerService
+import com.mikai233.common.inject.XKoin
 import com.mikai233.gate.component.GateSharding
 import com.mikai233.gate.component.ScriptSupport
 import com.mikai233.gate.server.NettyServer
@@ -21,10 +22,16 @@ import com.mikai233.protocol.MsgSc
 import com.mikai233.shared.message.ChannelMessage
 import com.mikai233.shared.script.ScriptActor
 import com.mikai233.shared.scriptActorServiceKey
+import org.koin.core.component.get
+import org.koin.dsl.koinApplication
+import org.koin.dsl.module
+import org.koin.dsl.onClose
+import org.koin.logger.slf4jLogger
 
 
 class GateNode(private val port: Int = 2334, private val sameJvm: Boolean = false) : Launcher {
-    val server: Server = Server()
+    lateinit var koin: XKoin
+        private set
 
     inner class GateNodeGuardian(context: ActorContext<GateSystemMessage>) :
         AbstractBehavior<GateSystemMessage>(context) {
@@ -45,7 +52,7 @@ class GateNode(private val port: Int = 2334, private val sameJvm: Boolean = fals
             val behavior = Behaviors.setup<ChannelMessage> {
                 Behaviors.withTimers { timers ->
                     Behaviors.withStash(100) { buffer ->
-                        ChannelActor(it, message.ctx, timers, buffer, this@GateNode)
+                        ChannelActor(it, message.ctx, timers, buffer, koin)
                     }
                 }
             }
@@ -63,43 +70,36 @@ class GateNode(private val port: Int = 2334, private val sameJvm: Boolean = fals
 
     init {
         GlobalProto.init(MsgCs.MessageClientToServer.getDescriptor(), MsgSc.MessageServerToClient.getDescriptor())
-        server.components {
-            component {
-                ZookeeperConfigCenter()
-            }
-            component {
-                NodeConfigsComponent(this, Role.Gate, port, sameJvm)
-            }
-            component {
-                AkkaSystem(this, Behaviors.supervise(Behaviors.setup {
-                    GateNodeGuardian(it)
-                }).onFailure(SupervisorStrategy.resume()))
-            }
-            component {
-                NettyConfigComponent(this)
-            }
-            component {
-                NettyServer(this@GateNode)
-            }
-            component {
-                GateSharding(this)
-            }
-            component {
-                ScriptSupport(this)
-            }
-        }
+        XKoin(koinApplication {
+            this@GateNode.koin = XKoin(this)
+            slf4jLogger()
+            modules(serverModule())
+        })
     }
 
-    fun system() = server.component<AkkaSystem<GateSystemMessage>>().system
-
-    fun playerActor() = server.component<GateSharding>().playerActor
-
-    fun worldActor() = server.component<GateSharding>().worldActor
-
     override fun launch() {
+        val server = koin.get<Server>()
         server.state = State.Initializing
         server.initComponents()
         server.state = State.Running
+    }
+
+    private fun serverModule() = module(createdAtStart = true) {
+        single { this@GateNode }
+        single { Server(koin) }
+        single { ZookeeperConfigCenter() } onClose {
+            it?.close()
+        }
+        single { NodeConfigsComponent(koin, Role.Gate, port, sameJvm) }
+        single {
+            AkkaSystem(koin, Behaviors.supervise(Behaviors.setup {
+                GateNodeGuardian(it)
+            }).onFailure(SupervisorStrategy.resume()))
+        }
+        single { NettyConfigComponent(koin) }
+        single { NettyServer(koin) }
+        single { GateSharding(koin) }
+        single { ScriptSupport(koin) }
     }
 }
 

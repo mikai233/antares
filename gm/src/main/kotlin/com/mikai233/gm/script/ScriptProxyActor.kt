@@ -16,20 +16,24 @@ import com.mikai233.common.ext.actorLogger
 import com.mikai233.common.ext.runnableAdapter
 import com.mikai233.common.ext.shardingEnvelope
 import com.mikai233.common.ext.startBroadcastClusterRouterGroup
-import com.mikai233.gm.GmNode
+import com.mikai233.common.inject.XKoin
+import com.mikai233.gm.component.GmSharding
 import com.mikai233.shared.message.*
 import com.mikai233.shared.script.NodeKey
 import com.mikai233.shared.script.ScriptActor
 import com.mikai233.shared.scriptActorServiceKey
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 import java.util.*
 
-class ScriptProxyActor(context: ActorContext<ScriptProxyMessage>, private val gmNode: GmNode) :
-    AbstractBehavior<ScriptProxyMessage>(context) {
+class ScriptProxyActor(context: ActorContext<ScriptProxyMessage>, private val koin: XKoin) :
+    AbstractBehavior<ScriptProxyMessage>(context), KoinComponent by koin {
     private val logger = actorLogger()
     private val runnableAdapter = runnableAdapter { ScriptRunnable(it::run) }
     private val coroutine = ActorCoroutine(runnableAdapter.safeActorCoroutine())
-    private val configCenter = gmNode.server.component<ZookeeperConfigCenter>()
-    private val playerActor = gmNode.playerActor()
+    private val configCenter by inject<ZookeeperConfigCenter>()
+    private val gmSharding by inject<GmSharding>()
+    private val playerActor = gmSharding.playerActor
     private val scriptBroadcastRouter: ActorRef<SerdeScriptMessage>
     private val scriptBroadcastRoleRouter: EnumMap<Role, ActorRef<SerdeScriptMessage>>
     private val scriptTargetNodeRef: MutableMap<NodeKey, ActorRef<SerdeScriptMessage>> = mutableMapOf()

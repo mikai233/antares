@@ -1,6 +1,7 @@
 package com.mikai233.common.ext
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 
 /**
  * @author mikai233
@@ -12,11 +13,11 @@ object Json {
     val mapper = jacksonObjectMapper()
 
     inline fun <reified T> fromJson(content: String): T {
-        return mapper.readValue(content, T::class.java)
+        return mapper.readValue(content)
     }
 
     inline fun <reified T> fromJson(src: ByteArray): T {
-        return mapper.readValue(src, T::class.java)
+        return mapper.readValue(src)
     }
 
     inline fun <reified T> toJsonString(value: T, pretty: Boolean = false): String {

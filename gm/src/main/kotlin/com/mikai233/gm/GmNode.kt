@@ -20,18 +20,24 @@ import com.mikai233.common.core.component.ZookeeperConfigCenter
 import com.mikai233.common.ext.actorLogger
 import com.mikai233.common.ext.registerService
 import com.mikai233.common.ext.startBroadcastClusterRouterGroup
-import com.mikai233.gm.component.ScriptSupport
-import com.mikai233.gm.component.Sharding
+import com.mikai233.common.inject.XKoin
+import com.mikai233.gm.component.GmScriptSupport
+import com.mikai233.gm.component.GmSharding
 import com.mikai233.gm.script.ScriptProxyActor
 import com.mikai233.shared.message.ScriptProxyMessage
 import com.mikai233.shared.message.SerdeScriptMessage
 import com.mikai233.shared.script.ScriptActor
 import com.mikai233.shared.scriptActorServiceKey
+import org.koin.core.component.get
+import org.koin.dsl.koinApplication
+import org.koin.dsl.module
+import org.koin.logger.slf4jLogger
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
 class GmNode(private val port: Int = 2339, private val sameJvm: Boolean = false) : Launcher {
-    val server: Server = Server()
+    lateinit var koin: XKoin
+        private set
 
     inner class GmNodeGuardian(context: ActorContext<GmSystemMessage>) :
         AbstractBehavior<GmSystemMessage>(context) {
@@ -70,7 +76,7 @@ class GmNode(private val port: Int = 2339, private val sameJvm: Boolean = false)
 
         private fun startScriptProxyActor(): ActorRef<ScriptProxyMessage> {
             val singletonSettings = ClusterSingletonSettings.create(context.system).withRole(Role.Gm.name)
-            val behavior = Behaviors.supervise(Behaviors.setup { ScriptProxyActor(it, this@GmNode) }).onFailure(
+            val behavior = Behaviors.supervise(Behaviors.setup { ScriptProxyActor(it, koin) }).onFailure(
                 SupervisorStrategy.restartWithBackoff(
                     1.seconds.toJavaDuration(),
                     10.seconds.toJavaDuration(),
@@ -83,35 +89,32 @@ class GmNode(private val port: Int = 2339, private val sameJvm: Boolean = false)
     }
 
     init {
-        server.components {
-            component {
-                ZookeeperConfigCenter()
-            }
-            component {
-                NodeConfigsComponent(this, Role.Gm, port, sameJvm)
-            }
-            component {
-                AkkaSystem(this, Behaviors.supervise(Behaviors.setup {
-                    GmNodeGuardian(it)
-                }).onFailure(SupervisorStrategy.resume()))
-            }
-            component {
-                Sharding(this)
-            }
-            component {
-                ScriptSupport(this)
-            }
+        koinApplication {
+            this@GmNode.koin = XKoin(this)
+            slf4jLogger()
+            modules(serverModule())
         }
     }
 
-    fun system() = server.component<AkkaSystem<GmSystemMessage>>().system
-
-    fun playerActor() = server.component<Sharding>().playerActor
-
     override fun launch() {
+        val server = koin.get<Server>()
         server.state = State.Initializing
         server.initComponents()
         server.state = State.Running
+    }
+
+    private fun serverModule() = module(createdAtStart = true) {
+        single { this@GmNode }
+        single { Server(koin) }
+        single { ZookeeperConfigCenter() }
+        single { NodeConfigsComponent(koin, Role.Gm, port, sameJvm) }
+        single {
+            AkkaSystem(koin, Behaviors.supervise(Behaviors.setup {
+                GmNodeGuardian(it)
+            }).onFailure(SupervisorStrategy.resume()))
+        }
+        single { GmSharding(koin) }
+        single { GmScriptSupport(koin) }
     }
 }
 

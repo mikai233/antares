@@ -6,34 +6,33 @@ import akka.actor.typed.javadsl.Behaviors
 import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.ShardingEnvelope
 import com.mikai233.common.core.component.AkkaSystem
-import com.mikai233.common.core.component.Component
 import com.mikai233.common.core.component.Role
 import com.mikai233.common.core.component.ShardEntityType
 import com.mikai233.common.ext.startSharding
 import com.mikai233.common.ext.startShardingProxy
+import com.mikai233.common.inject.XKoin
 import com.mikai233.shared.PlayerShardNum
 import com.mikai233.shared.WorldShardNum
 import com.mikai233.shared.message.*
 import com.mikai233.world.WorldActor
-import com.mikai233.world.WorldNode
 import com.mikai233.world.WorldSystemMessage
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
-class WorldSharding(private val worldNode: WorldNode) : Component {
-    private lateinit var akka: AkkaSystem<WorldSystemMessage>
-    private val server = worldNode.server
+class WorldSharding(private val koin: XKoin) : KoinComponent by koin {
+    private val akkaSystem: AkkaSystem<WorldSystemMessage> by inject()
     lateinit var playerActor: ActorRef<ShardingEnvelope<SerdePlayerMessage>>
         private set
     lateinit var worldActor: ActorRef<ShardingEnvelope<SerdeWorldMessage>>
         private set
 
-    override fun init() {
-        akka = server.component()
+    init {
         startSharding()
         startShardingProxy()
     }
 
     private fun startSharding() {
-        val system = akka.system
+        val system = akkaSystem.system
         worldActor = system.startSharding(
             ShardEntityType.WorldActor.name,
             Role.World,
@@ -44,7 +43,7 @@ class WorldSharding(private val worldNode: WorldNode) : Component {
             val behavior = Behaviors.setup<WorldMessage> { ctx ->
                 Behaviors.withStash(100) { buffer ->
                     Behaviors.withTimers { timers ->
-                        WorldActor(ctx, buffer, timers, entityCtx.entityId.toLong(), worldNode)
+                        WorldActor(ctx, buffer, timers, entityCtx.entityId.toLong(), koin)
                     }
                 }
             }
@@ -53,7 +52,7 @@ class WorldSharding(private val worldNode: WorldNode) : Component {
     }
 
     private fun startShardingProxy() {
-        val system = akka.system
+        val system = akkaSystem.system
         playerActor = system.startShardingProxy(
             ShardEntityType.PlayerActor.name,
             Role.Player,

@@ -1,22 +1,22 @@
 package com.mikai233.common.core.component
 
 import com.mikai233.common.conf.GlobalEnv
-import com.mikai233.common.core.Server
 import com.mikai233.common.core.component.config.NettyConfig
 import com.mikai233.common.core.component.config.getConfigEx
 import com.mikai233.common.core.component.config.serverNetty
+import com.mikai233.common.inject.XKoin
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
-class NettyConfigComponent(private val server: Server) : Component {
-    private lateinit var configCenter: ZookeeperConfigCenter
+class NettyConfigComponent(private val koin: XKoin) : KoinComponent by koin {
+    private val configCenter: ZookeeperConfigCenter by inject()
     private lateinit var nettyConfig: NettyConfig
-    override fun init() {
-        configCenter = server.component()
+
+    init {
         initNettyConfig()
     }
 
     private fun initNettyConfig() {
         nettyConfig = configCenter.getConfigEx(serverNetty(GlobalEnv.machineIp))
     }
-
-    override fun shutdown() = Unit
 }

@@ -13,17 +13,23 @@ import com.mikai233.common.core.State
 import com.mikai233.common.core.component.*
 import com.mikai233.common.ext.actorLogger
 import com.mikai233.common.ext.registerService
+import com.mikai233.common.inject.XKoin
 import com.mikai233.protocol.MsgCs
 import com.mikai233.protocol.MsgSc
 import com.mikai233.shared.script.ScriptActor
 import com.mikai233.shared.scriptActorServiceKey
-import com.mikai233.world.component.WorldActorMessageDispatchers
+import com.mikai233.world.component.WorldActorDispatchers
 import com.mikai233.world.component.WorldScriptSupport
 import com.mikai233.world.component.WorldSharding
 import com.mikai233.world.component.WorldWaker
+import org.koin.core.component.get
+import org.koin.dsl.koinApplication
+import org.koin.dsl.module
+import org.koin.logger.slf4jLogger
 
 class WorldNode(private val port: Int = 2336, private val sameJvm: Boolean = false) : Launcher {
-    val server = Server()
+    lateinit var koin: XKoin
+        private set
 
     inner class WorldNodeGuardian(context: ActorContext<WorldSystemMessage>) :
         AbstractBehavior<WorldSystemMessage>(context) {
@@ -50,40 +56,35 @@ class WorldNode(private val port: Int = 2336, private val sameJvm: Boolean = fal
 
     init {
         GlobalProto.init(MsgCs.MessageClientToServer.getDescriptor(), MsgSc.MessageServerToClient.getDescriptor())
-        server.components {
-            component {
-                WorldActorMessageDispatchers()
-            }
-            component {
-                ZookeeperConfigCenter()
-            }
-            component {
-                NodeConfigsComponent(this, Role.World, port, sameJvm)
-            }
-            component {
-                AkkaSystem(this, Behaviors.supervise(Behaviors.setup {
-                    WorldNodeGuardian(it)
-                }).onFailure(SupervisorStrategy.resume()))
-            }
-            component {
-                WorldSharding(this@WorldNode)
-            }
-            component {
-                WorldScriptSupport(this)
-            }
-            component {
-                WorldConfigComponent(this)
-            }
-            component {
-                WorldWaker(this@WorldNode)
-            }
+        koinApplication {
+            this@WorldNode.koin = XKoin(this)
+            slf4jLogger()
+            modules(serverModule())
         }
     }
 
     override fun launch() {
+        val server = koin.get<Server>()
         server.state = State.Initializing
         server.initComponents()
         server.state = State.Running
+    }
+
+    private fun serverModule() = module(createdAtStart = true) {
+        single { this@WorldNode }
+        single { Server(koin) }
+        single { WorldActorDispatchers(koin) }
+        single { ZookeeperConfigCenter() }
+        single { NodeConfigsComponent(koin, Role.World, port, sameJvm) }
+        single {
+            AkkaSystem(koin, Behaviors.supervise(Behaviors.setup {
+                WorldNodeGuardian(it)
+            }).onFailure(SupervisorStrategy.resume()))
+        }
+        single { WorldSharding(koin) }
+        single { WorldScriptSupport(koin) }
+        single { WorldConfigComponent(koin) }
+        single { WorldWaker(koin) }
     }
 }
 

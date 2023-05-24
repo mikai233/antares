@@ -9,20 +9,24 @@ import com.mikai233.common.ext.actorLogger
 import com.mikai233.common.ext.protobufJsonPrinter
 import com.mikai233.common.ext.runnableAdapter
 import com.mikai233.common.ext.shardingEnvelope
+import com.mikai233.common.inject.XKoin
+import com.mikai233.gate.component.GateSharding
 import com.mikai233.protocol.ProtoLogin
 import com.mikai233.protocol.ProtoLogin.LoginReq
 import com.mikai233.protocol.ProtoLogin.LoginResp
 import com.mikai233.protocol.loginReq
 import com.mikai233.shared.message.*
 import io.netty.channel.ChannelHandlerContext
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
 class ChannelActor(
     context: ActorContext<ChannelMessage>,
     private val handlerContext: ChannelHandlerContext,
     private val timers: TimerScheduler<ChannelMessage>,
     private val buffer: StashBuffer<ChannelMessage>,
-    private val gateNode: GateNode,
-) : AbstractBehavior<ChannelMessage>(context) {
+    private val koin: XKoin
+) : AbstractBehavior<ChannelMessage>(context), KoinComponent by koin {
     enum class State {
         Connected,
         WaitForAuth,
@@ -36,8 +40,9 @@ class ChannelActor(
     private var playerId = 0L
     private var birthWorldId = 0L
     private var worldId = 0L
-    private val playerActor = gateNode.playerActor()
-    private val worldActor = gateNode.worldActor()
+    private val gateSharding by inject<GateSharding>()
+    private val playerActor = gateSharding.playerActor
+    private val worldActor = gateSharding.worldActor
     private val protobufPrinter = protobufJsonPrinter()
 
     init {

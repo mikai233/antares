@@ -1,8 +1,6 @@
 package com.mikai233.gate.server
 
 import com.mikai233.common.conf.GlobalEnv
-import com.mikai233.common.core.component.AkkaSystem
-import com.mikai233.common.core.component.Component
 import com.mikai233.common.core.component.ZookeeperConfigCenter
 import com.mikai233.common.core.component.config.NettyConfig
 import com.mikai233.common.core.component.config.getConfigEx
@@ -10,8 +8,8 @@ import com.mikai233.common.core.component.config.serverNetty
 import com.mikai233.common.ext.Platform
 import com.mikai233.common.ext.getPlatform
 import com.mikai233.common.ext.logger
+import com.mikai233.common.inject.XKoin
 import com.mikai233.gate.GateNode
-import com.mikai233.gate.GateSystemMessage
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.ChannelFuture
 import io.netty.channel.ChannelOption
@@ -25,17 +23,18 @@ import io.netty.channel.socket.ServerSocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.handler.logging.LogLevel
 import io.netty.handler.logging.LoggingHandler
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 import kotlin.concurrent.thread
 
-class NettyServer(private val gate: GateNode) : Component {
+class NettyServer(private val koin: XKoin) : KoinComponent by koin {
     private val logger = logger()
-    private val server = gate.server
-    private lateinit var akka: AkkaSystem<GateSystemMessage>
+    private val gate: GateNode by inject()
     private val name: String = "netty-server"
     private val bossGroup: EventLoopGroup
     private val workGroup: EventLoopGroup
     private lateinit var nettyConfig: NettyConfig
-    private lateinit var configCenter: ZookeeperConfigCenter
+    private val configCenter: ZookeeperConfigCenter by inject()
 
     init {
         when (getPlatform()) {
@@ -57,17 +56,8 @@ class NettyServer(private val gate: GateNode) : Component {
         logger.info(
             "{} using bossGroup:{}, workGroup:{}", name, bossGroup.javaClass.simpleName, workGroup.javaClass.simpleName
         )
-    }
-
-    override fun init() {
-        akka = server.component()
-        configCenter = server.component()
         initNettyConfig()
         start()
-    }
-
-    override fun shutdown() {
-        stop()
     }
 
     private fun initNettyConfig() {
@@ -101,7 +91,7 @@ class NettyServer(private val gate: GateNode) : Component {
             .group(bossGroup, workGroup)
             .channel(getServerSocketChannel())
             .handler(LoggingHandler(LogLevel.INFO))
-            .childHandler(ServerChannelInitializer(null, gate))
+            .childHandler(ServerChannelInitializer(koin, null))
             .option(ChannelOption.SO_BACKLOG, 128)
             .option(ChannelOption.SO_REUSEADDR, true)
             .childOption(ChannelOption.SO_KEEPALIVE, true)
