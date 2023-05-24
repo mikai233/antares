@@ -91,6 +91,8 @@ dependencyResolutionManagement {
             library("koin", "io.insert-koin:koin-core-jvm:3.4.0")
             library("koin.slf4j", "io.insert-koin:koin-logger-slf4j:3.4.0")
             bundle("koin", listOf("koin", "koin.slf4j"))
+            library("poi.ooxml", "org.apache.poi:poi-ooxml:5.2.3")
+            library("easyexcel", "com.alibaba:easyexcel:3.3.1")
         }
         create("test") {
             library("junit.bom", "org.junit:junit-bom:$junitVersion")

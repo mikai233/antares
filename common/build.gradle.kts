@@ -25,6 +25,8 @@ dependencies {
     implementation(tool.kryo)
     implementation(tool.groovy.all)
     implementation(tool.bundles.koin)
+    implementation(tool.poi.ooxml)
+    implementation(tool.easyexcel)
 }
 
 tasks.test {
