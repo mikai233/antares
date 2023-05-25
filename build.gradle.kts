@@ -6,6 +6,8 @@ plugins {
     @Suppress("DSL_SCOPE_VIOLATION") alias(kt.plugins.noarg)
     @Suppress("DSL_SCOPE_VIOLATION") alias(tool.plugins.detekt)
     @Suppress("DSL_SCOPE_VIOLATION") alias(tool.plugins.dokka)
+    @Suppress("DSL_SCOPE_VIOLATION")
+    alias(tool.plugins.boot) apply false
 }
 
 repositories {
@@ -31,6 +33,9 @@ subprojects {
     apply(plugin = "kotlin-noarg")
     apply(plugin = "io.gitlab.arturbosch.detekt")
     apply(plugin = "org.jetbrains.dokka")
+    if (Nodes.contains(project.name)) {
+        apply(plugin = "org.springframework.boot")
+    }
 
     allOpen {
         annotation("com.mikai233.common.annotation.AllOpen")

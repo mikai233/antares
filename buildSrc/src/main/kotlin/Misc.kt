@@ -1,0 +1,1 @@
+val Nodes = setOf("gate", "global", "gm", "player", "stardust", "world")

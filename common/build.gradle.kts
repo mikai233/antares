@@ -27,6 +27,8 @@ dependencies {
     implementation(tool.bundles.koin)
     implementation(tool.poi.ooxml)
     implementation(tool.easyexcel)
+    implementation("org.springframework:spring-core:6.0.9")
+
 }
 
 tasks.test {

@@ -51,7 +51,7 @@ class NodeConfigsComponent(
             configs["akka.cluster.jmx.multi-mbeans-in-same-jvm"] = "on"
         }
         val centerConfig = ConfigFactory.parseMap(configs)
-        val roleConfig = ConfigFactory.load("${node.role.name}.conf")
+        val roleConfig = ConfigFactory.load("${node.role.name.lowercase()}.conf")
         return centerConfig.withFallback(roleConfig)
     }
 

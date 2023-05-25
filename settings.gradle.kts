@@ -93,6 +93,7 @@ dependencyResolutionManagement {
             bundle("koin", listOf("koin", "koin.slf4j"))
             library("poi.ooxml", "org.apache.poi:poi-ooxml:5.2.3")
             library("easyexcel", "com.alibaba:easyexcel:3.3.1")
+            plugin("boot", "org.springframework.boot").version("3.1.0")
         }
         create("test") {
             library("junit.bom", "org.junit:junit-bom:$junitVersion")
