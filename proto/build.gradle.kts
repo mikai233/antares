@@ -1,7 +1,7 @@
 import com.google.protobuf.gradle.id
 
 plugins {
-    @Suppress("DSL_SCOPE_VIOLATION") alias(tool.plugins.protobuf)
+    alias(tool.plugins.protobuf)
 }
 
 repositories {

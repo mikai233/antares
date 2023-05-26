@@ -1,12 +1,11 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    @Suppress("DSL_SCOPE_VIOLATION") alias(kt.plugins.jvm)
-    @Suppress("DSL_SCOPE_VIOLATION") alias(kt.plugins.allopen)
-    @Suppress("DSL_SCOPE_VIOLATION") alias(kt.plugins.noarg)
-    @Suppress("DSL_SCOPE_VIOLATION") alias(tool.plugins.detekt)
-    @Suppress("DSL_SCOPE_VIOLATION") alias(tool.plugins.dokka)
-    @Suppress("DSL_SCOPE_VIOLATION")
+    alias(kt.plugins.jvm)
+    alias(kt.plugins.allopen)
+    alias(kt.plugins.noarg)
+    alias(tool.plugins.detekt)
+    alias(tool.plugins.dokka)
     alias(tool.plugins.boot) apply false
 }
 
