@@ -6,10 +6,10 @@ import kotlin.reflect.KClass
 
 class ExcelManager {
     private val logger = logger()
-    val validators: HashMap<KClass<out ExcelConfig<*>>, Validator<in ExcelRow<*>, *>> = hashMapOf()
-    private val configs: HashMap<KClass<out ExcelConfig<*>>, ExcelConfig<*>> = hashMapOf()
+    val validators: HashMap<KClass<out Validator<ExcelRow<*>, *>>, Validator<in ExcelRow<*>, *>> = hashMapOf()
+    private val configs: HashMap<KClass<out ExcelConfig<*, *>>, ExcelConfig<*, *>> = hashMapOf()
 
-    fun loadExcel(vararg packages: String) {
+    fun loadExcel(excelDir: String, vararg packages: String) {
         Reflections(packages).getSubTypesOf(ExcelConfig::class.java).forEach { clazz ->
             val config = clazz.getConstructor(ExcelManager::class.java).newInstance(this)
             configs[clazz.kotlin] = config
@@ -17,11 +17,11 @@ class ExcelManager {
         configs.values.forEach { config ->
             logger.info("load:{}", config.name())
             with(config) {
-                load()
+                load(EasyExcelContext("$excelDir/${name()}"))
                 rebuildData()
             }
         }
-        configs.values.forEach(ExcelConfig<*>::allLoadFinish)
+        configs.values.forEach(ExcelConfig<*, *>::allLoadFinish)
     }
 
     fun validate() {
@@ -30,7 +30,7 @@ class ExcelManager {
 
     fun getConfigs() = configs.toMap()
 
-    inline fun <reified T : ExcelConfig<*>> getConfig(): ExcelConfig<*> {
+    inline fun <reified T : ExcelConfig<*, *>> getConfig(): ExcelConfig<*, *> {
         return requireNotNull(getConfigs()[T::class]) { "config:${T::class} not found" }
     }
 }

@@ -60,6 +60,7 @@ dependencyResolutionManagement {
         create("log") {
             library("api", "org.slf4j:slf4j-api:2.0.7")
             library("logback", "ch.qos.logback:logback-classic:1.4.7")
+            library("log4j.to.slf4j", "org.apache.logging.log4j:log4j-to-slf4j:2.20.0")
         }
         create("tool") {
             version("protobuf", protobufVersion)
@@ -94,6 +95,7 @@ dependencyResolutionManagement {
             library("poi.ooxml", "org.apache.poi:poi-ooxml:5.2.3")
             library("easyexcel", "com.alibaba:easyexcel:3.3.1")
             plugin("boot", "org.springframework.boot").version("3.1.0")
+            library("guava", "com.google.guava:guava:31.1-jre")
         }
         create("test") {
             library("junit.bom", "org.junit:junit-bom:$junitVersion")
