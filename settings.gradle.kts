@@ -1,5 +1,3 @@
-@file:Suppress("UnstableApiUsage")
-
 rootProject.name = "antares"
 
 val kotlinVersion = "1.8.20"
