@@ -1,7 +1,8 @@
 package com.mikai233.common.excel
 
+@Suppress("FunctionName")
 interface ExcelRow<K> {
-    fun id(): K
+    fun `primary key`(): K
 
-    fun unModifyKey(): String = id().toString()
+    fun `primary key that cannot be modified`(): String = `primary key`().toString()
 }

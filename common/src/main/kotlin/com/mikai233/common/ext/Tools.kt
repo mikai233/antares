@@ -1,5 +1,6 @@
 package com.mikai233.common.ext
 
+import com.google.common.base.CaseFormat
 import com.google.protobuf.util.JsonFormat
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.conf.ServerMode
@@ -61,3 +62,7 @@ fun invokeOnTargetMode(modes: Set<ServerMode>, block: () -> Unit) {
         block.invoke()
     }
 }
+
+fun String.snakeCaseToCamelCase(): String = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, this)
+
+fun String.camelCaseToSnakeCase(): String = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, this)

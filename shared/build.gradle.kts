@@ -11,6 +11,7 @@ dependencies {
     implementation(akka.bundles.common)
     implementation(tool.caffeine)
     implementation(tool.groovy.all)
+    implementation(tool.guava)
     implementation(tool.easyexcel) {
         exclude("org.apache.poi")
     }
