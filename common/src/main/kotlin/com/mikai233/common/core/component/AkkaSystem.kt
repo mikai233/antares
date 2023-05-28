@@ -39,7 +39,7 @@ open class AkkaSystem<T : GuardianMessage>(private val koin: XKoin, private val 
     lateinit var system: ActorSystem<T>
         private set
     private val server: Server by inject()
-    private val nodeConfigsComponent: NodeConfigsComponent by inject()
+    private val nodeConfigHolder: NodeConfigHolder by inject()
 
     init {
         startActorSystem()
@@ -49,8 +49,8 @@ open class AkkaSystem<T : GuardianMessage>(private val koin: XKoin, private val 
     private fun startActorSystem() {
         system = ActorSystem.create(
             behavior,
-            nodeConfigsComponent.akkaSystemName,
-            nodeConfigsComponent.retrieveAkkaConfig()
+            nodeConfigHolder.akkaSystemName,
+            nodeConfigHolder.retrieveAkkaConfig()
         )
     }
 
@@ -64,7 +64,7 @@ open class AkkaSystem<T : GuardianMessage>(private val koin: XKoin, private val 
                 server.state = State.Stopping
             })
             addTask(CoordinatedShutdown.PhaseBeforeActorSystemTerminate(), "stop-services", taskSupplier {
-                server.shutdownComponents()
+                server.onStop()
             })
             addTask(CoordinatedShutdown.PhaseActorSystemTerminate(), "change-server-state-stopped", taskSupplier {
                 server.state = State.Stopped

@@ -10,11 +10,9 @@ import com.mikai233.common.conf.GlobalProto
 import com.mikai233.common.core.Launcher
 import com.mikai233.common.core.Server
 import com.mikai233.common.core.State
-import com.mikai233.common.core.component.AkkaSystem
-import com.mikai233.common.core.component.NodeConfigsComponent
-import com.mikai233.common.core.component.Role
-import com.mikai233.common.core.component.ZookeeperConfigCenter
+import com.mikai233.common.core.component.*
 import com.mikai233.common.ext.actorLogger
+import com.mikai233.common.ext.closeableSingle
 import com.mikai233.common.ext.registerService
 import com.mikai233.common.inject.XKoin
 import com.mikai233.player.component.PlayerActorDispatchers
@@ -68,7 +66,7 @@ class PlayerNode(private val port: Int = 2337, private val sameJvm: Boolean = fa
     override fun launch() {
         val server = koin.get<Server>()
         server.state = State.Initializing
-        server.initComponents()
+        server.onInit()
         server.state = State.Running
     }
 
@@ -76,8 +74,9 @@ class PlayerNode(private val port: Int = 2337, private val sameJvm: Boolean = fa
         single { this@PlayerNode }
         single { Server(koin) }
         single { PlayerActorDispatchers(koin) }
-        single { ZookeeperConfigCenter() }
-        single { NodeConfigsComponent(koin, Role.Player, port, sameJvm) }
+        closeableSingle { ZookeeperConfigCenter() }
+        single { NodeConfigHolder(koin, Role.Player, port, sameJvm) }
+        single { ExcelConfigHolder(koin) }
         single {
             AkkaSystem(koin, Behaviors.supervise(Behaviors.setup {
                 PlayerNodeGuardian(it)

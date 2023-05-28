@@ -13,11 +13,9 @@ import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.Launcher
 import com.mikai233.common.core.Server
 import com.mikai233.common.core.State
-import com.mikai233.common.core.component.AkkaSystem
-import com.mikai233.common.core.component.NodeConfigsComponent
-import com.mikai233.common.core.component.Role
-import com.mikai233.common.core.component.ZookeeperConfigCenter
+import com.mikai233.common.core.component.*
 import com.mikai233.common.ext.actorLogger
+import com.mikai233.common.ext.closeableSingle
 import com.mikai233.common.ext.registerService
 import com.mikai233.common.ext.startBroadcastClusterRouterGroup
 import com.mikai233.common.inject.XKoin
@@ -99,15 +97,16 @@ class GmNode(private val port: Int = 2339, private val sameJvm: Boolean = false)
     override fun launch() {
         val server = koin.get<Server>()
         server.state = State.Initializing
-        server.initComponents()
+        server.onInit()
         server.state = State.Running
     }
 
     private fun serverModule() = module(createdAtStart = true) {
         single { this@GmNode }
         single { Server(koin) }
-        single { ZookeeperConfigCenter() }
-        single { NodeConfigsComponent(koin, Role.Gm, port, sameJvm) }
+        closeableSingle { ZookeeperConfigCenter() }
+        single { NodeConfigHolder(koin, Role.Gm, port, sameJvm) }
+        single { ExcelConfigHolder(koin) }
         single {
             AkkaSystem(koin, Behaviors.supervise(Behaviors.setup {
                 GmNodeGuardian(it)

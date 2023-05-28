@@ -59,6 +59,7 @@ dependencyResolutionManagement {
             library("api", "org.slf4j:slf4j-api:2.0.7")
             library("logback", "ch.qos.logback:logback-classic:1.4.7")
             library("log4j.to.slf4j", "org.apache.logging.log4j:log4j-to-slf4j:2.20.0")
+            bundle("common", listOf("api", "logback", "log4j.to.slf4j"))
         }
         create("tool") {
             version("protobuf", protobufVersion)
@@ -71,7 +72,8 @@ dependencyResolutionManagement {
             library("jackson.databind", "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
             library("jackson.kotlin", "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
             library("jackson.protobuf", "com.fasterxml.jackson.dataformat:jackson-dataformat-protobuf:$jacksonVersion")
-            bundle("jackson", listOf("jackson.databind", "jackson.kotlin"))
+            library("jackson.guava", "com.fasterxml.jackson.datatype:jackson-datatype-guava:$jacksonVersion")
+            bundle("jackson", listOf("jackson.databind", "jackson.kotlin", "jackson.guava"))
             library("reflections", "org.reflections:reflections:0.10.2")
             library("protoc", "com.google.protobuf:protoc:$protobufVersion")
             plugin("protobuf", "com.google.protobuf").version("0.9.3")

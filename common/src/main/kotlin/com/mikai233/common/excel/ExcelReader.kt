@@ -2,20 +2,20 @@ package com.mikai233.common.excel
 
 import com.google.common.collect.ImmutableList
 
-typealias IntTrip = Triple<Int, Int, Int>
+typealias IntTriple = Triple<Int, Int, Int>
 typealias IntPair = Pair<Int, Int>
 
-typealias LongTrip = Triple<Long, Long, Long>
+typealias LongTriple = Triple<Long, Long, Long>
 typealias LongPair = Pair<Long, Long>
 
-typealias IntTripList = ImmutableList<IntTrip>
+typealias IntTripleList = ImmutableList<IntTriple>
 typealias IntPairList = ImmutableList<IntPair>
 
-typealias LongTripList = ImmutableList<LongTrip>
+typealias LongTripList = ImmutableList<LongTriple>
 typealias LongPairList = ImmutableList<LongPair>
 
 interface ExcelReader {
-    fun data(): Map<Int, String>
+    fun data(): List<String>
     fun read(name: String): String
 }
 
@@ -33,21 +33,29 @@ fun ExcelReader.readBoolean(name: String): Boolean {
     }
 }
 
+fun ExcelReader.readIntPair(name: String): IntPair = read(name).split(",").toIntPair()
+
+fun ExcelReader.readIntTriple(name: String): IntTriple = read(name).split(",").toIntTriple()
+
 fun ExcelReader.readVecInt(name: String): ImmutableList<Int> =
     ImmutableList.copyOf(read(name).split(",").map { it.toInt() })
 
 fun ExcelReader.readVec2Int(name: String): IntPairList =
     ImmutableList.copyOf(read(name).split(";").map {
-        it.split(",").let { list ->
-            check(list.size == 2) { "illegal vec2int data:$list, expect like 1,2;2,3" }
-            list[0].toInt() to list[1].toInt()
-        }
+        it.split(",").toIntPair()
     })
 
-fun ExcelReader.readVec3Int(name: String): IntTripList =
+fun ExcelReader.readVec3Int(name: String): IntTripleList =
     ImmutableList.copyOf(read(name).split(";").map {
-        it.split(",").let { list ->
-            check(list.size == 3) { "illegal vec2int data:$list, expect like 1,2;2,3" }
-            Triple(list[0].toInt(), list[1].toInt(), list[2].toInt())
-        }
+        it.split(",").toIntTriple()
     })
+
+fun List<String>.toIntPair(): IntPair {
+    check(size == 2) { "illegal pair data:$this , expect like 1,2" }
+    return get(0).toInt() to get(1).toInt()
+}
+
+fun List<String>.toIntTriple(): IntTriple {
+    check(size == 3) { "illegal trip data:$this , expect like 1,2,3;1,2,3" }
+    return Triple(get(0).toInt(), get(1).toInt(), get(2).toInt())
+}

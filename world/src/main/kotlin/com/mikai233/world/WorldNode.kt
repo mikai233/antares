@@ -12,6 +12,7 @@ import com.mikai233.common.core.Server
 import com.mikai233.common.core.State
 import com.mikai233.common.core.component.*
 import com.mikai233.common.ext.actorLogger
+import com.mikai233.common.ext.closeableSingle
 import com.mikai233.common.ext.registerService
 import com.mikai233.common.inject.XKoin
 import com.mikai233.protocol.MsgCs
@@ -66,7 +67,7 @@ class WorldNode(private val port: Int = 2336, private val sameJvm: Boolean = fal
     override fun launch() {
         val server = koin.get<Server>()
         server.state = State.Initializing
-        server.initComponents()
+        server.onInit()
         server.state = State.Running
     }
 
@@ -74,8 +75,9 @@ class WorldNode(private val port: Int = 2336, private val sameJvm: Boolean = fal
         single { this@WorldNode }
         single { Server(koin) }
         single { WorldActorDispatchers(koin) }
-        single { ZookeeperConfigCenter() }
-        single { NodeConfigsComponent(koin, Role.World, port, sameJvm) }
+        closeableSingle { ZookeeperConfigCenter() }
+        single { NodeConfigHolder(koin, Role.World, port, sameJvm) }
+        single { ExcelConfigHolder(koin) }
         single {
             AkkaSystem(koin, Behaviors.supervise(Behaviors.setup {
                 WorldNodeGuardian(it)
@@ -83,7 +85,7 @@ class WorldNode(private val port: Int = 2336, private val sameJvm: Boolean = fal
         }
         single { WorldSharding(koin) }
         single { WorldScriptSupport(koin) }
-        single { WorldConfigComponent(koin) }
+        single { WorldConfigHolder(koin) }
         single { WorldWaker(koin) }
     }
 }

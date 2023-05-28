@@ -1,7 +1,8 @@
 package com.mikai233.common.conf
 
-import com.mikai233.common.core.Server
+import kotlinx.datetime.TimeZone
 
 object GlobalData {
-    val servers: MutableList<Server> = mutableListOf()
+    val version: String = "1.0.0"
+    val zoneId = TimeZone.of("Asia/Shanghai")
 }

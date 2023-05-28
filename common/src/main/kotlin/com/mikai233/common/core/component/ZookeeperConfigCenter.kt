@@ -46,18 +46,15 @@ class ZookeeperConfigCenter(connectionString: String = "localhost:2181") : Confi
         client.delete().forPath(path)
     }
 
-    override fun watchConfig(path: String, onUpdate: (ChildData, ChildData) -> Unit) {
+    override fun watchConfig(path: String, onUpdate: (ByteArray) -> Unit) {
         val cache = CuratorCache.builder(client, path).build().apply {
-            listenable().addListener(CuratorCacheListener { type, oldData, data ->
-                when (type) {
-                    CuratorCacheListener.Type.NODE_CREATED,
-                    CuratorCacheListener.Type.NODE_CHANGED -> {
-                        onUpdate(oldData, data)
+            listenable().addListener(
+                CuratorCacheListener.builder().forCreatesAndChanges { _: ChildData?, node: ChildData? ->
+                    if (node?.path == path) {
+                        onUpdate(node.data)
                     }
-
-                    else -> Unit
-                }
-            })
+                }.build()
+            )
             start()
         }
         cacheMap.remove(path)?.close()
@@ -73,11 +70,6 @@ class ZookeeperConfigCenter(connectionString: String = "localhost:2181") : Confi
     }
 
     override fun close() {
-        TODO("Not yet implemented")
+        client.close()
     }
-
-    //    override fun shutdown() {
-//        cacheMap.values.forEach(CuratorCache::close)
-//        client.close()
-//    }
 }

@@ -17,3 +17,9 @@ fun nodePath(host: String, node: String) = "${serverHostPath(host)}/$node"
 fun serverNetty(host: String) = "$NETTY_PATH/$host"
 
 fun gameWorldPath(worldId: String) = "$GAME_WORLD/$worldId"
+
+fun excelPath() = "$ROOT/excel"
+
+fun excelVersion(version: String) = "${excelPath()}/$version"
+
+fun excelFile(version: String, name: String) = "${excelVersion(version)}/$name"

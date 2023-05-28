@@ -1,6 +1,8 @@
 package com.mikai233.common.ext
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.datatype.guava.GuavaModule
+import com.fasterxml.jackson.module.kotlin.jsonMapper
+import com.fasterxml.jackson.module.kotlin.kotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
 
 /**
@@ -10,7 +12,10 @@ import com.fasterxml.jackson.module.kotlin.readValue
  */
 
 object Json {
-    val mapper = jacksonObjectMapper()
+    val mapper = jsonMapper {
+        addModule(kotlinModule())
+        addModule(GuavaModule())
+    }
 
     inline fun <reified T> fromJson(content: String): T {
         return mapper.readValue(content)

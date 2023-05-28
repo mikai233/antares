@@ -12,6 +12,7 @@ import com.mikai233.common.core.Server
 import com.mikai233.common.core.State
 import com.mikai233.common.core.component.*
 import com.mikai233.common.ext.actorLogger
+import com.mikai233.common.ext.closeableSingle
 import com.mikai233.common.ext.registerService
 import com.mikai233.common.inject.XKoin
 import com.mikai233.gate.component.GateSharding
@@ -25,7 +26,6 @@ import com.mikai233.shared.scriptActorServiceKey
 import org.koin.core.component.get
 import org.koin.dsl.koinApplication
 import org.koin.dsl.module
-import org.koin.dsl.onClose
 import org.koin.logger.slf4jLogger
 
 
@@ -80,24 +80,22 @@ class GateNode(private val port: Int = 2334, private val sameJvm: Boolean = fals
     override fun launch() {
         val server = koin.get<Server>()
         server.state = State.Initializing
-        server.initComponents()
+        server.onInit()
         server.state = State.Running
     }
 
     private fun serverModule() = module(createdAtStart = true) {
         single { this@GateNode }
         single { Server(koin) }
-        single { ZookeeperConfigCenter() } onClose {
-            it?.close()
-        }
-        single { NodeConfigsComponent(koin, Role.Gate, port, sameJvm) }
+        closeableSingle { ZookeeperConfigCenter() }
+        single { NodeConfigHolder(koin, Role.Gate, port, sameJvm) }
         single {
             AkkaSystem(koin, Behaviors.supervise(Behaviors.setup {
                 GateNodeGuardian(it)
             }).onFailure(SupervisorStrategy.resume()))
         }
-        single { NettyConfigComponent(koin) }
-        single { NettyServer(koin) }
+        single { NettyConfigHolder(koin) }
+        closeableSingle { NettyServer(koin) }
         single { GateSharding(koin) }
         single { ScriptSupport(koin) }
     }

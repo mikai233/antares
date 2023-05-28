@@ -27,7 +27,7 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import kotlin.concurrent.thread
 
-class NettyServer(private val koin: XKoin) : KoinComponent by koin {
+class NettyServer(private val koin: XKoin) : KoinComponent by koin, AutoCloseable {
     private val logger = logger()
     private val gate: GateNode by inject()
     private val name: String = "netty-server"
@@ -113,5 +113,9 @@ class NettyServer(private val koin: XKoin) : KoinComponent by koin {
             Platform.MacOS -> KQueueServerSocketChannel::class.java
             Platform.Windows, Platform.Unknown -> NioServerSocketChannel::class.java
         }
+    }
+
+    override fun close() {
+        stop()
     }
 }

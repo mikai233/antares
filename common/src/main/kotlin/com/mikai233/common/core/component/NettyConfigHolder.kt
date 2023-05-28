@@ -8,7 +8,7 @@ import com.mikai233.common.inject.XKoin
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
-class NettyConfigComponent(private val koin: XKoin) : KoinComponent by koin {
+class NettyConfigHolder(private val koin: XKoin) : KoinComponent by koin {
     private val configCenter: ZookeeperConfigCenter by inject()
     private lateinit var nettyConfig: NettyConfig
 

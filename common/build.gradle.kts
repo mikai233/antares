@@ -13,6 +13,7 @@ dependencies {
     implementation(kt.bundles.common)
     implementation(ktx.core)
     runtimeOnly(ktx.core.jvm)
+    implementation(ktx.datetime)
     implementation(tool.bundles.curator)
     runtimeOnly(log.logback)
     implementation(log.api)

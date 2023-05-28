@@ -1,11 +1,9 @@
 package com.mikai233.common.core
 
-import com.mikai233.common.core.component.Component
 import com.mikai233.common.ext.logger
 import com.mikai233.common.inject.XKoin
 import org.koin.core.component.KoinComponent
 import java.util.*
-import kotlin.reflect.KClass
 
 /**
  * @author mikai233
@@ -25,36 +23,13 @@ open class Server(val koin: XKoin) : KoinComponent by koin {
                 it(field)
             }
         }
-    val components: HashMap<KClass<out Component>, Component> = hashMapOf()
-    val componentsOrder: MutableList<KClass<out Component>> = mutableListOf()
     private val eventListeners: EnumMap<State, MutableList<(State) -> Unit>> = EnumMap(State::class.java)
 
-    inner class ComponentBuilder {
-        inline fun <reified C : Component> component(block: Server.() -> C) {
-            val key = C::class
-            check(components.containsKey(key).not()) { "duplicate add component:${key}" }
-            componentsOrder.add(key)
-            val c = block()
-            components[key] = c as Component
-        }
+    fun onInit() {
+
     }
 
-    inline fun <reified C : Component> component(): C {
-        val key = C::class
-        return requireNotNull(components[key]) { "component:${C::class} not found in components" } as C
-    }
-
-    fun components(block: Server.ComponentBuilder.() -> Unit) {
-        check(state == State.Uninitialized)
-        val builder = ComponentBuilder()
-        block.invoke(builder)
-    }
-
-    fun initComponents() {
-        getKoin().getAll<Component>().forEach(Component::init)
-    }
-
-    fun shutdownComponents() {
-        getKoin().getAll<Component>().reversed().forEach(Component::shutdown)
+    fun onStop() {
+        getKoin().close()
     }
 }

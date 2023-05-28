@@ -12,6 +12,7 @@ dependencies {
     implementation(tool.caffeine)
     implementation(tool.groovy.all)
     implementation(tool.guava)
+    implementation(tool.bundles.jackson)
     implementation(tool.easyexcel) {
         exclude("org.apache.poi")
     }

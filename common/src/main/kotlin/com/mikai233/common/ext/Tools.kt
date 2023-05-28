@@ -7,6 +7,12 @@ import com.mikai233.common.conf.ServerMode
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.CuratorFrameworkFactory
 import org.apache.curator.retry.ExponentialBackoffRetry
+import org.koin.core.definition.Definition
+import org.koin.core.definition.KoinDefinition
+import org.koin.core.module.Module
+import org.koin.core.qualifier.Qualifier
+import org.koin.dsl.onClose
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.Inet4Address
 import java.net.NetworkInterface
@@ -66,3 +72,29 @@ fun invokeOnTargetMode(modes: Set<ServerMode>, block: () -> Unit) {
 fun String.snakeCaseToCamelCase(): String = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, this)
 
 fun String.camelCaseToSnakeCase(): String = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, this)
+
+inline fun <reified T : AutoCloseable> Module.closeableSingle(
+    qualifier: Qualifier? = null,
+    createdAtStart: Boolean = false,
+    noinline definition: Definition<T>
+): KoinDefinition<T> = single(qualifier, createdAtStart, definition) onClose {
+    tryCatch({ T::class.logger() }) {
+        it?.close()
+    }
+}
+
+fun tryCatch(logger: () -> Logger, block: () -> Unit) {
+    try {
+        block()
+    } catch (t: Throwable) {
+        logger().error("", t)
+    }
+}
+
+fun tryCatch(logger: Logger, block: () -> Unit) {
+    try {
+        block()
+    } catch (t: Throwable) {
+        logger.error("", t)
+    }
+}

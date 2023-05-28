@@ -13,7 +13,7 @@ import org.koin.core.component.inject
  * @email dreamfever2017@yahoo.com
  * @date 2023/5/21
  */
-class WorldConfigComponent(private val koin: XKoin) : KoinComponent by koin {
+class WorldConfigHolder(private val koin: XKoin) : KoinComponent by koin {
     private val configCenter: ZookeeperConfigCenter by inject()
     private val worldConfigs: MutableMap<Int, WorldConfig> = mutableMapOf()
 

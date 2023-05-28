@@ -1,55 +1,38 @@
 package com.mikai233.tools.excel
 
+import com.google.common.base.CaseFormat
 import com.google.common.collect.ImmutableMap
 import com.mikai233.common.excel.*
+import com.mikai233.common.ext.logger
 import com.mikai233.common.ext.snakeCaseToCamelCase
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import java.io.File
-import java.util.*
 import kotlin.String
-import kotlin.io.path.Path
 
 private const val extPackage = "com.mikai233.common.excel"
 private const val immutablePackage = "com.google.common.collect"
 
 object ExcelGenerator {
+    private val logger = logger()
     private val vecInt = ClassName(immutablePackage, "ImmutableList").parameterizedBy(typeNameOf<Int>())
     private val vec2Int = ClassName(immutablePackage, "ImmutableList").parameterizedBy(typeNameOf<IntPair>())
-    private val vec3Int = ClassName(immutablePackage, "ImmutableList").parameterizedBy(typeNameOf<IntTrip>())
+    private val vec3Int = ClassName(immutablePackage, "ImmutableList").parameterizedBy(typeNameOf<IntTriple>())
     private val immutableMap = ClassName("com.google.common.collect", "ImmutableMap")
 
     @JvmStatic
     fun main(args: Array<String>) {
-        check(args.size == 1) { "please input excel path" }
+        check(args.isNotEmpty()) { "please input excel path" }
         val path = args[0]
-
-        val excelName = File(path).name
-        println(Path(path).fileName)
+        logger.info("{}", path)
+        val file = File(path)
+        val excelNameWithExt = file.name
+        val excelName = file.nameWithoutExtension
+        val excelClassName = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, excelName)
         val context = EasyExcelContext(path)
-        var rowNumber = 0
-        val columnName = mutableListOf<String>()
-        val excelTypes = mutableListOf<Type>()
-        val excelKeys = mutableListOf<ExcelKey>()
-        context.forEachRow { row ->
-            val rowData = TreeMap(row.data())
-            when (rowNumber) {
-                0 -> {
-                    columnName.addAll(rowData.values)
-                }
-
-                1 -> {
-                    excelTypes.addAll(rowData.values.map { Type.form(it) })
-                }
-
-                2 -> {
-                    excelKeys.addAll(rowData.values.map { ExcelKey.form(it) })
-                }
-
-                else -> Unit
-            }
-            rowNumber += 1
-        }
+        val columnName = context.header[0]
+        val excelTypes = context.header[1].map { Type.form(it) }
+        val excelKeys = context.header[2].map { ExcelKey.form(it) }
         check(columnName.size == excelTypes.size && excelTypes.size == excelKeys.size)
         val excelMeta = columnName.zip(excelTypes).zip(excelKeys) { (name, type), key ->
             Triple(name.snakeCaseToCamelCase(), type, key)
@@ -58,14 +41,21 @@ object ExcelGenerator {
         val pk = requireNotNull(excelMeta.find { it.third == ExcelKey.PrimaryKey }) { "primary key not found" }
 
         val meta = ConfigMeta(
-            "question_total_reward.xlsx",
+            excelNameWithExt,
             pk.first,
             typeNameFormType(pk.second),
-            "QuestionTotal",
+            excelClassName,
             excelMeta.map { it.first to it.second },
         )
         val code = genConfig(meta)
-        println(code)
+        if (args.getOrNull(1) != null) {
+            val outPath = "${args[1]}/$excelClassName.kt"
+            val out = File(outPath)
+            out.writeText(code)
+            logger.info("generate to:{}", outPath)
+        } else {
+            println(code)
+        }
     }
 
     data class ConfigMeta(
@@ -78,11 +68,12 @@ object ExcelGenerator {
     )
 
     private fun genConfig(meta: ConfigMeta): String {
+        val rowName = "${meta.rowName}Row"
         val configName = "${meta.rowName}Config"
         val types = meta.fields.map { (name, type) -> name to typeNameFormType(type) }
-        val row = rowClass(meta.rowName, meta.pkName, meta.pkType, types)
+        val row = rowClass(rowName, meta.pkName, meta.pkType, types)
         val type = configClass(
-            ClassName(meta.pkg, meta.rowName),
+            ClassName(meta.pkg, rowName),
             meta.pkType,
             meta.fields,
             configName,
@@ -145,23 +136,6 @@ object ExcelGenerator {
         val typedRowClass = ClassName(extPackage, "ExcelConfig").parameterizedBy(pkType, rowClass)
         return TypeSpec.classBuilder(configName)
             .superclass(typedRowClass)
-            .addSuperclassConstructorParameter("manager")
-            .primaryConstructor(
-                FunSpec.constructorBuilder()
-                    .addParameter("manager", typeNameOf<ExcelManager>())
-                    .build()
-            )
-            .addProperty(
-                PropertySpec.builder(
-                    "rows",
-                    immutableMap.parameterizedBy(pkType, rowClass),
-                    KModifier.LATEINIT,
-                    KModifier.PRIVATE,
-                )
-                    .mutable()
-                    .build()
-            )
-            .addFunction(rows(rowClass, pkType))
             .addFunction(name(excelName))
             .addFunction(load(rowClass, pkType, fields))
             .build()
@@ -171,13 +145,17 @@ object ExcelGenerator {
         return FunSpec.builder("load")
             .addModifiers(KModifier.OVERRIDE)
             .addParameter("context", typeNameOf<ExcelContext>())
+            .addParameter("manager", typeNameOf<ExcelManager>())
             .addStatement("val rowsBuilder = %T.builder<%T, %T>()", ImmutableMap::class, pkType, rowClass)
             .addCode(buildCodeBlock {
                 addStatement("context.forEachRow { row -> ")
                 fields.forEach { field ->
                     add(buildLoadCode(rowClass, field.first, field.second))
                 }
-                addStatement("val rowData = %T(%L)", rowClass, fields.joinToString { "${it.first} = ${it.first}" })
+                addStatement(
+                    "val rowData = %T(%L)",
+                    rowClass,
+                    fields.joinToString(",\n") { "${it.first} = ${it.first}" })
                 addStatement(" rowsBuilder.put(rowData.`primary key`(), rowData)")
                 addStatement("}")
                 addStatement("rows = rowsBuilder.build()")
@@ -186,10 +164,15 @@ object ExcelGenerator {
 
     private fun buildLoadCode(rowClass: TypeName, field: String, type: Type): CodeBlock {
         val convert = MemberName("com.mikai233.common.ext", "camelCaseToSnakeCase", true)
+
         fun readExt(name: String): CodeBlock {
-            val readVec3Int = MemberName(extPackage, name)
             return buildCodeBlock {
-                addStatement("val %L = row.%M(%T::%L.name.%M())", field, readVec3Int, rowClass, field, convert)
+                if (type == Type.String || type == Type.Lang) {
+                    addStatement("val %L = row.read(%T::%L.name.%M())", field, rowClass, field, convert)
+                } else {
+                    val read = MemberName(extPackage, name, true)
+                    addStatement("val %L = row.%M(%T::%L.name.%M())", field, read, rowClass, field, convert)
+                }
             }
         }
 
@@ -210,7 +193,7 @@ object ExcelGenerator {
                 readExt(ExcelReader::readBoolean.name)
             }
 
-            Type.String -> {
+            Type.String, Type.Lang -> {
                 readExt(ExcelReader::read.name)
             }
 
@@ -225,6 +208,14 @@ object ExcelGenerator {
             Type.Vec3Int -> {
                 readExt(ExcelReader::readVec3Int.name)
             }
+
+            Type.IntPair -> {
+                readExt(ExcelReader::readIntPair.name)
+            }
+
+            Type.IntTriple -> {
+                readExt(ExcelReader::readIntTriple.name)
+            }
         }
     }
 
@@ -236,24 +227,18 @@ object ExcelGenerator {
             .build()
     }
 
-    private fun rows(rowClass: TypeName, pkType: TypeName): FunSpec {
-        return FunSpec.builder("rows")
-            .addModifiers(KModifier.OVERRIDE)
-            .returns(immutableMap.parameterizedBy(pkType, rowClass))
-            .addStatement("return %L", "rows")
-            .build()
-    }
-
     private fun typeNameFormType(type: Type): TypeName {
         return when (type) {
             Type.Int -> typeNameOf<Int>()
             Type.Long -> typeNameOf<Long>()
             Type.Double -> typeNameOf<Double>()
             Type.Boolean -> typeNameOf<Boolean>()
-            Type.String -> typeNameOf<String>()
+            Type.String, Type.Lang -> typeNameOf<String>()
             Type.VecInt -> vecInt
             Type.Vec2Int -> vec2Int
             Type.Vec3Int -> vec3Int
+            Type.IntPair -> typeNameOf<IntPair>()
+            Type.IntTriple -> typeNameOf<IntTriple>()
         }
     }
 }

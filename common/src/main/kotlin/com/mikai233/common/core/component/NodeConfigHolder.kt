@@ -14,7 +14,7 @@ import org.koin.core.component.inject
  * @email dreamfever2017@yahoo.com
  * @date 2023/5/11
  */
-class NodeConfigsComponent(
+class NodeConfigHolder(
     private val koin: XKoin,
     private val role: Role,
     private val port: Int,

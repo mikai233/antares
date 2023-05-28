@@ -32,7 +32,7 @@ subprojects {
     apply(plugin = "kotlin-noarg")
     apply(plugin = "io.gitlab.arturbosch.detekt")
     apply(plugin = "org.jetbrains.dokka")
-    if (Nodes.contains(project.name)) {
+    if (Boot.contains(project.name)) {
         apply(plugin = "org.springframework.boot")
     }
 

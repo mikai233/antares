@@ -2,7 +2,7 @@ package com.mikai233.world.component
 
 import akka.cluster.Cluster
 import com.mikai233.common.core.component.AkkaSystem
-import com.mikai233.common.core.component.WorldConfigComponent
+import com.mikai233.common.core.component.WorldConfigHolder
 import com.mikai233.common.ext.logger
 import com.mikai233.common.ext.shardingEnvelope
 import com.mikai233.common.inject.XKoin
@@ -21,7 +21,7 @@ class WorldWaker(private val koin: XKoin) : KoinComponent by koin {
     private val akkaSystem: AkkaSystem<WorldSystemMessage> by inject()
     private val cluster: Cluster = Cluster.get(akkaSystem.system)
     private val worldSharding: WorldSharding by inject()
-    private val worldConfigComponent: WorldConfigComponent by inject()
+    private val worldConfigHolder: WorldConfigHolder by inject()
 
     init {
         cluster.registerOnMemberUp(::wakeupWorld)
@@ -29,7 +29,7 @@ class WorldWaker(private val koin: XKoin) : KoinComponent by koin {
 
     private fun wakeupWorld() {
         logger.info("start wakeup world")
-        worldConfigComponent.getWorldConfig().forEach { (worldId, worldConfig) ->
+        worldConfigHolder.getWorldConfig().forEach { (worldId, worldConfig) ->
             worldSharding.worldActor.tell(shardingEnvelope("$worldId", WakeupGameWorld))
         }
     }
