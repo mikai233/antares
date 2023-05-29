@@ -2,6 +2,7 @@ package com.mikai233.tools.excel
 
 import com.google.common.base.CaseFormat
 import com.google.common.collect.ImmutableMap
+import com.mikai233.common.annotation.NoArg
 import com.mikai233.common.excel.*
 import com.mikai233.common.ext.logger
 import com.mikai233.common.ext.snakeCaseToCamelCase
@@ -105,6 +106,7 @@ object ExcelGenerator {
         val superInterface = ClassName(extPackage, "ExcelRow").parameterizedBy(pkType)
         return TypeSpec.classBuilder(className)
             .addModifiers(KModifier.DATA)
+            .addAnnotation(NoArg::class)
             .primaryConstructor(
                 FunSpec.constructorBuilder().apply {
                     fields.forEach { (name, type) ->

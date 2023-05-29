@@ -1,9 +1,11 @@
 package com.mikai233.shared.excel
 
 import com.google.common.collect.ImmutableMap
+import com.mikai233.common.annotation.NoArg
 import com.mikai233.common.excel.*
 import com.mikai233.common.ext.camelCaseToSnakeCase
 
+@NoArg
 data class ItemRow(
     val id: Int,
     val quality: Int,
