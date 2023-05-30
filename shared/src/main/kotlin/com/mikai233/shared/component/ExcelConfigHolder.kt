@@ -1,24 +1,30 @@
-package com.mikai233.common.core.component
+package com.mikai233.shared.component
 
 import com.google.common.collect.ImmutableMap
 import com.mikai233.common.conf.GlobalData
 import com.mikai233.common.conf.GlobalExcel
+import com.mikai233.common.core.component.ZookeeperConfigCenter
 import com.mikai233.common.core.component.config.excelFile
 import com.mikai233.common.core.component.config.excelVersion
 import com.mikai233.common.core.component.config.getConfigEx
-import com.mikai233.common.excel.ConfigMapKey
-import com.mikai233.common.excel.ConfigMapValue
-import com.mikai233.common.excel.ExcelManager
-import com.mikai233.common.excel.ImmutableConfigMap
-import com.mikai233.common.ext.Json
+import com.mikai233.common.excel.*
 import com.mikai233.common.ext.logger
 import com.mikai233.common.inject.XKoin
+import com.mikai233.shared.serde.ProtobufExcelSerde
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
-class ExcelConfigHolder(private val koin: XKoin) : KoinComponent by koin {
+class ExcelConfigHolder(
+    private val koin: XKoin,
+    private val serde: ExcelSerde = ProtobufExcelSerde
+) :
+    KoinComponent by koin {
     private val logger = logger()
     private val configCenter: ZookeeperConfigCenter by inject()
+
+    companion object {
+        const val name = "configs.bin"
+    }
 
     init {
         initExcelConfig()
@@ -26,17 +32,19 @@ class ExcelConfigHolder(private val koin: XKoin) : KoinComponent by koin {
 
     private fun initExcelConfig() {
         if (!GlobalExcel.initialized()) {
+            //sync init
             val version = GlobalData.version
             val manager = configCenter.getConfigEx<ExcelManager>(excelVersion(version))
-            val configs = loadConfigs(version)
+            val configBytes = configCenter.getConfig(excelFile(version, name))
+            val configs = loadConfigs(configBytes)
             manager.loadFromConfigs(configs)
             GlobalExcel.updateManager(manager)
-            configCenter.watchConfig(excelVersion(version)) {
+            configCenter.watchConfig(excelFile(version, name)) {
                 try {
-                    val newManager = Json.fromJson<ExcelManager>(it)
-                    val newConfigs = loadConfigs(GlobalData.version)
-                    newManager.loadFromConfigs(newConfigs)
-                    GlobalExcel.updateManager(newManager)
+                    val updateMgr = configCenter.getConfigEx<ExcelManager>(excelVersion(version))
+                    val updateCfg = loadConfigs(it)
+                    updateMgr.loadFromConfigs(updateCfg)
+                    GlobalExcel.updateManager(updateMgr)
                 } catch (e: Exception) {
                     logger.error("update excel error", e)
                 }
@@ -46,12 +54,12 @@ class ExcelConfigHolder(private val koin: XKoin) : KoinComponent by koin {
         }
     }
 
-    private fun loadConfigs(version: String): ImmutableConfigMap {
+    private fun loadConfigs(bytes: ByteArray): ImmutableConfigMap {
         val configs = ImmutableMap.builder<ConfigMapKey, ConfigMapValue>()
-        configCenter.getChildren(excelVersion(version)).forEach { fileName ->
-            val bytes = configCenter.getConfig(excelFile(version, fileName))
-            val config = Json.fromJson<ConfigMapValue>(bytes)
-            configs.put(config::class, config)
+        val serdeConfigs = serde.de(bytes)
+        serdeConfigs.configs.forEach { config ->
+            @Suppress("UNCHECKED_CAST")
+            configs.put(config::class as ConfigMapKey, config as ConfigMapValue)
         }
         return configs.build()
     }

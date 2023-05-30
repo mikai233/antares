@@ -1,11 +1,12 @@
 package com.mikai233.common.excel
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo
-import com.google.common.collect.ImmutableMap
+import kotlinx.serialization.Serializable
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
-abstract class ExcelConfig<K, R> where R : ExcelRow<K> {
-    open lateinit var rows: ImmutableMap<K, R>
+@Serializable
+abstract class ExcelConfig<K, R> : SerdeConfig where R : ExcelRow<K> {
+    open lateinit var rows: Map<K, R>
 
     abstract fun name(): String
 

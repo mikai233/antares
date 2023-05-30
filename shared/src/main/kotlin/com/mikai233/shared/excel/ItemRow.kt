@@ -4,8 +4,10 @@ import com.google.common.collect.ImmutableMap
 import com.mikai233.common.annotation.NoArg
 import com.mikai233.common.excel.*
 import com.mikai233.common.ext.camelCaseToSnakeCase
+import kotlinx.serialization.Serializable
 
 @NoArg
+@Serializable
 data class ItemRow(
     val id: Int,
     val quality: Int,
@@ -14,6 +16,7 @@ data class ItemRow(
     override fun `primary key`(): Int = id
 }
 
+@Serializable
 class ItemConfig : ExcelConfig<Int, ItemRow>() {
     override fun name(): String = "item.xlsx"
 

@@ -14,8 +14,11 @@ dependencies {
     implementation(tool.kotlinpoet)
     implementation(log.bundles.common)
     implementation(ktx.datetime)
+    implementation(ktx.bundles.serialization)
     implementation(tool.bundles.curator)
     implementation(tool.guava)
+    implementation(tool.lz4)
+    implementation(tool.reflections)
     implementation(project(":common"))
     implementation(project(":shared"))
 }

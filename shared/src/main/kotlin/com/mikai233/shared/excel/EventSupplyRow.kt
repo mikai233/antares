@@ -1,23 +1,23 @@
 package com.mikai233.shared.excel
 
-import com.google.common.collect.ImmutableList
 import com.google.common.collect.ImmutableMap
-import com.mikai233.common.annotation.NoArg
 import com.mikai233.common.excel.*
 import com.mikai233.common.ext.camelCaseToSnakeCase
+import kotlinx.serialization.Serializable
 
-@NoArg
+@Serializable
 data class EventSupplyRow(
     val id: Int,
     val startTime: String,
     val endTime: String,
     val position: Int,
     val cost: Triple<Int, Int, Int>,
-    val reward: ImmutableList<Triple<Int, Int, Int>>,
+    val reward: List<Triple<Int, Int, Int>>,
 ) : ExcelRow<Int> {
     override fun `primary key`(): Int = id
 }
 
+@Serializable
 class EventSupplyConfig : ExcelConfig<Int, EventSupplyRow>() {
     override fun name(): String = "event_supply.xlsx"
 

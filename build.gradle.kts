@@ -4,6 +4,7 @@ plugins {
     alias(kt.plugins.jvm)
     alias(kt.plugins.allopen)
     alias(kt.plugins.noarg)
+    alias(kt.plugins.serialization)
     alias(tool.plugins.detekt)
     alias(tool.plugins.dokka)
     alias(tool.plugins.boot) apply false
@@ -32,6 +33,7 @@ subprojects {
     apply(plugin = "kotlin-noarg")
     apply(plugin = "io.gitlab.arturbosch.detekt")
     apply(plugin = "org.jetbrains.dokka")
+    apply(plugin = "org.jetbrains.kotlin.plugin.serialization")
     if (Boot.contains(project.name)) {
         apply(plugin = "org.springframework.boot")
     }
@@ -55,6 +57,15 @@ subprojects {
             sourceSets.main {
                 java.srcDir("build/generated/source/proto/main/java")
             }
+        }
+    }
+
+    if (project.name == "shared") {
+        sourceSets.main {
+            kotlin.srcDir("build/generated/ksp/main/kotlin")
+        }
+        sourceSets.test {
+            kotlin.srcDir("build/generated/ksp/test/kotlin")
         }
     }
 

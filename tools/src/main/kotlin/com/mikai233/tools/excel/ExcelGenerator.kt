@@ -2,12 +2,12 @@ package com.mikai233.tools.excel
 
 import com.google.common.base.CaseFormat
 import com.google.common.collect.ImmutableMap
-import com.mikai233.common.annotation.NoArg
 import com.mikai233.common.excel.*
 import com.mikai233.common.ext.logger
 import com.mikai233.common.ext.snakeCaseToCamelCase
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import kotlinx.serialization.Serializable
 import java.io.File
 import kotlin.String
 
@@ -103,10 +103,10 @@ object ExcelGenerator {
         pkType: TypeName,
         fields: List<Pair<String, TypeName>>
     ): TypeSpec {
-        val superInterface = ClassName(extPackage, "ExcelRow").parameterizedBy(pkType)
+        val excelRowInterface = ClassName(extPackage, "ExcelRow").parameterizedBy(pkType)
         return TypeSpec.classBuilder(className)
             .addModifiers(KModifier.DATA)
-            .addAnnotation(NoArg::class)
+            .addAnnotation(Serializable::class)
             .primaryConstructor(
                 FunSpec.constructorBuilder().apply {
                     fields.forEach { (name, type) ->
@@ -123,7 +123,7 @@ object ExcelGenerator {
                     )
                 }
             }
-            .addSuperinterface(superInterface)
+            .addSuperinterface(excelRowInterface)
             .addFunction(pk(pkName, pkType))
             .build()
     }

@@ -5,9 +5,11 @@ import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.component.config.excelFile
 import com.mikai233.common.core.component.config.excelVersion
 import com.mikai233.common.excel.ExcelManager
+import com.mikai233.common.excel.SerdeConfigs
 import com.mikai233.common.ext.Json
 import com.mikai233.common.ext.buildSimpleZkClient
 import com.mikai233.common.ext.logger
+import com.mikai233.shared.serde.ProtobufExcelSerde
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toLocalDateTime
 
@@ -23,15 +25,11 @@ object ExcelExporter {
         val client = buildSimpleZkClient(GlobalEnv.zkConnect).apply { start() }
         val manager = ExcelManager("n/a", now.toString())
         manager.loadFromExcel(excelDir, "com.mikai233.shared.excel")
-        if (client.checkExists().forPath(excelVersion(version)) != null) {
-            client.delete().deletingChildrenIfNeeded().forPath(excelVersion(version))
-        }
-        client.create().creatingParentsIfNeeded().forPath(excelVersion(version), Json.toJsonBytes(manager, true))
-        manager.configs.values.forEach { config ->
-            val excelName = config.name()
-            val jsonBytes = Json.toJsonBytes(config, true)
-            client.create().creatingParentsIfNeeded().forPath(excelFile(version, excelName), jsonBytes)
-        }
+        client.create().orSetData().creatingParentsIfNeeded()
+            .forPath(excelVersion(version), Json.toJsonBytes(manager, true))
+        val serdeConfigs = SerdeConfigs(manager.configs.values.toSet())
+        val serBytes = ProtobufExcelSerde.ser(serdeConfigs)
+        client.create().orSetData().forPath(excelFile(version, "configs.bin"), serBytes)
         logger.info("export excel to zookeeper:{}", manager)
     }
 }

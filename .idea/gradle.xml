@@ -25,6 +25,7 @@
             <option value="$PROJECT_DIR$/global" />
             <option value="$PROJECT_DIR$/gm" />
             <option value="$PROJECT_DIR$/player" />
+            <option value="$PROJECT_DIR$/processor" />
             <option value="$PROJECT_DIR$/proto" />
             <option value="$PROJECT_DIR$/shared" />
             <option value="$PROJECT_DIR$/stardust" />

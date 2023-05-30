@@ -2,24 +2,18 @@ rootProject.name = "antares"
 
 val kotlinVersion = "1.8.20"
 val kotlinxVersion = "1.7.0"
-
 val akkaVersion = "2.8.1"
 val scalaVersion = "2.13"
-
 val ktorClientVersion = "2.3.0"
 val ktorServerVersion = "2.3.0"
-
 val jacksonVersion = "2.15.0"
-
 val curatorVersion = "5.5.0"
-
 val junitVersion = "5.9.3"
-
 val protobufVersion = "3.23.0"
-
 val atomicfuVersion = "0.20.2"
-
 val datetimeVersion = "0.4.0"
+val kotlinpoetVersion = "1.14.0"
+val kspVersion = "1.0.11"
 
 dependencyResolutionManagement {
     versionCatalogs {
@@ -27,6 +21,7 @@ dependencyResolutionManagement {
             plugin("jvm", "org.jetbrains.kotlin.jvm").version(kotlinVersion)
             plugin("allopen", "org.jetbrains.kotlin.plugin.allopen").version(kotlinVersion)
             plugin("noarg", "org.jetbrains.kotlin.plugin.noarg").version(kotlinVersion)
+            plugin("serialization", "org.jetbrains.kotlin.plugin.serialization").version(kotlinxVersion)
             library("stdlib", "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion")
             library("jdk8", "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
             library("reflect", "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion")
@@ -45,6 +40,9 @@ dependencyResolutionManagement {
             library("atomicfu.jvm", "org.jetbrains.kotlinx:atomicfu-jvm:$atomicfuVersion")
             library("datetime", "org.jetbrains.kotlinx:kotlinx-datetime:$datetimeVersion")
             library("datetime.jvm", "org.jetbrains.kotlinx:kotlinx-datetime-jvm:$datetimeVersion")
+            library("serialization.protobuf", "org.jetbrains.kotlinx:kotlinx-serialization-protobuf-jvm:1.5.1")
+            library("serialization.core", "org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.5.1")
+            bundle("serialization", listOf("serialization.protobuf", "serialization.core"))
         }
         create("akka") {
             library("actor", "com.typesafe.akka:akka-actor-typed_$scalaVersion:$akkaVersion")
@@ -73,6 +71,7 @@ dependencyResolutionManagement {
             library("jackson.kotlin", "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
             library("jackson.protobuf", "com.fasterxml.jackson.dataformat:jackson-dataformat-protobuf:$jacksonVersion")
             library("jackson.guava", "com.fasterxml.jackson.datatype:jackson-datatype-guava:$jacksonVersion")
+            library("jackson.cbor", "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:$jacksonVersion")
             bundle("jackson", listOf("jackson.databind", "jackson.kotlin", "jackson.guava"))
             library("reflections", "org.reflections:reflections:0.10.2")
             library("protoc", "com.google.protobuf:protoc:$protobufVersion")
@@ -82,13 +81,14 @@ dependencyResolutionManagement {
             library("netty", "io.netty:netty-all:4.1.92.Final")
             library("lz4", "org.lz4:lz4-java:1.8.0")
             library("bcprov", "org.bouncycastle:bcprov-jdk15on:1.70")
-            library("kryo", "io.altoo:akka-kryo-serialization-typed_$scalaVersion:2.5.0")
+            library("akka.kryo", "io.altoo:akka-kryo-serialization-typed_$scalaVersion:2.5.0")
             plugin("detekt", "io.gitlab.arturbosch.detekt").version("1.23.0-RC3")
             library("caffeine", "com.github.ben-manes.caffeine:caffeine:3.1.6")
             library("groovy", "org.apache.groovy:groovy:4.0.12")
             library("groovy.all", "org.apache.groovy:groovy-all:4.0.12")
             plugin("dokka", "org.jetbrains.dokka").version("1.8.10")
-            library("kotlinpoet", "com.squareup:kotlinpoet:1.13.2")
+            library("kotlinpoet", "com.squareup:kotlinpoet:$kotlinpoetVersion")
+            library("kotlinpoet.ksp", "com.squareup:kotlinpoet-ksp:$kotlinpoetVersion")
             library("koin", "io.insert-koin:koin-core-jvm:3.4.0")
             library("koin.slf4j", "io.insert-koin:koin-logger-slf4j:3.4.0")
             bundle("koin", listOf("koin", "koin.slf4j"))
@@ -96,6 +96,9 @@ dependencyResolutionManagement {
             library("easyexcel", "com.alibaba:easyexcel:3.3.1")
             plugin("boot", "org.springframework.boot").version("3.1.0")
             library("guava", "com.google.guava:guava:31.1-jre")
+            library("symbol.processing.api", "com.google.devtools.ksp:symbol-processing-api:$kotlinVersion-$kspVersion")
+            library("symbol.processing", "com.google.devtools.ksp:symbol-processing:$kotlinVersion-$kspVersion")
+            plugin("ksp", "com.google.devtools.ksp").version("${kotlinVersion}-${kspVersion}")
         }
         create("test") {
             library("junit.bom", "org.junit:junit-bom:$junitVersion")
@@ -113,3 +116,4 @@ include("world")
 include("shared")
 include("stardust")
 include("gm")
+include("processor")

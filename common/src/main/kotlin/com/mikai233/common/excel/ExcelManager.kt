@@ -39,6 +39,7 @@ class ExcelManager(val commitId: String, val generateTime: String) : Config {
                 rebuildData(this@ExcelManager)
             }
         }
+        validateConfig()
         configs.values.forEach {
             it.allLoadFinish(this)
         }
@@ -50,12 +51,13 @@ class ExcelManager(val commitId: String, val generateTime: String) : Config {
         this.configs.values.forEach { config ->
             config.rebuildData(this)
         }
+        validateConfig()
         this.configs.values.forEach {
             it.allLoadFinish(this)
         }
     }
 
-    fun validate() {
+    private fun validateConfig() {
 
     }
 

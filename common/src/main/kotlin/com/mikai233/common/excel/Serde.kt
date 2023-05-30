@@ -1,21 +1,12 @@
 package com.mikai233.common.excel
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
+import kotlinx.serialization.Serializable
 
+
+@Serializable
+data class SerdeConfigs(val configs: Set<SerdeConfig>)
 interface ExcelSerde {
-    fun ser(config: ExcelRow<*>): ByteArray
-    fun de(bytes: ByteArray): ExcelRow<*>
-}
+    fun ser(configs: SerdeConfigs): ByteArray
 
-class JsonExcelSerde : ExcelSerde {
-    private val mapper = jacksonObjectMapper()
-    private val prettyWriter = mapper.writerWithDefaultPrettyPrinter()
-    override fun ser(config: ExcelRow<*>): ByteArray {
-        return prettyWriter.writeValueAsBytes(config)
-    }
-
-    override fun de(bytes: ByteArray): ExcelRow<*> {
-        return mapper.readValue(bytes)
-    }
+    fun de(bytes: ByteArray): SerdeConfigs
 }

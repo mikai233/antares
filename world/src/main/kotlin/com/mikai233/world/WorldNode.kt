@@ -17,6 +17,7 @@ import com.mikai233.common.ext.registerService
 import com.mikai233.common.inject.XKoin
 import com.mikai233.protocol.MsgCs
 import com.mikai233.protocol.MsgSc
+import com.mikai233.shared.component.ExcelConfigHolder
 import com.mikai233.shared.script.ScriptActor
 import com.mikai233.shared.scriptActorServiceKey
 import com.mikai233.world.component.WorldActorDispatchers

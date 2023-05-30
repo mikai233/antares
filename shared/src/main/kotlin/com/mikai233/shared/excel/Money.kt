@@ -1,11 +1,11 @@
 package com.mikai233.shared.excel
 
 import com.google.common.collect.ImmutableMap
-import com.mikai233.common.annotation.NoArg
 import com.mikai233.common.excel.*
 import com.mikai233.common.ext.camelCaseToSnakeCase
+import kotlinx.serialization.Serializable
 
-@NoArg
+@Serializable
 data class MoneyRow(
     val id: Int,
     val name: String,
@@ -15,6 +15,7 @@ data class MoneyRow(
     override fun `primary key`(): Int = id
 }
 
+@Serializable
 class MoneyConfig : ExcelConfig<Int, MoneyRow>() {
     override fun name(): String = "money.xlsx"
 
