@@ -30,6 +30,9 @@ dependencies {
     implementation(tool.guava)
     implementation(tool.poi.ooxml)
     implementation(tool.easyexcel)
+    implementation(tool.spring.data.mongodb)
+    implementation(tool.mongodb.driver.sync)
+    implementation(tool.agrona)
 }
 
 tasks.test {

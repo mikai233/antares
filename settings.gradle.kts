@@ -99,6 +99,9 @@ dependencyResolutionManagement {
             library("symbol.processing.api", "com.google.devtools.ksp:symbol-processing-api:$kotlinVersion-$kspVersion")
             library("symbol.processing", "com.google.devtools.ksp:symbol-processing:$kotlinVersion-$kspVersion")
             plugin("ksp", "com.google.devtools.ksp").version("${kotlinVersion}-${kspVersion}")
+            library("spring.data.mongodb", "org.springframework.data:spring-data-mongodb:4.1.0")
+            library("mongodb.driver.sync", "org.mongodb:mongodb-driver-sync:4.9.1")
+            library("agrona", "org.agrona:agrona:1.18.1")
         }
         create("test") {
             library("junit.bom", "org.junit:junit-bom:$junitVersion")

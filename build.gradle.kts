@@ -77,12 +77,12 @@ subprojects {
 
     tasks.register<Jar>("buildKotlinScript") {
         group = "script"
-        val scriptClass: String by project
-        val classSimpleName = scriptClass.split(".").last()
+        val scriptClass: String? by project
+        val classSimpleName = scriptClass?.split(".")?.last()
         archiveFileName.set("${rootProject.name}_${project.name}_${classSimpleName}.jar")
         val script = sourceSets["script"]
         manifest {
-            attributes("Script-Class" to scriptClass)
+            attributes("Script-Class" to (scriptClass ?: "undefined"))
         }
         from(script.output)
         include("com/mikai233/${project.name}/script/*")
@@ -92,6 +92,7 @@ subprojects {
                 it.walk().any { file -> file.name == "${classSimpleName}.class" }
             }
             check(containsTarget) { "cannot find ${scriptClass}.class in build dir" }
+            check(scriptClass != null) { "missing property scriptClass" }
         }
     }
 }
