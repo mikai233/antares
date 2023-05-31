@@ -15,17 +15,17 @@ data class Room(
     val directObj: DirectObj,
     var listObj: MutableList<String>,
     val trackChild: TrackChild,
-) : RootEntity<Int> {
+) : FieldTrackableEntity<Int> {
     override fun key(): Int {
         return id
     }
 }
 
 @Serializable
-data class RoomPlayer(val id: Int, var level: Int) : ChildEntity
+data class RoomPlayer(val id: Int, var level: Int)
 
 @Serializable
 data class DirectObj(val a: String, var b: Int, var c: Long, var d: Boolean)
 
 @Serializable
-data class TrackChild(val a: String, var b: String) : ChildEntity
+data class TrackChild(val a: String, var b: String)

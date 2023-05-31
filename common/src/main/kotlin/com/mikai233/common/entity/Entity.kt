@@ -1,3 +1,5 @@
 package com.mikai233.common.entity
 
-interface Entity
+sealed interface Entity<K> where K : Any {
+    fun key(): K
+}

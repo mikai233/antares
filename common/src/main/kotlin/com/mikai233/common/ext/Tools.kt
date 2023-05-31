@@ -73,6 +73,8 @@ fun String.snakeCaseToCamelCase(): String = CaseFormat.LOWER_UNDERSCORE.to(CaseF
 
 fun String.camelCaseToSnakeCase(): String = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, this)
 
+fun String.upperCamelToLowerCamel(): String = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, this)
+
 inline fun <reified T : AutoCloseable> Module.closeableSingle(
     qualifier: Qualifier? = null,
     createdAtStart: Boolean = false,
