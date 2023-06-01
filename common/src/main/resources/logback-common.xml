@@ -15,7 +15,9 @@
     <logger name="org.apache.zookeeper.ClientCnxn" level="info"/>
     <logger name="io.netty" level="info"/>
     <logger name="akka.serialization" level="info"/>
-    <root level="info">
+    <logger name="org.mongodb.driver.cluster" level="info"/>
+    <logger name="org.mongodb.driver.connection" level="info"/>
+    <root level="trace">
         <appender-ref ref="ASYNC_STDOUT"/>
         <!--        <appender-ref ref="FILE"/>-->
     </root>
