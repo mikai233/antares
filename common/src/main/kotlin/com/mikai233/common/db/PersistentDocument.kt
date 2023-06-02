@@ -10,5 +10,5 @@ import org.bson.Document
 class PersistentDocument(
     val operation: Operation,
     val status: SubmitStatus,
-    val document: Document
+    val document: Document?
 )

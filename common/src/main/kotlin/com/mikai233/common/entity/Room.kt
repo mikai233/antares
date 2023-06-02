@@ -15,7 +15,7 @@ data class Room(
     val directObj: DirectObj,
     var listObj: MutableList<String>,
     val trackChild: TrackChild,
-) : FieldTraceableEntity<Int> {
+) : TraceableFieldEntity<Int> {
     override fun key(): Int {
         return id
     }
