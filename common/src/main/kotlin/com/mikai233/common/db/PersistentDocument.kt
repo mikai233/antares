@@ -1,6 +1,6 @@
 package com.mikai233.common.db
 
-import org.bson.Document
+import org.springframework.data.mongodb.core.MongoTemplate
 
 /**
  * @author mikai233
@@ -9,6 +9,5 @@ import org.bson.Document
  */
 class PersistentDocument(
     val operation: Operation,
-    val status: SubmitStatus,
-    val document: Document?
+    val block: (MongoTemplate) -> Unit
 )

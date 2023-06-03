@@ -41,8 +41,9 @@ dependencyResolutionManagement {
             library("datetime", "org.jetbrains.kotlinx:kotlinx-datetime:$datetimeVersion")
             library("datetime.jvm", "org.jetbrains.kotlinx:kotlinx-datetime-jvm:$datetimeVersion")
             library("serialization.protobuf", "org.jetbrains.kotlinx:kotlinx-serialization-protobuf-jvm:1.5.1")
+            library("serialization.json", "org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.5.1")
             library("serialization.core", "org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.5.1")
-            bundle("serialization", listOf("serialization.protobuf", "serialization.core"))
+            bundle("serialization", listOf("serialization.protobuf", "serialization.json", "serialization.core"))
         }
         create("akka") {
             library("actor", "com.typesafe.akka:akka-actor-typed_$scalaVersion:$akkaVersion")

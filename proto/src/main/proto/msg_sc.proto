@@ -4,5 +4,5 @@ import "proto_login.proto";
 package com.mikai233.protocol;
 
 message MessageServerToClient{
-  LoginResp loginResp = 10001;
+  LoginResp login_resp = 10001;
 }

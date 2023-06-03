@@ -7,6 +7,8 @@ import com.mongodb.client.MongoClients
 import org.junit.jupiter.api.Test
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.SimpleMongoClientDatabaseFactory
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
 
 class TraceDBTest {
     data class ChildData(val field1: String, var field2: Long)
@@ -52,18 +54,20 @@ class TraceDBTest {
             field5 = hashMapOf(1 to null, 2 to "hello"),
             field6 = null,
         )
-        val path = "rootEntity.1"
+        val root = entity::class
+        val query = Query.query(Criteria.where("_id").`is`(entity.key()))
+        val key = TKey(root, query, null, TType.Data)
         db.traceEntity(entity)
         entity.field3 = hashMapOf()
-        var operation = db.checkDataHash(traceMap[TraceKey(path, TraceType.NormalField)]!!)
+        var operation = db.checkDataHash(traceMap[key]!!)
         assert(operation == Operation.Update)
-        operation = db.checkDataHash(traceMap[TraceKey(path, TraceType.NormalField)]!!)
+        operation = db.checkDataHash(traceMap[key]!!)
         assert(operation == null)
         entity.field6 = ChildData("hello", 1L)
-        operation = db.checkDataHash(traceMap[TraceKey(path, TraceType.NormalField)]!!)
+        operation = db.checkDataHash(traceMap[key]!!)
         assert(operation == Operation.Update)
         entity.field6?.field2 = 2
-        operation = db.checkDataHash(traceMap[TraceKey(path, TraceType.NormalField)]!!)
+        operation = db.checkDataHash(traceMap[key]!!)
         assert(operation == Operation.Update)
     }
 
@@ -81,35 +85,45 @@ class TraceDBTest {
             field4 = null,
             field5 = ChildData("mikai", 12),
         )
+        val root = entity::class
+        val query = Query.query(Criteria.where("_id").`is`(entity.key()))
         db.traceEntity(entity)
         entity.field3.clear()
         entity.field3[2] = 2
-        val traceKey = TraceKey("traceFieldEntity.1.field3", TraceType.MapField)
-        val (delete, save, update) = db.checkMapFieldHash(traceKey, traceMap[traceKey]!!)
+        val field3Path = TraceFieldEntity::field3.name
+        val keyOfField3 = TKey(root, query, field3Path, TType.Map)
+        val (delete, add, update) = db.checkMapValueHash(keyOfField3, traceMap[keyOfField3]!!)
         assert(delete.size == 1)
-        assert(delete[TraceKey("traceFieldEntity.1.field3.1", TraceType.MapValue)] != null)
+        assert(delete[TKey(root, query, "$field3Path.1", TType.Builtin)] != null)
         delete.forEach {
             traceMap.remove(it.key)
         }
-        assert(save.size == 1)
-        assert(save[TraceKey("traceFieldEntity.1.field3.2", TraceType.MapValue)] != null)
-        save.forEach {
-            traceMap[it.key] = TraceData.of(it.value, db.hashFunction)
+        assert(add.size == 1)
+        assert(add[TKey(root, query, "$field3Path.2", TType.Builtin)] != null)
+        add.forEach {
+            traceMap[it.key] = TData(it.value, it.hashCode(), db.serdeHash(it.value), 0)
         }
         assert(update.isEmpty())
         entity.field3[1] = 3
-        val (delete1, save1, update1) = db.checkMapFieldHash(traceKey, traceMap[traceKey]!!)
+        val (delete1, save1, update1) = db.checkMapValueHash(keyOfField3, traceMap[keyOfField3]!!)
         assert(delete1.isEmpty())
         assert(save1.size == 1)
-        assert(save1[TraceKey("traceFieldEntity.1.field3.1", TraceType.MapValue)] != null)
+        assert(save1[TKey(root, query, "$field3Path.1", TType.Builtin)] != null)
         save1.forEach {
-            traceMap[it.key] = TraceData.of(it.value, db.hashFunction)
+            traceMap[it.key] = TData(it, it.hashCode(), db.serdeHash(it), 0)
         }
         assert(update.isEmpty())
         entity.field3[1] = 4
-        val (delete2, save2, update2) = db.checkMapFieldHash(traceKey, traceMap[traceKey]!!)
+        val (delete2, save2, update2) = db.checkMapValueHash(keyOfField3, traceMap[keyOfField3]!!)
         assert(delete2.isEmpty())
         assert(save2.isEmpty())
         assert(update2.size == 1)
+        entity.field4 = mutableSetOf(1, 2, 3)
+        val field4Path = TraceFieldEntity::field4.name
+        val keyOfField4 = TKey(root, query, field4Path, TType.Builtin)
+        val data = traceMap[keyOfField4]!!
+        data.inner = entity.field4
+        val operation = db.checkDataHash(data)
+        assert(operation == Operation.Update)
     }
 }

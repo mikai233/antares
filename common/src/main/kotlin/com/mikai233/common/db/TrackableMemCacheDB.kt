@@ -3,14 +3,12 @@ package com.mikai233.common.db
 import com.google.common.collect.BiMap
 import com.google.common.collect.HashBiMap
 import com.google.common.hash.HashCode
-import com.google.common.hash.HashFunction
 import com.google.common.hash.Hashing
 import com.mikai233.common.conf.GlobalData
 import com.mikai233.common.entity.*
 import com.mikai233.common.ext.Json
 import com.mikai233.common.ext.logger
 import com.mikai233.common.ext.unixTimestamp
-import com.mikai233.common.ext.upperCamelToLowerCamel
 import com.mongodb.client.MongoClients
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -26,42 +24,51 @@ import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 import kotlin.random.nextInt
 import kotlin.reflect.KMutableProperty
+import kotlin.reflect.KProperty1
+import kotlin.reflect.KType
+import kotlin.reflect.full.createType
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.isSubtypeOf
+import kotlin.reflect.full.withNullability
+import kotlin.reflect.jvm.jvmErasure
 import kotlin.reflect.typeOf
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
-enum class TraceType {
-    NormalField,
-    MapField,
-    MapValue,
-}
-
-data class TraceKey(val path: String, val type: TraceType)
-
-data class TraceData(
-    val data: Any?,
-    var hashCode: Int,
-    var fullHashCode: HashCode,
-    var sameHashCount: Int
-) {
-    companion object {
-        fun of(data: Any?, hashFunction: HashFunction): TraceData {
-            return TraceData(data, data.hashCode(), hashFunction.hashBytes(Json.toJsonBytes(data)), 0)
-        }
-    }
-}
-
 class TrackableMemCacheDB(private val template: MongoTemplate, private val fullHashThreshold: Int = 100) {
+    companion object {
+        val allowedBuiltinType = setOf(
+            typeOf<Byte>(),
+            typeOf<UByte>(),
+            typeOf<Short>(),
+            typeOf<UShort>(),
+            typeOf<Int>(),
+            typeOf<UInt>(),
+            typeOf<Long>(),
+            typeOf<ULong>(),
+            typeOf<ByteArray>(),
+            typeOf<String>(),
+            typeOf<List<*>>(),
+            typeOf<Set<*>>(),
+            typeOf<Boolean>(),
+        )
+    }
+
     private val logger = logger()
     private val clock = Clock.System
-    private val pendingData: MutableMap<TraceKey, Pair<PersistentDocument?, PersistentDocument?>> = mutableMapOf()
-    internal val traceMap: MutableMap<TraceKey, TraceData> = mutableMapOf()
-    private val timers: BiMap<Long, TraceKey> = HashBiMap.create()
-    internal val hashFunction = Hashing.goodFastHash(128)
+    private val pendingData: MutableMap<TKey, Pair<PersistentDocument?, PersistentDocument?>> = mutableMapOf()
+    internal val traceMap: MutableMap<TKey, TData> = mutableMapOf()
+    private val propertiesMap: MutableMap<TKey, Pair<KProperty1<out TraceableFieldEntity<*>, *>, TraceableFieldEntity<*>>> =
+        mutableMapOf()
+    private val timers: BiMap<Long, TKey> = HashBiMap.create()
+    private val hashFunction = Hashing.goodFastHash(128)
     private val timerWheel = DeadlineTimerWheel(TimeUnit.MILLISECONDS, unixTimestamp(), 16, 256)
+    private var stopped = true
+
+    internal fun serdeHash(obj: Any?) = hashFunction.hashBytes(Json.toJsonBytes(obj))
 
     fun traceEntity(entity: Entity<*>) {
+        check(stopped) { "trace db is not working, this means you already stopped the trace db" }
         when (entity) {
             is TraceableFieldEntity -> {
                 traceEntityByFields(entity)
@@ -75,7 +82,8 @@ class TrackableMemCacheDB(private val template: MongoTemplate, private val fullH
 
     private fun traceEntityByFields(entity: TraceableFieldEntity<*>) {
         val entityClazz = entity::class
-        val root = requireNotNull(entityClazz.simpleName) { "class simple name is null" }.upperCamelToLowerCamel()
+        checkNotNull(entityClazz.qualifiedName) { "class qualified name is null" }
+        val query = Query.query(Criteria.where("_id").`is`(entity.key()))
         entityClazz.declaredMemberProperties.forEach { kp ->
             val returnType = kp.returnType
             val fieldValue = kp.call(entity)
@@ -83,74 +91,103 @@ class TrackableMemCacheDB(private val template: MongoTemplate, private val fullH
                 returnType.isSubtypeOf(typeOf<Map<*, *>>()) -> {
                     check(kp !is KMutableProperty<*>) { "map field is not allowed mutable in trace entity by fields mode" }
                     check(!returnType.isMarkedNullable) { "map field return type is not allowed nullable in trace entity by fields mode" }
-                    val mapKey = TraceKey("$root.${entity.key()}.${kp.name}", TraceType.MapField)
+                    val mapKey = TKey(entityClazz, query, kp.name, TType.Map)
                     val mapField = fieldValue as Map<*, *>
-                    traceMap[mapKey] = TraceData.of(mapField, hashFunction).also {
+                    traceMap[mapKey] = TData(mapField, 0, serdeHash(mapField), 0).also {
+                        propertiesMap[mapKey] = kp to entity
                         scheduleTraceCheck(mapKey, it)
                     }
                     mapField.forEach { (k, v) ->
                         checkNotNull(k) { "map key of:${kp.name} in $entityClazz is not allowed nullable" }
-//                        checkNotNull(v) { "map value of:${kp.name} in $entityClazz is not allowed nullable" }
-                        val mapValueKey = TraceKey("${mapKey.path}.$k", TraceType.MapValue)
-                        traceMap[mapValueKey] = TraceData.of(v, hashFunction)
+                        checkNotNull(v) { "map value of:${kp.name} in $entityClazz is not allowed nullable" }
+                        val valueType = v::class.createType()
+                        val type = when {
+                            isBuiltin(valueType) -> {
+                                TType.Builtin
+                            }
+
+                            isDataClass(valueType) -> {
+                                TType.Data
+                            }
+
+                            else -> error("unsupported class:${v::class}")
+                        }
+                        val mapValueKey = mapKey.copy(path = "${mapKey.path}.$k", type = type)
+                        traceMap[mapValueKey] = TData(v, 0, serdeHash(v), 0)
                     }
                 }
 
-                else -> {
-                    val fieldKey = TraceKey("$root.${entity.key()}.${kp.name}", TraceType.NormalField)
-                    traceMap[fieldKey] = TraceData.of(fieldValue, hashFunction).also {
+                isBuiltin(returnType) -> {
+                    val fieldKey = TKey(entityClazz, query, kp.name, TType.Builtin)
+                    traceMap[fieldKey] = TData(fieldValue, 0, serdeHash(fieldValue), 0).also {
+                        propertiesMap[fieldKey] = kp to entity
                         scheduleTraceCheck(fieldKey, it)
                     }
                 }
+
+                isDataClass(returnType) -> {
+                    val fieldKey = TKey(entityClazz, query, kp.name, TType.Data)
+                    traceMap[fieldKey] = TData(fieldValue, 0, serdeHash(fieldValue), 0).also {
+                        propertiesMap[fieldKey] = kp to entity
+                        scheduleTraceCheck(fieldKey, it)
+                    }
+                }
+
+                else -> error("unsupported class:${returnType.jvmErasure}")
             }
         }
         logger.trace("{}", traceMap)
         logger.debug("trace entity:{} by fields", entityClazz)
     }
 
-    private fun scheduleTraceCheck(traceKey: TraceKey, traceData: TraceData) {
-        val checkDelay = nextCheckTime(traceData)
+    private fun scheduleTraceCheck(key: TKey, data: TData) {
+        val checkDelay = nextCheckTime(data)
         val timerId = timerWheel.scheduleTimer(checkDelay.toEpochMilliseconds())
         logger.trace(
             "schedule check:{} at:{} with timer:{}",
-            traceKey,
+            key,
             checkDelay.toLocalDateTime(GlobalData.zoneId),
             timerId
         )
-        timers[timerId] = traceKey
+        timers[timerId] = key
     }
 
     private fun traceEntityByRoot(entity: TraceableRootEntity<*>) {
         val entityClazz = entity::class
-        val root = requireNotNull(entityClazz.simpleName) { "class simple name is null" }.upperCamelToLowerCamel()
-        val traceKey = TraceKey("$root.${entity.key()}", TraceType.NormalField)
-        val traceData = TraceData.of(entity, hashFunction)
-        scheduleTraceCheck(traceKey, traceData)
+        val query = Query.query(Criteria.where("_id").`is`(entity.key()))
+        val key = TKey(entityClazz, query, null, TType.Data)
+        val traceData = TData(
+            entity,
+            entity.hashCode(),
+            serdeHash(entity),
+            0
+        )
+        scheduleTraceCheck(key, traceData)
         logger.info("{}", traceData)
-        traceMap[traceKey] = traceData
+        traceMap[key] = traceData
         logger.debug("trace entity:{} by root", entityClazz)
     }
 
     /**
      * @return true if hash changed
      */
-    private fun calHashCode(traceData: TraceData): Boolean {
-        val preHashCode = traceData.hashCode
-        traceData.hashCode = traceData.data.hashCode()
-        return preHashCode != traceData.hashCode
+    private fun calHashCode(traceData: TData): Boolean {
+        val preHashCode = traceData.objHash
+        traceData.objHash = traceData.inner.hashCode()
+        return preHashCode != traceData.objHash
     }
 
     /**
      * @return true if hash changed
      */
-    private fun calFullHashCode(traceData: TraceData): Boolean {
-        val preHashCode = traceData.fullHashCode
-        traceData.fullHashCode = hashFunction.hashBytes(Json.toJsonBytes(traceData.data))
-        return preHashCode != traceData.fullHashCode
+    private fun calFullHashCode(traceData: TData): Boolean {
+        val preHashCode = traceData.serdeHash
+        traceData.serdeHash = hashFunction.hashBytes(Json.toJsonBytes(traceData.inner))
+        return preHashCode != traceData.serdeHash
     }
 
-    private fun nextCheckTime(traceData: TraceData): Instant {
-        val delay = 1.seconds - traceData.sameHashCount.seconds + (Random.nextInt(1..2).seconds)
+    private fun nextCheckTime(traceData: TData): Instant {
+        val delay = 1.minutes - traceData.sameObjHashCount.seconds + (Random.nextInt(10..20).seconds)
         return clock.now().plus(delay)
     }
 
@@ -158,115 +195,135 @@ class TrackableMemCacheDB(private val template: MongoTemplate, private val fullH
         timerWheel.poll(now.toEpochMilliseconds(), ::handleTimeout, 1000)
     }
 
-    private fun handleTimeout(timeUnit: TimeUnit, now: Long, timerId: Long): Boolean {
-        val traceKey = timers.remove(timerId)
-        if (traceKey != null) {
+    private fun handleTimeout(@Suppress("UNUSED_PARAMETER") timeUnit: TimeUnit, now: Long, timerId: Long): Boolean {
+        val key = timers.remove(timerId)
+        if (key != null) {
             logger.trace(
                 "{} timerId:{} timeout at:{}",
-                traceKey,
+                key,
                 timerId,
                 Instant.fromEpochMilliseconds(now).toLocalDateTime(GlobalData.zoneId)
             )
-            val traceData = requireNotNull(traceMap[traceKey]) { "track data of key:$traceKey not found" }
-            when (traceKey.type) {
-                TraceType.MapField -> {
-                    val (delete, save, update) = checkMapFieldHash(traceKey, traceData)
-                    delete.forEach { (k, v) ->
-                        checkNotNull(traceMap.remove(k))
-                        persistent(Operation.Delete, k, v)
-                    }
-                    save.forEach { (k, v) ->
-                        val mapValueData = TraceData.of(v, hashFunction)
-                        check(this.traceMap.containsKey(k).not())
-                        traceMap[k] = mapValueData
-                        persistent(Operation.Save, k, mapValueData)
-                    }
-                    update.forEach { (k, v) ->
-                        check(this.traceMap.containsKey(k))
-                        persistent(Operation.Update, k, v)
-                    }
-                    scheduleTraceCheck(traceKey, traceData)
-                }
-
-                TraceType.NormalField,
-                TraceType.MapValue -> {
-                    val operation = checkDataHash(traceData)
-                    if (operation != null) {
-                        persistent(operation, traceKey, traceData)
-                    }
-                    scheduleTraceCheck(traceKey, traceData)
-                }
-            }
+            val data = requireNotNull(traceMap[key]) { "track data of key:$key not found" }
+            checkDataChangeForKey(key, data)
+            scheduleTraceCheck(key, data)
         } else {
             logger.warn("track key of timerId:{} not found", timerId)
         }
         return true
     }
 
-    internal fun checkDataHash(traceData: TraceData): Operation? {
-        if (traceData.data == null) {
+    private fun checkDataChangeForKey(key: TKey, data: TData) {
+        when (key.type) {
+            TType.Map -> {
+                val (delete, add, update) = checkMapValueHash(key, data)
+                delete.forEach { (k, v) ->
+                    //there is no need to cancel the timer, because each map value not start a timer
+                    checkNotNull(traceMap.remove(k)) { "key:$k trace data not found" }
+                    persistent(Operation.Delete, k, v)
+                }
+                add.forEach { (k, v) ->
+                    val mapValueData = TData(v, v.hashCode(), serdeHash(v), 0)
+                    check(this.traceMap.containsKey(k).not()) { "logic error, trace map contains key:$k" }
+                    traceMap[k] = mapValueData
+                    persistent(Operation.Save, k, mapValueData)
+                }
+                update.forEach { (k, v) ->
+                    check(this.traceMap.containsKey(k)) { "logic error, trace map not contains key:$k" }
+                    persistent(Operation.Update, k, v)
+                }
+            }
+
+            TType.Data,
+            TType.Builtin -> {
+                val (kp, entity) = requireNotNull(propertiesMap[key]) { "kp of key:$key not found" }
+                val value = kp.call(entity)
+                if (value != data.inner) {
+                    data.inner = value
+                }
+                val operation = checkDataHash(data)
+                if (operation != null) {
+                    persistent(operation, key, data)
+                }
+            }
+        }
+    }
+
+    internal fun checkDataHash(traceData: TData): Operation? {
+        if (stopped.not()) {
+            //stop trace db, force do full hash if obj hash has no change
+            traceData.sameObjHashCount = fullHashThreshold
+        }
+        if (traceData.inner == null) {
             with(traceData) {
-                sameHashCount = 0
-                hashCode = 0
-                fullHashCode = HashCode.fromInt(0)
+                sameObjHashCount = 0
+                objHash = 0
+                serdeHash = HashCode.fromInt(0)
             }
             return Operation.Delete
         }
         val hashChanged = calHashCode(traceData)
         if (!hashChanged) {
-            traceData.sameHashCount++
+            traceData.sameObjHashCount++
         } else {
-            traceData.sameHashCount = 0
+            traceData.sameObjHashCount = 0
             return Operation.Update
         }
-        if (traceData.sameHashCount >= fullHashThreshold) {
+        if (traceData.sameObjHashCount >= fullHashThreshold) {
             val fullHashChanged = calFullHashCode(traceData)
             if (fullHashChanged) {
                 return Operation.Update
             }
-            traceData.sameHashCount = 0
+            traceData.sameObjHashCount = 0
         }
         return null
     }
 
     /**
-     * @return first: delete data, second: save data, third: update data
+     * @return first: delete data, second: add data, third: update data
      */
-    internal fun checkMapFieldHash(
-        traceKey: TraceKey,
-        traceData: TraceData
-    ): Triple<Map<TraceKey, TraceData>, Map<TraceKey, Any>, Map<TraceKey, TraceData>> {
-        check(traceKey.type == TraceType.MapField)
-        val mapData = traceData.data as Map<*, *>
-        val allMapValue = mutableMapOf<TraceKey, Any>()
-        mapData.forEach { (k, v) ->
-            checkNotNull(k) { "$traceKey map key is null" }
-            //if map value is null, represent this value deleted
-            if (v != null) {
-                allMapValue[TraceKey("${traceKey.path}.$k", TraceType.MapValue)] = v
+    internal fun checkMapValueHash(
+        key: TKey,
+        data: TData
+    ): Triple<Map<TKey, TData>, Map<TKey, Any>, Map<TKey, TData>> {
+        check(key.type == TType.Map)
+        val map = data.inner as Map<*, *>
+        val allMapValue = mutableMapOf<TKey, Any>()
+        map.forEach { (k, v) ->
+            checkNotNull(k) { "$key map key is null" }
+            checkNotNull(v) { "$key map value is null" }
+            val valueType = v::class.createType()
+            val type = when {
+                isBuiltin(valueType) -> TType.Builtin
+                isDataClass(valueType) -> TType.Data
+                else -> error("logic error, unexpected class:${valueType.jvmErasure}")
             }
+            allMapValue[TKey(key.root, key.query, "${key.path}.$k", type)] = v
         }
-        val tracedMapValue = mutableSetOf<TraceKey>()
-        val delete = mutableMapOf<TraceKey, TraceData>()
-        val update = mutableMapOf<TraceKey, TraceData>()
+        val allTracedKeys = mutableSetOf<TKey>()
+        val deleteValues = mutableMapOf<TKey, TData>()
+        val updateValues = mutableMapOf<TKey, TData>()
         traceMap.forEach { (k, v) ->
-            if (k.type == TraceType.MapValue && k.path.startsWith(traceKey.path)) {
-                tracedMapValue.add(k)
+            val valuePath = requireNotNull(k.path) { "map value path is null:$k" }
+            val keyPath = requireNotNull(key.path) { "map key path is null:$key" }
+            if (k.type != TType.Map && valuePath.startsWith(keyPath)) {
+                allTracedKeys.add(k)
                 val maybeTraced = allMapValue[k]
-                if (maybeTraced != null && (maybeTraced !== v.data || checkDataHash(v) == Operation.Update)) {
-                    update[k] = v
+                //value reference not equals is allowed, only check value is equals or not
+                if (maybeTraced != null && (maybeTraced != v.inner || checkDataHash(v) == Operation.Update)) {
+                    updateValues[k] = v
                 } else if (maybeTraced == null) {
-                    delete[k] = v
+                    deleteValues[k] = v
                 }
             }
         }
-        val save = allMapValue.filter { it.key !in tracedMapValue }
-        return Triple(delete, save, update)
+        val addValues = allMapValue.filter { it.key !in allTracedKeys }
+        return Triple(deleteValues, addValues, updateValues)
     }
 
-    private fun persistent(operation: Operation, traceKey: TraceKey, traceData: TraceData) {
-        merge(operation, traceKey, traceData)
-        val submittingData = arrayListOf<Pair<TraceKey, PersistentDocument>>()
+    private fun persistent(operation: Operation, tKey: TKey, traceData: TData) {
+        merge(operation, tKey, traceData)
+        val submittingData = arrayListOf<Pair<TKey, PersistentDocument>>()
         val iter = pendingData.iterator()
         while (iter.hasNext()) {
             val next = iter.next()
@@ -276,32 +333,25 @@ class TrackableMemCacheDB(private val template: MongoTemplate, private val fullH
                 next.setValue(pending to null)
             }
         }
+        // TODO with IO thread
         submittingData.forEach { (k, v) ->
             try {
-                when (v.operation) {
-                    Operation.Save,
-                    Operation.Update -> {
-                        val update = Update.update(k.path.removePrefix("room.1."), v.document)
-                        val result = template.updateFirst(Query.query(Criteria.where("_id").`is`(1)), update, "room")
-                    }
-
-                    Operation.Delete -> {
-                        val update = Update().unset(k.path.removePrefix("room.1."))
-                        val result = template.updateFirst(Query.query(Criteria.where("_id").`is`(1)), update, "room")
-                    }
-                }
+                v.block.invoke(template)
+                val (_, pending) = requireNotNull(pendingData[k]) { "pending data of key:$k not found" }
+                pendingData[k] = null to pending
+                logger.info("submitted:{} op:{} to db", k, v.operation)
             } catch (e: Exception) {
                 logger.error("", e)
             }
         }
     }
 
-    private fun merge(incomingOperation: Operation, traceKey: TraceKey, traceData: TraceData) {
-        val (submitting, pending) = pendingData[traceKey] ?: (null to null)
+    private fun merge(incomingOperation: Operation, key: TKey, data: TData) {
+        val (submitting, pending) = pendingData[key] ?: (null to null)
         if (pending == null) {
-            val persistentDoc = genPersistentDoc(incomingOperation, traceData)
-            pendingData[traceKey] = submitting to persistentDoc
-            logger.trace("put pending key:{} {} ", traceKey, incomingOperation)
+            val persistentDoc = genPersistentDoc(incomingOperation, key, data)
+            pendingData[key] = submitting to persistentDoc
+            logger.trace("put pending key:{} {} data:{}", key, incomingOperation, data.inner)
             return
         }
         val mergedOperation = when (incomingOperation) {
@@ -353,31 +403,96 @@ class TrackableMemCacheDB(private val template: MongoTemplate, private val fullH
                 }
             }
         }
-        val persistentDoc = genPersistentDoc(mergedOperation, traceData)
-        pendingData[traceKey] = submitting to persistentDoc
+        val persistentDoc = genPersistentDoc(mergedOperation, key, data)
+        pendingData[key] = submitting to persistentDoc
         logger.trace(
-            "merge pending key:{} incoming:{} pending:{} final:{}",
-            traceKey,
+            "merge pending key:{} incoming:{} pending:{} final:{} data:{}",
+            key,
             pending.operation,
             incomingOperation,
-            mergedOperation
+            mergedOperation,
+            data.inner
         )
     }
 
-    private fun genPersistentDoc(incomingOperation: Operation, traceData: TraceData): PersistentDocument {
+    private fun isBuiltin(type: KType): Boolean {
+        return allowedBuiltinType.contains(type) || allowedBuiltinType.any {
+            type.withNullability(false).isSubtypeOf(it)
+        }
+    }
+
+    private fun isDataClass(type: KType): Boolean {
+        return type.jvmErasure.let {
+            it.isData && it.qualifiedName?.startsWith("com.mikai233") == true
+        }
+    }
+
+    private fun genPersistentDoc(incomingOperation: Operation, key: TKey, traceData: TData): PersistentDocument {
         return when (incomingOperation) {
             Operation.Save,
             Operation.Update -> {
-                val document = Document()
-                val data = checkNotNull(traceData.data) { "save or update data cannot be null" }
-                template.converter.write(data, document)
-                PersistentDocument(incomingOperation, SubmitStatus.Pending, document)
+                val data = checkNotNull(traceData.inner) { "save or update data cannot be null" }
+                when (val type = key.type) {
+                    TType.Data -> {
+                        if (key.path != null) {
+                            val document = Document()
+                            template.converter.write(data, document)
+                            PersistentDocument(incomingOperation) { mongoTemplate ->
+                                mongoTemplate.updateFirst(key.query, Update.update(key.path, document), key.root.java)
+                            }
+                        } else {
+                            PersistentDocument(incomingOperation) { mongoTemplate ->
+                                mongoTemplate.save(data)
+                            }
+                        }
+
+                    }
+
+                    TType.Builtin -> {
+                        if (key.path != null) {
+                            PersistentDocument(incomingOperation) { mongoTemplate ->
+                                mongoTemplate.updateFirst(key.query, Update.update(key.path, data), key.root.java)
+                            }
+                        } else {
+                            PersistentDocument(incomingOperation) { mongoTemplate ->
+                                mongoTemplate.save(data)
+                            }
+                        }
+                    }
+
+                    TType.Map -> error("logic error, unexpected type:${type}")
+                }
             }
 
             Operation.Delete -> {
-                PersistentDocument(incomingOperation, SubmitStatus.Pending, null)
+                if (key.path != null) {
+                    PersistentDocument(incomingOperation) { mongoTemplate ->
+                        mongoTemplate.updateFirst(key.query, Update().unset(key.path), key.root.java)
+                    }
+                } else {
+                    PersistentDocument(incomingOperation) { mongoTemplate ->
+                        mongoTemplate.remove(key.query, key.root.java)
+                    }
+                }
             }
         }
+    }
+
+    fun stopTrace() {
+        if (stopped.not()) {
+            stopped = true
+            timerWheel.clear()
+            timers.clear()
+            traceMap.forEach { (key, data) ->
+                checkDataChangeForKey(key, data)
+            }
+        } else {
+            logger.warn("trace db already stopped, this invoke has no effect")
+        }
+    }
+
+    fun isAllPendingDataFlushedToDb(): Boolean {
+        return pendingData.values.all { (submitting, pending) -> submitting == null && pending == null }
     }
 }
 
@@ -416,6 +531,19 @@ fun main() {
             room.players.keys.randomOrNull()?.let {
                 room.players.remove(it)
             }
+        }
+        if (Random.nextBoolean()) {
+            room.changeableString = Random.nextLong().toString()
+        }
+        if (Random.nextBoolean()) {
+            room.directObj.c = Random.nextLong()
+        }
+        if (Random.nextBoolean()) {
+            room.listObj = null
+        }
+        if (Random.nextBoolean()) {
+            room.listObj =
+                generateSequence(1) { it + 1 }.take(Random.nextInt(1..20)).map { it.toString() }.toMutableList()
         }
     }
 }

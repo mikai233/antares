@@ -13,7 +13,7 @@ data class Room(
     var changeableString: String,
     val players: HashMap<Int, RoomPlayer>,
     val directObj: DirectObj,
-    var listObj: MutableList<String>,
+    var listObj: MutableList<String>?,
     val trackChild: TrackChild,
 ) : TraceableFieldEntity<Int> {
     override fun key(): Int {
