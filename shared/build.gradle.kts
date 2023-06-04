@@ -21,6 +21,7 @@ dependencies {
     implementation(tool.koin)
     implementation(tool.bundles.jackson)
     implementation(tool.symbol.processing)
+    implementation(tool.spring.data.mongodb)
     implementation(tool.easyexcel) {
         exclude("org.apache.poi")
     }

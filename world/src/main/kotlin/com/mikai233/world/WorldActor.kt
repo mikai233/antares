@@ -7,14 +7,15 @@ import com.mikai233.common.core.actor.ActorCoroutine
 import com.mikai233.common.core.actor.safeActorCoroutine
 import com.mikai233.common.ext.actorLogger
 import com.mikai233.common.ext.runnableAdapter
+import com.mikai233.common.ext.tell
+import com.mikai233.common.ext.unixTimestamp
 import com.mikai233.common.inject.XKoin
 import com.mikai233.shared.message.*
 import com.mikai233.world.component.WorldActorDispatchers
 import com.mikai233.world.component.WorldSharding
-import kotlinx.coroutines.delay
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
-import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.toJavaDuration
 
 class WorldActor(
@@ -22,7 +23,7 @@ class WorldActor(
     private val buffer: StashBuffer<WorldMessage>,
     val timers: TimerScheduler<WorldMessage>,
     val worldId: Long,
-    private val koin: XKoin,
+    val koin: XKoin,
 ) : AbstractBehavior<WorldMessage>(context), KoinComponent by koin {
     private val logger = actorLogger()
     private val runnableAdapter = runnableAdapter { WorldRunnable(it::run) }
@@ -34,6 +35,7 @@ class WorldActor(
     val playerActor = worldSharding.playerActor
     val worldActor = worldSharding.worldActor
     val sessionManager = WorldSessionManager(this)
+    val manager = WorldDataManager(this, coroutine)
 
     init {
         logger.info("worldId:{} preStart", worldId)
@@ -51,11 +53,8 @@ class WorldActor(
                 }
 
                 WakeupGameWorld -> {
-                    logger.info("pretend loading world data")
-                    coroutine.launch {
-                        delay(3.seconds)
-                        context.self.tell(WorldInitDone)
-                    }
+                    logger.info("loading world data")
+                    manager.loadAll()
                 }
 
                 is WorldRunnable -> {
@@ -67,8 +66,13 @@ class WorldActor(
                 }
 
                 WorldInitDone -> {
+                    timers.startTimerAtFixedRate(WorldTick, 100.milliseconds.toJavaDuration())
+                    //FIXME test
+                    manager.worldActionMem.worldAction.actionTime = unixTimestamp()
                     return@onMessage buffer.unstashAll(active())
                 }
+
+                WorldTick -> Unit
             }
             Behaviors.same()
         }.onSignal(PostStop::class.java) { message ->
@@ -85,8 +89,8 @@ class WorldActor(
                 }
 
                 StopWorld -> {
+                    manager.stopAndFlush()
                     logger.info("pretend stop player operation")
-                    timers.startSingleTimer(StopWorld, 3.seconds.toJavaDuration())
                     return@onMessage stopping()
                 }
 
@@ -104,6 +108,10 @@ class WorldActor(
                 is BusinessWorldMessage -> {
                     handleBusinessWorldMessage(message)
                 }
+
+                WorldTick -> {
+                    manager.tickDatabase()
+                }
             }
             Behaviors.same()
         }.build()
@@ -117,6 +125,7 @@ class WorldActor(
                 }
 
                 StopWorld -> {
+                    coroutine.cancelAll("StopWorld")
                     return@onMessage Behaviors.stopped()
                 }
 
@@ -127,6 +136,12 @@ class WorldActor(
                 WakeupGameWorld,
                 WorldInitDone,
                 is BusinessWorldMessage -> Unit
+
+                WorldTick -> {
+                    if (manager.stopAndFlush()) {
+                        context.self tell StopWorld
+                    }
+                }
             }
             Behaviors.same()
         }.build()

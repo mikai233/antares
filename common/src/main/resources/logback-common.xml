@@ -16,7 +16,8 @@
     <logger name="io.netty" level="info"/>
     <logger name="akka.serialization" level="info"/>
     <logger name="org.mongodb.driver" level="info"/>
-    <root level="debug">
+    <logger name="akka" level="info"/>
+    <root level="info">
         <appender-ref ref="ASYNC_STDOUT"/>
         <!--        <appender-ref ref="FILE"/>-->
     </root>

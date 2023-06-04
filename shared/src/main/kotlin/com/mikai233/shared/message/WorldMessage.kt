@@ -20,6 +20,8 @@ object WakeupGameWorld : SerdeWorldMessage
 
 object WorldInitDone : WorldMessage
 
+object WorldTick : WorldMessage
+
 data class WorldProtobufEnvelope(val inner: GeneratedMessageV3) : BusinessWorldMessage
 
 data class PlayerLogin(val req: LoginReq, val channelActor: ActorRef<SerdeChannelMessage>) : BusinessWorldMessage

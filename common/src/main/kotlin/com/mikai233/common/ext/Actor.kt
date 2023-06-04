@@ -33,6 +33,10 @@ fun <T> AbstractBehavior<T>.runnableAdapter(block: (Runnable) -> T): ActorRef<Ru
     return context.messageAdapter(Runnable::class.java, block)
 }
 
+infix fun <T> ActorRef<T>.tell(msg: T) {
+    tell(msg)
+}
+
 suspend fun <Req : M, Resp, M> ask(
     target: ActorRef<M>,
     scheduler: Scheduler,

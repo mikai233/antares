@@ -1,14 +1,18 @@
 package com.mikai233.common.test.db
 
+import com.mikai233.common.core.actor.ActorCoroutine
 import com.mikai233.common.db.*
 import com.mikai233.common.entity.TraceableFieldEntity
 import com.mikai233.common.entity.TraceableRootEntity
 import com.mongodb.client.MongoClients
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.asCoroutineDispatcher
 import org.junit.jupiter.api.Test
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.SimpleMongoClientDatabaseFactory
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import java.util.concurrent.Executor
 
 class TraceDBTest {
     data class ChildData(val field1: String, var field2: Long)
@@ -43,7 +47,11 @@ class TraceDBTest {
     fun traceRootEntity() {
         val client = MongoClients.create()
         val template = MongoTemplate(SimpleMongoClientDatabaseFactory(client, "test"))
-        val db = TrackableMemCacheDB(template, 1)
+        val db = TrackableMemCacheDatabase(
+            { template },
+            ActorCoroutine(CoroutineScope(Executor { it.run() }.asCoroutineDispatcher())),
+            fullHashThreshold = 1
+        )
         val traceMap = db.traceMap
         val entity = RootEntity(
             id = 1,
@@ -75,7 +83,11 @@ class TraceDBTest {
     fun traceFieldEntity() {
         val client = MongoClients.create()
         val template = MongoTemplate(SimpleMongoClientDatabaseFactory(client, "test"))
-        val db = TrackableMemCacheDB(template, 1)
+        val db = TrackableMemCacheDatabase(
+            { template },
+            ActorCoroutine(CoroutineScope(Executor { it.run() }.asCoroutineDispatcher())),
+            fullHashThreshold = 1
+        )
         val traceMap = db.traceMap
         val entity = TraceFieldEntity(
             id = 1,

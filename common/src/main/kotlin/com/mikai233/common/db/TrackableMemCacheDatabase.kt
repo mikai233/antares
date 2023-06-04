@@ -5,11 +5,13 @@ import com.google.common.collect.HashBiMap
 import com.google.common.hash.HashCode
 import com.google.common.hash.Hashing
 import com.mikai233.common.conf.GlobalData
+import com.mikai233.common.core.actor.ActorCoroutine
 import com.mikai233.common.entity.*
 import com.mikai233.common.ext.Json
 import com.mikai233.common.ext.logger
 import com.mikai233.common.ext.unixTimestamp
 import com.mongodb.client.MongoClients
+import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toLocalDateTime
@@ -20,6 +22,8 @@ import org.springframework.data.mongodb.core.SimpleMongoClientDatabaseFactory
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
+import java.util.*
+import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 import kotlin.random.nextInt
@@ -32,10 +36,13 @@ import kotlin.reflect.full.isSubtypeOf
 import kotlin.reflect.full.withNullability
 import kotlin.reflect.jvm.jvmErasure
 import kotlin.reflect.typeOf
-import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
-class TrackableMemCacheDB(private val template: MongoTemplate, private val fullHashThreshold: Int = 100) {
+class TrackableMemCacheDatabase(
+    private val template: () -> MongoTemplate,
+    private val coroutine: ActorCoroutine,
+    private val fullHashThreshold: Int = 100
+) {
     companion object {
         val allowedBuiltinType = setOf(
             typeOf<Byte>(),
@@ -63,12 +70,14 @@ class TrackableMemCacheDB(private val template: MongoTemplate, private val fullH
     private val timers: BiMap<Long, TKey> = HashBiMap.create()
     private val hashFunction = Hashing.goodFastHash(128)
     private val timerWheel = DeadlineTimerWheel(TimeUnit.MILLISECONDS, unixTimestamp(), 16, 256)
-    private var stopped = true
+    private var ioJob: Job? = null
+    var stopped = false
+        private set
 
     internal fun serdeHash(obj: Any?) = hashFunction.hashBytes(Json.toJsonBytes(obj))
 
     fun traceEntity(entity: Entity<*>) {
-        check(stopped) { "trace db is not working, this means you already stopped the trace db" }
+        check(stopped.not()) { "trace db is not working, this means you already stopped the trace db" }
         when (entity) {
             is TraceableFieldEntity -> {
                 traceEntityByFields(entity)
@@ -78,6 +87,50 @@ class TrackableMemCacheDB(private val template: MongoTemplate, private val fullH
                 traceEntityByRoot(entity)
             }
         }
+    }
+
+    fun saveAndTrace(entity: Entity<*>) {
+        val root = entity::class
+        val isTraced = traceMap.any { it.key.root == root }
+        if (isTraced) {
+            logger.warn("entity:{} already traced, cannot be saved and trace", entity)
+            return
+        }
+        coroutine.launch {
+            //TODO retry
+            withContext(Dispatchers.IO) {
+                template().save(entity)
+            }
+            traceEntity(entity)
+        }
+    }
+
+    fun deleteAndCancelTrace(entity: Entity<*>) {
+        val root = entity::class
+        val iter = traceMap.iterator()
+        val removeKeys = mutableSetOf<TKey>()
+        while (iter.hasNext()) {
+            val next = iter.next()
+            if (next.key.root == root) {
+                iter.remove()
+                removeKeys.add(next.key)
+            }
+        }
+        val inverseTimer = timers.inverse()
+        removeKeys.forEach { key ->
+            //map value has no timer, may remove none exits timer
+            inverseTimer.remove(key)?.let { timerId ->
+                check(timerWheel.cancelTimer(timerId)) { "timerId:$timerId not found in wheel" }
+            }
+        }
+        if (removeKeys.isEmpty()) {
+            logger.warn("there's no trace entity to delete:{}", entity)
+            return
+        }
+        val query = Query.query(Criteria.where("_id").`is`(entity.key()))
+        val key = TKey(root, query, null, TType.Data)
+        val data = TData(entity, 0, HashCode.fromInt(0), 0)
+        persistent(Operation.Delete, key, data)
     }
 
     private fun traceEntityByFields(entity: TraceableFieldEntity<*>) {
@@ -143,12 +196,14 @@ class TrackableMemCacheDB(private val template: MongoTemplate, private val fullH
     private fun scheduleTraceCheck(key: TKey, data: TData) {
         val checkDelay = nextCheckTime(data)
         val timerId = timerWheel.scheduleTimer(checkDelay.toEpochMilliseconds())
-        logger.trace(
-            "schedule check:{} at:{} with timer:{}",
-            key,
-            checkDelay.toLocalDateTime(GlobalData.zoneId),
-            timerId
-        )
+        if (logger.isTraceEnabled) {
+            logger.trace(
+                "schedule check:{} at:{} with timer:{}",
+                key,
+                checkDelay.toLocalDateTime(GlobalData.zoneId),
+                timerId
+            )
+        }
         timers[timerId] = key
     }
 
@@ -187,8 +242,8 @@ class TrackableMemCacheDB(private val template: MongoTemplate, private val fullH
     }
 
     private fun nextCheckTime(traceData: TData): Instant {
-        val delay = 1.minutes - traceData.sameObjHashCount.seconds + (Random.nextInt(10..20).seconds)
-        return clock.now().plus(delay)
+//        val delay = 1.minutes - traceData.sameObjHashCount.seconds + (Random.nextInt(10..20).seconds)
+        return clock.now().plus(5.seconds)
     }
 
     fun tick(now: Instant) {
@@ -198,12 +253,14 @@ class TrackableMemCacheDB(private val template: MongoTemplate, private val fullH
     private fun handleTimeout(@Suppress("UNUSED_PARAMETER") timeUnit: TimeUnit, now: Long, timerId: Long): Boolean {
         val key = timers.remove(timerId)
         if (key != null) {
-            logger.trace(
-                "{} timerId:{} timeout at:{}",
-                key,
-                timerId,
-                Instant.fromEpochMilliseconds(now).toLocalDateTime(GlobalData.zoneId)
-            )
+            if (logger.isTraceEnabled) {
+                logger.trace(
+                    "{} timerId:{} timeout at:{}",
+                    key,
+                    timerId,
+                    Instant.fromEpochMilliseconds(now).toLocalDateTime(GlobalData.zoneId)
+                )
+            }
             val data = requireNotNull(traceMap[key]) { "track data of key:$key not found" }
             checkDataChangeForKey(key, data)
             scheduleTraceCheck(key, data)
@@ -236,21 +293,45 @@ class TrackableMemCacheDB(private val template: MongoTemplate, private val fullH
 
             TType.Data,
             TType.Builtin -> {
-                val (kp, entity) = requireNotNull(propertiesMap[key]) { "kp of key:$key not found" }
-                val value = kp.call(entity)
-                if (value != data.inner) {
-                    data.inner = value
-                }
-                val operation = checkDataHash(data)
-                if (operation != null) {
-                    persistent(operation, key, data)
+                if (key.path == null) {
+                    //trace by root
+                    val operation = checkDataHash(data)
+                    if (operation != null) {
+                        persistent(operation, key, data)
+                    }
+                } else {
+                    //trace by fields
+                    val (kp, entity) = requireNotNull(propertiesMap[key]) { "kp of key:$key not found" }
+                    val currentValue = kp.call(entity)
+                    when {
+                        currentValue != null && currentValue != data.inner && data.inner != null -> {
+                            data.inner = currentValue
+                            checkDataHash(data)
+                            //update
+                            persistent(Operation.Update, key, data)
+                        }
+
+                        currentValue != data.inner && data.inner == null -> {
+                            data.inner = currentValue
+                            checkDataHash(data)
+                            //save
+                            persistent(Operation.Save, key, data)
+                        }
+
+                        else -> {
+                            val operation = checkDataHash(data)
+                            if (operation != null) {
+                                persistent(operation, key, data)
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 
     internal fun checkDataHash(traceData: TData): Operation? {
-        if (stopped.not()) {
+        if (stopped) {
             //stop trace db, force do full hash if obj hash has no change
             traceData.sameObjHashCount = fullHashThreshold
         }
@@ -263,6 +344,7 @@ class TrackableMemCacheDB(private val template: MongoTemplate, private val fullH
             return Operation.Delete
         }
         val hashChanged = calHashCode(traceData)
+        logger.trace("cal hash for:{} changed:{}", traceData, hashChanged)
         if (!hashChanged) {
             traceData.sameObjHashCount++
         } else {
@@ -271,6 +353,7 @@ class TrackableMemCacheDB(private val template: MongoTemplate, private val fullH
         }
         if (traceData.sameObjHashCount >= fullHashThreshold) {
             val fullHashChanged = calFullHashCode(traceData)
+            logger.trace("cal full hash for:{} changed:{}", traceData, fullHashChanged)
             if (fullHashChanged) {
                 return Operation.Update
             }
@@ -321,8 +404,11 @@ class TrackableMemCacheDB(private val template: MongoTemplate, private val fullH
         return Triple(deleteValues, addValues, updateValues)
     }
 
-    private fun persistent(operation: Operation, tKey: TKey, traceData: TData) {
-        merge(operation, tKey, traceData)
+    private fun persistent(operation: Operation, key: TKey, data: TData) {
+        merge(operation, key, data)
+        if (ioJob?.isCompleted == false) {
+            return
+        }
         val submittingData = arrayListOf<Pair<TKey, PersistentDocument>>()
         val iter = pendingData.iterator()
         while (iter.hasNext()) {
@@ -333,15 +419,25 @@ class TrackableMemCacheDB(private val template: MongoTemplate, private val fullH
                 next.setValue(pending to null)
             }
         }
-        // TODO with IO thread
-        submittingData.forEach { (k, v) ->
-            try {
-                v.block.invoke(template)
-                val (_, pending) = requireNotNull(pendingData[k]) { "pending data of key:$k not found" }
-                pendingData[k] = null to pending
-                logger.info("submitted:{} op:{} to db", k, v.operation)
-            } catch (e: Exception) {
-                logger.error("", e)
+        ioJob = coroutine.launch {
+            val completedKeys = withContext(Dispatchers.IO) {
+                logger.debug("flushing changed data to db:{}", submittingData)
+                val completeKeys = arrayListOf<TKey>()
+                submittingData.forEach { (k, v) ->
+                    try {
+                        v.block.invoke(template())
+                        completeKeys.add(k)
+                        logger.debug("submitted:{} op:{} to db", k, v.operation)
+                    } catch (e: Exception) {
+                        logger.error("submitting key:${k} op:${v.operation} error", e)
+                    }
+                }
+                completeKeys
+            }
+            logger.debug("remove flushed data from pendingData:{}", completedKeys)
+            completedKeys.forEach { key ->
+                val (_, pending) = requireNotNull(pendingData[key]) { "pending data of key:$key not found" }
+                pendingData[key] = null to pending
             }
         }
     }
@@ -358,11 +454,11 @@ class TrackableMemCacheDB(private val template: MongoTemplate, private val fullH
             Operation.Save -> {
                 when (pending.operation) {
                     Operation.Save -> {
-                        error("illegal new operation state:${incomingOperation}")
+                        error("illegal new operation state:${incomingOperation}, pending:${pending.operation}, key:$key, data:$data")
                     }
 
                     Operation.Update -> {
-                        error("illegal new operation state:${incomingOperation}")
+                        error("illegal new operation state:${incomingOperation}, pending:${pending.operation}, key:$key, data:$data")
                     }
 
                     Operation.Delete -> {
@@ -382,7 +478,7 @@ class TrackableMemCacheDB(private val template: MongoTemplate, private val fullH
                     }
 
                     Operation.Delete -> {
-                        error("illegal new operation state:${incomingOperation}")
+                        error("illegal new operation state:${incomingOperation}, pending:${pending.operation}, key:$key, data:$data")
                     }
                 }
             }
@@ -398,7 +494,7 @@ class TrackableMemCacheDB(private val template: MongoTemplate, private val fullH
                     }
 
                     Operation.Delete -> {
-                        error("illegal new operation state:${incomingOperation}")
+                        error("illegal new operation state:${incomingOperation}, pending:${pending.operation}, key:$key, data:$data")
                     }
                 }
             }
@@ -427,22 +523,24 @@ class TrackableMemCacheDB(private val template: MongoTemplate, private val fullH
         }
     }
 
-    private fun genPersistentDoc(incomingOperation: Operation, key: TKey, traceData: TData): PersistentDocument {
+    private fun genPersistentDoc(incomingOperation: Operation, key: TKey, data: TData): PersistentDocument {
         return when (incomingOperation) {
             Operation.Save,
             Operation.Update -> {
-                val data = checkNotNull(traceData.inner) { "save or update data cannot be null" }
+                val inner = checkNotNull(data.inner) { "save or update data cannot be null" }
+                //TODO lambda ref mutable data
                 when (val type = key.type) {
                     TType.Data -> {
                         if (key.path != null) {
                             val document = Document()
-                            template.converter.write(data, document)
+                            template().converter.write(inner, document)
+                            document.remove("_class")
                             PersistentDocument(incomingOperation) { mongoTemplate ->
                                 mongoTemplate.updateFirst(key.query, Update.update(key.path, document), key.root.java)
                             }
                         } else {
                             PersistentDocument(incomingOperation) { mongoTemplate ->
-                                mongoTemplate.save(data)
+                                mongoTemplate.save(inner)
                             }
                         }
 
@@ -451,11 +549,11 @@ class TrackableMemCacheDB(private val template: MongoTemplate, private val fullH
                     TType.Builtin -> {
                         if (key.path != null) {
                             PersistentDocument(incomingOperation) { mongoTemplate ->
-                                mongoTemplate.updateFirst(key.query, Update.update(key.path, data), key.root.java)
+                                mongoTemplate.updateFirst(key.query, Update.update(key.path, inner), key.root.java)
                             }
                         } else {
                             PersistentDocument(incomingOperation) { mongoTemplate ->
-                                mongoTemplate.save(data)
+                                mongoTemplate.save(inner)
                             }
                         }
                     }
@@ -483,6 +581,7 @@ class TrackableMemCacheDB(private val template: MongoTemplate, private val fullH
             stopped = true
             timerWheel.clear()
             timers.clear()
+            logger.trace("start force check all traced data change:{}", traceMap)
             traceMap.forEach { (key, data) ->
                 checkDataChangeForKey(key, data)
             }
@@ -499,7 +598,13 @@ class TrackableMemCacheDB(private val template: MongoTemplate, private val fullH
 fun main() {
     val client = MongoClients.create()
     val template = MongoTemplate(SimpleMongoClientDatabaseFactory(client, "test"))
-    val db = TrackableMemCacheDB(template)
+    val r = template.findById(1, Room::class.java)
+    val pendingRunnable = LinkedList<Runnable>()
+    val executor = Executor {
+        pendingRunnable.add(it)
+    }
+    val actorCoroutine = ActorCoroutine(CoroutineScope(executor.asCoroutineDispatcher()))
+    val db = TrackableMemCacheDatabase({ template }, actorCoroutine)
     val room = Room(
         1,
         "mikai",
@@ -509,15 +614,21 @@ fun main() {
         hashMapOf(1 to RoomPlayer(1, 1), 2 to RoomPlayer(2, 2)),
         DirectObj(",", 12, 12, false),
         mutableListOf(),
-        TrackChild("hello", "world")
+        TrackChild("hello", "world"),
+        mutableListOf(Cat("a", 1), Bird("bb"))
     )
-    template.save(room)
-    db.traceEntity(room)
+    db.saveAndTrace(room)
+//    template.save(room)
+//    db.traceEntity(room)
     room.players.clear()
     room.players[3] = RoomPlayer(12, 12)
+//    db.delete(room)
     while (true) {
         Thread.sleep(10)
         db.tick(Clock.System.now())
+        while (pendingRunnable.isNotEmpty()) {
+            pendingRunnable.poll().run()
+        }
         room.changeableBoolean = Random.nextBoolean()
         if (Random.nextBoolean()) {
             room.players[Random.nextInt()] = RoomPlayer(Random.nextInt(), Random.nextInt())
@@ -544,6 +655,23 @@ fun main() {
         if (Random.nextBoolean()) {
             room.listObj =
                 generateSequence(1) { it + 1 }.take(Random.nextInt(1..20)).map { it.toString() }.toMutableList()
+        }
+        if (Random.nextBoolean()) {
+            room.trackChild.b = Random.nextLong().toString()
+        }
+        if (Random.nextBoolean()) {
+            room.animals.randomOrNull()?.let {
+                room.animals.remove(it)
+            }
+        }
+        if (Random.nextBoolean()) {
+            room.animals.add(Bird(Random.nextLong().toString()))
+        }
+        if (Random.nextBoolean()) {
+            room.animals.add(Cat(Random.nextLong().toString(), Random.nextInt()))
+        }
+        if (Random.nextBoolean()) {
+            room.animals = mutableListOf()
         }
     }
 }

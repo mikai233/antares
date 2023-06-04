@@ -77,6 +77,7 @@ class WorldNode(private val port: Int = 2336, private val sameJvm: Boolean = fal
         single { Server(koin) }
         single { WorldActorDispatchers(koin) }
         closeableSingle { ZookeeperConfigCenter() }
+        closeableSingle { MongoHolder(koin) }
         single { NodeConfigHolder(koin, Role.World, port, sameJvm) }
         single { ExcelConfigHolder(koin) }
         single {
