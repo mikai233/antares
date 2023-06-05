@@ -8,5 +8,4 @@ import com.mikai233.common.annotation.AllOpen
  * @date 2023/5/17
  */
 @AllOpen
-class LoginService {
-}
+class LoginService

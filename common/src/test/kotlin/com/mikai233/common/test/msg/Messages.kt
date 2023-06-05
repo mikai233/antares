@@ -26,6 +26,4 @@ class MessageHandlerA : MessageHandler {
 }
 
 @AllOpen
-class MessageHandlerB : MessageHandler {
-
-}
+class MessageHandlerB : MessageHandler

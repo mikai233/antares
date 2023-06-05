@@ -44,6 +44,7 @@ class TrackableMemCacheDatabase(
     private val fullHashThreshold: Int = 100
 ) {
     companion object {
+        //basic type
         val allowedBuiltinType = setOf(
             typeOf<Byte>(),
             typeOf<UByte>(),
@@ -55,8 +56,8 @@ class TrackableMemCacheDatabase(
             typeOf<ULong>(),
             typeOf<ByteArray>(),
             typeOf<String>(),
-            typeOf<List<*>>(),
-            typeOf<Set<*>>(),
+//            typeOf<List<*>>(),
+//            typeOf<Set<*>>(),
             typeOf<Boolean>(),
         )
     }
@@ -67,6 +68,7 @@ class TrackableMemCacheDatabase(
     internal val traceMap: MutableMap<TKey, TData> = mutableMapOf()
     private val propertiesMap: MutableMap<TKey, Pair<KProperty1<out TraceableFieldEntity<*>, *>, TraceableFieldEntity<*>>> =
         mutableMapOf()
+    private val mapKey2Type: MutableMap<TKey, TType> = mutableMapOf()
     private val timers: BiMap<Long, TKey> = HashBiMap.create()
     private val hashFunction = Hashing.goodFastHash(128)
     private val timerWheel = DeadlineTimerWheel(TimeUnit.MILLISECONDS, unixTimestamp(), 16, 256)
@@ -98,8 +100,9 @@ class TrackableMemCacheDatabase(
         }
         coroutine.launch {
             //TODO retry
+            val entitySnapshot = Json.deepCopy(entity)
             withContext(Dispatchers.IO) {
-                template().save(entity)
+                template().save(entitySnapshot)
             }
             traceEntity(entity)
         }
@@ -144,7 +147,26 @@ class TrackableMemCacheDatabase(
                 returnType.isSubtypeOf(typeOf<Map<*, *>>()) -> {
                     check(kp !is KMutableProperty<*>) { "map field is not allowed mutable in trace entity by fields mode" }
                     check(!returnType.isMarkedNullable) { "map field return type is not allowed nullable in trace entity by fields mode" }
+                    val mapKeyType = checkNotNull(returnType.arguments[0].type) { "$kp map key type is null" }
+                    check(mapKeyType.jvmErasure.isAbstract.not()) { "$kp map key cannot be abstract" }
+                    val mapValueType = checkNotNull(returnType.arguments[1].type) { "$kp map value type is null" }
+                    val type = when {
+                        isBuiltin(mapValueType) -> {
+                            TType.Builtin
+                        }
+
+                        isData(mapValueType) -> {
+                            TType.Data
+                        }
+
+                        isAbstract(mapValueType) -> {
+                            TType.Abstract
+                        }
+
+                        else -> error("unsupported class:${mapValueType.jvmErasure}")
+                    }
                     val mapKey = TKey(entityClazz, query, kp.name, TType.Map)
+                    mapKey2Type[mapKey] = type
                     val mapField = fieldValue as Map<*, *>
                     traceMap[mapKey] = TData(mapField, 0, serdeHash(mapField), 0).also {
                         propertiesMap[mapKey] = kp to entity
@@ -154,17 +176,7 @@ class TrackableMemCacheDatabase(
                         checkNotNull(k) { "map key of:${kp.name} in $entityClazz is not allowed nullable" }
                         checkNotNull(v) { "map value of:${kp.name} in $entityClazz is not allowed nullable" }
                         val valueType = v::class.createType()
-                        val type = when {
-                            isBuiltin(valueType) -> {
-                                TType.Builtin
-                            }
 
-                            isDataClass(valueType) -> {
-                                TType.Data
-                            }
-
-                            else -> error("unsupported class:${v::class}")
-                        }
                         val mapValueKey = mapKey.copy(path = "${mapKey.path}.$k", type = type)
                         traceMap[mapValueKey] = TData(v, 0, serdeHash(v), 0)
                     }
@@ -178,8 +190,16 @@ class TrackableMemCacheDatabase(
                     }
                 }
 
-                isDataClass(returnType) -> {
+                isData(returnType) -> {
                     val fieldKey = TKey(entityClazz, query, kp.name, TType.Data)
+                    traceMap[fieldKey] = TData(fieldValue, 0, serdeHash(fieldValue), 0).also {
+                        propertiesMap[fieldKey] = kp to entity
+                        scheduleTraceCheck(fieldKey, it)
+                    }
+                }
+
+                isAbstract(returnType) -> {
+                    val fieldKey = TKey(entityClazz, query, kp.name, TType.Abstract)
                     traceMap[fieldKey] = TData(fieldValue, 0, serdeHash(fieldValue), 0).also {
                         propertiesMap[fieldKey] = kp to entity
                         scheduleTraceCheck(fieldKey, it)
@@ -292,6 +312,7 @@ class TrackableMemCacheDatabase(
             }
 
             TType.Data,
+            TType.Abstract,
             TType.Builtin -> {
                 if (key.path == null) {
                     //trace by root
@@ -372,15 +393,10 @@ class TrackableMemCacheDatabase(
         check(key.type == TType.Map)
         val map = data.inner as Map<*, *>
         val allMapValue = mutableMapOf<TKey, Any>()
+        val type = requireNotNull(mapKey2Type[key]) { "$key map value type not found" }
         map.forEach { (k, v) ->
             checkNotNull(k) { "$key map key is null" }
             checkNotNull(v) { "$key map value is null" }
-            val valueType = v::class.createType()
-            val type = when {
-                isBuiltin(valueType) -> TType.Builtin
-                isDataClass(valueType) -> TType.Data
-                else -> error("logic error, unexpected class:${valueType.jvmErasure}")
-            }
             allMapValue[TKey(key.root, key.query, "${key.path}.$k", type)] = v
         }
         val allTracedKeys = mutableSetOf<TKey>()
@@ -517,10 +533,12 @@ class TrackableMemCacheDatabase(
         }
     }
 
-    private fun isDataClass(type: KType): Boolean {
-        return type.jvmErasure.let {
-            it.isData && it.qualifiedName?.startsWith("com.mikai233") == true
-        }
+    private fun isData(type: KType): Boolean {
+        return type.jvmErasure.isData
+    }
+
+    private fun isAbstract(type: KType): Boolean {
+        return type.jvmErasure.isAbstract
     }
 
     private fun genPersistentDoc(incomingOperation: Operation, key: TKey, data: TData): PersistentDocument {
@@ -539,11 +557,29 @@ class TrackableMemCacheDatabase(
                                 mongoTemplate.updateFirst(key.query, Update.update(key.path, document), key.root.java)
                             }
                         } else {
+//                            val innerSnapshot = Json.deepCopy(inner)
                             PersistentDocument(incomingOperation) { mongoTemplate ->
                                 mongoTemplate.save(inner)
                             }
                         }
+                    }
 
+                    TType.Abstract -> {
+                        if (key.path != null) {
+//                            val innerSnapshot = Json.deepCopy(inner)
+                            PersistentDocument(incomingOperation) { mongoTemplate ->
+                                mongoTemplate.updateFirst(
+                                    key.query,
+                                    Update.update(key.path, inner),
+                                    key.root.java
+                                )
+                            }
+                        } else {
+//                            val innerSnapshot = Json.deepCopy(inner)
+                            PersistentDocument(incomingOperation) { mongoTemplate ->
+                                mongoTemplate.save(inner)
+                            }
+                        }
                     }
 
                     TType.Builtin -> {
@@ -552,6 +588,7 @@ class TrackableMemCacheDatabase(
                                 mongoTemplate.updateFirst(key.query, Update.update(key.path, inner), key.root.java)
                             }
                         } else {
+//                            val innerSnapshot = Json.deepCopy(inner)
                             PersistentDocument(incomingOperation) { mongoTemplate ->
                                 mongoTemplate.save(inner)
                             }
@@ -615,7 +652,8 @@ fun main() {
         DirectObj(",", 12, 12, false),
         mutableListOf(),
         TrackChild("hello", "world"),
-        mutableListOf(Cat("a", 1), Bird("bb"))
+        mutableListOf(Cat("a", 1), Bird("bb")),
+        Cat("asdlfkjalsdk", 1)
     )
     db.saveAndTrace(room)
 //    template.save(room)
@@ -635,7 +673,10 @@ fun main() {
         }
         if (Random.nextBoolean()) {
             room.players.keys.randomOrNull()?.let {
-                requireNotNull(room.players[it]).level = Random.nextInt()
+                val player = requireNotNull(room.players[it])
+                if (player is RoomPlayer) {
+                    player.level = Random.nextInt()
+                }
             }
         }
         if (Random.nextBoolean()) {
@@ -672,6 +713,12 @@ fun main() {
         }
         if (Random.nextBoolean()) {
             room.animals = mutableListOf()
+        }
+        if (Random.nextBoolean()) {
+            room.directInterface = Cat(Random.nextLong().toString(), Random.nextInt())
+        }
+        if (Random.nextBoolean()) {
+            room.directInterface = Bird(Random.nextLong().toString())
         }
     }
 }
