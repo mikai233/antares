@@ -9,6 +9,7 @@ import com.mikai233.common.core.actor.ActorCoroutine
 import com.mikai233.common.entity.*
 import com.mikai233.common.ext.Json
 import com.mikai233.common.ext.logger
+import com.mikai233.common.ext.timestampToLocalDateTime
 import com.mikai233.common.ext.unixTimestamp
 import com.mongodb.client.MongoClients
 import kotlinx.coroutines.*
@@ -30,18 +31,19 @@ import kotlin.random.nextInt
 import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KProperty1
 import kotlin.reflect.KType
-import kotlin.reflect.full.createType
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.isSubtypeOf
 import kotlin.reflect.full.withNullability
 import kotlin.reflect.jvm.jvmErasure
 import kotlin.reflect.typeOf
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 class TrackableMemCacheDatabase(
     private val template: () -> MongoTemplate,
     private val coroutine: ActorCoroutine,
-    private val fullHashThreshold: Int = 100
+    private val fullHashThreshold: Int = 100,
+    private val debugMode: Boolean = false,
 ) {
     companion object {
         //basic type
@@ -68,7 +70,7 @@ class TrackableMemCacheDatabase(
     internal val traceMap: MutableMap<TKey, TData> = mutableMapOf()
     private val propertiesMap: MutableMap<TKey, Pair<KProperty1<out TraceableFieldEntity<*>, *>, TraceableFieldEntity<*>>> =
         mutableMapOf()
-    private val mapKey2Type: MutableMap<TKey, TType> = mutableMapOf()
+    private val mapAssociatedValueType: MutableMap<TKey, TType> = mutableMapOf()
     private val timers: BiMap<Long, TKey> = HashBiMap.create()
     private val hashFunction = Hashing.goodFastHash(128)
     private val timerWheel = DeadlineTimerWheel(TimeUnit.MILLISECONDS, unixTimestamp(), 16, 256)
@@ -114,16 +116,20 @@ class TrackableMemCacheDatabase(
         val removeKeys = mutableSetOf<TKey>()
         while (iter.hasNext()) {
             val next = iter.next()
-            if (next.key.root == root) {
+            val key = next.key
+            if (key.root == root) {
                 iter.remove()
-                removeKeys.add(next.key)
+                removeKeys.add(key)
+                if (key.type == TType.Map) {
+                    checkNotNull(mapAssociatedValueType.remove(key)) { "logic error, key:$key not found" }
+                }
             }
         }
         val inverseTimer = timers.inverse()
         removeKeys.forEach { key ->
             //map value has no timer, may remove none exits timer
             inverseTimer.remove(key)?.let { timerId ->
-                check(timerWheel.cancelTimer(timerId)) { "timerId:$timerId not found in wheel" }
+                check(timerWheel.cancelTimer(timerId)) { "logic error, timerId:$timerId not found" }
             }
         }
         if (removeKeys.isEmpty()) {
@@ -166,7 +172,7 @@ class TrackableMemCacheDatabase(
                         else -> error("unsupported class:${mapValueType.jvmErasure}")
                     }
                     val mapKey = TKey(entityClazz, query, kp.name, TType.Map)
-                    mapKey2Type[mapKey] = type
+                    mapAssociatedValueType[mapKey] = type
                     val mapField = fieldValue as Map<*, *>
                     traceMap[mapKey] = TData(mapField, 0, serdeHash(mapField), 0).also {
                         propertiesMap[mapKey] = kp to entity
@@ -175,8 +181,6 @@ class TrackableMemCacheDatabase(
                     mapField.forEach { (k, v) ->
                         checkNotNull(k) { "map key of:${kp.name} in $entityClazz is not allowed nullable" }
                         checkNotNull(v) { "map value of:${kp.name} in $entityClazz is not allowed nullable" }
-                        val valueType = v::class.createType()
-
                         val mapValueKey = mapKey.copy(path = "${mapKey.path}.$k", type = type)
                         traceMap[mapValueKey] = TData(v, 0, serdeHash(v), 0)
                     }
@@ -209,12 +213,11 @@ class TrackableMemCacheDatabase(
                 else -> error("unsupported class:${returnType.jvmErasure}")
             }
         }
-        logger.trace("{}", traceMap)
         logger.debug("trace entity:{} by fields", entityClazz)
     }
 
     private fun scheduleTraceCheck(key: TKey, data: TData) {
-        val checkDelay = nextCheckTime(data)
+        val checkDelay = nextCheckInstant(data)
         val timerId = timerWheel.scheduleTimer(checkDelay.toEpochMilliseconds())
         if (logger.isTraceEnabled) {
             logger.trace(
@@ -238,7 +241,6 @@ class TrackableMemCacheDatabase(
             0
         )
         scheduleTraceCheck(key, traceData)
-        logger.info("{}", traceData)
         traceMap[key] = traceData
         logger.debug("trace entity:{} by root", entityClazz)
     }
@@ -261,9 +263,13 @@ class TrackableMemCacheDatabase(
         return preHashCode != traceData.serdeHash
     }
 
-    private fun nextCheckTime(traceData: TData): Instant {
-//        val delay = 1.minutes - traceData.sameObjHashCount.seconds + (Random.nextInt(10..20).seconds)
-        return clock.now().plus(5.seconds)
+    private fun nextCheckInstant(traceData: TData): Instant {
+        val delay = if (debugMode) {
+            5.seconds
+        } else {
+            1.minutes - traceData.sameObjHashCount.seconds + (Random.nextInt(10..20).seconds)
+        }
+        return clock.now().plus(delay)
     }
 
     fun tick(now: Instant) {
@@ -278,10 +284,11 @@ class TrackableMemCacheDatabase(
                     "{} timerId:{} timeout at:{}",
                     key,
                     timerId,
-                    Instant.fromEpochMilliseconds(now).toLocalDateTime(GlobalData.zoneId)
+                    timestampToLocalDateTime(now)
                 )
             }
-            val data = requireNotNull(traceMap[key]) { "track data of key:$key not found" }
+            val data =
+                requireNotNull(traceMap[key]) { "logic error, trace data of key:$key not found" }
             checkDataChangeForKey(key, data)
             scheduleTraceCheck(key, data)
         } else {
@@ -296,7 +303,7 @@ class TrackableMemCacheDatabase(
                 val (delete, add, update) = checkMapValueHash(key, data)
                 delete.forEach { (k, v) ->
                     //there is no need to cancel the timer, because each map value not start a timer
-                    checkNotNull(traceMap.remove(k)) { "key:$k trace data not found" }
+                    checkNotNull(traceMap.remove(k)) { "logic error, key:$k trace data not found" }
                     persistent(Operation.Delete, k, v)
                 }
                 add.forEach { (k, v) ->
@@ -322,7 +329,7 @@ class TrackableMemCacheDatabase(
                     }
                 } else {
                     //trace by fields
-                    val (kp, entity) = requireNotNull(propertiesMap[key]) { "kp of key:$key not found" }
+                    val (kp, entity) = requireNotNull(propertiesMap[key]) { "logic error, kp of key:$key not found" }
                     val currentValue = kp.call(entity)
                     when {
                         currentValue != null && currentValue != data.inner && data.inner != null -> {
@@ -393,18 +400,18 @@ class TrackableMemCacheDatabase(
         check(key.type == TType.Map)
         val map = data.inner as Map<*, *>
         val allMapValue = mutableMapOf<TKey, Any>()
-        val type = requireNotNull(mapKey2Type[key]) { "$key map value type not found" }
+        val type = requireNotNull(mapAssociatedValueType[key]) { "logic error, $key map value type not found" }
         map.forEach { (k, v) ->
-            checkNotNull(k) { "$key map key is null" }
-            checkNotNull(v) { "$key map value is null" }
+            checkNotNull(k) { "logic error, $key map key is null" }
+            checkNotNull(v) { "logic error, $key map value is null" }
             allMapValue[TKey(key.root, key.query, "${key.path}.$k", type)] = v
         }
         val allTracedKeys = mutableSetOf<TKey>()
         val deleteValues = mutableMapOf<TKey, TData>()
         val updateValues = mutableMapOf<TKey, TData>()
         traceMap.forEach { (k, v) ->
-            val valuePath = requireNotNull(k.path) { "map value path is null:$k" }
-            val keyPath = requireNotNull(key.path) { "map key path is null:$key" }
+            val valuePath = requireNotNull(k.path) { "logic error, map value path is null:$k" }
+            val keyPath = requireNotNull(key.path) { "logic error, map key path is null:$key" }
             if (k.type != TType.Map && valuePath.startsWith(keyPath)) {
                 allTracedKeys.add(k)
                 val maybeTraced = allMapValue[k]
@@ -545,7 +552,7 @@ class TrackableMemCacheDatabase(
         return when (incomingOperation) {
             Operation.Save,
             Operation.Update -> {
-                val inner = checkNotNull(data.inner) { "save or update data cannot be null" }
+                val inner = checkNotNull(data.inner) { "logic error, save or update data cannot be null" }
                 //TODO lambda ref mutable data
                 when (val type = key.type) {
                     TType.Data -> {
@@ -635,13 +642,13 @@ class TrackableMemCacheDatabase(
 fun main() {
     val client = MongoClients.create()
     val template = MongoTemplate(SimpleMongoClientDatabaseFactory(client, "test"))
-    val r = template.findById(1, Room::class.java)
+//    val r = template.findById(1, Room::class.java)
     val pendingRunnable = LinkedList<Runnable>()
     val executor = Executor {
         pendingRunnable.add(it)
     }
     val actorCoroutine = ActorCoroutine(CoroutineScope(executor.asCoroutineDispatcher()))
-    val db = TrackableMemCacheDatabase({ template }, actorCoroutine)
+    val db = TrackableMemCacheDatabase({ template }, actorCoroutine, debugMode = true)
     val room = Room(
         1,
         "mikai",
