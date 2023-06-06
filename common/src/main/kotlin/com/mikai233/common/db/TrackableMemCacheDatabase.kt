@@ -28,14 +28,11 @@ import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 import kotlin.random.nextInt
-import kotlin.reflect.KMutableProperty
-import kotlin.reflect.KProperty1
-import kotlin.reflect.KType
+import kotlin.reflect.*
 import kotlin.reflect.full.declaredMemberProperties
+import kotlin.reflect.full.isSubclassOf
 import kotlin.reflect.full.isSubtypeOf
-import kotlin.reflect.full.withNullability
 import kotlin.reflect.jvm.jvmErasure
-import kotlin.reflect.typeOf
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
@@ -56,13 +53,12 @@ class TrackableMemCacheDatabase(
             typeOf<UInt>(),
             typeOf<Long>(),
             typeOf<ULong>(),
-            typeOf<ByteArray>(),
             typeOf<String>(),
-//            typeOf<List<*>>(),
-//            typeOf<Set<*>>(),
             typeOf<Boolean>(),
         )
     }
+
+    data class ConvertWrap(val inner: Any)
 
     private val logger = logger()
     private val clock = Clock.System
@@ -265,7 +261,7 @@ class TrackableMemCacheDatabase(
 
     private fun nextCheckInstant(traceData: TData): Instant {
         val delay = if (debugMode) {
-            5.seconds
+            1.seconds
         } else {
             1.minutes - traceData.sameObjHashCount.seconds + (Random.nextInt(10..20).seconds)
         }
@@ -535,17 +531,16 @@ class TrackableMemCacheDatabase(
     }
 
     private fun isBuiltin(type: KType): Boolean {
-        return allowedBuiltinType.contains(type) || allowedBuiltinType.any {
-            type.withNullability(false).isSubtypeOf(it)
-        }
+        return allowedBuiltinType.contains(type)
     }
 
     private fun isData(type: KType): Boolean {
-        return type.jvmErasure.isData
+        return type.jvmErasure.isData && type.jvmErasure.qualifiedName?.startsWith("com.mikai233") == true
     }
 
     private fun isAbstract(type: KType): Boolean {
-        return type.jvmErasure.isAbstract
+        return (type.jvmErasure.isAbstract && type.jvmErasure.qualifiedName?.startsWith("com.mikai233") == true) ||
+                isSubTypeOfListAndSet(type.jvmErasure)
     }
 
     private fun genPersistentDoc(incomingOperation: Operation, key: TKey, data: TData): PersistentDocument {
@@ -553,52 +548,46 @@ class TrackableMemCacheDatabase(
             Operation.Save,
             Operation.Update -> {
                 val inner = checkNotNull(data.inner) { "logic error, save or update data cannot be null" }
-                //TODO lambda ref mutable data
                 when (val type = key.type) {
                     TType.Data -> {
                         if (key.path != null) {
-                            val document = Document()
-                            template().converter.write(inner, document)
+                            val document = writeDoc(inner)
                             document.remove("_class")
                             PersistentDocument(incomingOperation) { mongoTemplate ->
                                 mongoTemplate.updateFirst(key.query, Update.update(key.path, document), key.root.java)
                             }
                         } else {
-//                            val innerSnapshot = Json.deepCopy(inner)
+                            val document = writeDoc(inner)
+                            val collectionName = template().getCollectionName(inner::class.java)
                             PersistentDocument(incomingOperation) { mongoTemplate ->
-                                mongoTemplate.save(inner)
+                                mongoTemplate.save(inner, collectionName)
                             }
                         }
                     }
 
                     TType.Abstract -> {
                         if (key.path != null) {
-//                            val innerSnapshot = Json.deepCopy(inner)
+                            val copy = if (isSubTypeOfListAndSet(inner::class)) {
+                                writeListAndSet(inner)
+                            } else {
+                                writeDoc(inner)
+                            }
                             PersistentDocument(incomingOperation) { mongoTemplate ->
-                                mongoTemplate.updateFirst(
-                                    key.query,
-                                    Update.update(key.path, inner),
-                                    key.root.java
-                                )
+                                mongoTemplate.updateFirst(key.query, Update.update(key.path, copy), key.root.java)
                             }
                         } else {
-//                            val innerSnapshot = Json.deepCopy(inner)
+                            val document = writeDoc(inner)
+                            val collectionName = template().getCollectionName(inner::class.java)
                             PersistentDocument(incomingOperation) { mongoTemplate ->
-                                mongoTemplate.save(inner)
+                                mongoTemplate.save(document, collectionName)
                             }
                         }
                     }
 
                     TType.Builtin -> {
-                        if (key.path != null) {
-                            PersistentDocument(incomingOperation) { mongoTemplate ->
-                                mongoTemplate.updateFirst(key.query, Update.update(key.path, inner), key.root.java)
-                            }
-                        } else {
-//                            val innerSnapshot = Json.deepCopy(inner)
-                            PersistentDocument(incomingOperation) { mongoTemplate ->
-                                mongoTemplate.save(inner)
-                            }
+                        val path = requireNotNull(key.path) { "logic error, $key path is null in builtin type" }
+                        PersistentDocument(incomingOperation) { mongoTemplate ->
+                            mongoTemplate.updateFirst(key.query, Update.update(path, inner), key.root.java)
                         }
                     }
 
@@ -637,12 +626,26 @@ class TrackableMemCacheDatabase(
     fun isAllPendingDataFlushedToDb(): Boolean {
         return pendingData.values.all { (submitting, pending) -> submitting == null && pending == null }
     }
+
+    private fun writeDoc(data: Any): Document {
+        val document = Document()
+        template().converter.write(data, document)
+        return document
+    }
+
+    private fun isSubTypeOfListAndSet(clazz: KClass<*>): Boolean {
+        return clazz.isSubclassOf(List::class) || clazz.isSubclassOf(Set::class)
+    }
+
+    private fun writeListAndSet(data: Any): Any {
+        return writeDoc(ConvertWrap(data))[ConvertWrap::inner.name]!!
+    }
 }
 
 fun main() {
     val client = MongoClients.create()
     val template = MongoTemplate(SimpleMongoClientDatabaseFactory(client, "test"))
-//    val r = template.findById(1, Room::class.java)
+    val r = template.findById(1, Room::class.java)
     val pendingRunnable = LinkedList<Runnable>()
     val executor = Executor {
         pendingRunnable.add(it)
