@@ -17,7 +17,7 @@
     <logger name="akka.serialization" level="info"/>
     <logger name="org.mongodb.driver" level="info"/>
     <logger name="akka" level="info"/>
-    <root level="debug">
+    <root level="info">
         <appender-ref ref="ASYNC_STDOUT"/>
         <!--        <appender-ref ref="FILE"/>-->
     </root>

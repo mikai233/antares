@@ -10,6 +10,7 @@ import com.mikai233.common.ext.runnableAdapter
 import com.mikai233.common.ext.tell
 import com.mikai233.common.ext.unixTimestamp
 import com.mikai233.common.inject.XKoin
+import com.mikai233.shared.constants.WorldActionType
 import com.mikai233.shared.message.*
 import com.mikai233.world.component.WorldActorDispatchers
 import com.mikai233.world.component.WorldSharding
@@ -53,7 +54,6 @@ class WorldActor(
                 }
 
                 WakeupGameWorld -> {
-                    logger.info("loading world data")
                     manager.loadAll()
                 }
 
@@ -68,7 +68,8 @@ class WorldActor(
                 WorldInitDone -> {
                     timers.startTimerAtFixedRate(WorldTick, 100.milliseconds.toJavaDuration())
                     //FIXME test
-                    manager.worldActionMem.worldAction.actionTime = unixTimestamp()
+                    val action = manager.worldActionMem.getOrCreateAction(WorldActionType.Test)
+                    action.latestActionMills = unixTimestamp()
                     return@onMessage buffer.unstashAll(active())
                 }
 
@@ -90,7 +91,6 @@ class WorldActor(
 
                 StopWorld -> {
                     manager.stopAndFlush()
-                    logger.info("pretend stop player operation")
                     return@onMessage stopping()
                 }
 

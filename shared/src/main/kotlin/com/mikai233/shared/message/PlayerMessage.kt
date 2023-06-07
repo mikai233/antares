@@ -17,6 +17,8 @@ data class PlayerScript(val script: Script) : SerdePlayerMessage
 
 object PlayerInitDone : PlayerMessage
 
+object PlayerTick : PlayerMessage
+
 data class ExecutePlayerScript(val script: ActorScriptFunction<in AbstractBehavior<*>>) : PlayerMessage
 
 data class PlayerProtobufEnvelope(val inner: GeneratedMessageV3) : BusinessPlayerMessage

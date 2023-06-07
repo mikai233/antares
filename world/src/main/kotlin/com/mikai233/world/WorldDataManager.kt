@@ -17,12 +17,15 @@ class WorldDataManager(
     private val coroutine: ActorCoroutine
 ) : DataManager {
     private val logger = logger()
+    private val clock = Clock.System
     private val db = ActorDatabase(worldActor.koin, coroutine)
+    val traceDatabase get() = db.traceDatabase
     val worldActionMem = WorldActionMem()
 
-    data class LoadedData(val worldAction: WorldAction)
+    data class LoadedData(val worldAction: List<WorldAction>)
 
     override fun loadAll() {
+        logger.info("{} start loading data", worldActor.worldId)
         val template = db.mongoHolder.getGameTemplate()
         coroutine.launch {
             val loadedData = withContext(Dispatchers.IO) {
@@ -35,12 +38,12 @@ class WorldDataManager(
     }
 
     override fun loadComplete() {
-        logger.info("worldId:{} data load complete", worldActor.worldId)
+        logger.info("{} data load complete", worldActor.worldId)
         worldActor.context.self tell WorldInitDone
     }
 
     fun tickDatabase() {
-        db.traceDatabase.tick(Clock.System.now())
+        db.traceDatabase.tick(clock.now())
     }
 
     fun stopAndFlush(): Boolean {

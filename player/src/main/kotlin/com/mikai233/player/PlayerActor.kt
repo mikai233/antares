@@ -10,21 +10,22 @@ import com.mikai233.common.core.actor.ActorCoroutine
 import com.mikai233.common.core.actor.safeActorCoroutine
 import com.mikai233.common.ext.actorLogger
 import com.mikai233.common.ext.runnableAdapter
+import com.mikai233.common.ext.tell
 import com.mikai233.common.inject.XKoin
 import com.mikai233.player.component.PlayerActorDispatchers
 import com.mikai233.player.component.PlayerScriptSupport
 import com.mikai233.shared.message.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.toJavaDuration
 
 class PlayerActor(
     context: ActorContext<PlayerMessage>,
     private val buffer: StashBuffer<PlayerMessage>,
     val timers: TimerScheduler<PlayerMessage>,
     val playerId: Long,
-    private val koin: XKoin,
+    val koin: XKoin,
 ) : AbstractBehavior<PlayerMessage>(context), KoinComponent by koin {
     private val logger = actorLogger()
     private val runnableAdapter = runnableAdapter { PlayerRunnable(it::run) }
@@ -35,13 +36,15 @@ class PlayerActor(
     private val internalDispatcher = dispatcher.internalDispatcher
     private val playerScriptSupport by inject<PlayerScriptSupport>()
     private val localScriptActor = playerScriptSupport.localScriptActor
+    val manager = PlayerDataManager(this, coroutine)
 
     init {
         logger.info("{} preStart", playerId)
-        coroutine.launch(Dispatchers.IO) {
-            logger.info("pretend load data")
-            delay(2000)
-            context.self.tell(PlayerInitDone)
+        try {
+            manager.loadAll()
+        } catch (e: Exception) {
+            logger.error("$playerId load data error, stop the player", e)
+            context.self tell StopPlayer
         }
     }
 
@@ -53,6 +56,7 @@ class PlayerActor(
                 }
 
                 PlayerInitDone -> {
+                    timers.startTimerAtFixedRate(PlayerTick, 100.milliseconds.toJavaDuration())
                     return@onMessage buffer.unstashAll(active())
                 }
 
@@ -71,6 +75,8 @@ class PlayerActor(
                 is PlayerScript -> {
                     compilePlayerScript(message)
                 }
+
+                PlayerTick -> Unit
             }
             Behaviors.same()
         }.build()
@@ -88,13 +94,9 @@ class PlayerActor(
                 }
 
                 PlayerInitDone -> Unit
+
                 StopPlayer -> {
-                    coroutine.cancelAll("StopPlayer")
-                    coroutine.launch {
-                        logger.info("pretend stopping operation")
-                        delay(2000)
-                        context.self.tell(StopPlayer)
-                    }
+                    manager.stopAndFlush()
                     return@onMessage stopping()
                 }
 
@@ -107,6 +109,10 @@ class PlayerActor(
                 }
 
                 is BusinessPlayerMessage -> handleBusinessPlayerMessage(message)
+
+                PlayerTick -> {
+                    manager.tickDatabase()
+                }
             }
             Behaviors.same()
         }.onSignal(Terminated::class.java) { terminated ->
@@ -138,13 +144,23 @@ class PlayerActor(
                 PlayerInitDone,
                 is BusinessPlayerMessage -> Unit
 
-                StopPlayer -> return@onMessage Behaviors.stopped()
+                StopPlayer -> {
+                    coroutine.cancelAll("StopPlayer")
+                    return@onMessage Behaviors.stopped()
+                }
+
                 is ExecutePlayerScript -> {
                     executePlayerScript(message)
                 }
 
                 is PlayerScript -> {
                     compilePlayerScript(message)
+                }
+
+                PlayerTick -> {
+                    if (manager.stopAndFlush()) {
+                        context.self tell StopPlayer
+                    }
                 }
             }
             Behaviors.same()

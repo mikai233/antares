@@ -32,7 +32,6 @@ data class DirectObj(val a: String, var b: Int, var c: Long, var d: Boolean)
 
 data class TrackChild(val a: String, var b: String)
 
-
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
 interface Animal
 

@@ -23,7 +23,7 @@ class ActorCoroutine(private val scope: CoroutineScope) {
         start: CoroutineStart = CoroutineStart.DEFAULT,
         block: suspend CoroutineScope.() -> Unit
     ): Job {
-        val job = scope.launch(context, start, block)
+        val job = scope.launch(context + SupervisorJob(), start, block)
         jobs.add(job)
         return job
     }
