@@ -18,6 +18,7 @@ dependencies {
     implementation(project(":player"))
     implementation(project(":world"))
     implementation(project(":gm"))
+    implementation(project(":global"))
 }
 
 tasks.test {

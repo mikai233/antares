@@ -8,28 +8,31 @@ import com.mikai233.common.core.component.AkkaSystem
 import com.mikai233.common.core.component.Role
 import com.mikai233.common.core.component.ShardEntityType
 import com.mikai233.common.ext.startSharding
+import com.mikai233.common.ext.startShardingProxy
 import com.mikai233.common.inject.XKoin
 import com.mikai233.player.PlayerActor
 import com.mikai233.player.PlayerSystemMessage
 import com.mikai233.shared.PlayerShardNum
+import com.mikai233.shared.WorldShardNum
 import com.mikai233.shared.message.*
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
 class PlayerSharding(private val koin: XKoin) : KoinComponent by koin {
     private val akkaSystem: AkkaSystem<PlayerSystemMessage> by inject()
-    lateinit var playerActor: ActorRef<ShardingEnvelope<SerdePlayerMessage>>
+    lateinit var playerActorSharding: ActorRef<ShardingEnvelope<SerdePlayerMessage>>
         private set
-    lateinit var worldActor: ActorRef<ShardingEnvelope<SerdeWorldMessage>>
+    lateinit var worldActorSharding: ActorRef<ShardingEnvelope<SerdeWorldMessage>>
         private set
 
     init {
         startSharding()
+        startShardingProxy()
     }
 
     private fun startSharding() {
         val system = akkaSystem.system
-        playerActor = system.startSharding(
+        playerActorSharding = system.startSharding(
             ShardEntityType.PlayerActor.name,
             Role.Player,
             PlayerMessageExtractor(PlayerShardNum),
@@ -44,5 +47,14 @@ class PlayerSharding(private val koin: XKoin) : KoinComponent by koin {
             }
             Behaviors.supervise(behavior).onFailure(SupervisorStrategy.resume())
         }
+    }
+
+    private fun startShardingProxy() {
+        val system = akkaSystem.system
+        worldActorSharding = system.startShardingProxy(
+            ShardEntityType.WorldActor.name,
+            Role.World,
+            WorldMessageExtractor(WorldShardNum)
+        )
     }
 }

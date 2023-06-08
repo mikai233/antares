@@ -10,6 +10,7 @@ import com.mikai233.common.ext.Json
 import com.mikai233.common.ext.buildSimpleZkClient
 import com.mikai233.common.ext.logger
 import com.mikai233.gate.GateNode
+import com.mikai233.global.GlobalNode
 import com.mikai233.gm.GmNode
 import com.mikai233.player.PlayerNode
 import com.mikai233.world.WorldNode
@@ -32,6 +33,7 @@ class StardustLauncher {
         roleNode[Role.Player] = PlayerNode::class
         roleNode[Role.World] = WorldNode::class
         roleNode[Role.Gm] = GmNode::class
+        roleNode[Role.Global] = GlobalNode::class
         clazzToCtor = Reflections("com.mikai233").getSubTypesOf(Launcher::class.java).map {
             val clazz = it.kotlin
             val ctor = clazz.constructors.first()

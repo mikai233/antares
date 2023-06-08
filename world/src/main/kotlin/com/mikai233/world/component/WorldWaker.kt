@@ -30,7 +30,7 @@ class WorldWaker(private val koin: XKoin) : KoinComponent by koin {
     private fun wakeupWorld() {
         logger.info("start wakeup world")
         worldConfigHolder.getWorldConfig().forEach { (worldId, worldConfig) ->
-            worldSharding.worldActor.tell(shardingEnvelope("$worldId", WakeupGameWorld))
+            worldSharding.worldActorSharding.tell(shardingEnvelope("$worldId", WakeupGameWorld))
         }
     }
 }

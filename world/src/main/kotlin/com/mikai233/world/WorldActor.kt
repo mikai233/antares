@@ -33,8 +33,8 @@ class WorldActor(
     private val protobufDispatcher = dispatcher.protobufDispatcher
     private val internalDispatcher = dispatcher.internalDispatcher
     private val worldSharding by inject<WorldSharding>()
-    val playerActor = worldSharding.playerActor
-    val worldActor = worldSharding.worldActor
+    val playerActorSharding = worldSharding.playerActorSharding
+    val worldActorSharding = worldSharding.worldActorSharding
     val sessionManager = WorldSessionManager(this)
     val manager = WorldDataManager(this, coroutine)
 

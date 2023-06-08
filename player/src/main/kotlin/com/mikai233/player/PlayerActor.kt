@@ -14,6 +14,7 @@ import com.mikai233.common.ext.tell
 import com.mikai233.common.inject.XKoin
 import com.mikai233.player.component.PlayerActorDispatchers
 import com.mikai233.player.component.PlayerScriptSupport
+import com.mikai233.player.component.PlayerSharding
 import com.mikai233.shared.message.*
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -34,6 +35,9 @@ class PlayerActor(
     private val dispatcher by inject<PlayerActorDispatchers>()
     private val protobufDispatcher = dispatcher.protobufDispatcher
     private val internalDispatcher = dispatcher.internalDispatcher
+    private val playerSharding by inject<PlayerSharding>()
+    val playerActorSharding = playerSharding.playerActorSharding
+    val worldActorSharding = playerSharding.worldActorSharding
     private val playerScriptSupport by inject<PlayerScriptSupport>()
     private val localScriptActor = playerScriptSupport.localScriptActor
     val manager = PlayerDataManager(this, coroutine)

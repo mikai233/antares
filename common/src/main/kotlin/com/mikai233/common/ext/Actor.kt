@@ -17,8 +17,12 @@ import akka.cluster.sharding.typed.javadsl.ClusterSharding
 import akka.cluster.sharding.typed.javadsl.Entity
 import akka.cluster.sharding.typed.javadsl.EntityContext
 import akka.cluster.sharding.typed.javadsl.EntityTypeKey
+import akka.cluster.typed.ClusterSingleton
+import akka.cluster.typed.ClusterSingletonSettings
+import akka.cluster.typed.SingletonActor
 import akka.routing.BroadcastGroup
 import com.mikai233.common.core.component.Role
+import com.mikai233.common.msg.Message
 import kotlinx.coroutines.future.await
 import org.slf4j.Logger
 import kotlin.time.Duration
@@ -85,6 +89,18 @@ fun <Req : M, Resp, M> syncAsk(
 //    val proxySetting = settings ?: ClusterSingletonProxySettings.create(this).withRole(role.name)
 //    return actorOf(ClusterSingletonProxy.props(path, proxySetting))
 //}
+
+fun <T : Message> ActorSystem<*>.startSingleton(
+    behavior: Behavior<T>,
+    name: String,
+    role: Role,
+    settings: ClusterSingletonSettings? = null
+): ActorRef<T> {
+    val singleton = ClusterSingleton.get(this)
+    val singletonSettings = settings ?: ClusterSingletonSettings.create(this).withRole(role.name)
+    val singletonActor = SingletonActor.of(behavior, name).withSettings(singletonSettings)
+    return singleton.init(singletonActor)
+}
 
 inline fun <reified M, N> ActorSystem<*>.startSharding(
     name: String,

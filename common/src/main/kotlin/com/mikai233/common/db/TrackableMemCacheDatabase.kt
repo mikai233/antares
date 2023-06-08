@@ -86,6 +86,8 @@ class TrackableMemCacheDatabase(
             is TraceableRootEntity -> {
                 traceEntityByRoot(entity)
             }
+
+            is ImmutableEntity -> error("this entity is mark at immutable, trace is unused")
         }
     }
 

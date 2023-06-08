@@ -22,3 +22,9 @@ sealed interface BusinessWorldMessage : SerdeWorldMessage
 sealed interface ScriptMessage : Message
 
 sealed interface SerdeScriptMessage : ScriptMessage, SerdeMessage
+
+sealed interface GlobalUidMessage : Message
+
+sealed interface SerdeGlobalUidMessage : GlobalUidMessage, SerdeMessage
+
+sealed interface BusinessSerdeGlobalUidMessage : SerdeGlobalUidMessage

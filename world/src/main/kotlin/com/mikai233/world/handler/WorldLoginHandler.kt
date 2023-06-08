@@ -27,6 +27,11 @@ class WorldLoginHandler : MessageHandler {
             }
             result = ProtoLogin.LoginResult.Success
         })
-        world.playerActor.tell(shardingEnvelope("$playerId", WHPlayerLogin("mikai233", playerId, world.worldId)))
+        world.playerActorSharding.tell(
+            shardingEnvelope(
+                "$playerId",
+                WHPlayerLogin("mikai233", playerId, world.worldId)
+            )
+        )
     }
 }

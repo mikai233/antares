@@ -9,11 +9,10 @@ import com.mikai233.common.core.component.AkkaSystem
 import com.mikai233.common.core.component.Role
 import com.mikai233.common.core.component.ShardEntityType
 import com.mikai233.common.ext.startSharding
-import com.mikai233.common.ext.startShardingProxy
 import com.mikai233.common.inject.XKoin
-import com.mikai233.shared.PlayerShardNum
 import com.mikai233.shared.WorldShardNum
 import com.mikai233.shared.message.*
+import com.mikai233.shared.startPlayerActorShardingProxy
 import com.mikai233.world.WorldActor
 import com.mikai233.world.WorldSystemMessage
 import org.koin.core.component.KoinComponent
@@ -21,9 +20,9 @@ import org.koin.core.component.inject
 
 class WorldSharding(private val koin: XKoin) : KoinComponent by koin {
     private val akkaSystem: AkkaSystem<WorldSystemMessage> by inject()
-    lateinit var playerActor: ActorRef<ShardingEnvelope<SerdePlayerMessage>>
+    lateinit var playerActorSharding: ActorRef<ShardingEnvelope<SerdePlayerMessage>>
         private set
-    lateinit var worldActor: ActorRef<ShardingEnvelope<SerdeWorldMessage>>
+    lateinit var worldActorSharding: ActorRef<ShardingEnvelope<SerdeWorldMessage>>
         private set
 
     init {
@@ -33,7 +32,7 @@ class WorldSharding(private val koin: XKoin) : KoinComponent by koin {
 
     private fun startSharding() {
         val system = akkaSystem.system
-        worldActor = system.startSharding(
+        worldActorSharding = system.startSharding(
             ShardEntityType.WorldActor.name,
             Role.World,
             WorldMessageExtractor(WorldShardNum),
@@ -52,11 +51,6 @@ class WorldSharding(private val koin: XKoin) : KoinComponent by koin {
     }
 
     private fun startShardingProxy() {
-        val system = akkaSystem.system
-        playerActor = system.startShardingProxy(
-            ShardEntityType.PlayerActor.name,
-            Role.Player,
-            PlayerMessageExtractor(PlayerShardNum)
-        )
+        playerActorSharding = akkaSystem.system.startPlayerActorShardingProxy()
     }
 }

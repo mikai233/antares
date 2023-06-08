@@ -6,9 +6,6 @@ import akka.actor.typed.javadsl.AbstractBehavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
-import akka.cluster.typed.ClusterSingleton
-import akka.cluster.typed.ClusterSingletonSettings
-import akka.cluster.typed.SingletonActor
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.Launcher
 import com.mikai233.common.core.Server
@@ -17,10 +14,7 @@ import com.mikai233.common.core.component.AkkaSystem
 import com.mikai233.common.core.component.NodeConfigHolder
 import com.mikai233.common.core.component.Role
 import com.mikai233.common.core.component.ZookeeperConfigCenter
-import com.mikai233.common.ext.actorLogger
-import com.mikai233.common.ext.closeableSingle
-import com.mikai233.common.ext.registerService
-import com.mikai233.common.ext.startBroadcastClusterRouterGroup
+import com.mikai233.common.ext.*
 import com.mikai233.common.inject.XKoin
 import com.mikai233.gm.component.GmScriptSupport
 import com.mikai233.gm.component.GmSharding
@@ -45,7 +39,6 @@ class GmNode(private val port: Int = 2339, private val sameJvm: Boolean = false)
         AbstractBehavior<GmSystemMessage>(context) {
         private val logger = actorLogger()
         private val scriptProxyActor: ActorRef<ScriptProxyMessage>
-        private val singleton = ClusterSingleton.get(context.system)
 
         init {
             scriptProxyActor = startScriptProxyActor()
@@ -77,7 +70,6 @@ class GmNode(private val port: Int = 2339, private val sameJvm: Boolean = false)
         }
 
         private fun startScriptProxyActor(): ActorRef<ScriptProxyMessage> {
-            val singletonSettings = ClusterSingletonSettings.create(context.system).withRole(Role.Gm.name)
             val behavior = Behaviors.supervise(Behaviors.setup { ScriptProxyActor(it, koin) }).onFailure(
                 SupervisorStrategy.restartWithBackoff(
                     1.seconds.toJavaDuration(),
@@ -85,8 +77,7 @@ class GmNode(private val port: Int = 2339, private val sameJvm: Boolean = false)
                     0.5
                 )
             )
-            val scriptProxyActor = SingletonActor.of(behavior, "ScriptProxyActor").withSettings(singletonSettings)
-            return singleton.init(scriptProxyActor)
+            return context.system.startSingleton(behavior, "ScriptProxyActor", Role.Gm)
         }
     }
 

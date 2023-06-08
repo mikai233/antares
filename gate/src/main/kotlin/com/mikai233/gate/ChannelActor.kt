@@ -41,8 +41,8 @@ class ChannelActor(
     private var birthWorldId = 0L
     private var worldId = 0L
     private val gateSharding by inject<GateSharding>()
-    private val playerActor = gateSharding.playerActor
-    private val worldActor = gateSharding.worldActor
+    private val playerActorSharding = gateSharding.playerActorSharding
+    private val worldActorSharding = gateSharding.worldActorSharding
     private val protobufPrinter = protobufJsonPrinter()
 
     init {
@@ -91,7 +91,7 @@ class ChannelActor(
 
     private fun tellPlayer(playerId: Long, message: SerdePlayerMessage) {
         if (playerId > 0L) {
-            playerActor.tell(shardingEnvelope("$playerId", message))
+            playerActorSharding.tell(shardingEnvelope("$playerId", message))
         } else {
             logger.warn("try to message to uninitialized playerId")
         }
@@ -99,7 +99,7 @@ class ChannelActor(
 
     private fun tellWorld(worldId: Long, message: SerdeWorldMessage) {
         if (worldId > 0L) {
-            worldActor.tell(shardingEnvelope("$worldId", message))
+            worldActorSharding.tell(shardingEnvelope("$worldId", message))
         } else {
             logger.warn("try to message to uninitialized worldId")
         }

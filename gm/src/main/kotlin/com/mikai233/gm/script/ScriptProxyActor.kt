@@ -33,7 +33,8 @@ class ScriptProxyActor(context: ActorContext<ScriptProxyMessage>, private val ko
     private val coroutine = ActorCoroutine(runnableAdapter.safeActorCoroutine())
     private val configCenter by inject<ZookeeperConfigCenter>()
     private val gmSharding by inject<GmSharding>()
-    private val playerActor = gmSharding.playerActor
+    private val playerActorSharding = gmSharding.playerActorSharding
+    private val worldActorSharding = gmSharding.worldActorSharding
     private val scriptBroadcastRouter: ActorRef<SerdeScriptMessage>
     private val scriptBroadcastRoleRouter: EnumMap<Role, ActorRef<SerdeScriptMessage>>
     private val scriptTargetNodeRef: MutableMap<NodeKey, ActorRef<SerdeScriptMessage>> = mutableMapOf()
@@ -89,7 +90,7 @@ class ScriptProxyActor(context: ActorContext<ScriptProxyMessage>, private val ko
     private fun handleBatchDispatchPlayerActorScript(message: BatchDispatchPlayerActorScript) {
         val script = message.script
         message.playerIds.forEach { playerId ->
-            playerActor.tell(shardingEnvelope("$playerId", PlayerScript(script)))
+            playerActorSharding.tell(shardingEnvelope("$playerId", PlayerScript(script)))
         }
     }
 
