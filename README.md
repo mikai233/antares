@@ -5,6 +5,7 @@
 ## development environment
 
 - JDK17(azul-17)
+- MongoDB
 - Gradle 8
 - Zookeeper
 
