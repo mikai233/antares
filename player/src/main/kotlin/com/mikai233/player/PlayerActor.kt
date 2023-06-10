@@ -8,13 +8,12 @@ import akka.actor.typed.javadsl.*
 import com.google.protobuf.GeneratedMessageV3
 import com.mikai233.common.core.actor.ActorCoroutine
 import com.mikai233.common.core.actor.safeActorCoroutine
-import com.mikai233.common.ext.actorLogger
-import com.mikai233.common.ext.runnableAdapter
-import com.mikai233.common.ext.tell
+import com.mikai233.common.ext.*
 import com.mikai233.common.inject.XKoin
 import com.mikai233.player.component.PlayerActorDispatchers
 import com.mikai233.player.component.PlayerScriptSupport
 import com.mikai233.player.component.PlayerSharding
+import com.mikai233.shared.logMessage
 import com.mikai233.shared.message.*
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -36,24 +35,19 @@ class PlayerActor(
     private val protobufDispatcher = dispatcher.protobufDispatcher
     private val internalDispatcher = dispatcher.internalDispatcher
     private val playerSharding by inject<PlayerSharding>()
-    val playerActorSharding = playerSharding.playerActorSharding
-    val worldActorSharding = playerSharding.worldActorSharding
+    private val playerActorSharding = playerSharding.playerActorSharding
+    private val worldActorSharding = playerSharding.worldActorSharding
     private val playerScriptSupport by inject<PlayerScriptSupport>()
     private val localScriptActor = playerScriptSupport.localScriptActor
     val manager = PlayerDataManager(this, coroutine)
 
     init {
         logger.info("{} preStart", playerId)
-        try {
-            manager.loadAll()
-        } catch (e: Exception) {
-            logger.error("$playerId load data error, stop the player", e)
-            context.self tell StopPlayer
-        }
     }
 
     override fun createReceive(): Receive<PlayerMessage> {
         return newReceiveBuilder().onMessage(PlayerMessage::class.java) { message ->
+            logMessage(logger, message) { "playerId:$playerId" }
             when (message) {
                 StopPlayer -> {
                     return@onMessage Behaviors.stopped()
@@ -68,28 +62,33 @@ class PlayerActor(
                     message.run()
                 }
 
-                is BusinessPlayerMessage -> {
-                    buffer.stash(message)
+                is WHPlayerCreate -> {
+                    handleBusinessPlayerMessage(message)
                 }
 
-                is ExecutePlayerScript -> {
-                    executePlayerScript(message)
+                else -> {
+                    startLoadingPlayerData(message)
                 }
-
-                is PlayerScript -> {
-                    compilePlayerScript(message)
-                }
-
-                PlayerTick -> Unit
             }
             Behaviors.same()
         }.build()
+    }
+
+    private fun startLoadingPlayerData(message: PlayerMessage?) {
+        buffer.stash(message)
+        try {
+            manager.loadAll()
+        } catch (e: Exception) {
+            logger.error("$playerId load data error, stop the player", e)
+            context.self tell StopPlayer
+        }
     }
 
     private fun active(): Behavior<PlayerMessage> {
         return newReceiveBuilder().onMessage(PlayerMessage::class.java) { message ->
             when (message) {
                 is PlayerProtobufEnvelope -> {
+                    logMessage(logger, message) { "playerId:$playerId" }
                     handlePlayerProtobufEnvelope(message)
                 }
 
@@ -97,7 +96,7 @@ class PlayerActor(
                     message.run()
                 }
 
-                PlayerInitDone -> Unit
+                PlayerInitDone -> unexpectedMessage(message)
 
                 StopPlayer -> {
                     manager.stopAndFlush()
@@ -112,7 +111,10 @@ class PlayerActor(
                     compilePlayerScript(message)
                 }
 
-                is BusinessPlayerMessage -> handleBusinessPlayerMessage(message)
+                is BusinessPlayerMessage -> {
+                    logMessage(logger, message) { "playerId:$playerId" }
+                    handleBusinessPlayerMessage(message)
+                }
 
                 PlayerTick -> {
                     manager.tickDatabase()
@@ -145,7 +147,8 @@ class PlayerActor(
                     message.run()
                 }
 
-                PlayerInitDone,
+                PlayerInitDone -> unexpectedMessage(message)
+
                 is BusinessPlayerMessage -> Unit
 
                 StopPlayer -> {
@@ -163,7 +166,7 @@ class PlayerActor(
 
                 PlayerTick -> {
                     if (manager.stopAndFlush()) {
-                        context.self tell StopPlayer
+                        stopSelf()
                     }
                 }
             }
@@ -184,11 +187,11 @@ class PlayerActor(
         }
     }
 
-    fun stop() {
-        context.self.tell(StopPlayer)
+    fun stopSelf() {
+        context.self tell StopPlayer
     }
 
-    private fun bindChannelActor(incomingChannelActor: ActorRef<SerdeChannelMessage>) {
+    fun bindChannelActor(incomingChannelActor: ActorRef<SerdeChannelMessage>) {
         if (incomingChannelActor != channelActor) {
             channelActor?.let {
                 context.unwatch(it)
@@ -206,5 +209,13 @@ class PlayerActor(
 
     private fun executePlayerScript(message: ExecutePlayerScript) {
         message.script.invoke(this)
+    }
+
+    fun tellPlayer(playerId: Long, message: SerdePlayerMessage) {
+        playerActorSharding.tell(shardingEnvelope("$playerId", message))
+    }
+
+    fun tellWorld(worldId: Long, message: SerdeWorldMessage) {
+        worldActorSharding.tell(shardingEnvelope("$worldId", message))
     }
 }

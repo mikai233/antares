@@ -1,4 +1,4 @@
-package com.mikai233.gate.codec
+package com.mikai233.shared.codec
 
 import io.netty.channel.ChannelHandler
 import io.netty.channel.ChannelHandlerContext

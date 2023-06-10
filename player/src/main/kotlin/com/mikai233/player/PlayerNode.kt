@@ -10,10 +10,7 @@ import com.mikai233.common.conf.GlobalProto
 import com.mikai233.common.core.Launcher
 import com.mikai233.common.core.Server
 import com.mikai233.common.core.State
-import com.mikai233.common.core.component.AkkaSystem
-import com.mikai233.common.core.component.NodeConfigHolder
-import com.mikai233.common.core.component.Role
-import com.mikai233.common.core.component.ZookeeperConfigCenter
+import com.mikai233.common.core.component.*
 import com.mikai233.common.ext.actorLogger
 import com.mikai233.common.ext.closeableSingle
 import com.mikai233.common.ext.registerService
@@ -79,6 +76,7 @@ class PlayerNode(private val port: Int = 2337, private val sameJvm: Boolean = fa
         single { Server(koin) }
         single { PlayerActorDispatchers(koin) }
         closeableSingle { ZookeeperConfigCenter() }
+        closeableSingle { MongoHolder(koin) }
         single { NodeConfigHolder(koin, Role.Player, port, sameJvm) }
         single { ExcelConfigHolder(koin) }
         single {

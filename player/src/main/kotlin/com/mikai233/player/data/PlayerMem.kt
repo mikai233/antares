@@ -26,4 +26,11 @@ class PlayerMem : MemData<PlayerActor, PlayerMessage, Player> {
         player = data
         db.traceDatabase.traceEntity(player)
     }
+
+    fun initPlayer(playerActor: PlayerActor, player: Player) {
+        check(this::player.isInitialized.not()) { "player already initialized" }
+        this.playerActor = playerActor
+        this.player = player
+        playerActor.manager.traceDatabase.saveAndTrace(player)
+    }
 }

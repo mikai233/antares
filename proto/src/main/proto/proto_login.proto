@@ -7,11 +7,16 @@ import "proto_player.proto";
 message LoginReq{
   string account = 1;
   int64 world_id = 2;
+  bytes client_public_key = 3;
+  string client_zone = 4;
+  string client_ip = 5;
 }
 
 message LoginResp{
   LoginResult result = 1;
-  PlayerData player_data = 2;
+  PlayerData data = 2;
+  bytes server_public_key = 3;
+  string server_zone = 4;
 }
 
 enum LoginResult{
@@ -20,4 +25,8 @@ enum LoginResult{
   WorldNotExists = 2;
   WorldClosed = 3;
   AccountBan = 4;
+}
+
+message TestNotify{
+  string data = 1;
 }

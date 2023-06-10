@@ -4,11 +4,11 @@ import com.google.protobuf.GeneratedMessageV3
 import com.mikai233.common.conf.GlobalProto
 import com.mikai233.common.ext.logger
 import com.mikai233.common.ext.protobufJsonPrinter
-import com.mikai233.gate.codec.*
 import com.mikai233.protocol.MsgCs.MessageClientToServer
 import com.mikai233.protocol.MsgSc.MessageServerToClient
 import com.mikai233.protocol.loginReq
 import com.mikai233.protocol.loginResp
+import com.mikai233.shared.codec.*
 import io.netty.bootstrap.Bootstrap
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.ChannelHandlerContext

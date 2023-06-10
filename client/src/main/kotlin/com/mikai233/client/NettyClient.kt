@@ -1,4 +1,4 @@
-package com.mikai233.gate.client
+package com.mikai233.client
 
 import com.mikai233.common.ext.Platform
 import com.mikai233.common.ext.getPlatform
@@ -14,13 +14,12 @@ import io.netty.channel.kqueue.KQueueSocketChannel
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
-import kotlin.concurrent.thread
 
 class NettyClient(
     private val host: String,
     private val port: Int,
     private val channelInitializer: ChannelInitializer<SocketChannel>,
-    private val name: String = "netty-client",
+    name: String = "netty-client",
 ) {
     private val logger = logger()
     private val bossGroup: EventLoopGroup = when (getPlatform()) {
@@ -41,25 +40,7 @@ class NettyClient(
         logger.info("{} using bossGroup:{} ", name, bossGroup.javaClass.simpleName)
     }
 
-    fun start(): Thread {
-        return thread(name = name, isDaemon = true) {
-            try {
-                val future = startClient()
-                future.channel().closeFuture().sync()
-                logger.info("channel:{} closed", future.channel())
-            } catch (e: Exception) {
-                logger.error("", e)
-            } finally {
-                stop()
-            }
-        }
-    }
-
-    fun stop() {
-        bossGroup.shutdownGracefully().sync()
-    }
-
-    private fun startClient(): ChannelFuture {
+    fun startClient(): ChannelFuture {
         val bootstrap = Bootstrap()
         bootstrap.group(bossGroup).channel(getSocketChannel()).handler(channelInitializer)
         val future = bootstrap.connect(host, port).also { future ->

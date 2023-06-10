@@ -10,6 +10,7 @@ import com.mikai233.player.data.PlayerMem
 import com.mikai233.shared.entity.Player
 import com.mikai233.shared.entity.PlayerAction
 import com.mikai233.shared.message.PlayerInitDone
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
@@ -29,7 +30,10 @@ class PlayerDataManager(private val playerActor: PlayerActor, private val corout
     override fun loadAll() {
         logger.info("{} start loading data", playerActor.playerId)
         val template = db.mongoHolder.getGameTemplate()
-        coroutine.launch {
+        coroutine.launch(CoroutineExceptionHandler { _, throwable ->
+            logger.error("{} loading data failed, player will stop", playerActor.playerId, throwable)
+            playerActor.stopSelf()
+        }) {
             val loadedData = withContext(Dispatchers.IO) {
                 val player = playerMem.load(playerActor, template)
                 val playerAction = playerActionMem.load(playerActor, template)

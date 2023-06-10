@@ -21,3 +21,5 @@ enum class StopReason {
 }
 
 data class ChannelExpired(val reason: Int) : SerdeChannelMessage
+
+object ChannelAuthorized : ChannelMessage

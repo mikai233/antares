@@ -100,3 +100,5 @@ fun tryCatch(logger: Logger, block: () -> Unit) {
         logger.error("", t)
     }
 }
+
+fun unexpectedMessage(message: Any): Nothing = error("unexpected message:$message")

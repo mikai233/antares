@@ -1,17 +1,17 @@
-package com.mikai233.shared.entity
+package com.mikai233.common.entity
 
-import com.mikai233.common.entity.TraceableFieldEntity
 import org.springframework.data.annotation.Id
 
-data class Player(
+data class PlayerAbstract(
     @Id
-    val id: Long,
-    val account: String,
+    val playerId: Long,
     val worldId: Long,
+    val account: String,
     var nickname: String,
     var level: Int,
+    val createTime: Long,
 ) : TraceableFieldEntity<Long> {
     override fun key(): Long {
-        return id
+        return playerId
     }
 }

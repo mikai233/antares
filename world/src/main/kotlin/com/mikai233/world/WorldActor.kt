@@ -5,10 +5,7 @@ import akka.actor.typed.PostStop
 import akka.actor.typed.javadsl.*
 import com.mikai233.common.core.actor.ActorCoroutine
 import com.mikai233.common.core.actor.safeActorCoroutine
-import com.mikai233.common.ext.actorLogger
-import com.mikai233.common.ext.runnableAdapter
-import com.mikai233.common.ext.tell
-import com.mikai233.common.ext.unixTimestamp
+import com.mikai233.common.ext.*
 import com.mikai233.common.inject.XKoin
 import com.mikai233.shared.constants.WorldActionType
 import com.mikai233.shared.message.*
@@ -162,5 +159,13 @@ class WorldActor(
 
     private fun executeWorldScript(message: ExecuteWorldScript) {
         message.script.invoke(this)
+    }
+
+    fun tellPlayer(playerId: Long, message: SerdePlayerMessage) {
+        playerActorSharding.tell(shardingEnvelope("$playerId", message))
+    }
+
+    fun tellWorld(worldId: Long, message: SerdeWorldMessage) {
+        worldActorSharding.tell(shardingEnvelope("$worldId", message))
     }
 }

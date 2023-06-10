@@ -4,18 +4,21 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.PostStop
 import akka.actor.typed.javadsl.*
 import com.google.protobuf.GeneratedMessageV3
+import com.google.protobuf.kotlin.toByteString
 import com.mikai233.common.core.actor.safeActorCoroutine
-import com.mikai233.common.ext.actorLogger
-import com.mikai233.common.ext.protobufJsonPrinter
-import com.mikai233.common.ext.runnableAdapter
-import com.mikai233.common.ext.shardingEnvelope
+import com.mikai233.common.crypto.ECDH
+import com.mikai233.common.ext.*
 import com.mikai233.common.inject.XKoin
 import com.mikai233.gate.component.GateSharding
 import com.mikai233.protocol.ProtoLogin
 import com.mikai233.protocol.ProtoLogin.LoginReq
 import com.mikai233.protocol.ProtoLogin.LoginResp
-import com.mikai233.protocol.loginReq
+import com.mikai233.protocol.ProtoSystem.PingReq
+import com.mikai233.protocol.pingResp
+import com.mikai233.shared.codec.CryptoCodec
+import com.mikai233.shared.logMessage
 import com.mikai233.shared.message.*
+import io.netty.channel.ChannelFutureListener
 import io.netty.channel.ChannelHandlerContext
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -44,13 +47,10 @@ class ChannelActor(
     private val playerActorSharding = gateSharding.playerActorSharding
     private val worldActorSharding = gateSharding.worldActorSharding
     private val protobufPrinter = protobufJsonPrinter()
+    private lateinit var clientPublicKey: ByteArray
 
     init {
-        logger.info("{} preStart", context.self)
-        context.self.tell(ClientMessage(loginReq {
-            account = "mikai233"
-            worldId = 1000
-        }))
+        logger.debug("{} preStart", context.self)
     }
 
     override fun createReceive(): Receive<ChannelMessage> {
@@ -61,6 +61,7 @@ class ChannelActor(
                 }
 
                 is ClientMessage -> {
+                    logMessage(logger, message) { "worldId:$worldId" }
                     handleClientConnectMessage(message)
                 }
 
@@ -79,9 +80,11 @@ class ChannelActor(
                 }
 
                 is ChannelExpired -> {
-                    logger.info("{} {}", context.self, message)
+                    logger.debug("{} {}", context.self, message)
                     Behaviors.stopped()
                 }
+
+                ChannelAuthorized -> unexpectedMessage(message)
             }
         }.onSignal(PostStop::class.java) {
             onChannelStopped()
@@ -93,7 +96,7 @@ class ChannelActor(
         if (playerId > 0L) {
             playerActorSharding.tell(shardingEnvelope("$playerId", message))
         } else {
-            logger.warn("try to message to uninitialized playerId")
+            logger.warn("try to send message to uninitialized playerId, this message will be dropped")
         }
     }
 
@@ -101,18 +104,22 @@ class ChannelActor(
         if (worldId > 0L) {
             worldActorSharding.tell(shardingEnvelope("$worldId", message))
         } else {
-            logger.warn("try to message to uninitialized worldId")
+            logger.warn("try to send message to uninitialized worldId, this message will be dropped")
         }
     }
 
-    private fun write(message: GeneratedMessageV3) {
-        handlerContext.writeAndFlush(message)
+    private fun write(message: GeneratedMessageV3, listener: ChannelFutureListener? = null) {
+        val future = handlerContext.writeAndFlush(message)
+        listener?.let {
+            future.addListener(listener)
+        }
     }
 
     private fun handleClientConnectMessage(message: ClientMessage): Behavior<ChannelMessage> {
         val inner = message.inner
         return if (inner is LoginReq && state == State.Connected) {
             state = State.WaitForAuth
+            clientPublicKey = inner.clientPublicKey.toByteArray()
             worldId = inner.worldId
             tellWorld(worldId, PlayerLogin(inner, context.self.narrow()))
             waitForAuthResult()
@@ -126,31 +133,47 @@ class ChannelActor(
         val inner = message.inner
         return if (inner is LoginResp) {
             when (inner.result) {
-                ProtoLogin.LoginResult.Success -> handleLoginSuccess(inner)
+                ProtoLogin.LoginResult.Success -> {
+                    handleLoginSuccess(inner)
+                }
+
                 ProtoLogin.LoginResult.RegisterLimit,
                 ProtoLogin.LoginResult.WorldNotExists,
                 ProtoLogin.LoginResult.WorldClosed,
                 ProtoLogin.LoginResult.AccountBan -> {
-                    Behaviors.stopped()
+                    handleLoginFailed(inner)
                 }
 
                 ProtoLogin.LoginResult.UNRECOGNIZED, null -> {
                     logger.error("unexpected login result, stop the channel")
-                    Behaviors.stopped()
+                    handleLoginFailed(inner)
                 }
             }
         } else {
-            logger.error("unexpected ChannelProtobufEnvelope:{}, stop the channel", protobufPrinter.print(inner))
-            Behaviors.stopped()
+            buffer.stash(message)
+            Behaviors.same()
         }
     }
 
     private fun handleLoginSuccess(resp: LoginResp): Behavior<ChannelMessage> {
         state = State.Authorized
-        val playerData = resp.playerData
+        val playerData = resp.data
         playerId = playerData.playerId
+        val serverKeyPair = ECDH.genKeyPair()
+        val keyResp = resp.toBuilder().setServerPublicKey(serverKeyPair.publicKey.toByteString()).build()
+        write(keyResp) {
+            if (it.isDone) {
+                val shareKey = ECDH.calculateShareKey(serverKeyPair.privateKey, clientPublicKey)
+                handlerContext.channel().attr(CryptoCodec.cryptoKey).set(shareKey)
+                context.self tell ChannelAuthorized
+            }
+        }
+        return Behaviors.same()
+    }
+
+    private fun handleLoginFailed(resp: LoginResp): Behavior<ChannelMessage> {
         write(resp)
-        return authorized()
+        return Behaviors.stopped()
     }
 
     private fun waitForAuthResult(): Behavior<ChannelMessage> {
@@ -174,18 +197,23 @@ class ChannelActor(
                 }
 
                 is ChannelProtobufEnvelope -> {
+                    logMessage(logger, message) { "playerId:$playerId worldId:$worldId" }
                     handleWaitForAuthResultMessage(message)
                 }
 
                 is StopChannel -> {
                     Behaviors.stopped()
                 }
+
+                ChannelAuthorized -> {
+                    buffer.unstashAll(authorized())
+                }
             }
         }.build()
     }
 
     private fun handleChannelExpired(): Behavior<ChannelMessage>? {
-        logger.info("{} channel expired while waiting for auth, stop the channel", context.self)
+        logger.debug("{} channel expired while waiting for auth, stop the channel", context.self)
         return Behaviors.stopped()
     }
 
@@ -197,7 +225,7 @@ class ChannelActor(
                 }
 
                 is ClientMessage -> {
-                    tellPlayer(playerId, PlayerProtobufEnvelope(message.inner))
+                    forwardClientMessage(message)
                     Behaviors.same()
                 }
 
@@ -206,6 +234,7 @@ class ChannelActor(
                 }
 
                 is ChannelProtobufEnvelope -> {
+                    logMessage(logger, message) { "playerId:$playerId worldId:$worldId" }
                     write(message.inner)
                     Behaviors.same()
                 }
@@ -213,6 +242,8 @@ class ChannelActor(
                 is StopChannel -> {
                     Behaviors.stopped()
                 }
+
+                ChannelAuthorized -> unexpectedMessage(message)
             }
         }.build()
     }
@@ -226,7 +257,21 @@ class ChannelActor(
         handlerContext.close()
     }
 
-    private fun stop(reason: StopReason) {
+    private fun stopSelf(reason: StopReason) {
         context.self.tell(StopChannel(reason))
+    }
+
+    private fun forwardClientMessage(message: ClientMessage) {
+        val inner = message.inner
+        if (inner is PingReq) {
+            handlePingReq(inner)
+        } else {
+            logMessage(logger, message) { "playerId:$playerId worldId:$worldId" }
+            tellPlayer(playerId, PlayerProtobufEnvelope(inner))
+        }
+    }
+
+    private fun handlePingReq(req: PingReq) {
+        write(pingResp { serverTimestamp = unixTimestamp() })
     }
 }

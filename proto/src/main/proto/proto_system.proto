@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package com.mikai233.protocol;
+
+message PingReq{
+  int64 client_timestamp = 1;
+}
+
+message PingResp{
+  int64 server_timestamp = 1;
+}

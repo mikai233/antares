@@ -3,9 +3,7 @@ package com.mikai233.tools.init
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.component.Role
 import com.mikai233.common.core.component.ZookeeperConfigCenter
-import com.mikai233.common.core.component.config.NettyConfig
-import com.mikai233.common.core.component.config.Node
-import com.mikai233.common.core.component.config.ServerHosts
+import com.mikai233.common.core.component.config.*
 
 private var PORT_ALLOC = 2333
 fun nextPort() = PORT_ALLOC++
@@ -15,6 +13,7 @@ fun main() {
     with(configCenter) {
         createServerHosts("stardust")
         createNettyConfig()
+        createDataSource()
     }
 }
 
@@ -41,4 +40,9 @@ internal fun ZookeeperConfigCenter.createServerHosts(systemName: String) {
 internal fun ZookeeperConfigCenter.createNettyConfig() {
     val nettyConfig = NettyConfig(GlobalEnv.machineIp, GlobalEnv.loginPort)
     addConfig(nettyConfig)
+}
+
+internal fun ZookeeperConfigCenter.createDataSource() {
+    val gameDataSource = GameDataSource(listOf(Source("127.0.0.1", 27117)))
+    addConfig(gameDataSource)
 }
