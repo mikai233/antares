@@ -8,14 +8,12 @@ import com.mikai233.common.core.component.AkkaSystem
 import com.mikai233.common.ext.logger
 import com.mikai233.common.ext.syncAsk
 import com.mikai233.common.inject.XKoin
-import com.mikai233.gate.GateNode
 import com.mikai233.gate.GateSystemMessage
 import com.mikai233.gate.SpawnChannelActorReq
 import com.mikai233.gate.SpawnChannelActorResp
 import com.mikai233.shared.message.ChannelMessage
 import com.mikai233.shared.message.ClientMessage
 import com.mikai233.shared.message.StopChannel
-import com.mikai233.shared.message.StopReason
 import io.netty.channel.ChannelHandler
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
@@ -29,7 +27,6 @@ class ChannelHandler(private val koin: XKoin) : ChannelInboundHandlerAdapter(), 
         const val CHANNEL_ACTOR_KEY = "CHANNEL_ACTOR_KEY"
     }
 
-    private val gate by inject<GateNode>()
     private val server by inject<Server>()
     private val akkaSystem by inject<AkkaSystem<GateSystemMessage>>()
     private val actorKey = AttributeKey.valueOf<ActorRef<ChannelMessage>>(CHANNEL_ACTOR_KEY)
@@ -56,7 +53,7 @@ class ChannelHandler(private val koin: XKoin) : ChannelInboundHandlerAdapter(), 
     }
 
     override fun channelInactive(ctx: ChannelHandlerContext) {
-        tell(ctx, StopChannel(StopReason.ChannelInactive))
+        tell(ctx, StopChannel)
     }
 
     override fun channelRead(ctx: ChannelHandlerContext, message: Any) {

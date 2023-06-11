@@ -2,7 +2,6 @@ package com.mikai233.gate
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
-import akka.actor.typed.PostStop
 import akka.actor.typed.javadsl.*
 import akka.actor.typed.pubsub.Topic
 import com.google.protobuf.GeneratedMessageV3
@@ -16,6 +15,7 @@ import com.mikai233.protocol.ProtoLogin
 import com.mikai233.protocol.ProtoLogin.LoginReq
 import com.mikai233.protocol.ProtoLogin.LoginResp
 import com.mikai233.protocol.ProtoSystem.PingReq
+import com.mikai233.protocol.connectionExpiredNotify
 import com.mikai233.protocol.pingResp
 import com.mikai233.shared.codec.CryptoCodec
 import com.mikai233.shared.logMessage
@@ -26,6 +26,8 @@ import io.netty.channel.ChannelFutureListener
 import io.netty.channel.ChannelHandlerContext
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.toJavaDuration
 
 class ChannelActor(
     context: ActorContext<ChannelMessage>,
@@ -34,6 +36,10 @@ class ChannelActor(
     private val buffer: StashBuffer<ChannelMessage>,
     private val koin: XKoin
 ) : AbstractBehavior<ChannelMessage>(context), KoinComponent by koin {
+    companion object {
+        val maxIdleDuration = 10.seconds
+    }
+
     enum class State {
         Connected,
         WaitForAuth,
@@ -61,6 +67,7 @@ class ChannelActor(
 
     init {
         logger.debug("{} preStart", context.self)
+        context.setReceiveTimeout(maxIdleDuration.toJavaDuration(), ChannelReceiveTimeout)
     }
 
     override fun createReceive(): Receive<ChannelMessage> {
@@ -76,8 +83,7 @@ class ChannelActor(
                 }
 
                 is StopChannel -> {
-                    logger.info("{} {}", context.self, message)
-                    Behaviors.stopped()
+                    handleStopChannel()
                 }
 
                 is ChannelProtobufEnvelope -> {
@@ -90,17 +96,17 @@ class ChannelActor(
                 }
 
                 is ChannelExpired -> {
-                    logger.debug("{} {}", context.self, message)
-                    Behaviors.stopped()
+                    handleChannelExpired(message)
                 }
 
                 ChannelAuthorized,
                 is ChannelAllWorldTopic,
                 is ChannelWorldTopic -> unexpectedMessage(message)
+
+                ChannelReceiveTimeout -> {
+                    stopSelf()
+                }
             }
-        }.onSignal(PostStop::class.java) {
-            onChannelStopped()
-            Behaviors.same()
         }.build()
     }
 
@@ -157,7 +163,7 @@ class ChannelActor(
             waitForAuthResult()
         } else {
             logger.warn("unexpected protobuf message:{} at state:{}", protobufPrinter.print(inner), state)
-            Behaviors.stopped()
+            stopSelf()
         }
     }
 
@@ -205,7 +211,7 @@ class ChannelActor(
 
     private fun handleLoginFailed(resp: LoginResp): Behavior<ChannelMessage> {
         write(resp)
-        return Behaviors.stopped()
+        return stopSelf()
     }
 
     private fun waitForAuthResult(): Behavior<ChannelMessage> {
@@ -221,11 +227,11 @@ class ChannelActor(
                         context.self,
                         protobufPrinter.print(message.inner),
                     )
-                    Behaviors.stopped()
+                    stopSelf()
                 }
 
                 is ChannelExpired -> {
-                    handleChannelExpired()
+                    handleChannelExpired(message)
                 }
 
                 is ChannelProtobufEnvelope -> {
@@ -234,7 +240,7 @@ class ChannelActor(
                 }
 
                 is StopChannel -> {
-                    Behaviors.stopped()
+                    handleStopChannel()
                 }
 
                 ChannelAuthorized -> {
@@ -243,6 +249,10 @@ class ChannelActor(
 
                 is ChannelAllWorldTopic,
                 is ChannelWorldTopic -> unexpectedMessage(message)
+
+                ChannelReceiveTimeout -> {
+                    stopSelf()
+                }
             }
         }.build()
     }
@@ -255,9 +265,9 @@ class ChannelActor(
         return buffer.unstashAll(authorized())
     }
 
-    private fun handleChannelExpired(): Behavior<ChannelMessage> {
-        logger.debug("{} channel expired while waiting for auth, stop the channel", context.self)
-        return Behaviors.stopped()
+    private fun handleChannelExpired(message: ChannelExpired): Behavior<ChannelMessage> {
+        write(connectionExpiredNotify { reasonValue = message.reason })
+        return stopSelf()
     }
 
     private fun authorized(): Behavior<ChannelMessage> {
@@ -273,7 +283,7 @@ class ChannelActor(
                 }
 
                 is ChannelExpired -> {
-                    handleChannelExpired()
+                    handleChannelExpired(message)
                 }
 
                 is ChannelProtobufEnvelope -> {
@@ -283,7 +293,7 @@ class ChannelActor(
                 }
 
                 is StopChannel -> {
-                    Behaviors.stopped()
+                    handleStopChannel()
                 }
 
                 ChannelAuthorized -> unexpectedMessage(message)
@@ -293,6 +303,10 @@ class ChannelActor(
 
                 is ChannelWorldTopic -> {
                     handleWorldTopic(message)
+                }
+
+                ChannelReceiveTimeout -> {
+                    stopSelf()
                 }
             }
         }.build()
@@ -305,14 +319,9 @@ class ChannelActor(
         return Behaviors.same()
     }
 
-    private fun onChannelStopped() {
-        worldTopicActor tell Topic.unsubscribe(worldTopicAdapter)
-        allWorldTopicActor tell Topic.unsubscribe(allWorldTopicAdapter)
+    private fun stopSelf(): Behavior<ChannelMessage> {
         handlerContext.close()
-    }
-
-    private fun stopSelf(reason: StopReason) {
-        context.self.tell(StopChannel(reason))
+        return Behaviors.same()
     }
 
     private fun forwardClientMessage(message: ClientMessage) {
@@ -327,5 +336,17 @@ class ChannelActor(
 
     private fun handlePingReq(req: PingReq) {
         write(pingResp { serverTimestamp = unixTimestamp() })
+    }
+
+    private fun handleStopChannel(): Behavior<ChannelMessage> {
+        if (this::worldTopicActor.isInitialized) {
+            worldTopicActor tell Topic.unsubscribe(worldTopicAdapter)
+        }
+        if (this::allWorldTopicActor.isInitialized) {
+            allWorldTopicActor tell Topic.unsubscribe(allWorldTopicAdapter)
+        }
+        return Behaviors.stopped {
+            logger.debug("player:{} {} channel stopped", playerId, context.self)
+        }
     }
 }

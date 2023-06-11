@@ -30,3 +30,11 @@ enum LoginResult{
 message TestNotify{
   string data = 1;
 }
+
+message ConnectionExpiredNotify{
+  enum Reason{
+    Idle = 0;
+    MultiLogin = 1;
+  }
+  Reason reason = 1;
+}

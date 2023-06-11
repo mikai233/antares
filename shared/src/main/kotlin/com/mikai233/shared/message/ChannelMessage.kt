@@ -7,12 +7,7 @@ data class ChannelProtobufEnvelope(val inner: GeneratedMessageV3) : SerdeChannel
 
 data class ClientMessage(val inner: GeneratedMessageV3) : ChannelMessage
 
-data class StopChannel(val reason: StopReason) : ChannelMessage
-
-enum class StopReason {
-    ChannelInactive,
-    UnexpectedMessage,
-}
+object StopChannel : ChannelMessage
 
 data class ChannelExpired(val reason: Int) : SerdeChannelMessage
 
@@ -21,3 +16,5 @@ object ChannelAuthorized : ChannelMessage
 data class ChannelWorldTopic(val inner: WorldTopicMessage) : ChannelMessage
 
 data class ChannelAllWorldTopic(val inner: AllWorldTopicMessage) : ChannelMessage
+
+object ChannelReceiveTimeout : ChannelMessage

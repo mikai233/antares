@@ -13,12 +13,12 @@ import com.mikai233.common.inject.XKoin
 import com.mikai233.player.component.PlayerActorDispatchers
 import com.mikai233.player.component.PlayerScriptSupport
 import com.mikai233.player.component.PlayerSharding
+import com.mikai233.protocol.ProtoLogin.ConnectionExpiredNotify
 import com.mikai233.shared.logMessage
 import com.mikai233.shared.message.*
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.toJavaDuration
 
 class PlayerActor(
     context: ActorContext<PlayerMessage>,
@@ -58,7 +58,7 @@ class PlayerActor(
                 }
 
                 PlayerInitDone -> {
-                    timers.startTimerAtFixedRate(PlayerTick, 100.milliseconds.toJavaDuration())
+                    timers.startTimerWithFixedDelay(PlayerTick, playerTick)
                     return@onMessage buffer.unstashAll(active())
                 }
 
@@ -82,7 +82,7 @@ class PlayerActor(
         buffer.stash(message)
         runCatching(manager::loadAll).onFailure {
             logger.error("$playerId load data error, stop the player", it)
-            context.self tell StopPlayer
+            stopSelf()
         }
     }
 
@@ -185,7 +185,7 @@ class PlayerActor(
         val channel = channelActor
         if (channel != null) {
             val envelope = ChannelProtobufEnvelope(message)
-            channel.tell(envelope)
+            channel tell envelope
         } else {
             logger.warn("player:{} unable to write message to channel actor, because channel actor is null", playerId)
         }
@@ -200,6 +200,7 @@ class PlayerActor(
             channelActor?.let {
                 context.unwatch(it)
                 logger.info("player:{} unbind old channel actor:{}", playerId, it)
+                it tell ChannelExpired(ConnectionExpiredNotify.Reason.MultiLogin_VALUE)
             }
             channelActor = incomingChannelActor
             context.watch(channelActor)
@@ -228,5 +229,9 @@ class PlayerActor(
             logger.error("player actor handle runnable:{} failed", message.name, it)
         }
         return Behaviors.same()
+    }
+
+    fun submit(name: String, block: () -> Unit) {
+        context.self tell ActorNamedRunnable(name, block)
     }
 }

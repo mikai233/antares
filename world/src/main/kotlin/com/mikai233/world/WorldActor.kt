@@ -182,4 +182,8 @@ class WorldActor(
         }
         return Behaviors.same()
     }
+
+    fun submit(name: String, block: () -> Unit) {
+        context.self tell ActorNamedRunnable(name, block)
+    }
 }

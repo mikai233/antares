@@ -440,6 +440,9 @@ class TrackableMemCacheDatabase(
                 next.setValue(pending to null)
             }
         }
+        if (submittingData.isEmpty()) {
+            return
+        }
         ioJob = coroutine.launch {
             val completedKeys = withContext(Dispatchers.IO) {
                 logger.debug("flushing changed data to db:{}", submittingData)

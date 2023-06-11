@@ -173,18 +173,18 @@ fun <T> TimerScheduler<T>.startTimerAtFixedRate(msg: T, initialDelay: Duration, 
     startTimerAtFixedRate(msg, initialDelay.toJavaDuration(), interval.toJavaDuration())
 }
 
-fun <T> TimerScheduler<T>.startTimerAtFixedDelay(msg: T, delay: Duration) {
+fun <T> TimerScheduler<T>.startTimerWithFixedDelay(msg: T, delay: Duration) {
     startTimerWithFixedDelay(msg, delay.toJavaDuration())
 }
 
-fun <T> TimerScheduler<T>.startTimerAtFixedDelay(key: Any, msg: T, delay: Duration) {
+fun <T> TimerScheduler<T>.startTimerWithFixedDelay(key: Any, msg: T, delay: Duration) {
     startTimerWithFixedDelay(key, msg, delay.toJavaDuration())
 }
 
-fun <T> TimerScheduler<T>.startTimerAtFixedDelay(msg: T, initialDelay: Duration, delay: Duration) {
+fun <T> TimerScheduler<T>.startTimerWithFixedDelay(msg: T, initialDelay: Duration, delay: Duration) {
     startTimerWithFixedDelay(msg, initialDelay.toJavaDuration(), delay.toJavaDuration())
 }
 
-fun <T> TimerScheduler<T>.startTimerAtFixedDelay(key: Any, msg: T, initialDelay: Duration, delay: Duration) {
+fun <T> TimerScheduler<T>.startTimerWithFixedDelay(key: Any, msg: T, initialDelay: Duration, delay: Duration) {
     startTimerWithFixedDelay(key, msg, initialDelay.toJavaDuration(), delay.toJavaDuration())
 }
