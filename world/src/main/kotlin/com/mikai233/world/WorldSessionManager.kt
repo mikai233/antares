@@ -1,10 +1,13 @@
 package com.mikai233.world
 
 import akka.actor.typed.ActorRef
+import akka.actor.typed.pubsub.Topic
 import com.google.protobuf.GeneratedMessageV3
 import com.mikai233.common.ext.logger
 import com.mikai233.shared.logMessage
 import com.mikai233.shared.message.ChannelProtobufEnvelope
+import com.mikai233.shared.message.ProtobufEnvelopeToAllWorldClient
+import com.mikai233.shared.message.ProtobufEnvelopeToWorldClient
 import com.mikai233.shared.message.SerdeChannelMessage
 
 class WorldSessionManager(val world: WorldActor) {
@@ -30,5 +33,13 @@ class WorldSessionManager(val world: WorldActor) {
         val session = WorldSession(playerId, channelActor)
         sessions[playerId] = session
         return session
+    }
+
+    fun broadcastWorldClient(message: GeneratedMessageV3) {
+        world.worldTopic.tell(Topic.publish(ProtobufEnvelopeToWorldClient(message)))
+    }
+
+    fun broadcastAllWorldClient(message: GeneratedMessageV3) {
+        world.allWorldTopic.tell(Topic.publish(ProtobufEnvelopeToAllWorldClient(message)))
     }
 }

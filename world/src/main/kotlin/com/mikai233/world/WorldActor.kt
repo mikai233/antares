@@ -5,10 +5,14 @@ import akka.actor.typed.PostStop
 import akka.actor.typed.javadsl.*
 import com.mikai233.common.core.actor.ActorCoroutine
 import com.mikai233.common.core.actor.safeActorCoroutine
-import com.mikai233.common.ext.*
+import com.mikai233.common.ext.actorLogger
+import com.mikai233.common.ext.runnableAdapter
+import com.mikai233.common.ext.shardingEnvelope
+import com.mikai233.common.ext.tell
 import com.mikai233.common.inject.XKoin
-import com.mikai233.shared.constants.WorldActionType
 import com.mikai233.shared.message.*
+import com.mikai233.shared.startAllWorldTopicActor
+import com.mikai233.shared.startWorldTopicActor
 import com.mikai233.world.component.WorldActorDispatchers
 import com.mikai233.world.component.WorldSharding
 import org.koin.core.component.KoinComponent
@@ -23,9 +27,13 @@ class WorldActor(
     val worldId: Long,
     val koin: XKoin,
 ) : AbstractBehavior<WorldMessage>(context), KoinComponent by koin {
+    companion object {
+        val worldTick = 100.milliseconds
+    }
+
     private val logger = actorLogger()
-    private val runnableAdapter = runnableAdapter { WorldRunnable(it::run) }
-    private val coroutine = ActorCoroutine(runnableAdapter.safeActorCoroutine())
+    private val runnableAdapter = runnableAdapter { ActorNamedRunnable("worldActorCoroutine", it::run) }
+    val coroutine = ActorCoroutine(runnableAdapter.safeActorCoroutine())
     private val dispatcher: WorldActorDispatchers by inject()
     private val protobufDispatcher = dispatcher.protobufDispatcher
     private val internalDispatcher = dispatcher.internalDispatcher
@@ -34,6 +42,8 @@ class WorldActor(
     val worldActorSharding = worldSharding.worldActorSharding
     val sessionManager = WorldSessionManager(this)
     val manager = WorldDataManager(this, coroutine)
+    val worldTopic = context.startWorldTopicActor(worldId)
+    val allWorldTopic = context.startAllWorldTopicActor()
 
     init {
         logger.info("worldId:{} preStart", worldId)
@@ -54,8 +64,8 @@ class WorldActor(
                     manager.loadAll()
                 }
 
-                is WorldRunnable -> {
-                    message.run()
+                is ActorNamedRunnable -> {
+                    handleWorldActorRunnable(message)
                 }
 
                 is BusinessWorldMessage -> {
@@ -63,10 +73,7 @@ class WorldActor(
                 }
 
                 WorldInitDone -> {
-                    timers.startTimerAtFixedRate(WorldTick, 100.milliseconds.toJavaDuration())
-                    //FIXME test
-                    val action = manager.worldActionMem.getOrCreateAction(WorldActionType.Test)
-                    action.latestActionMills = unixTimestamp()
+                    timers.startTimerAtFixedRate(WorldTick, worldTick.toJavaDuration())
                     return@onMessage buffer.unstashAll(active())
                 }
 
@@ -91,8 +98,8 @@ class WorldActor(
                     return@onMessage stopping()
                 }
 
-                is WorldRunnable -> {
-                    message.run()
+                is ActorNamedRunnable -> {
+                    handleWorldActorRunnable(message)
                 }
 
                 WakeupGameWorld,
@@ -126,8 +133,8 @@ class WorldActor(
                     return@onMessage Behaviors.stopped()
                 }
 
-                is WorldRunnable -> {
-                    message.run()
+                is ActorNamedRunnable -> {
+                    handleWorldActorRunnable(message)
                 }
 
                 WakeupGameWorld,
@@ -167,5 +174,12 @@ class WorldActor(
 
     fun tellWorld(worldId: Long, message: SerdeWorldMessage) {
         worldActorSharding.tell(shardingEnvelope("$worldId", message))
+    }
+
+    private fun handleWorldActorRunnable(message: ActorNamedRunnable): Behavior<WorldMessage> {
+        runCatching(message::run).onFailure {
+            logger.error("world actor handle runnable:{} failed", message.name, it)
+        }
+        return Behaviors.same()
     }
 }

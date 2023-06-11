@@ -9,3 +9,14 @@ message PingReq{
 message PingResp{
   int64 server_timestamp = 1;
 }
+
+message GmReq{
+  string cmd = 1;
+  repeated string params = 2;
+}
+
+message GmResp{
+  string cmd = 1;
+  string data = 2;
+  bool success = 3;
+}

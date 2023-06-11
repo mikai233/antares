@@ -6,12 +6,6 @@ import com.google.protobuf.GeneratedMessageV3
 import com.mikai233.shared.script.ActorScriptFunction
 import com.mikai233.shared.script.Script
 
-data class PlayerRunnable(private val block: () -> Unit) : Runnable, PlayerMessage {
-    override fun run() {
-        block()
-    }
-}
-
 object StopPlayer : SerdePlayerMessage
 
 data class PlayerScript(val script: Script) : SerdePlayerMessage

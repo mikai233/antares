@@ -70,26 +70,6 @@ fun <Req : M, Resp, M> syncAsk(
     return completionStage.toCompletableFuture().get()
 }
 
-//fun <T> ActorSystem<T>.startSingleton(
-//    name: String,
-//    role: Role,
-//    props: Props,
-//    handoffStopMessage: Any = Handoff,
-//    settings: ClusterSingletonManagerSettings? = null
-//): akka.actor.ActorRef {
-//    val setting = settings ?: ClusterSingletonManagerSettings.create(this).withRole(role.name)
-//    return actorOf(ClusterSingletonManager.props(props, handoffStopMessage, setting), name)
-//}
-//
-//fun <T> ActorSystem<T>.startSingletonProxy(
-//    role: ClusterRole,
-//    path: String,
-//    settings: ClusterSingletonProxySettings? = null
-//): akka.actor.ActorRef {
-//    val proxySetting = settings ?: ClusterSingletonProxySettings.create(this).withRole(role.name)
-//    return actorOf(ClusterSingletonProxy.props(path, proxySetting))
-//}
-
 fun <T : Message> ActorSystem<*>.startSingleton(
     behavior: Behavior<T>,
     name: String,
@@ -163,4 +143,48 @@ fun <M> ActorContext<*>.startBroadcastClusterRouterGroup(
     )
     val ref = Adapter.actorOf(this, group.props())
     return Adapter.toTyped<M>(ref)
+}
+
+fun <T> TimerScheduler<T>.startPeriodicTimer(key: Any, msg: T, interval: Duration) {
+    startPeriodicTimer(key, msg, interval.toJavaDuration())
+}
+
+fun <T> TimerScheduler<T>.startSingleTimer(key: Any, msg: T, delay: Duration) {
+    startSingleTimer(key, msg, delay.toJavaDuration())
+}
+
+fun <T> TimerScheduler<T>.startSingleTimer(msg: T, delay: Duration) {
+    startSingleTimer(msg, delay.toJavaDuration())
+}
+
+fun <T> TimerScheduler<T>.startTimerAtFixedRate(key: Any, msg: T, initialDelay: Duration, interval: Duration) {
+    startTimerAtFixedRate(key, msg, initialDelay.toJavaDuration(), interval.toJavaDuration())
+}
+
+fun <T> TimerScheduler<T>.startTimerAtFixedRate(key: Any, msg: T, interval: Duration) {
+    startTimerAtFixedRate(key, msg, interval.toJavaDuration())
+}
+
+fun <T> TimerScheduler<T>.startTimerAtFixedRate(msg: T, interval: Duration) {
+    startTimerAtFixedRate(msg, interval.toJavaDuration())
+}
+
+fun <T> TimerScheduler<T>.startTimerAtFixedRate(msg: T, initialDelay: Duration, interval: Duration) {
+    startTimerAtFixedRate(msg, initialDelay.toJavaDuration(), interval.toJavaDuration())
+}
+
+fun <T> TimerScheduler<T>.startTimerAtFixedDelay(msg: T, delay: Duration) {
+    startTimerWithFixedDelay(msg, delay.toJavaDuration())
+}
+
+fun <T> TimerScheduler<T>.startTimerAtFixedDelay(key: Any, msg: T, delay: Duration) {
+    startTimerWithFixedDelay(key, msg, delay.toJavaDuration())
+}
+
+fun <T> TimerScheduler<T>.startTimerAtFixedDelay(msg: T, initialDelay: Duration, delay: Duration) {
+    startTimerWithFixedDelay(msg, initialDelay.toJavaDuration(), delay.toJavaDuration())
+}
+
+fun <T> TimerScheduler<T>.startTimerAtFixedDelay(key: Any, msg: T, initialDelay: Duration, delay: Duration) {
+    startTimerWithFixedDelay(key, msg, initialDelay.toJavaDuration(), delay.toJavaDuration())
 }

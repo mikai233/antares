@@ -6,6 +6,7 @@ package com.mikai233.protocol;
 
 message MessageServerToClient{
   PingResp ping_resp = 1;
+  GmResp gm_resp = 2;
   LoginResp login_resp = 10001;
   TestNotify test_notify = 99999;
 }

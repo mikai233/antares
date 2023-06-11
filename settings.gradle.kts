@@ -73,6 +73,7 @@ dependencyResolutionManagement {
             library("jackson.protobuf", "com.fasterxml.jackson.dataformat:jackson-dataformat-protobuf:$jacksonVersion")
             library("jackson.guava", "com.fasterxml.jackson.datatype:jackson-datatype-guava:$jacksonVersion")
             library("jackson.cbor", "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:$jacksonVersion")
+            library("jackson.yaml", "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
             bundle("jackson", listOf("jackson.databind", "jackson.kotlin", "jackson.guava"))
             library("reflections", "org.reflections:reflections:0.10.2")
             library("protoc", "com.google.protobuf:protoc:$protobufVersion")

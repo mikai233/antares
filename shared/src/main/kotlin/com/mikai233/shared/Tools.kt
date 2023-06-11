@@ -27,6 +27,7 @@ fun logMessage(logger: Logger, message: Any, msgHeader: () -> String = { "" }) {
                 "${message.inner::class.simpleName} ${ProtobufPrinter.printer.print(message.inner)}"
             }
 
+
             else -> message.toString()
         }
         logger.info("{} {}", msgHeader(), formattedMessage)

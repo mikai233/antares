@@ -6,5 +6,6 @@ package com.mikai233.protocol;
 
 message MessageClientToServer{
   PingReq ping_req = 1;
+  GmReq gm_req = 2;
   LoginReq login_req = 10001;
 }

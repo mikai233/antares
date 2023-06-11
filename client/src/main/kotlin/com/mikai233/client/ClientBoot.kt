@@ -1,5 +1,7 @@
 package com.mikai233.client
 
+import com.mikai233.common.conf.GlobalEnv
+
 fun main() {
-    GameClient("localhost", 6666).start()
+    GameClient("localhost", GlobalEnv.loginPort).start()
 }

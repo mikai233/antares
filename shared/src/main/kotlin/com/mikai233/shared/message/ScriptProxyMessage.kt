@@ -13,12 +13,6 @@ sealed interface SerdeScriptProxyMessage : ScriptProxyMessage, SerdeMessage
 
 data class ServiceList(val inner: Receptionist.Listing) : ScriptProxyMessage
 
-data class ScriptRunnable(private val block: () -> Unit) : Runnable, ScriptProxyMessage {
-    override fun run() {
-        block()
-    }
-}
-
 @AllOpen
 sealed class DispatchScript : ScriptProxyMessage
 

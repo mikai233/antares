@@ -23,12 +23,16 @@ import kotlin.time.toJavaDuration
 class PlayerActor(
     context: ActorContext<PlayerMessage>,
     private val buffer: StashBuffer<PlayerMessage>,
-    val timers: TimerScheduler<PlayerMessage>,
+    private val timers: TimerScheduler<PlayerMessage>,
     val playerId: Long,
     val koin: XKoin,
 ) : AbstractBehavior<PlayerMessage>(context), KoinComponent by koin {
+    companion object {
+        val playerTick = 100.milliseconds
+    }
+
     private val logger = actorLogger()
-    private val runnableAdapter = runnableAdapter { PlayerRunnable(it::run) }
+    private val runnableAdapter = runnableAdapter { ActorNamedRunnable("playerActorCoroutine", it::run) }
     private val coroutine = ActorCoroutine(runnableAdapter.safeActorCoroutine())
     private var channelActor: ActorRef<SerdeChannelMessage>? = null
     private val dispatcher by inject<PlayerActorDispatchers>()
@@ -58,8 +62,8 @@ class PlayerActor(
                     return@onMessage buffer.unstashAll(active())
                 }
 
-                is PlayerRunnable -> {
-                    message.run()
+                is ActorNamedRunnable -> {
+                    handlePlayerActorRunnable(message)
                 }
 
                 is WHPlayerCreate -> {
@@ -74,12 +78,10 @@ class PlayerActor(
         }.build()
     }
 
-    private fun startLoadingPlayerData(message: PlayerMessage?) {
+    private fun startLoadingPlayerData(message: PlayerMessage) {
         buffer.stash(message)
-        try {
-            manager.loadAll()
-        } catch (e: Exception) {
-            logger.error("$playerId load data error, stop the player", e)
+        runCatching(manager::loadAll).onFailure {
+            logger.error("$playerId load data error, stop the player", it)
             context.self tell StopPlayer
         }
     }
@@ -92,8 +94,8 @@ class PlayerActor(
                     handlePlayerProtobufEnvelope(message)
                 }
 
-                is PlayerRunnable -> {
-                    message.run()
+                is ActorNamedRunnable -> {
+                    handlePlayerActorRunnable(message)
                 }
 
                 PlayerInitDone -> unexpectedMessage(message)
@@ -143,8 +145,8 @@ class PlayerActor(
     private fun stopping(): Behavior<PlayerMessage> {
         return newReceiveBuilder().onMessage(PlayerMessage::class.java) { message ->
             when (message) {
-                is PlayerRunnable -> {
-                    message.run()
+                is ActorNamedRunnable -> {
+                    handlePlayerActorRunnable(message)
                 }
 
                 PlayerInitDone -> unexpectedMessage(message)
@@ -176,6 +178,8 @@ class PlayerActor(
             Behaviors.same()
         }.build()
     }
+
+    fun isOnline() = channelActor != null
 
     fun write(message: GeneratedMessageV3) {
         val channel = channelActor
@@ -217,5 +221,12 @@ class PlayerActor(
 
     fun tellWorld(worldId: Long, message: SerdeWorldMessage) {
         worldActorSharding.tell(shardingEnvelope("$worldId", message))
+    }
+
+    private fun handlePlayerActorRunnable(message: ActorNamedRunnable): Behavior<WorldMessage> {
+        runCatching(message::run).onFailure {
+            logger.error("player actor handle runnable:{} failed", message.name, it)
+        }
+        return Behaviors.same()
     }
 }

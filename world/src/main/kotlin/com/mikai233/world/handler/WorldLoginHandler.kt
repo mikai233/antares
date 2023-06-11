@@ -4,10 +4,12 @@ import com.mikai233.common.annotation.AllOpen
 import com.mikai233.common.entity.PlayerAbstract
 import com.mikai233.common.ext.unixTimestamp
 import com.mikai233.common.msg.MessageHandler
+import com.mikai233.protocol.testNotify
 import com.mikai233.shared.message.PlayerLogin
 import com.mikai233.shared.message.WHPlayerCreate
 import com.mikai233.shared.message.WHPlayerLogin
 import com.mikai233.world.WorldActor
+import kotlinx.coroutines.delay
 import kotlin.random.Random
 import kotlin.random.nextUInt
 
@@ -32,6 +34,12 @@ class WorldLoginHandler : MessageHandler {
                 mayExistsAbstract.playerId,
                 WHPlayerLogin(channelActor, loginReq.account, mayExistsAbstract.playerId, mayExistsAbstract.worldId)
             )
+        }
+        world.coroutine.launch {
+            delay(3000)
+            repeat(10) {
+                world.sessionManager.broadcastWorldClient(testNotify { data = "test notify:$it" })
+            }
         }
     }
 }

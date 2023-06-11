@@ -1,6 +1,7 @@
 package com.mikai233.gm.script
 
 import akka.actor.typed.ActorRef
+import akka.actor.typed.Behavior
 import akka.actor.typed.javadsl.AbstractBehavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
@@ -29,7 +30,7 @@ import java.util.*
 class ScriptProxyActor(context: ActorContext<ScriptProxyMessage>, private val koin: XKoin) :
     AbstractBehavior<ScriptProxyMessage>(context), KoinComponent by koin {
     private val logger = actorLogger()
-    private val runnableAdapter = runnableAdapter { ScriptRunnable(it::run) }
+    private val runnableAdapter = runnableAdapter { ActorNamedRunnable("scriptProxyActorCoroutine", it::run) }
     private val coroutine = ActorCoroutine(runnableAdapter.safeActorCoroutine())
     private val configCenter by inject<ZookeeperConfigCenter>()
     private val gmSharding by inject<GmSharding>()
@@ -49,9 +50,17 @@ class ScriptProxyActor(context: ActorContext<ScriptProxyMessage>, private val ko
     override fun createReceive(): Receive<ScriptProxyMessage> {
         return newReceiveBuilder().onMessage(ScriptProxyMessage::class.java) { message ->
             when (message) {
-                is ServiceList -> handleServiceList(message)
-                is ScriptRunnable -> message.run()
-                is DispatchScript -> handleDispatchScript(message)
+                is ServiceList -> {
+                    handleServiceList(message)
+                }
+
+                is ActorNamedRunnable -> {
+                    handleScriptProxyActorRunnable(message)
+                }
+
+                is DispatchScript -> {
+                    handleDispatchScript(message)
+                }
             }
             Behaviors.same()
         }.build()
@@ -59,10 +68,21 @@ class ScriptProxyActor(context: ActorContext<ScriptProxyMessage>, private val ko
 
     private fun handleDispatchScript(message: DispatchScript) {
         when (message) {
-            is BatchDispatchPlayerActorScript -> handleBatchDispatchPlayerActorScript(message)
-            is BatchDispatchWorldActorScript -> handleBatchDispatchWorldActorScript(message)
-            is DispatchNodeRoleScript -> handleDispatchNodeRoleScript(message)
-            is DispatchNodeScript -> handleDispatchNodeScript(message)
+            is BatchDispatchPlayerActorScript -> {
+                handleBatchDispatchPlayerActorScript(message)
+            }
+
+            is BatchDispatchWorldActorScript -> {
+                handleBatchDispatchWorldActorScript(message)
+            }
+
+            is DispatchNodeRoleScript -> {
+                handleDispatchNodeRoleScript(message)
+            }
+
+            is DispatchNodeScript -> {
+                handleDispatchNodeScript(message)
+            }
         }
     }
 
@@ -143,5 +163,12 @@ class ScriptProxyActor(context: ActorContext<ScriptProxyMessage>, private val ko
             scriptTargetNodeRef.remove(nodeKey)
             logger.warn("script service:{} unreachable", nodeKey)
         }
+    }
+
+    private fun handleScriptProxyActorRunnable(message: ActorNamedRunnable): Behavior<ScriptProxyMessage> {
+        runCatching(message::run).onFailure {
+            logger.error("script proxy actor handle runnable:{} failed", message.name, it)
+        }
+        return Behaviors.same()
     }
 }

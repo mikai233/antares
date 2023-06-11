@@ -1,8 +1,10 @@
 package com.mikai233.gate
 
+import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.PostStop
 import akka.actor.typed.javadsl.*
+import akka.actor.typed.pubsub.Topic
 import com.google.protobuf.GeneratedMessageV3
 import com.google.protobuf.kotlin.toByteString
 import com.mikai233.common.core.actor.safeActorCoroutine
@@ -18,6 +20,8 @@ import com.mikai233.protocol.pingResp
 import com.mikai233.shared.codec.CryptoCodec
 import com.mikai233.shared.logMessage
 import com.mikai233.shared.message.*
+import com.mikai233.shared.startAllWorldTopicActor
+import com.mikai233.shared.startWorldTopicActor
 import io.netty.channel.ChannelFutureListener
 import io.netty.channel.ChannelHandlerContext
 import org.koin.core.component.KoinComponent
@@ -37,7 +41,7 @@ class ChannelActor(
     }
 
     private var state = State.Connected
-    private val runnableAdapter = runnableAdapter { ChannelRunnable(it::run) }
+    private val runnableAdapter = runnableAdapter { ActorNamedRunnable("channelActorCoroutine", it::run) }
     private val coroutine = runnableAdapter.safeActorCoroutine()
     private val logger = actorLogger()
     private var playerId = 0L
@@ -48,6 +52,12 @@ class ChannelActor(
     private val worldActorSharding = gateSharding.worldActorSharding
     private val protobufPrinter = protobufJsonPrinter()
     private lateinit var clientPublicKey: ByteArray
+    private lateinit var worldTopicActor: ActorRef<Topic.Command<WorldTopicMessage>>
+    private val worldTopicAdapter: ActorRef<WorldTopicMessage> =
+        context.messageAdapter(WorldTopicMessage::class.java) { ChannelWorldTopic(it) }
+    private lateinit var allWorldTopicActor: ActorRef<Topic.Command<AllWorldTopicMessage>>
+    private val allWorldTopicAdapter: ActorRef<AllWorldTopicMessage> =
+        context.messageAdapter(AllWorldTopicMessage::class.java) { ChannelAllWorldTopic(it) }
 
     init {
         logger.debug("{} preStart", context.self)
@@ -56,7 +66,7 @@ class ChannelActor(
     override fun createReceive(): Receive<ChannelMessage> {
         return newReceiveBuilder().onMessage(ChannelMessage::class.java) { message ->
             when (message) {
-                is ChannelRunnable -> {
+                is ActorNamedRunnable -> {
                     handleChannelRunnable(message)
                 }
 
@@ -84,12 +94,34 @@ class ChannelActor(
                     Behaviors.stopped()
                 }
 
-                ChannelAuthorized -> unexpectedMessage(message)
+                ChannelAuthorized,
+                is ChannelAllWorldTopic,
+                is ChannelWorldTopic -> unexpectedMessage(message)
             }
         }.onSignal(PostStop::class.java) {
             onChannelStopped()
             Behaviors.same()
         }.build()
+    }
+
+    private fun handleWorldTopic(message: ChannelWorldTopic): Behavior<ChannelMessage> {
+        when (val inner = message.inner) {
+            is ProtobufEnvelopeToWorldClient -> {
+                logMessage(logger, inner.inner) { "playerId:$playerId worldId:$worldId" }
+                write(inner.inner)
+            }
+        }
+        return Behaviors.same()
+    }
+
+    private fun handleAllWorldTopic(message: ChannelAllWorldTopic): Behavior<ChannelMessage> {
+        when (val inner = message.inner) {
+            is ProtobufEnvelopeToAllWorldClient -> {
+                logMessage(logger, inner.inner) { "playerId:$playerId worldId:$worldId" }
+                write(inner.inner)
+            }
+        }
+        return Behaviors.same()
     }
 
     private fun tellPlayer(playerId: Long, message: SerdePlayerMessage) {
@@ -179,7 +211,7 @@ class ChannelActor(
     private fun waitForAuthResult(): Behavior<ChannelMessage> {
         return newReceiveBuilder().onMessage(ChannelMessage::class.java) { message ->
             when (message) {
-                is ChannelRunnable -> {
+                is ActorNamedRunnable -> {
                     handleChannelRunnable(message)
                 }
 
@@ -206,13 +238,24 @@ class ChannelActor(
                 }
 
                 ChannelAuthorized -> {
-                    buffer.unstashAll(authorized())
+                    onAuthorized()
                 }
+
+                is ChannelAllWorldTopic,
+                is ChannelWorldTopic -> unexpectedMessage(message)
             }
         }.build()
     }
 
-    private fun handleChannelExpired(): Behavior<ChannelMessage>? {
+    private fun onAuthorized(): Behavior<ChannelMessage> {
+        worldTopicActor = context.startWorldTopicActor(worldId)
+        worldTopicActor tell Topic.subscribe(worldTopicAdapter)
+        allWorldTopicActor = context.startAllWorldTopicActor()
+        allWorldTopicActor tell Topic.subscribe(allWorldTopicAdapter)
+        return buffer.unstashAll(authorized())
+    }
+
+    private fun handleChannelExpired(): Behavior<ChannelMessage> {
         logger.debug("{} channel expired while waiting for auth, stop the channel", context.self)
         return Behaviors.stopped()
     }
@@ -220,7 +263,7 @@ class ChannelActor(
     private fun authorized(): Behavior<ChannelMessage> {
         return newReceiveBuilder().onMessage(ChannelMessage::class.java) { message ->
             when (message) {
-                is ChannelRunnable -> {
+                is ActorNamedRunnable -> {
                     handleChannelRunnable(message)
                 }
 
@@ -244,16 +287,27 @@ class ChannelActor(
                 }
 
                 ChannelAuthorized -> unexpectedMessage(message)
+                is ChannelAllWorldTopic -> {
+                    handleAllWorldTopic(message)
+                }
+
+                is ChannelWorldTopic -> {
+                    handleWorldTopic(message)
+                }
             }
         }.build()
     }
 
-    private fun handleChannelRunnable(message: ChannelRunnable): Behavior<ChannelMessage>? {
-        message.run()
+    private fun handleChannelRunnable(message: ActorNamedRunnable): Behavior<ChannelMessage> {
+        runCatching(message::run).onFailure {
+            logger.error("channel actor handle runnable:{} failed", message.name, it)
+        }
         return Behaviors.same()
     }
 
     private fun onChannelStopped() {
+        worldTopicActor tell Topic.unsubscribe(worldTopicAdapter)
+        allWorldTopicActor tell Topic.unsubscribe(allWorldTopicAdapter)
         handlerContext.close()
     }
 

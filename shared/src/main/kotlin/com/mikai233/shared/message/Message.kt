@@ -3,6 +3,15 @@ package com.mikai233.shared.message
 import com.mikai233.common.msg.Message
 import com.mikai233.common.msg.SerdeMessage
 
+data class ActorNamedRunnable(
+    val name: String,
+    val block: () -> Unit
+) : Runnable, PlayerMessage, ChannelMessage, WorldMessage, ScriptProxyMessage {
+    override fun run() {
+        block()
+    }
+}
+
 sealed interface ChannelMessage : Message
 
 sealed interface SerdeChannelMessage : ChannelMessage, SerdeMessage
