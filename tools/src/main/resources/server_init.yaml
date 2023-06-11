@@ -1,0 +1,31 @@
+nodes:
+  - role: Player
+    port: 2333
+    seed: true
+  - role: World
+    port: 2334
+    seed: true
+  - role: Gate
+    port: 2335
+    seed: false
+  - role: Gm
+    port: 2336
+    seed: false
+  - role: Global
+    port: 2337
+    seed: true
+
+machineIp: 127.0.0.1
+
+loginPort: 6666
+
+dataSource:
+  game:
+    - host: 127.0.0.1
+    - port: 2107
+
+gameWorlds:
+  - worldId: 1000
+    loginAddress: 127.0.0.1:6666
+  - worldId: 1001
+    loginAddress: 127.0.0.1:6666
