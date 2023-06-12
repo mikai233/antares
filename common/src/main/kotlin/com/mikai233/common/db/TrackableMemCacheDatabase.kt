@@ -185,10 +185,12 @@ class TrackableMemCacheDatabase(
                 }
 
                 isBuiltin(returnType) -> {
-                    val fieldKey = TKey(entityClazz, query, kp.name, TType.Builtin)
-                    traceMap[fieldKey] = TData(fieldValue, 0, serdeHash(fieldValue), 0).also {
-                        propertiesMap[fieldKey] = kp to entity
-                        scheduleTraceCheck(fieldKey, it)
+                    if (kp is KMutableProperty<*>) {
+                        val fieldKey = TKey(entityClazz, query, kp.name, TType.Builtin)
+                        traceMap[fieldKey] = TData(fieldValue, 0, serdeHash(fieldValue), 0).also {
+                            propertiesMap[fieldKey] = kp to entity
+                            scheduleTraceCheck(fieldKey, it)
+                        }
                     }
                 }
 
