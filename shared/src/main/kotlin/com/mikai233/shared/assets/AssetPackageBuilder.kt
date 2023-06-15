@@ -10,11 +10,9 @@ class AssetPackageBuilder {
     }
 
     fun merge(): AssetPackageBuilder {
-        assets = assets.groupBy { it.type }.mapNotNull { (_, typeAssets) ->
-            if (typeAssets.isNotEmpty()) {
-                typeAssets.reduce { acc, asset -> acc + asset }
-            } else {
-                null
+        assets = assets.groupBy { it.type }.flatMap { (_, typedAssets) ->
+            typedAssets.groupBy { it.id }.mapNotNull { (_, typedIdAssets) ->
+                typedIdAssets.reduceOrNull { acc, asset -> acc + asset }
             }
         }.toMutableList()
         return this
@@ -55,11 +53,12 @@ class AssetPackageBuilder {
         return this
     }
 
-    fun times(scale: Double, strategy: RoundingStrategy, mergeBeforeTimes: Boolean) {
+    fun times(scale: Double, strategy: RoundingStrategy, mergeBeforeTimes: Boolean): AssetPackageBuilder {
         if (mergeBeforeTimes) {
             merge()
         }
         assets = assets.map { it.times(scale, strategy) }.toMutableList()
+        return this
     }
 
     fun cleanupZero(): AssetPackageBuilder {
@@ -80,7 +79,22 @@ class AssetPackageBuilder {
     fun build(): AssetPackage {
         if (mergeOnBuild) {
             merge()
+            cleanupZero()
         }
         return AssetPackage(assets, mergeOnBuild)
+    }
+
+    fun item(block: ItemAssetBuilder.() -> Unit): AssetPackageBuilder {
+        val builder = ItemAssetBuilder()
+        block.invoke(builder)
+        plus(builder.build())
+        return this
+    }
+
+    fun resource(block: ResourceAssetBuilder.() -> Unit): AssetPackageBuilder {
+        val builder = ResourceAssetBuilder()
+        block.invoke(builder)
+        plus(builder.build())
+        return this
     }
 }
