@@ -2,6 +2,7 @@ package com.mikai233.shared.codec
 
 import com.google.protobuf.GeneratedMessageV3
 import com.mikai233.common.conf.GlobalProto
+import com.mikai233.shared.message.ClientMessage
 import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.MessageToMessageCodec
@@ -18,6 +19,6 @@ class ProtobufServerCodec : MessageToMessageCodec<Packet, GeneratedMessageV3>() 
         val protoId = msg.protoId
         val parser = GlobalProto.getClientMessageParser(protoId)
         val protoMessage = parser.parseFrom(msg.body)
-        out.add(protoMessage)
+        out.add(ClientMessage(protoId, protoMessage))
     }
 }

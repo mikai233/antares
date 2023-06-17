@@ -167,10 +167,10 @@
           <option name="location" value="file://$PROJECT_DIR$/player/src/main/resources" />
         </ImportPathEntry>
         <ImportPathEntry>
-          <option name="location" value="jar://$APPLICATION_HOME_DIR$/plugins/protoeditor/lib/protoeditor.jar!/include" />
+          <option name="location" value="file://$PROJECT_DIR$/proto/src/main/proto" />
         </ImportPathEntry>
         <ImportPathEntry>
-          <option name="location" value="file://$PROJECT_DIR$/proto/src/main/proto" />
+          <option name="location" value="file://$USER_HOME$/AppData/Local/JetBrains/IntelliJIdea2022.3/protoeditor" />
         </ImportPathEntry>
       </list>
     </option>

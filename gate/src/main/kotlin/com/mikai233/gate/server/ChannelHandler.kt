@@ -1,7 +1,6 @@
 package com.mikai233.gate.server
 
 import akka.actor.typed.ActorRef
-import com.google.protobuf.GeneratedMessageV3
 import com.mikai233.common.core.Server
 import com.mikai233.common.core.State
 import com.mikai233.common.core.component.AkkaSystem
@@ -57,8 +56,8 @@ class ChannelHandler(private val koin: XKoin) : ChannelInboundHandlerAdapter(), 
     }
 
     override fun channelRead(ctx: ChannelHandlerContext, message: Any) {
-        if (message is GeneratedMessageV3) {
-            tell(ctx, ClientMessage(message))
+        if (message is ClientMessage) {
+            tell(ctx, message)
         } else {
             logger.error("unsupported message:{}", message)
         }

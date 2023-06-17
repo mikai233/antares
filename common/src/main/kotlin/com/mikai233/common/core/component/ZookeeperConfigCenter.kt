@@ -1,5 +1,6 @@
 package com.mikai233.common.core.component
 
+import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.component.config.Config
 import com.mikai233.common.core.component.config.ConfigCenter
 import com.mikai233.common.ext.Json
@@ -11,7 +12,7 @@ import org.apache.curator.framework.recipes.cache.CuratorCacheListener
 import org.apache.curator.retry.ExponentialBackoffRetry
 import org.apache.curator.x.async.AsyncCuratorFramework
 
-class ZookeeperConfigCenter(connectionString: String = "localhost:2181") : ConfigCenter, AutoCloseable {
+class ZookeeperConfigCenter(connectionString: String = GlobalEnv.zkConnect) : ConfigCenter, AutoCloseable {
     private val client: CuratorFramework
     private val asyncClient: AsyncCuratorFramework
     private val cacheMap: HashMap<String, CuratorCache> = hashMapOf()

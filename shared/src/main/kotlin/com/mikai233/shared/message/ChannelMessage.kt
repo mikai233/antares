@@ -5,7 +5,7 @@ import com.google.protobuf.GeneratedMessageV3
 
 data class ChannelProtobufEnvelope(val inner: GeneratedMessageV3) : SerdeChannelMessage
 
-data class ClientMessage(val inner: GeneratedMessageV3) : ChannelMessage
+data class ClientMessage(val id: Int, val inner: GeneratedMessageV3) : ChannelMessage
 
 object StopChannel : ChannelMessage
 
