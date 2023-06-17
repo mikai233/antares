@@ -16,8 +16,10 @@ import com.mikai233.common.core.component.Role
 import com.mikai233.common.core.component.ZookeeperConfigCenter
 import com.mikai233.common.ext.*
 import com.mikai233.common.inject.XKoin
+import com.mikai233.gm.component.GmNodeConfigHolder
 import com.mikai233.gm.component.GmScriptSupport
 import com.mikai233.gm.component.GmSharding
+import com.mikai233.gm.component.Management
 import com.mikai233.gm.script.ScriptProxyActor
 import com.mikai233.shared.component.ExcelConfigHolder
 import com.mikai233.shared.message.ScriptProxyMessage
@@ -25,6 +27,7 @@ import com.mikai233.shared.message.SerdeScriptMessage
 import com.mikai233.shared.script.ScriptActor
 import com.mikai233.shared.scriptActorServiceKey
 import org.koin.core.component.get
+import org.koin.dsl.bind
 import org.koin.dsl.koinApplication
 import org.koin.dsl.module
 import org.koin.logger.slf4jLogger
@@ -100,7 +103,7 @@ class GmNode(private val port: Int = 2339, private val sameJvm: Boolean = false)
         single { this@GmNode }
         single { Server(koin) }
         closeableSingle { ZookeeperConfigCenter() }
-        single { NodeConfigHolder(koin, Role.Gm, port, sameJvm) }
+        single { GmNodeConfigHolder(koin, Role.Gm, port, sameJvm) } bind NodeConfigHolder::class
         single { ExcelConfigHolder(koin) }
         single {
             AkkaSystem(koin, Behaviors.supervise(Behaviors.setup {
@@ -109,6 +112,7 @@ class GmNode(private val port: Int = 2339, private val sameJvm: Boolean = false)
         }
         single { GmSharding(koin) }
         single { GmScriptSupport(koin) }
+        single { Management(koin) }
     }
 }
 

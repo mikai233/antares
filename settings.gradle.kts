@@ -2,7 +2,8 @@ rootProject.name = "antares"
 
 val kotlinVersion = "1.8.20"
 val kotlinxVersion = "1.7.0"
-val akkaVersion = "2.8.1"
+val akkaVersion = "2.8.2"
+val akkaManagementVersion = "1.4.1"
 val scalaVersion = "2.13"
 val ktorClientVersion = "2.3.0"
 val ktorServerVersion = "2.3.0"
@@ -53,6 +54,15 @@ dependencyResolutionManagement {
             library("slf4j", "com.typesafe.akka:akka-slf4j_$scalaVersion:$akkaVersion")
             library("stream", "com.typesafe.akka:akka-stream-typed_$scalaVersion:$akkaVersion")
             bundle("common", listOf("actor", "cluster", "sharding", "slf4j"))
+            library("discovery", "com.typesafe.akka:akka-discovery_$scalaVersion:$akkaVersion")
+            library(
+                "management",
+                "com.lightbend.akka.management:akka-management_$scalaVersion:$akkaManagementVersion"
+            )
+            library(
+                "management.cluster.http",
+                "com.lightbend.akka.management:akka-management-cluster-http_$scalaVersion:$akkaManagementVersion"
+            )
         }
         create("log") {
             library("api", "org.slf4j:slf4j-api:2.0.7")

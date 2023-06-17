@@ -43,6 +43,6 @@ internal fun ZookeeperConfigCenter.createNettyConfig() {
 }
 
 internal fun ZookeeperConfigCenter.createDataSource() {
-    val gameDataSource = GameDataSource(listOf(Source("127.0.0.1", 27117)))
+    val gameDataSource = GameDataSource(listOf(Source("127.0.0.1", 27017)))
     addConfig(gameDataSource)
 }

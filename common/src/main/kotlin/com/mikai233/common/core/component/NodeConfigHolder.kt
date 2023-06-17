@@ -14,7 +14,7 @@ import org.koin.core.component.inject
  * @email dreamfever2017@yahoo.com
  * @date 2023/5/11
  */
-class NodeConfigHolder(
+open class NodeConfigHolder(
     private val koin: XKoin,
     private val role: Role,
     private val port: Int,
@@ -32,7 +32,7 @@ class NodeConfigHolder(
         initSysName()
     }
 
-    fun retrieveAkkaConfig(): Config {
+    open fun retrieveAkkaConfig(): Config {
         val node = selfNode
         val configs = mutableMapOf(
             "akka.cluster.roles" to listOf(node.role.name),
