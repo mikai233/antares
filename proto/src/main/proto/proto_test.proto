@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package com.mikai233.protocol;
+
+message TestReq{
+
+}
+
+message TestResp{
+
+}

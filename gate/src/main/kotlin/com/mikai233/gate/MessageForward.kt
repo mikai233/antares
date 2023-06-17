@@ -24,26 +24,44 @@ enum class Forward {
 }
 
 object MessageForward {
-    val forwardTarget = mutableSetOf("com.mikai233.player.handler", "com.mikai233.world.handler")
-    val forwardMap = mutableMapOf<Int, Forward>()
+    private val forwardTarget = mutableMapOf<String, Forward>(
+        "com.mikai233.player.handler" to Forward.PlayerActor,
+        "com.mikai233.world.handler" to Forward.WorldActor,
+    )
+    private val forwardMap = mutableMapOf<Int, Forward>()
 
-    fun whichActor(id: Int): Forward {
-        TODO()
+    fun whichActor(id: Int): Forward? {
+        return forwardMap[id]
     }
 
-    @JvmStatic
-    fun main(args: Array<String>) {
+    fun addExtra(id: Int, target: Forward) {
+        forwardMap[id] = target
+    }
+
+    init {
         GlobalProto.init(MessageClientToServer.getDescriptor(), MessageServerToClient.getDescriptor())
-        Reflections(forwardTarget).getSubTypesOf(MessageHandler::class.java).forEach { clazz ->
-            clazz.kotlin.declaredMemberFunctions.forEach funcForeach@{ mf ->
-                if (mf.findAnnotation<IgnoreHandleMe>() != null) {
-                    return@funcForeach
-                }
-                mf.parameters.find { kp ->
-                    kp.type.isSubtypeOf(typeOf<GeneratedMessageV3>()) }?.let {
-                    val protoType = it.type.classifier!!
-                    val id = GlobalProto.getClientMessageId(protoType as KClass<out GeneratedMessageV3>)
-                    println(id)
+        buildForwardMap()
+    }
+
+    private fun buildForwardMap() {
+        forwardTarget.forEach { (pkg, target) ->
+            Reflections(pkg).getSubTypesOf(MessageHandler::class.java).forEach { clazz ->
+                clazz.kotlin.declaredMemberFunctions.forEach funcForeach@{ mf ->
+                    if (mf.findAnnotation<IgnoreHandleMe>() != null) {
+                        return@funcForeach
+                    }
+                    mf.parameters.find { kp ->
+                        kp.type.isSubtypeOf(typeOf<GeneratedMessageV3>())
+                    }?.let {
+                        val protoType = it.type.classifier!!
+                        @Suppress("UNCHECKED_CAST") val id =
+                            GlobalProto.getClientMessageId(protoType as KClass<out GeneratedMessageV3>)
+                        val mayExistsTarget = forwardMap[id]
+                        if (mayExistsTarget != null) {
+                            error("proto id$id already has a forward target")
+                        }
+                        forwardMap[id] = target
+                    }
                 }
             }
         }

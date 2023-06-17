@@ -1,12 +1,14 @@
 syntax = "proto3";
 import "proto_system.proto";
 import "proto_login.proto";
+import "proto_test.proto";
 
 package com.mikai233.protocol;
 
 message MessageServerToClient{
   PingResp ping_resp = 1;
   GmResp gm_resp = 2;
+  TestResp test_resp = 3;
   LoginResp login_resp = 10001;
   TestNotify test_notify = 99999;
 }

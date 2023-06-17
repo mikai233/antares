@@ -6,6 +6,8 @@ import com.mikai233.common.ext.invokeOnTargetMode
 import com.mikai233.common.ext.protobufJsonPrinter
 import com.mikai233.shared.message.ChannelProtobufEnvelope
 import com.mikai233.shared.message.ClientMessage
+import com.mikai233.shared.message.PlayerProtobufEnvelope
+import com.mikai233.shared.message.WorldProtobufEnvelope
 import org.slf4j.Logger
 
 object ProtobufPrinter {
@@ -24,6 +26,14 @@ fun logMessage(logger: Logger, message: Any, msgHeader: () -> String = { "" }) {
             }
 
             is ChannelProtobufEnvelope -> {
+                "${message.inner::class.simpleName} ${ProtobufPrinter.printer.print(message.inner)}"
+            }
+
+            is PlayerProtobufEnvelope -> {
+                "${message.inner::class.simpleName} ${ProtobufPrinter.printer.print(message.inner)}"
+            }
+
+            is WorldProtobufEnvelope -> {
                 "${message.inner::class.simpleName} ${ProtobufPrinter.printer.print(message.inner)}"
             }
 

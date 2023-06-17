@@ -330,7 +330,7 @@ class ChannelActor(
             handlePingReq(inner)
         } else {
             logMessage(logger, message) { "playerId:$playerId worldId:$worldId" }
-            tellPlayer(playerId, PlayerProtobufEnvelope(inner))
+            forwardToActor(message)
         }
     }
 
@@ -347,6 +347,18 @@ class ChannelActor(
         }
         return Behaviors.stopped {
             logger.debug("player:{} {} channel stopped", playerId, context.self)
+        }
+    }
+
+    private fun forwardToActor(message: ClientMessage) {
+        val target = MessageForward.whichActor(message.id)
+        if (target == null) {
+            logger.warn("proto: {} has no target forward actor", message.id)
+        } else {
+            when (target) {
+                Forward.PlayerActor -> tellPlayer(playerId, PlayerProtobufEnvelope(message.inner))
+                Forward.WorldActor -> tellWorld(worldId, WorldProtobufEnvelope(message.inner))
+            }
         }
     }
 }
