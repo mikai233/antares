@@ -11,7 +11,6 @@ import com.mikai233.common.core.Launcher
 import com.mikai233.common.core.Server
 import com.mikai233.common.core.State
 import com.mikai233.common.core.component.*
-import com.mikai233.common.ext.actorLogger
 import com.mikai233.common.ext.closeableSingle
 import com.mikai233.common.ext.registerService
 import com.mikai233.common.inject.XKoin
@@ -34,7 +33,6 @@ class PlayerNode(private val port: Int = 2337, private val sameJvm: Boolean = fa
 
     inner class PlayerNodeGuardian(context: ActorContext<PlayerSystemMessage>) :
         AbstractBehavior<PlayerSystemMessage>(context) {
-        private val logger = actorLogger()
 
         override fun createReceive(): Receive<PlayerSystemMessage> {
             return newReceiveBuilder().onMessage(PlayerSystemMessage::class.java) { message ->
@@ -90,6 +88,6 @@ class PlayerNode(private val port: Int = 2337, private val sameJvm: Boolean = fa
 }
 
 fun main(args: Array<String>) {
-//    val port = args[0].toUShort()
-    PlayerNode().launch()
+    val port = args[0].toInt()
+    PlayerNode(port = port).launch()
 }

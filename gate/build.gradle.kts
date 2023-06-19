@@ -13,6 +13,8 @@ dependencies {
     implementation(kt.reflect)
     implementation(ktx.core)
     runtimeOnly(ktx.core.jvm)
+    implementation(ktx.serialization.core)
+    implementation(log.bundles.common)
     implementation(tool.netty)
     implementation(tool.lz4)
     implementation(tool.reflections)

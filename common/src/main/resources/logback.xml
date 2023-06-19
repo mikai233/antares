@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <configuration scan="true" scanPeriod="30 seconds">
-
     <property scope="system" name="MODULE" value="common"/>
-
     <include resource="logback-common.xml"/>
 </configuration>

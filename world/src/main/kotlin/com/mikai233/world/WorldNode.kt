@@ -11,7 +11,6 @@ import com.mikai233.common.core.Launcher
 import com.mikai233.common.core.Server
 import com.mikai233.common.core.State
 import com.mikai233.common.core.component.*
-import com.mikai233.common.ext.actorLogger
 import com.mikai233.common.ext.closeableSingle
 import com.mikai233.common.ext.registerService
 import com.mikai233.common.inject.XKoin
@@ -35,7 +34,6 @@ class WorldNode(private val port: Int = 2336, private val sameJvm: Boolean = fal
 
     inner class WorldNodeGuardian(context: ActorContext<WorldSystemMessage>) :
         AbstractBehavior<WorldSystemMessage>(context) {
-        private val logger = actorLogger()
 
         override fun createReceive(): Receive<WorldSystemMessage> {
             return newReceiveBuilder().onMessage(WorldSystemMessage::class.java) { message ->
@@ -92,6 +90,7 @@ class WorldNode(private val port: Int = 2336, private val sameJvm: Boolean = fal
     }
 }
 
-fun main() {
-    WorldNode().launch()
+fun main(args: Array<String>) {
+    val port = args[0].toInt()
+    WorldNode(port = port).launch()
 }

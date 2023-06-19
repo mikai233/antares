@@ -14,7 +14,10 @@ import com.mikai233.common.core.component.AkkaSystem
 import com.mikai233.common.core.component.NodeConfigHolder
 import com.mikai233.common.core.component.Role
 import com.mikai233.common.core.component.ZookeeperConfigCenter
-import com.mikai233.common.ext.*
+import com.mikai233.common.ext.closeableSingle
+import com.mikai233.common.ext.registerService
+import com.mikai233.common.ext.startBroadcastClusterRouterGroup
+import com.mikai233.common.ext.startSingleton
 import com.mikai233.common.inject.XKoin
 import com.mikai233.gm.component.GmNodeConfigHolder
 import com.mikai233.gm.component.GmScriptSupport
@@ -40,7 +43,6 @@ class GmNode(private val port: Int = 2339, private val sameJvm: Boolean = false)
 
     inner class GmNodeGuardian(context: ActorContext<GmSystemMessage>) :
         AbstractBehavior<GmSystemMessage>(context) {
-        private val logger = actorLogger()
         private val scriptProxyActor: ActorRef<ScriptProxyMessage>
 
         init {
@@ -116,6 +118,7 @@ class GmNode(private val port: Int = 2339, private val sameJvm: Boolean = false)
     }
 }
 
-fun main() {
-    GmNode().launch()
+fun main(args: Array<String>) {
+    val port = args[0].toInt()
+    GmNode(port = port).launch()
 }

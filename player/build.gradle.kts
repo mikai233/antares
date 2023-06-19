@@ -1,6 +1,7 @@
 plugins {
     java
     groovy
+    alias(tool.plugins.ksp)
 }
 
 repositories {
@@ -14,6 +15,7 @@ dependencies {
     implementation(ktx.core)
     implementation(ktx.datetime.jvm)
     runtimeOnly(ktx.core.jvm)
+    implementation(ktx.serialization.core)
     implementation(tool.protobuf.kotlin)
     implementation(tool.groovy.all)
     implementation(tool.bundles.koin)
@@ -22,6 +24,8 @@ dependencies {
     implementation(project(":common"))
     implementation(project(":shared"))
     implementation(project(":proto"))
+    implementation(project(":processor"))
+    ksp(project(":processor"))
 }
 
 tasks.test {

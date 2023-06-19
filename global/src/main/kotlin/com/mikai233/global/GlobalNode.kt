@@ -13,7 +13,6 @@ import com.mikai233.common.core.component.AkkaSystem
 import com.mikai233.common.core.component.NodeConfigHolder
 import com.mikai233.common.core.component.Role
 import com.mikai233.common.core.component.ZookeeperConfigCenter
-import com.mikai233.common.ext.actorLogger
 import com.mikai233.common.ext.closeableSingle
 import com.mikai233.common.ext.registerService
 import com.mikai233.common.inject.XKoin
@@ -34,7 +33,6 @@ class GlobalNode(private val port: Int = 2338, private val sameJvm: Boolean = fa
 
     inner class PlayerNodeGuardian(context: ActorContext<GlobalSystemMessage>) :
         AbstractBehavior<GlobalSystemMessage>(context) {
-        private val logger = actorLogger()
 
         override fun createReceive(): Receive<GlobalSystemMessage> {
             return newReceiveBuilder().onMessage(GlobalSystemMessage::class.java) { message ->
@@ -87,6 +85,7 @@ class GlobalNode(private val port: Int = 2338, private val sameJvm: Boolean = fa
     }
 }
 
-fun main() {
-    GlobalNode().launch()
+fun main(args: Array<String>) {
+    val port = args[0].toInt()
+    GlobalNode(port = port).launch()
 }

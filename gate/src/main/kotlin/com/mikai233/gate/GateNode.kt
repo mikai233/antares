@@ -102,6 +102,6 @@ class GateNode(private val port: Int = 2334, private val sameJvm: Boolean = fals
 }
 
 fun main(args: Array<String>) {
-//    val port = args[0].toUShort()
-    GateNode().launch()
+    val port = args[0].toInt()
+    GateNode(port = port).launch()
 }
