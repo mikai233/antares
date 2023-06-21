@@ -1,5 +1,7 @@
 package com.mikai233.player
 
+import com.mikai233.common.annotation.GenerateLoader
+import com.mikai233.common.annotation.LoadMe
 import com.mikai233.common.core.actor.ActorCoroutine
 import com.mikai233.common.core.component.ActorDatabase
 import com.mikai233.common.db.DataManager
@@ -7,25 +9,23 @@ import com.mikai233.common.ext.logger
 import com.mikai233.common.ext.tell
 import com.mikai233.player.data.PlayerActionMem
 import com.mikai233.player.data.PlayerMem
-import com.mikai233.shared.entity.Player
-import com.mikai233.shared.entity.PlayerAction
+import com.mikai233.shared.loadAllExt
 import com.mikai233.shared.message.PlayerInitDone
 import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 
+@GenerateLoader(PlayerActor::class)
 class PlayerDataManager(private val playerActor: PlayerActor, private val coroutine: ActorCoroutine) : DataManager {
     private val logger = logger()
     private val clock = Clock.System
     private val db = ActorDatabase(playerActor.koin, coroutine)
     val traceDatabase get() = db.traceDatabase
 
-    //TODO auto generate load code
+    @LoadMe
     val playerMem = PlayerMem()
-    val playerActionMem = PlayerActionMem()
 
-    data class LoadedData(val player: Player, val playerAction: List<PlayerAction>)
+    @LoadMe
+    val playerActionMem = PlayerActionMem()
 
     override fun loadAll() {
         logger.info("{} start loading data", playerActor.playerId)
@@ -34,14 +34,7 @@ class PlayerDataManager(private val playerActor: PlayerActor, private val corout
             logger.error("{} loading data failed, player will stop", playerActor.playerId, throwable)
             playerActor.stopSelf()
         }) {
-            val loadedData = withContext(Dispatchers.IO) {
-                val player = playerMem.load(playerActor, template)
-                val playerAction = playerActionMem.load(playerActor, template)
-                LoadedData(player, playerAction)
-            }
-            playerMem.onComplete(playerActor, db, loadedData.player)
-            playerActionMem.onComplete(playerActor, db, loadedData.playerAction)
-            loadComplete()
+            loadAllExt(playerActor, db, template)
         }
     }
 

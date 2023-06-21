@@ -1,0 +1,4 @@
+<configuration scan="true" scanPeriod="300 seconds">
+    <property scope="system" name="MODULE" value="world"/>
+    <include resource="logback-common.xml"/>
+</configuration>

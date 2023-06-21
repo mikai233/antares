@@ -58,7 +58,7 @@ class ExcelConfigProcessor(
             .addProperty(propertySpec)
             .build()
         codeGenerator.createNewFile(
-            Dependencies(true), "com.mikai233.shared.excel", "ExcelSerde"
+            Dependencies(false), "com.mikai233.shared.excel", "ExcelSerde"
         ).use { os ->
             os.writer().use {
                 fileSpec.writeTo(it)

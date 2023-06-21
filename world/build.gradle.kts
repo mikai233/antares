@@ -1,5 +1,6 @@
 plugins {
     java
+    alias(tool.plugins.ksp)
 }
 
 repositories {
@@ -12,6 +13,7 @@ dependencies {
     implementation(akka.bundles.common)
     implementation(ktx.core)
     runtimeOnly(ktx.core.jvm)
+    implementation(ktx.serialization.core)
     implementation(ktx.datetime.jvm)
     implementation(tool.protobuf.java.util)
     implementation(tool.protobuf.kotlin)
@@ -21,6 +23,8 @@ dependencies {
     implementation(project(":common"))
     implementation(project(":shared"))
     implementation(project(":proto"))
+    implementation(project(":processor"))
+    ksp(project(":processor"))
 }
 
 tasks.test {
