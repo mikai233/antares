@@ -19,7 +19,6 @@ object ExcelGenerator {
     private val vecInt = ClassName(immutablePackage, "ImmutableList").parameterizedBy(typeNameOf<Int>())
     private val vec2Int = ClassName(immutablePackage, "ImmutableList").parameterizedBy(typeNameOf<IntPair>())
     private val vec3Int = ClassName(immutablePackage, "ImmutableList").parameterizedBy(typeNameOf<IntTriple>())
-    private val immutableMap = ClassName("com.google.common.collect", "ImmutableMap")
 
     @JvmStatic
     fun main(args: Array<String>) {
@@ -158,7 +157,7 @@ object ExcelGenerator {
                     "val rowData = %T(%L)",
                     rowClass,
                     fields.joinToString(",\n") { "${it.first} = ${it.first}" })
-                addStatement(" rowsBuilder.put(rowData.`primary key`(), rowData)")
+                addStatement("rowsBuilder.put(rowData.`primary key`(), rowData)")
                 addStatement("}")
                 addStatement("rows = rowsBuilder.build()")
             }).build()

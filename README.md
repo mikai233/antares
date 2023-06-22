@@ -11,29 +11,30 @@
 
 ## basic demo
 
-1. run  ```NodeConfigInit.kt``` and ```GameWorldConfigInit.kt``` init zookeeper
-2. run ``` gradlew bootJar ``` to build fatjar
-3. run ```java -jar stardust-1.0.0.jar``` to start the all-in-one server
+1. run  `NodeConfigInit.kt` and `GameWorldConfigInit.kt` init zookeeper
+2. run `ExcelExporter` export excel data to zookeeper, excel dir:`tools/src/main/resources/excel`
+3. run `gradlew bootJar` to build fatjar
+4. run `java -jar stardust-1.0.0.jar` to start the all-in-one server
 
 ## handle logic
 
-in antares, all messages are inherit from ``Message`` interface, each actor has a top level message
-interface, for example, player actor declare ``PlayerMessage`` indicate this actor accept all subtype
-of ``PlayerMessage``.
+in antares, all messages are inherit from `Message` interface, each actor has a top level message
+interface, for example, player actor declare `PlayerMessage` indicate this actor accept all subtype
+of `PlayerMessage`.
 
-message inherit from ``PlayerMessage`` is internal message which is only used by player actor locally, it
+message inherit from `PlayerMessage` is internal message which is only used by player actor locally, it
 cannot send remotely,
-because remote message require serializable, so we add a ``SerdePlayerMessage`` indicate that this message can be
+because remote message require serializable, so we add a `SerdePlayerMessage` indicate that this message can be
 serialized.
-``SerdePlayerMessage`` also inherit from ``SerdeMessage``, message inherit from ``SerdeMessage`` support automatic
+`SerdePlayerMessage` also inherit from `SerdeMessage`, message inherit from `SerdeMessage` support automatic
 serialize and deserialize by framework(see akka kryo).
 
-usually, we add custom logic message inherit from ``SerdePlayerMessage``, because it usually needs to be sent remotely,
+usually, we add custom logic message inherit from `SerdePlayerMessage`, because it usually needs to be sent remotely,
 so serde is required.
 
 ### client logic
 
-- register your protobuf message in ```msg_cs.proto``` and ```msg_sc.proto```
+- register your protobuf message in `msg_cs.proto` and `msg_sc.proto`
 
 ```protobuf
 syntax = "proto3";
@@ -86,3 +87,16 @@ or world actor, It depends on you. parameters of handler function depends on how
 ### internal logic
 
 ## TODO
+
+1.
+    - [ ] deploy
+2.
+    - [ ] uuid generate
+3.
+    - [ ] eventbus
+4.
+    - [ ] handle actor message time-consuming trace
+5.
+    - [ ] excel data verify
+6.
+    - [ ] gm management backend
