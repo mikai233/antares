@@ -23,4 +23,22 @@ abstract class ExcelConfig<K, R> : SerdeConfig where R : ExcelRow<K> {
     open fun rebuildData(manager: ExcelManager) {}
 
     open fun allLoadFinish(manager: ExcelManager) {}
+
+    fun report(manager: ExcelManager, message: String) {
+        manager.report("[${javaClass.simpleName}] ${name()}: $message")
+    }
+
+    fun verify(manager: ExcelManager, value: Boolean, message: String) {
+        if (!value) {
+            report(manager, message)
+        }
+    }
+
+    fun <T : Any> verifyNotNull(manager: ExcelManager, value: T?, message: String, onNotNull: (value: T) -> Unit) {
+        if (value == null) {
+            report(manager, message)
+        } else {
+            onNotNull(value)
+        }
+    }
 }

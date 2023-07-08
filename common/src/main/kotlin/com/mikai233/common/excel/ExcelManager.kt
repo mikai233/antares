@@ -8,6 +8,8 @@ import com.mikai233.common.core.component.config.excelVersion
 import com.mikai233.common.ext.logger
 import org.reflections.Reflections
 import kotlin.reflect.KClass
+import kotlin.reflect.full.findAnnotation
+import kotlin.reflect.full.memberProperties
 
 val validators: HashMap<KClass<out Validator<ExcelRow<*>, *>>, Validator<in ExcelRow<*>, *>> = hashMapOf()
 typealias ConfigMapKey = KClass<out ExcelConfig<*, *>>
@@ -21,6 +23,8 @@ class ExcelManager(val commitId: String, val generateTime: String) : Config {
     @JsonIgnore
     lateinit var configs: ImmutableConfigMap
         private set
+    private val reportMessage: ArrayList<String> = arrayListOf()
+
 
     private fun isInitialized() = this::configs.isInitialized
 
@@ -43,6 +47,7 @@ class ExcelManager(val commitId: String, val generateTime: String) : Config {
         configs.values.forEach {
             it.allLoadFinish(this)
         }
+        checkReport()
     }
 
     fun loadFromConfigs(configs: ImmutableMap<ConfigMapKey, ConfigMapValue>) {
@@ -55,10 +60,39 @@ class ExcelManager(val commitId: String, val generateTime: String) : Config {
         this.configs.values.forEach {
             it.allLoadFinish(this)
         }
+        checkReport()
     }
 
     private fun validateConfig() {
-
+        configs.values.forEach { config ->
+            config.forEach { (key, row) ->
+                row::class.memberProperties.forEach { columnProperty ->
+                    val refFor = columnProperty.findAnnotation<RefFor>()
+                    if (refFor != null) {
+                        val refForConfig = configs[refFor.config]
+                        if (refForConfig == null) {
+                            config.report(this, "refFor config:${refFor.config} not found")
+                        } else {
+                            val refValue = columnProperty.call(row)
+                            if (refValue is Iterable<*>) {
+                                refValue.forEach {
+                                    if (!refForConfig.rows.containsKey(it)) {
+                                        config.report(
+                                            this,
+                                            "refFor id:${refValue} not found in config:${refFor.config}"
+                                        )
+                                    }
+                                }
+                            } else {
+                                if (!refForConfig.rows.containsKey(refValue)) {
+                                    config.report(this, "refFor id:${refValue} not found in config:${refFor.config}")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     inline fun <reified T : ConfigMapValue> getConfig(): T {
@@ -72,5 +106,18 @@ class ExcelManager(val commitId: String, val generateTime: String) : Config {
 
     override fun toString(): String {
         return "ExcelManager(commitId='$commitId', generateTime='$generateTime')"
+    }
+
+    fun report(message: String) {
+        reportMessage.add(message)
+    }
+
+    private fun checkReport() {
+        if (reportMessage.isNotEmpty()) {
+            reportMessage.forEach {
+                logger.error("{}", it)
+            }
+            error("config validate error")
+        }
     }
 }

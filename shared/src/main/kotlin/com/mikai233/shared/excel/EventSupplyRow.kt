@@ -13,6 +13,8 @@ data class EventSupplyRow(
     val position: Int,
     val cost: Triple<Int, Int, Int>,
     val reward: List<Triple<Int, Int, Int>>,
+    @RefFor(ItemConfig::class)
+    val testRef: Int,
 ) : ExcelRow<Int> {
     override fun `primary key`(): Int = id
 }
@@ -30,13 +32,15 @@ class EventSupplyConfig : ExcelConfig<Int, EventSupplyRow>() {
             val position = row.readInt(EventSupplyRow::position.name.camelCaseToSnakeCase())
             val cost = row.readIntTriple(EventSupplyRow::cost.name.camelCaseToSnakeCase())
             val reward = row.readVec3Int(EventSupplyRow::reward.name.camelCaseToSnakeCase())
+            val testRef = row.readInt(EventSupplyRow::testRef.name.camelCaseToSnakeCase())
             val rowData = EventSupplyRow(
                 id = id,
                 startTime = startTime,
                 endTime = endTime,
                 position = position,
                 cost = cost,
-                reward = reward
+                reward = reward,
+                testRef = testRef,
             )
             rowsBuilder.put(rowData.`primary key`(), rowData)
         }
