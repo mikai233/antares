@@ -8,12 +8,14 @@ import com.mikai233.common.core.component.config.excelVersion
 import com.mikai233.common.ext.logger
 import org.reflections.Reflections
 import kotlin.reflect.KClass
+import kotlin.reflect.KProperty1
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.memberProperties
 
-val validators: HashMap<KClass<out Validator<ExcelRow<*>, *>>, Validator<in ExcelRow<*>, *>> = hashMapOf()
+val Validators: MutableMap<String, Validator<ExcelConfig<*, ExcelRow<*>>, ExcelRow<*>, *>> =
+    mutableMapOf()
 typealias ConfigMapKey = KClass<out ExcelConfig<*, *>>
-typealias ConfigMapValue = ExcelConfig<*, *>
+typealias ConfigMapValue = ExcelConfig<*, ExcelRow<*>>
 typealias ImmutableConfigMap = ImmutableMap<ConfigMapKey, ConfigMapValue>
 
 class ExcelManager(val commitId: String, val generateTime: String) : Config {
@@ -32,7 +34,7 @@ class ExcelManager(val commitId: String, val generateTime: String) : Config {
         check(!isInitialized()) { "already loaded" }
         val configsBuilder = ImmutableMap.builder<ConfigMapKey, ConfigMapValue>()
         Reflections(packages).getSubTypesOf(ExcelConfig::class.java).forEach { clazz ->
-            val config = clazz.getConstructor().newInstance()
+            @Suppress("UNCHECKED_CAST") val config = clazz.getConstructor().newInstance() as ConfigMapValue
             configsBuilder.put(clazz.kotlin, config)
         }
         configs = configsBuilder.build()
@@ -65,33 +67,47 @@ class ExcelManager(val commitId: String, val generateTime: String) : Config {
 
     private fun validateConfig() {
         configs.values.forEach { config ->
-            config.forEach { (key, row) ->
+            config.forEach { (_, row) ->
                 row::class.memberProperties.forEach { columnProperty ->
-                    val refFor = columnProperty.findAnnotation<RefFor>()
-                    if (refFor != null) {
-                        val refForConfig = configs[refFor.config]
-                        if (refForConfig == null) {
-                            config.report(this, "refFor config:${refFor.config} not found")
-                        } else {
-                            val refValue = columnProperty.call(row)
-                            if (refValue is Iterable<*>) {
-                                refValue.forEach {
-                                    if (!refForConfig.rows.containsKey(it)) {
-                                        config.report(
-                                            this,
-                                            "refFor id:${refValue} not found in config:${refFor.config}"
-                                        )
-                                    }
-                                }
-                            } else {
-                                if (!refForConfig.rows.containsKey(refValue)) {
-                                    config.report(this, "refFor id:${refValue} not found in config:${refFor.config}")
-                                }
-                            }
+                    refFor(columnProperty, config, row)
+                    validateVia(columnProperty, config, row)
+                }
+            }
+        }
+    }
+
+    private fun refFor(columnProperty: KProperty1<out ExcelRow<*>, *>, config: ConfigMapValue, row: ExcelRow<*>) {
+        val refFor = columnProperty.findAnnotation<RefFor>()
+        if (refFor != null) {
+            val refForConfig = configs[refFor.config]
+            if (refForConfig == null) {
+                config.report(this, "refFor config:${refFor.config} not found")
+            } else {
+                val refValue = columnProperty.call(row)
+                if (refValue is Iterable<*>) {
+                    refValue.forEach {
+                        if (!refForConfig.rows.containsKey(it)) {
+                            config.report(
+                                this,
+                                "refFor id:${refValue} not found in config:${refFor.config}"
+                            )
                         }
+                    }
+                } else {
+                    if (!refForConfig.rows.containsKey(refValue)) {
+                        config.report(this, "refFor id:${refValue} not found in config:${refFor.config}")
                     }
                 }
             }
+        }
+    }
+
+    private fun validateVia(columnProperty: KProperty1<out ExcelRow<*>, *>, config: ConfigMapValue, row: ExcelRow<*>) {
+        val validateVia = columnProperty.findAnnotation<ValidateVia>()
+        if (validateVia != null) {
+            val validatorName = validateVia.validator
+            val validatorFun = requireNotNull(Validators[validatorName]) { "validator:${validatorName} not found" }
+            validatorFun.validate(config, row, this)
         }
     }
 
@@ -120,4 +136,8 @@ class ExcelManager(val commitId: String, val generateTime: String) : Config {
             error("config validate error")
         }
     }
+}
+
+fun registerValidator(validator: Validator<ExcelConfig<*, ExcelRow<*>>, ExcelRow<*>, *>) {
+    Validators[validator.name()] = validator
 }
