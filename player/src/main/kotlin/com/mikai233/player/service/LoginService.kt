@@ -2,6 +2,7 @@ package com.mikai233.player.service
 
 import com.mikai233.common.annotation.AllOpen
 import com.mikai233.player.PlayerActor
+import com.mikai233.player.data.PlayerMem
 import com.mikai233.protocol.ProtoLogin
 import com.mikai233.protocol.ProtoLogin.LoginResp
 import com.mikai233.protocol.loginResp
@@ -24,7 +25,7 @@ class LoginService {
             nickname = playerCreate.nickname,
             level = 1
         )
-        player.manager.playerMem.initPlayer(player, entity)
+        player.manager.get<PlayerMem>().initPlayer(player, entity)
     }
 
     fun loginSuccessResp(player: PlayerActor): LoginResp {
@@ -32,7 +33,7 @@ class LoginService {
             result = ProtoLogin.LoginResult.Success
             data = playerData {
                 playerId = player.playerId
-                nickname = player.manager.playerMem.player.nickname
+                nickname = player.manager.get<PlayerMem>().player.nickname
             }
         }
     }

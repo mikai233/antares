@@ -20,6 +20,7 @@ dependencies {
     implementation(tool.bundles.koin)
     implementation(tool.spring.data.mongodb)
     implementation(tool.mongodb.driver.sync)
+    implementation(tool.reflections)
     implementation(project(":common"))
     implementation(project(":shared"))
     implementation(project(":proto"))

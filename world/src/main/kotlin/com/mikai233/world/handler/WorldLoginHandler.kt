@@ -9,6 +9,7 @@ import com.mikai233.shared.message.PlayerLogin
 import com.mikai233.shared.message.WHPlayerCreate
 import com.mikai233.shared.message.WHPlayerLogin
 import com.mikai233.world.WorldActor
+import com.mikai233.world.data.PlayerAbstractMem
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 import kotlin.random.nextUInt
@@ -18,7 +19,7 @@ class WorldLoginHandler : MessageHandler {
     fun handlePlayerLogin(world: WorldActor, playerLogin: PlayerLogin) {
         val loginReq = playerLogin.req
         val channelActor = playerLogin.channelActor
-        val abstractMem = world.manager.playerAbstractMem
+        val abstractMem = world.manager.get<PlayerAbstractMem>()
         val mayExistsAbstract = abstractMem.getByAccount(loginReq.account)
         if (mayExistsAbstract == null) {
             //new player TODO generate player id
