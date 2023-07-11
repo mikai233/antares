@@ -82,7 +82,7 @@ class PlayerActor(
         buffer.stash(message)
         runCatching(manager::loadAll).onFailure {
             logger.error("$playerId load data error, stop the player", it)
-            stopSelf()
+            stop()
         }
     }
 
@@ -168,7 +168,7 @@ class PlayerActor(
 
                 PlayerTick -> {
                     if (manager.stopAndFlush()) {
-                        stopSelf()
+                        stop()
                     }
                 }
             }
@@ -191,7 +191,7 @@ class PlayerActor(
         }
     }
 
-    fun stopSelf() {
+    fun stop() {
         context.self tell StopPlayer
     }
 
