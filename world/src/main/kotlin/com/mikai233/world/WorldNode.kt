@@ -19,7 +19,7 @@ import com.mikai233.protocol.MsgSc
 import com.mikai233.shared.component.ExcelConfigHolder
 import com.mikai233.shared.script.ScriptActor
 import com.mikai233.shared.scriptActorServiceKey
-import com.mikai233.world.component.WorldActorDispatchers
+import com.mikai233.world.component.WorldMessageDispatcher
 import com.mikai233.world.component.WorldScriptSupport
 import com.mikai233.world.component.WorldSharding
 import com.mikai233.world.component.WorldWaker
@@ -73,7 +73,7 @@ class WorldNode(private val port: Int = 2336, private val sameJvm: Boolean = fal
     private fun serverModule() = module(createdAtStart = true) {
         single { this@WorldNode }
         single { Server(koin) }
-        single { WorldActorDispatchers(koin) }
+        single { WorldMessageDispatcher(koin) }
         closeableSingle { ZookeeperConfigCenter() }
         closeableSingle { MongoHolder(koin) }
         single { NodeConfigHolder(koin, Role.World, port, sameJvm) }

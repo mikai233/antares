@@ -10,7 +10,7 @@ import com.mikai233.common.core.actor.ActorCoroutine
 import com.mikai233.common.core.actor.safeActorCoroutine
 import com.mikai233.common.ext.*
 import com.mikai233.common.inject.XKoin
-import com.mikai233.player.component.PlayerActorDispatchers
+import com.mikai233.player.component.PlayerMessageDispatcher
 import com.mikai233.player.component.PlayerScriptSupport
 import com.mikai233.player.component.PlayerSharding
 import com.mikai233.protocol.ProtoLogin.ConnectionExpiredNotify
@@ -35,7 +35,7 @@ class PlayerActor(
     private val runnableAdapter = runnableAdapter { ActorNamedRunnable("playerActorCoroutine", it::run) }
     private val coroutine = ActorCoroutine(runnableAdapter.safeActorCoroutine())
     private var channelActor: ActorRef<SerdeChannelMessage>? = null
-    private val dispatcher by inject<PlayerActorDispatchers>()
+    private val dispatcher by inject<PlayerMessageDispatcher>()
     private val protobufDispatcher = dispatcher.protobufDispatcher
     private val internalDispatcher = dispatcher.internalDispatcher
     private val playerSharding by inject<PlayerSharding>()
@@ -119,7 +119,7 @@ class PlayerActor(
                 }
 
                 PlayerTick -> {
-                    manager.tickDatabase()
+                    manager.tick()
                 }
             }
             Behaviors.same()

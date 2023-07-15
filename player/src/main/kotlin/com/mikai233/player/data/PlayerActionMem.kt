@@ -5,12 +5,11 @@ import com.mikai233.common.db.MemData
 import com.mikai233.player.PlayerActor
 import com.mikai233.shared.constants.PlayerActionType
 import com.mikai233.shared.entity.PlayerAction
-import com.mikai233.shared.message.PlayerMessage
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.where
 
-class PlayerActionMem : MemData<PlayerActor, PlayerMessage, List<PlayerAction>> {
+class PlayerActionMem : MemData<PlayerActor, List<PlayerAction>> {
     private lateinit var playerActor: PlayerActor
     private var maxActionId: Long = 0
     private val worldAction: MutableMap<Int, PlayerAction> = mutableMapOf()
@@ -25,7 +24,7 @@ class PlayerActionMem : MemData<PlayerActor, PlayerMessage, List<PlayerAction>> 
     override fun onComplete(actor: PlayerActor, db: ActorDatabase, data: List<PlayerAction>) {
         playerActor = actor
         data.forEach {
-            db.traceDatabase.traceEntity(it)
+            db.tracer.traceEntity(it)
             val id = it.id.split("_").last().toLong()
             if (id > maxActionId) {
                 maxActionId = id
@@ -42,7 +41,7 @@ class PlayerActionMem : MemData<PlayerActor, PlayerMessage, List<PlayerAction>> 
             val id = "${playerActor.playerId}_${++maxActionId}"
             val newAction = PlayerAction(id, playerActor.playerId, actionId, 0L, 0L)
             worldAction[actionId] = newAction
-            playerActor.manager.traceDatabase.saveAndTrace(newAction)
+            playerActor.manager.tracer.saveAndTrace(newAction)
             newAction
         }
     }
@@ -53,7 +52,7 @@ class PlayerActionMem : MemData<PlayerActor, PlayerMessage, List<PlayerAction>> 
 
     fun delAction(actionId: Int) {
         worldAction.remove(actionId)?.also {
-            playerActor.manager.traceDatabase.deleteAndCancelTrace(it)
+            playerActor.manager.tracer.deleteAndCancelTrace(it)
         }
     }
 

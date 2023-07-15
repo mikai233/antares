@@ -36,7 +36,7 @@ import kotlin.reflect.jvm.jvmErasure
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
-class TrackableMemCacheDatabase(
+class DataTracer(
     private val template: () -> MongoTemplate,
     private val coroutine: ActorCoroutine,
     private val fullHashThreshold: Int = 100,
@@ -658,7 +658,7 @@ fun main() {
         pendingRunnable.add(it)
     }
     val actorCoroutine = ActorCoroutine(CoroutineScope(executor.asCoroutineDispatcher()))
-    val db = TrackableMemCacheDatabase({ template }, actorCoroutine, debugMode = true)
+    val db = DataTracer({ template }, actorCoroutine, debugMode = true)
     val room = Room(
         1,
         "mikai",

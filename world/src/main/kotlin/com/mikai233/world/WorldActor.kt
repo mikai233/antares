@@ -13,7 +13,7 @@ import com.mikai233.common.inject.XKoin
 import com.mikai233.shared.message.*
 import com.mikai233.shared.startAllWorldTopicActor
 import com.mikai233.shared.startWorldTopicActor
-import com.mikai233.world.component.WorldActorDispatchers
+import com.mikai233.world.component.WorldMessageDispatcher
 import com.mikai233.world.component.WorldSharding
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -34,12 +34,12 @@ class WorldActor(
     private val logger = actorLogger()
     private val runnableAdapter = runnableAdapter { ActorNamedRunnable("worldActorCoroutine", it::run) }
     val coroutine = ActorCoroutine(runnableAdapter.safeActorCoroutine())
-    private val dispatcher: WorldActorDispatchers by inject()
+    private val dispatcher: WorldMessageDispatcher by inject()
     private val protobufDispatcher = dispatcher.protobufDispatcher
     private val internalDispatcher = dispatcher.internalDispatcher
     private val worldSharding by inject<WorldSharding>()
-    val playerActorSharding = worldSharding.playerActorSharding
-    val worldActorSharding = worldSharding.worldActorSharding
+    private val playerActorSharding = worldSharding.playerActorSharding
+    private val worldActorSharding = worldSharding.worldActorSharding
     val sessionManager = WorldSessionManager(this)
     val manager = WorldDataManager(this, coroutine)
     val worldTopic = context.startWorldTopicActor(worldId)

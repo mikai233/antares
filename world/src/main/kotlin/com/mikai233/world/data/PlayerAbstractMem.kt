@@ -3,13 +3,12 @@ package com.mikai233.world.data
 import com.mikai233.common.core.component.ActorDatabase
 import com.mikai233.common.db.MemData
 import com.mikai233.common.entity.PlayerAbstract
-import com.mikai233.shared.message.WorldMessage
 import com.mikai233.world.WorldActor
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.where
 
-class PlayerAbstractMem : MemData<WorldActor, WorldMessage, List<PlayerAbstract>> {
+class PlayerAbstractMem : MemData<WorldActor, List<PlayerAbstract>> {
     private lateinit var worldActor: WorldActor
     private val playerAbstracts: MutableMap<Long, PlayerAbstract> = mutableMapOf()
     private val accountToAbstracts: MutableMap<String, PlayerAbstract> = mutableMapOf()
@@ -24,7 +23,7 @@ class PlayerAbstractMem : MemData<WorldActor, WorldMessage, List<PlayerAbstract>
     override fun onComplete(actor: WorldActor, db: ActorDatabase, data: List<PlayerAbstract>) {
         worldActor = actor
         data.forEach {
-            db.traceDatabase.traceEntity(it)
+            db.tracer.traceEntity(it)
             playerAbstracts[it.playerId] = it
             accountToAbstracts[it.account] = it
         }
@@ -36,7 +35,7 @@ class PlayerAbstractMem : MemData<WorldActor, WorldMessage, List<PlayerAbstract>
         ) { "abstract:${playerAbstract.playerId} already exists" }
         playerAbstracts[playerAbstract.playerId] = playerAbstract
         accountToAbstracts[playerAbstract.account] = playerAbstract
-        worldActor.manager.traceDatabase.saveAndTrace(playerAbstract)
+        worldActor.manager.tracer.saveAndTrace(playerAbstract)
     }
 
     operator fun get(playerId: Long) = playerAbstracts[playerId]
@@ -44,7 +43,7 @@ class PlayerAbstractMem : MemData<WorldActor, WorldMessage, List<PlayerAbstract>
     fun delAbstract(playerAbstract: PlayerAbstract) {
         accountToAbstracts.remove(playerAbstract.account)
         playerAbstracts.remove(playerAbstract.playerId)?.also {
-            worldActor.manager.traceDatabase.deleteAndCancelTrace(playerAbstract)
+            worldActor.manager.tracer.deleteAndCancelTrace(playerAbstract)
         }
     }
 

@@ -47,7 +47,7 @@ class TraceDBTest {
     fun traceRootEntity() {
         val client = MongoClients.create()
         val template = MongoTemplate(SimpleMongoClientDatabaseFactory(client, "test"))
-        val db = TrackableMemCacheDatabase(
+        val db = DataTracer(
             { template },
             ActorCoroutine(CoroutineScope(Executor { it.run() }.asCoroutineDispatcher())),
             fullHashThreshold = 1
@@ -83,7 +83,7 @@ class TraceDBTest {
     fun traceFieldEntity() {
         val client = MongoClients.create()
         val template = MongoTemplate(SimpleMongoClientDatabaseFactory(client, "test"))
-        val db = TrackableMemCacheDatabase(
+        val db = DataTracer(
             { template },
             ActorCoroutine(CoroutineScope(Executor { it.run() }.asCoroutineDispatcher())),
             fullHashThreshold = 1

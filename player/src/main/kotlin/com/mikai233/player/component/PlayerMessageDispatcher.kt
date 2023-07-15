@@ -11,7 +11,7 @@ import org.koin.core.component.KoinComponent
  * @email dreamfever2017@yahoo.com
  * @date 2023/5/17
  */
-class PlayerActorDispatchers(private val koin: XKoin) : KoinComponent by koin {
+class PlayerMessageDispatcher(private val koin: XKoin) : KoinComponent by koin {
     val protobufDispatcher = MessageDispatcher(GeneratedMessageV3::class, "com.mikai233.player.handler")
     val internalDispatcher = MessageDispatcher(BusinessPlayerMessage::class, "com.mikai233.player.handler")
 }

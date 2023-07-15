@@ -14,7 +14,7 @@ import com.mikai233.common.core.component.*
 import com.mikai233.common.ext.closeableSingle
 import com.mikai233.common.ext.registerService
 import com.mikai233.common.inject.XKoin
-import com.mikai233.player.component.PlayerActorDispatchers
+import com.mikai233.player.component.PlayerMessageDispatcher
 import com.mikai233.player.component.PlayerScriptSupport
 import com.mikai233.player.component.PlayerSharding
 import com.mikai233.protocol.MsgCs
@@ -72,7 +72,7 @@ class PlayerNode(private val port: Int = 2337, private val sameJvm: Boolean = fa
     private fun serverModule() = module(createdAtStart = true) {
         single { this@PlayerNode }
         single { Server(koin) }
-        single { PlayerActorDispatchers(koin) }
+        single { PlayerMessageDispatcher(koin) }
         closeableSingle { ZookeeperConfigCenter() }
         closeableSingle { MongoHolder(koin) }
         single { NodeConfigHolder(koin, Role.Player, port, sameJvm) }

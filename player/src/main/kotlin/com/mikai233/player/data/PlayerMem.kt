@@ -4,10 +4,9 @@ import com.mikai233.common.core.component.ActorDatabase
 import com.mikai233.common.db.MemData
 import com.mikai233.player.PlayerActor
 import com.mikai233.shared.entity.Player
-import com.mikai233.shared.message.PlayerMessage
 import org.springframework.data.mongodb.core.MongoTemplate
 
-class PlayerMem : MemData<PlayerActor, PlayerMessage, Player> {
+class PlayerMem : MemData<PlayerActor, Player> {
     private lateinit var playerActor: PlayerActor
     lateinit var player: Player
         private set
@@ -24,13 +23,13 @@ class PlayerMem : MemData<PlayerActor, PlayerMessage, Player> {
     override fun onComplete(actor: PlayerActor, db: ActorDatabase, data: Player) {
         playerActor = actor
         player = data
-        db.traceDatabase.traceEntity(player)
+        db.tracer.traceEntity(player)
     }
 
     fun initPlayer(playerActor: PlayerActor, player: Player) {
         check(this::player.isInitialized.not()) { "player already initialized" }
         this.playerActor = playerActor
         this.player = player
-        playerActor.manager.traceDatabase.saveAndTrace(player)
+        playerActor.manager.tracer.saveAndTrace(player)
     }
 }
