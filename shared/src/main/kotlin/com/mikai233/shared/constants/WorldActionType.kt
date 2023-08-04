@@ -2,6 +2,7 @@ package com.mikai233.shared.constants
 
 enum class WorldActionType(val id: Int) {
     Test(0),
+    ExcelVersion(1),
     ;
 
     companion object {

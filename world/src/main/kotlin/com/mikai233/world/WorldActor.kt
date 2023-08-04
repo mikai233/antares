@@ -5,10 +5,7 @@ import akka.actor.typed.PostStop
 import akka.actor.typed.javadsl.*
 import com.mikai233.common.core.actor.ActorCoroutine
 import com.mikai233.common.core.actor.safeActorCoroutine
-import com.mikai233.common.ext.actorLogger
-import com.mikai233.common.ext.runnableAdapter
-import com.mikai233.common.ext.shardingEnvelope
-import com.mikai233.common.ext.tell
+import com.mikai233.common.ext.*
 import com.mikai233.common.inject.XKoin
 import com.mikai233.shared.message.*
 import com.mikai233.shared.startAllWorldTopicActor
@@ -47,6 +44,7 @@ class WorldActor(
 
     init {
         logger.info("worldId:{} preStart", worldId)
+        context.system.subscribe<WorldMessage, ExcelUpdate>(context.self)
     }
 
     override fun createReceive(): Receive<WorldMessage> {
@@ -129,7 +127,8 @@ class WorldActor(
                 }
 
                 StopWorld -> {
-                    coroutine.cancelAll("StopWorld")
+                    context.system.unsubscribe(context.self)
+                    coroutine.cancelAll("StopWorld_$worldId")
                     return@onMessage Behaviors.stopped()
                 }
 

@@ -30,7 +30,7 @@ class GameClient(host: String, port: Int) {
     private val keyPair = ECDH.genKeyPair()
 
     companion object {
-        val key: AttributeKey<KeyPair> = AttributeKey.valueOf<KeyPair>("KEY_PAIR")
+        val key: AttributeKey<KeyPair> = AttributeKey.valueOf("KEY_PAIR")
     }
 
     init {

@@ -47,6 +47,7 @@ class PlayerActor(
 
     init {
         logger.info("{} preStart", playerId)
+        context.system.subscribe<PlayerMessage, ExcelUpdate>(context.self)
     }
 
     override fun createReceive(): Receive<PlayerMessage> {
@@ -154,7 +155,8 @@ class PlayerActor(
                 is BusinessPlayerMessage -> Unit
 
                 StopPlayer -> {
-                    coroutine.cancelAll("StopPlayer")
+                    context.system.unsubscribe(context.self)
+                    coroutine.cancelAll("StopPlayer_$playerId")
                     return@onMessage Behaviors.stopped()
                 }
 

@@ -12,6 +12,8 @@ data class ActorNamedRunnable(
     }
 }
 
+data class ExcelUpdate(val hashcode: Int) : BusinessPlayerMessage, BusinessWorldMessage
+
 sealed interface ChannelMessage : Message
 
 sealed interface SerdeChannelMessage : ChannelMessage, SerdeMessage

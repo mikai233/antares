@@ -32,6 +32,7 @@ class PlayerDataManager(private val player: PlayerActor, private val coroutine: 
                 mem.onComplete(player, db, data!!)
                 logger.info("{} load {} complete", player.playerId, manager.simpleName)
             }
+            loadComplete()
         }
     }
 

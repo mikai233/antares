@@ -4,6 +4,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.Scheduler
+import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.javadsl.*
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
@@ -118,6 +119,18 @@ inline fun <reified M, N> ActorSystem<*>.startShardingProxy(
         .withRole(role.name)
         .withMessageExtractor(extractor)
     return sharding.init(entity).narrow()
+}
+
+fun <M> ActorSystem<*>.publish(message: M) {
+    eventStream().tell(EventStream.Publish(message))
+}
+
+inline fun <E, reified M> ActorSystem<*>.subscribe(subscriber: ActorRef<E>) where M : E {
+    eventStream().tell(EventStream.Subscribe(M::class.java, subscriber.narrow<M>()))
+}
+
+inline fun <reified E> ActorSystem<*>.unsubscribe(subscriber: ActorRef<E>) {
+    eventStream().tell(EventStream.Unsubscribe(subscriber))
 }
 
 inline fun <reified M> shardingEnvelope(entityId: String, message: M): ShardingEnvelope<M> {

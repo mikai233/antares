@@ -3,13 +3,16 @@ package com.mikai233.shared.component
 import com.google.common.collect.ImmutableMap
 import com.mikai233.common.conf.GlobalData
 import com.mikai233.common.conf.GlobalExcel
+import com.mikai233.common.core.component.AkkaSystem
 import com.mikai233.common.core.component.ZookeeperConfigCenter
 import com.mikai233.common.core.component.config.excelFile
 import com.mikai233.common.core.component.config.excelVersion
 import com.mikai233.common.core.component.config.getConfigEx
 import com.mikai233.common.excel.*
 import com.mikai233.common.ext.logger
+import com.mikai233.common.ext.publish
 import com.mikai233.common.inject.XKoin
+import com.mikai233.shared.message.ExcelUpdate
 import com.mikai233.shared.serde.ProtobufExcelSerde
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -21,6 +24,7 @@ class ExcelConfigHolder(
     KoinComponent by koin {
     private val logger = logger()
     private val configCenter: ZookeeperConfigCenter by inject()
+    private val akkaSystem: AkkaSystem<*> by inject()
 
     companion object {
         const val name = "configs.bin"
@@ -39,12 +43,14 @@ class ExcelConfigHolder(
             val configs = loadConfigs(configBytes)
             manager.loadFromConfigs(configs)
             GlobalExcel.updateManager(manager)
+            akkaSystem.system.publish(ExcelUpdate(manager.commitId.hashCode()))
             configCenter.watchConfig(excelFile(version, name)) {
                 try {
                     val updateMgr = configCenter.getConfigEx<ExcelManager>(excelVersion(version))
                     val updateCfg = loadConfigs(it)
                     updateMgr.loadFromConfigs(updateCfg)
                     GlobalExcel.updateManager(updateMgr)
+                    akkaSystem.system.publish(ExcelUpdate(updateMgr.commitId.hashCode()))
                 } catch (e: Exception) {
                     logger.error("update excel error", e)
                 }

@@ -32,6 +32,7 @@ class WorldDataManager(private val world: WorldActor, private val coroutine: Act
                 mem.onComplete(world, db, data!!)
                 logger.info("{} load {} complete", world.worldId, manager.simpleName)
             }
+            loadComplete()
         }
     }
 
