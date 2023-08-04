@@ -1,6 +1,6 @@
 rootProject.name = "antares"
 
-val kotlinVersion = "1.8.20"
+val kotlinVersion = "1.9.0"
 val kotlinxVersion = "1.7.0"
 val akkaVersion = "2.8.2"
 val akkaManagementVersion = "1.4.1"
