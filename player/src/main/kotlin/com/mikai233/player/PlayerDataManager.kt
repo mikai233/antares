@@ -6,9 +6,7 @@ import com.mikai233.common.db.DataManager
 import com.mikai233.common.ext.logger
 import com.mikai233.common.ext.tell
 import com.mikai233.shared.message.PlayerInitDone
-import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 
 class PlayerDataManager(private val player: PlayerActor, private val coroutine: ActorCoroutine) :
@@ -25,13 +23,15 @@ class PlayerDataManager(private val player: PlayerActor, private val coroutine: 
             logger.error("{} loading data failed, player will stop", player.playerId, throwable)
             player.stop()
         }) {
-            managers.forEach { (manager, mem) ->
-                val data = withContext(Dispatchers.IO) {
-                    mem.load(player, template)
+            managers.map { (manager, mem) ->
+                launch {
+                    val data = withContext(Dispatchers.IO) {
+                        mem.load(player, template)
+                    }
+                    mem.onComplete(player, db, data!!)
+                    logger.info("{} load {} complete", player.playerId, manager.simpleName)
                 }
-                mem.onComplete(player, db, data!!)
-                logger.info("{} load {} complete", player.playerId, manager.simpleName)
-            }
+            }.joinAll()
             loadComplete()
         }
     }

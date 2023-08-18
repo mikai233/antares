@@ -6,9 +6,7 @@ import com.mikai233.common.db.DataManager
 import com.mikai233.common.ext.logger
 import com.mikai233.common.ext.tell
 import com.mikai233.shared.message.WorldInitDone
-import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 
 class WorldDataManager(private val world: WorldActor, private val coroutine: ActorCoroutine) :
@@ -25,13 +23,15 @@ class WorldDataManager(private val world: WorldActor, private val coroutine: Act
             logger.error("{} loading data failed, world will stop", world.worldId, throwable)
             world.stop()
         }) {
-            managers.forEach { (manager, mem) ->
-                val data = withContext(Dispatchers.IO) {
-                    mem.load(world, template)
+            managers.map { (manager, mem) ->
+                launch {
+                    val data = withContext(Dispatchers.IO) {
+                        mem.load(world, template)
+                    }
+                    mem.onComplete(world, db, data!!)
+                    logger.info("{} load {} complete", world.worldId, manager.simpleName)
                 }
-                mem.onComplete(world, db, data!!)
-                logger.info("{} load {} complete", world.worldId, manager.simpleName)
-            }
+            }.joinAll()
             loadComplete()
         }
     }
