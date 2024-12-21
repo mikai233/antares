@@ -15,6 +15,7 @@ dependencies {
     implementation(log.bundles.common)
     implementation(ktx.datetime)
     implementation(ktx.bundles.serialization)
+    implementation(kt.reflect)
     implementation(tool.bundles.curator)
     implementation(tool.guava)
     implementation(tool.lz4)

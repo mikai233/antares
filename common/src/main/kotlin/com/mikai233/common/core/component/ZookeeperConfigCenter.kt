@@ -31,7 +31,7 @@ class ZookeeperConfigCenter(connectionString: String = GlobalEnv.zkConnect) : Co
 
     override fun addConfig(config: Config) {
         val path = config.path()
-        val value = Json.toJsonBytes(config, true)
+        val value = Json.toBytes(config, true)
         if (exists(path).not()) {
             client.create().creatingParentsIfNeeded().forPath(path, value)
         } else {

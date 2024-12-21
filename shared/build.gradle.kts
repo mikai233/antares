@@ -26,6 +26,7 @@ dependencies {
     implementation(tool.spring.data.mongodb)
     implementation(tool.easyexcel)
     implementation(tool.kryo)
+    runtimeOnly(log.bundles.common)
     implementation(project(":common"))
     implementation(project(":proto"))
 //    implementation(project(":processor"))

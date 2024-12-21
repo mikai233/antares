@@ -22,7 +22,7 @@ object Deployer {
         with(curator) {
             children.forPath(hostFullPath).forEach {
                 val dataBytes = data.forPath(nodePath(GlobalEnv.machineIp, it))
-                val node = Json.fromJson<Node>(dataBytes)
+                val node = Json.fromBytes<Node>(dataBytes)
                 File("$deployDir/${node.role}_${node.port}").createNewFile()
             }
         }

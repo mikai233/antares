@@ -2,6 +2,8 @@ package com.mikai233.shared.excel
 
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -10,7 +12,7 @@ import java.util.zip.GZIPOutputStream
 import kotlin.reflect.full.primaryConstructor
 import kotlin.system.measureTimeMillis
 
-val GAME_CONFIG_KRYO_POOL = KryoPool(CONFIG_DEPS + CONFIG_IMPL)
+val GAME_CONFIG_KRYO_POOL = KryoPool(CONFIG_DEPS + CONFIG_IMPL + CONFIGS_IMPL + DEPS_EXTRA)
 
 /**
  * 由于Kryo序列化的一些限制，不能把[GameConfigManager]整个对象进行序列化和反序列化，而是需要把每个[GameConfigs]进行序列化和反序列化
@@ -79,6 +81,12 @@ suspend fun main() {
         "F:\\MiscProjects\\design\\OutPut\\cn\\ExportSheet",
         "0.1.0",
     )
+    withContext(Dispatchers.IO) {
+        ConfigManagerSerializer.serializeToFile(
+            manager,
+            FileOutputStream("excel_bin.tar.gz")
+        )
+    }
     val bytes = ConfigManagerSerializer.serializeToBytes(manager)
     val manager2 = ConfigManagerSerializer.deserializeBytes(bytes)
     manager2.loadComplete()

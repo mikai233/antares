@@ -74,7 +74,7 @@ class DataTracer(
     var stopped = false
         private set
 
-    internal fun serdeHash(obj: Any?) = hashFunction.hashBytes(Json.toJsonBytes(obj))
+    internal fun serdeHash(obj: Any?) = hashFunction.hashBytes(Json.toBytes(obj))
 
     fun traceEntity(entity: Entity<*>) {
         check(stopped.not()) { "trace db is not working, this means you already stopped the trace db" }
@@ -100,7 +100,7 @@ class DataTracer(
         }
         coroutine.launch {
             //TODO retry
-            val entitySnapshot = Json.deepCopy(entity)
+            val entitySnapshot = Json.copy(entity)
             withContext(Dispatchers.IO) {
                 template().save(entitySnapshot)
             }
@@ -259,7 +259,7 @@ class DataTracer(
      */
     private fun calFullHashCode(traceData: TData): Boolean {
         val preHashCode = traceData.serdeHash
-        traceData.serdeHash = hashFunction.hashBytes(Json.toJsonBytes(traceData.inner))
+        traceData.serdeHash = hashFunction.hashBytes(Json.toBytes(traceData.inner))
         return preHashCode != traceData.serdeHash
     }
 

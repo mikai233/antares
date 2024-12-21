@@ -10,6 +10,8 @@ import kotlin.reflect.KClass
 import kotlin.reflect.full.primaryConstructor
 
 class GameConfigManager(private val version: String) {
+    //这个是给Kryo通过反射构造用的
+    @Suppress("unused")
     constructor() : this("Unknown")
 
     companion object {
@@ -43,7 +45,7 @@ class GameConfigManager(private val version: String) {
      */
     suspend fun load(excelDir: String) {
         check(configs.isEmpty()) { "GameConfigManager already loaded" }
-        val configClasses = CONFIG_IMPL
+        val configClasses = CONFIGS_IMPL
         val loadFirstClasses = loadFirst()
         val loadSecondClasses = configClasses.filter { it !in loadFirstClasses }
         val loadedGameConfigs = coroutineScope {

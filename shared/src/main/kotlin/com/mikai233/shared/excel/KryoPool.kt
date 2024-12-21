@@ -1,7 +1,9 @@
 package com.mikai233.shared.excel
 
 import com.esotericsoftware.kryo.Kryo
+import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy
 import com.esotericsoftware.kryo.util.Pool
+import org.objenesis.strategy.StdInstantiatorStrategy
 import kotlin.reflect.KClass
 
 class KryoPool(val classes: Array<KClass<*>>) {
@@ -9,6 +11,7 @@ class KryoPool(val classes: Array<KClass<*>>) {
         override fun create(): Kryo {
             val kryo = Kryo()
             kryo.isRegistrationRequired = true
+            kryo.instantiatorStrategy = DefaultInstantiatorStrategy(StdInstantiatorStrategy())
             var id = 30
             classes.forEach {
                 kryo.register(it.java, ++id)

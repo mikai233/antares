@@ -13,5 +13,5 @@ interface ConfigCenter {
 
 inline fun <reified C : Config> ConfigCenter.getConfigEx(path: String): C {
     val bytes: ByteArray = getConfig(path)
-    return Json.fromJson<C>(bytes)
+    return Json.fromBytes<C>(bytes)
 }

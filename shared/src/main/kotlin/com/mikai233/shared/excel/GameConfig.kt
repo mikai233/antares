@@ -78,7 +78,7 @@ abstract class GameConfigs<K : Any, C : GameConfig<K>> : AnalysisEventListener<M
 
     abstract fun excelName(): String
 
-    abstract fun ids(): Set<K>
+    fun ids(): Set<K> = configs.keys
 
     fun getById(id: K): C {
         return requireNotNull(configs[id]) { "id: $id not found in ${this::class.simpleName}" }

@@ -17,15 +17,15 @@ object Json {
         addModule(GuavaModule())
     }
 
-    inline fun <reified T> fromJson(content: String): T {
+    inline fun <reified T> fromStr(content: String): T {
         return mapper.readValue(content)
     }
 
-    inline fun <reified T> fromJson(src: ByteArray): T {
+    inline fun <reified T> fromBytes(src: ByteArray): T {
         return mapper.readValue(src)
     }
 
-    inline fun <reified T> toJsonString(value: T, pretty: Boolean = false): String {
+    inline fun <reified T> toStr(value: T, pretty: Boolean = false): String {
         return if (pretty) {
             mapper.writerWithDefaultPrettyPrinter().writeValueAsString(value)
         } else {
@@ -33,7 +33,7 @@ object Json {
         }
     }
 
-    inline fun <reified T> toJsonBytes(value: T, pretty: Boolean = false): ByteArray {
+    inline fun <reified T> toBytes(value: T, pretty: Boolean = false): ByteArray {
         return if (pretty) {
             mapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(value)
         } else {
@@ -41,7 +41,7 @@ object Json {
         }
     }
 
-    inline fun <reified T> deepCopy(value: T): T {
-        return fromJson(toJsonBytes(value))
+    inline fun <reified T> copy(value: T): T {
+        return fromBytes(toBytes(value))
     }
 }

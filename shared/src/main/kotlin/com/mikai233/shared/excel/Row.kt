@@ -1,8 +1,5 @@
 package com.mikai233.shared.excel
 
-import com.google.common.collect.ImmutableList
-import com.google.common.collect.ImmutableMap
-
 /**
  * Excel行数据
  * @param rowIndex 行号 从0开始
@@ -18,8 +15,7 @@ data class Row(
 
     private fun getValueByName(name: String): String {
         currentName = name
-        val columnIndex = index[name] ?: throw IllegalArgumentException("Column $name not found")
-        check(columnIndex in data) { "Column $name not found" }
+        val columnIndex = index[name] ?: throw IllegalArgumentException("Column `$name` not found")
         return data[columnIndex] ?: ""
     }
 
@@ -131,9 +127,9 @@ data class Row(
         currentName = name
         val value = getValueByName(name)
         return if (value.isBlankOrDefault()) {
-            ImmutableList.of()
+            emptyList()
         } else {
-            ImmutableList.copyOf(value.split(",").map { it.toInt() })
+            value.split(",").map { it.toInt() }
         }
     }
 
@@ -141,13 +137,13 @@ data class Row(
         currentName = name
         val value = getValueByName(name)
         return if (value.isBlankOrDefault()) {
-            ImmutableList.of()
+            emptyList()
         } else {
-            ImmutableList.copyOf(value.split(";").map {
+            value.split(";").map {
                 val (first, second) = it.split(",")
                     .also { list -> check(list.size == 2) { "expect 2 values: $list" } }
                 Pair(first.toInt(), second.toInt())
-            })
+            }
         }
     }
 
@@ -155,13 +151,13 @@ data class Row(
         currentName = name
         val value = getValueByName(name)
         return if (value.isBlankOrDefault()) {
-            ImmutableList.of()
+            emptyList()
         } else {
-            ImmutableList.copyOf(value.split(";").map {
+            value.split(";").map {
                 val (first, second, third) = it.split(",")
                     .also { list -> check(list.size == 3) { "expect 3 values: $list" } }
                 Triple(first.toInt(), second.toInt(), third.toInt())
-            })
+            }
         }
     }
 
@@ -169,9 +165,9 @@ data class Row(
         currentName = name
         val value = getValueByName(name)
         return if (value.isBlankOrDefault()) {
-            ImmutableList.of()
+            emptyList()
         } else {
-            ImmutableList.copyOf(value.split(",").map { it.toLong() })
+            value.split(",").map { it.toLong() }
         }
     }
 
@@ -179,13 +175,13 @@ data class Row(
         currentName = name
         val value = getValueByName(name)
         return if (value.isBlankOrDefault()) {
-            ImmutableList.of()
+            emptyList()
         } else {
-            ImmutableList.copyOf(value.split(";").map {
+            value.split(";").map {
                 val (first, second) = it.split(",")
                     .also { list -> check(list.size == 2) { "expect 2 values: $list" } }
                 Pair(first.toLong(), second.toLong())
-            })
+            }
         }
     }
 
@@ -193,13 +189,13 @@ data class Row(
         currentName = name
         val value = getValueByName(name)
         return if (value.isBlankOrDefault()) {
-            ImmutableList.of()
+            emptyList()
         } else {
-            ImmutableList.copyOf(value.split(";").map {
+            value.split(";").map {
                 val (first, second, third) = it.split(",")
                     .also { list -> check(list.size == 3) { "expect 3 values: $list" } }
                 Triple(first.toLong(), second.toLong(), third.toLong())
-            })
+            }
         }
     }
 
@@ -207,13 +203,13 @@ data class Row(
         currentName = name
         val value = getValueByName(name)
         return if (value.isBlankOrDefault()) {
-            mapOf()
+            emptyMap()
         } else {
-            ImmutableMap.copyOf(value.split(";").associate {
+            value.split(";").associate {
                 val (k, v) = it.split(",")
                     .also { list -> check(list.size == 2) { "expect 2 values: $list" } }
                 k to v.toFloat()
-            })
+            }
         }
     }
 
