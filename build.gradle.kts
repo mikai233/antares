@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -107,15 +108,17 @@ kotlin {
 
 fun Project.configureJvmTarget() {
     tasks.withType<JavaCompile> {
+        sourceCompatibility = "17"
+        targetCompatibility = "17"
         with(options) {
             encoding = "UTF-8"
             isFork = true
         }
     }
     tasks.withType<KotlinCompile> {
-        kotlinOptions {
-            jvmTarget = "17"
-            javaParameters = true
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+            javaParameters.set(true)
         }
     }
 }

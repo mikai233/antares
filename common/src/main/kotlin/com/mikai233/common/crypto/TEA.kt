@@ -9,8 +9,8 @@
 
 package com.mikai233.common.crypto
 
-import com.mikai233.common.ext.toByteArray
-import com.mikai233.common.ext.toUHexString
+import com.mikai233.common.extension.toByteArray
+import com.mikai233.common.extension.toUHexString
 import kotlin.experimental.and
 import kotlin.experimental.xor
 import kotlin.random.Random

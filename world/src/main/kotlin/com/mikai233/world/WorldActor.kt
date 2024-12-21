@@ -5,7 +5,7 @@ import akka.actor.typed.PostStop
 import akka.actor.typed.javadsl.*
 import com.mikai233.common.core.actor.ActorCoroutine
 import com.mikai233.common.core.actor.safeActorCoroutine
-import com.mikai233.common.ext.*
+import com.mikai233.common.extension.*
 import com.mikai233.common.inject.XKoin
 import com.mikai233.shared.message.*
 import com.mikai233.shared.startAllWorldTopicActor
@@ -43,7 +43,8 @@ class WorldActor(
     val allWorldTopic = context.startAllWorldTopicActor()
 
     init {
-        logger.info("worldId:{} preStart", worldId)
+        val address = context.system.address()
+        logger.info("worldId:{} preStart {}", worldId, context.self)
         context.system.subscribe<WorldMessage, ExcelUpdate>(context.self)
     }
 

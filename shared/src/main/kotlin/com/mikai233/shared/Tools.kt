@@ -2,8 +2,8 @@ package com.mikai233.shared
 
 import com.google.protobuf.GeneratedMessageV3
 import com.mikai233.common.conf.ServerMode
-import com.mikai233.common.ext.invokeOnTargetMode
-import com.mikai233.common.ext.protobufJsonPrinter
+import com.mikai233.common.extension.invokeOnTargetMode
+import com.mikai233.common.extension.protobufJsonPrinter
 import com.mikai233.shared.message.ChannelProtobufEnvelope
 import com.mikai233.shared.message.ClientMessage
 import com.mikai233.shared.message.PlayerProtobufEnvelope

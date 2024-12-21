@@ -2,7 +2,7 @@ package com.mikai233.common.core.component
 
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.component.config.*
-import com.mikai233.common.ext.logger
+import com.mikai233.common.extension.logger
 import com.mikai233.common.inject.XKoin
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory

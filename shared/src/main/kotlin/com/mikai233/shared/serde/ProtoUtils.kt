@@ -2,8 +2,8 @@ package com.mikai233.shared.serde
 
 import com.google.protobuf.GeneratedMessageV3
 import com.mikai233.common.conf.GlobalProto
-import com.mikai233.common.ext.toByteArray
-import com.mikai233.common.ext.toInt
+import com.mikai233.common.extension.toByteArray
+import com.mikai233.common.extension.toInt
 
 internal fun protoMsgToPacket(message: GeneratedMessageV3, isClient: Boolean): ByteArray {
     val protoId = if (isClient) {

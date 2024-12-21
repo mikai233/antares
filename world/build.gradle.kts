@@ -1,6 +1,6 @@
 plugins {
     java
-    alias(tool.plugins.ksp)
+//    alias(tool.plugins.ksp)
 }
 
 repositories {
@@ -24,8 +24,8 @@ dependencies {
     implementation(project(":common"))
     implementation(project(":shared"))
     implementation(project(":proto"))
-    implementation(project(":processor"))
-    ksp(project(":processor"))
+//    implementation(project(":processor"))
+//    ksp(project(":processor"))
 }
 
 tasks.test {

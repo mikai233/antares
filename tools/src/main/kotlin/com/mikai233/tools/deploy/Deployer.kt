@@ -4,8 +4,8 @@ import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.component.config.Node
 import com.mikai233.common.core.component.config.nodePath
 import com.mikai233.common.core.component.config.serverHostPath
-import com.mikai233.common.ext.Json
-import com.mikai233.common.ext.buildSimpleZkClient
+import com.mikai233.common.extension.Json
+import com.mikai233.common.extension.buildSimpleZkClient
 import java.io.File
 
 object Deployer {

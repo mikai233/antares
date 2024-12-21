@@ -1,4 +1,4 @@
-package com.mikai233.common.ext
+package com.mikai233.common.extension
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

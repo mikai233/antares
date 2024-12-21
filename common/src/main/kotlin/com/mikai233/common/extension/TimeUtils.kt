@@ -1,4 +1,4 @@
-package com.mikai233.common.ext
+package com.mikai233.common.extension
 
 import com.mikai233.common.conf.GlobalData
 import kotlinx.datetime.Instant

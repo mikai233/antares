@@ -8,7 +8,7 @@ import com.google.protobuf.GeneratedMessageV3
 import com.google.protobuf.kotlin.toByteString
 import com.mikai233.common.core.actor.safeActorCoroutine
 import com.mikai233.common.crypto.ECDH
-import com.mikai233.common.ext.*
+import com.mikai233.common.extension.*
 import com.mikai233.common.inject.XKoin
 import com.mikai233.gate.component.GateSharding
 import com.mikai233.protocol.ProtoLogin

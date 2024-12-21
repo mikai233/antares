@@ -1,6 +1,6 @@
 package com.mikai233.player.script
 
-import com.mikai233.common.ext.logger
+import com.mikai233.common.extension.logger
 import com.mikai233.player.PlayerActor
 import com.mikai233.shared.script.ActorScriptFunction
 

@@ -1,7 +1,7 @@
 package com.mikai233.shared.codec
 
-import com.mikai233.common.ext.toByteArray
-import com.mikai233.common.ext.toInt
+import com.mikai233.common.extension.toByteArray
+import com.mikai233.common.extension.toInt
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.MessageToMessageCodec
 

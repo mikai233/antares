@@ -3,8 +3,8 @@ package com.mikai233.world
 import com.mikai233.common.core.actor.ActorCoroutine
 import com.mikai233.common.core.component.ActorDatabase
 import com.mikai233.common.db.DataManager
-import com.mikai233.common.ext.logger
-import com.mikai233.common.ext.tell
+import com.mikai233.common.extension.logger
+import com.mikai233.common.extension.tell
 import com.mikai233.shared.message.WorldInitDone
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock

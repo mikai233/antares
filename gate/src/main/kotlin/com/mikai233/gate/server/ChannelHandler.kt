@@ -4,8 +4,8 @@ import akka.actor.typed.ActorRef
 import com.mikai233.common.core.Server
 import com.mikai233.common.core.State
 import com.mikai233.common.core.component.AkkaSystem
-import com.mikai233.common.ext.logger
-import com.mikai233.common.ext.syncAsk
+import com.mikai233.common.extension.logger
+import com.mikai233.common.extension.syncAsk
 import com.mikai233.common.inject.XKoin
 import com.mikai233.gate.GateSystemMessage
 import com.mikai233.gate.SpawnChannelActorReq

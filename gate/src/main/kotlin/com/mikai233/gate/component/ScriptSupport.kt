@@ -2,7 +2,7 @@ package com.mikai233.gate.component
 
 import akka.actor.typed.ActorRef
 import com.mikai233.common.core.component.AkkaSystem
-import com.mikai233.common.ext.syncAsk
+import com.mikai233.common.extension.syncAsk
 import com.mikai233.common.inject.XKoin
 import com.mikai233.gate.GateSystemMessage
 import com.mikai233.gate.SpawnScriptActorReq

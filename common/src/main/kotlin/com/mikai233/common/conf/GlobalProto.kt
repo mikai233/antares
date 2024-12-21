@@ -3,7 +3,7 @@ package com.mikai233.common.conf
 import com.google.protobuf.Descriptors
 import com.google.protobuf.GeneratedMessageV3
 import com.google.protobuf.Parser
-import com.mikai233.common.ext.logger
+import com.mikai233.common.extension.logger
 import org.reflections.Reflections
 import kotlin.reflect.KClass
 import kotlin.reflect.full.declaredFunctions

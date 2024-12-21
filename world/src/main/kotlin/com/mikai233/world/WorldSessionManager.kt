@@ -3,7 +3,7 @@ package com.mikai233.world
 import akka.actor.typed.ActorRef
 import akka.actor.typed.pubsub.Topic
 import com.google.protobuf.GeneratedMessageV3
-import com.mikai233.common.ext.logger
+import com.mikai233.common.extension.logger
 import com.mikai233.shared.logMessage
 import com.mikai233.shared.message.ChannelProtobufEnvelope
 import com.mikai233.shared.message.ProtobufEnvelopeToAllWorldClient

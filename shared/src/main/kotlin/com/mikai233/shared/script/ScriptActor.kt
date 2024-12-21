@@ -10,7 +10,7 @@ import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.Launcher
-import com.mikai233.common.ext.actorLogger
+import com.mikai233.common.extension.actorLogger
 import com.mikai233.shared.message.*
 import groovy.lang.GroovyClassLoader
 import java.io.File

@@ -1,5 +1,5 @@
 plugins {
-    alias(tool.plugins.ksp)
+//    alias(tool.plugins.ksp)
 }
 
 repositories {
@@ -13,7 +13,7 @@ dependencies {
     implementation(tool.protobuf.kotlin)
     implementation(tool.protobuf.java.util)
     implementation(kt.reflect)
-    implementation(ktx.bundles.serialization)
+    implementation(ktx.core)
     implementation(akka.bundles.common)
     implementation(tool.caffeine)
     implementation(tool.groovy.all)
@@ -22,15 +22,14 @@ dependencies {
     implementation(tool.netty)
     implementation(tool.koin)
     implementation(tool.bundles.jackson)
-    implementation(tool.symbol.processing)
+//    implementation(tool.symbol.processing)
     implementation(tool.spring.data.mongodb)
-    implementation(tool.easyexcel) {
-        exclude("org.apache.poi")
-    }
+    implementation(tool.easyexcel)
+    implementation(tool.kryo)
     implementation(project(":common"))
     implementation(project(":proto"))
-    implementation(project(":processor"))
-    ksp(project(":processor"))
+//    implementation(project(":processor"))
+//    ksp(project(":processor"))
 }
 
 tasks.test {

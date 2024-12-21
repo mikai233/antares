@@ -2,7 +2,7 @@ package com.mikai233.world.handler
 
 import com.mikai233.common.annotation.AllOpen
 import com.mikai233.common.entity.PlayerAbstract
-import com.mikai233.common.ext.unixTimestamp
+import com.mikai233.common.extension.unixTimestamp
 import com.mikai233.common.msg.MessageHandler
 import com.mikai233.protocol.testNotify
 import com.mikai233.shared.message.PlayerLogin

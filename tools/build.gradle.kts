@@ -19,6 +19,7 @@ dependencies {
     implementation(tool.guava)
     implementation(tool.lz4)
     implementation(tool.reflections)
+    implementation(tool.easyexcel)
     implementation(project(":common"))
     implementation(project(":shared"))
 }

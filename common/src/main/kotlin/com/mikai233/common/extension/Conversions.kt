@@ -1,6 +1,6 @@
 @file:Suppress("unused")
 
-package com.mikai233.common.ext
+package com.mikai233.common.extension
 
 /**
  * 255 -> 00 FF

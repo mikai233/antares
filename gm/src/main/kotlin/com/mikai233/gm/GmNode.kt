@@ -14,10 +14,10 @@ import com.mikai233.common.core.component.AkkaSystem
 import com.mikai233.common.core.component.NodeConfigHolder
 import com.mikai233.common.core.component.Role
 import com.mikai233.common.core.component.ZookeeperConfigCenter
-import com.mikai233.common.ext.closeableSingle
-import com.mikai233.common.ext.registerService
-import com.mikai233.common.ext.startBroadcastClusterRouterGroup
-import com.mikai233.common.ext.startSingleton
+import com.mikai233.common.extension.closeableSingle
+import com.mikai233.common.extension.registerService
+import com.mikai233.common.extension.startBroadcastClusterRouterGroup
+import com.mikai233.common.extension.startSingleton
 import com.mikai233.common.inject.XKoin
 import com.mikai233.gm.component.GmNodeConfigHolder
 import com.mikai233.gm.component.GmScriptSupport

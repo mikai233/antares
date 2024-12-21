@@ -1,6 +1,6 @@
 package com.mikai233.common.core
 
-import com.mikai233.common.ext.logger
+import com.mikai233.common.extension.logger
 import com.mikai233.common.inject.XKoin
 import org.koin.core.component.KoinComponent
 import java.util.*

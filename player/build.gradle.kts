@@ -1,7 +1,7 @@
 plugins {
     java
     groovy
-    alias(tool.plugins.ksp)
+//    alias(tool.plugins.ksp)
 }
 
 repositories {
@@ -26,7 +26,7 @@ dependencies {
     implementation(project(":shared"))
     implementation(project(":proto"))
     implementation(project(":processor"))
-    ksp(project(":processor"))
+//    ksp(project(":processor"))
 }
 
 tasks.test {

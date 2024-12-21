@@ -1,6 +1,6 @@
 package com.mikai233.common.crypto
 
-import com.mikai233.common.ext.toUHexString
+import com.mikai233.common.extension.toUHexString
 import java.security.KeyFactory
 import java.security.MessageDigest
 import java.security.PublicKey

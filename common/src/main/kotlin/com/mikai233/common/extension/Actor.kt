@@ -1,4 +1,4 @@
-package com.mikai233.common.ext
+package com.mikai233.common.extension
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem

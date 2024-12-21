@@ -3,7 +3,7 @@ package com.mikai233.common.core.component
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.component.config.Config
 import com.mikai233.common.core.component.config.ConfigCenter
-import com.mikai233.common.ext.Json
+import com.mikai233.common.extension.Json
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.CuratorFrameworkFactory
 import org.apache.curator.framework.recipes.cache.ChildData

@@ -1,7 +1,7 @@
 rootProject.name = "antares"
 
-val kotlinVersion = "1.9.0"
-val kotlinxVersion = "1.7.0"
+val kotlinVersion = "2.1.0"
+val kotlinxVersion = "1.10.0"
 val akkaVersion = "2.8.2"
 val akkaManagementVersion = "1.4.1"
 val scalaVersion = "2.13"
@@ -13,7 +13,7 @@ val junitVersion = "5.9.3"
 val protobufVersion = "3.23.0"
 val atomicfuVersion = "0.20.2"
 val datetimeVersion = "0.4.0"
-val kotlinpoetVersion = "1.14.0"
+val kotlinpoetVersion = "2.0.0"
 val kspVersion = "1.0.11"
 
 dependencyResolutionManagement {
@@ -22,7 +22,7 @@ dependencyResolutionManagement {
             plugin("jvm", "org.jetbrains.kotlin.jvm").version(kotlinVersion)
             plugin("allopen", "org.jetbrains.kotlin.plugin.allopen").version(kotlinVersion)
             plugin("noarg", "org.jetbrains.kotlin.plugin.noarg").version(kotlinVersion)
-            plugin("serialization", "org.jetbrains.kotlin.plugin.serialization").version(kotlinxVersion)
+            plugin("serialization", "org.jetbrains.kotlin.plugin.serialization").version("2.1.0")
             library("stdlib", "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion")
             library("jdk8", "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
             library("reflect", "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion")
@@ -35,8 +35,8 @@ dependencyResolutionManagement {
             library("server.netty", "io.ktor:ktor-server-netty:$ktorServerVersion")
         }
         create("ktx") {
-            library("core", "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxVersion")
-            library("core.jvm", "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$kotlinxVersion")
+            library("core", "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.0")
+            library("core.jvm", "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.10.0")
             library("atomicfu", "org.jetbrains.kotlinx:atomicfu:$atomicfuVersion")
             library("atomicfu.jvm", "org.jetbrains.kotlinx:atomicfu-jvm:$atomicfuVersion")
             library("datetime", "org.jetbrains.kotlinx:kotlinx-datetime:$datetimeVersion")
@@ -106,15 +106,16 @@ dependencyResolutionManagement {
             library("koin.slf4j", "io.insert-koin:koin-logger-slf4j:3.4.0")
             bundle("koin", listOf("koin", "koin.slf4j"))
             library("poi.ooxml", "org.apache.poi:poi-ooxml:5.2.3")
-            library("easyexcel", "com.alibaba:easyexcel:3.3.1")
+            library("easyexcel", "com.alibaba:easyexcel:4.0.3")
             plugin("boot", "org.springframework.boot").version("3.1.0")
             library("guava", "com.google.guava:guava:31.1-jre")
-            library("symbol.processing.api", "com.google.devtools.ksp:symbol-processing-api:$kotlinVersion-$kspVersion")
-            library("symbol.processing", "com.google.devtools.ksp:symbol-processing:$kotlinVersion-$kspVersion")
-            plugin("ksp", "com.google.devtools.ksp").version("${kotlinVersion}-${kspVersion}")
+//            library("symbol.processing.api", "com.google.devtools.ksp:symbol-processing-api:$kotlinVersion-$kspVersion")
+//            library("symbol.processing", "com.google.devtools.ksp:symbol-processing:$kotlinVersion-$kspVersion")
+//            plugin("ksp", "com.google.devtools.ksp").version("${kotlinVersion}-${kspVersion}")
             library("spring.data.mongodb", "org.springframework.data:spring-data-mongodb:4.1.0")
             library("mongodb.driver.sync", "org.mongodb:mongodb-driver-sync:4.9.1")
             library("agrona", "org.agrona:agrona:1.18.1")
+            library("kryo", "com.esotericsoftware:kryo:5.6.2")
         }
         create("test") {
             library("junit.bom", "org.junit:junit-bom:$junitVersion")

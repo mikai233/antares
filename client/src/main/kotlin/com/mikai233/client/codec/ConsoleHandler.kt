@@ -2,8 +2,8 @@ package com.mikai233.client.codec
 
 import com.mikai233.client.GameClient
 import com.mikai233.common.crypto.ECDH
-import com.mikai233.common.ext.logger
-import com.mikai233.common.ext.unixTimestamp
+import com.mikai233.common.extension.logger
+import com.mikai233.common.extension.unixTimestamp
 import com.mikai233.protocol.ProtoLogin.LoginResp
 import com.mikai233.protocol.ProtoSystem.PingResp
 import com.mikai233.protocol.pingReq

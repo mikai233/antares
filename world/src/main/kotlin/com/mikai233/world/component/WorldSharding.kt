@@ -8,7 +8,7 @@ import akka.cluster.sharding.typed.ShardingEnvelope
 import com.mikai233.common.core.component.AkkaSystem
 import com.mikai233.common.core.component.Role
 import com.mikai233.common.core.component.ShardEntityType
-import com.mikai233.common.ext.startSharding
+import com.mikai233.common.extension.startSharding
 import com.mikai233.common.inject.XKoin
 import com.mikai233.shared.WorldShardNum
 import com.mikai233.shared.message.*

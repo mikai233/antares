@@ -1,6 +1,6 @@
 package com.mikai233.shared.codec
 
-import com.mikai233.common.ext.logger
+import com.mikai233.common.extension.logger
 import io.netty.channel.ChannelDuplexHandler
 import io.netty.channel.ChannelFutureListener
 import io.netty.channel.ChannelHandler.Sharable

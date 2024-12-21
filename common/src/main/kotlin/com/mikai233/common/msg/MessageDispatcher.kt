@@ -1,6 +1,6 @@
 package com.mikai233.common.msg
 
-import com.mikai233.common.ext.logger
+import com.mikai233.common.extension.logger
 import org.reflections.Reflections
 import org.reflections.util.ConfigurationBuilder
 import kotlin.reflect.KClass

@@ -1,4 +1,4 @@
-package com.mikai233.common.ext
+package com.mikai233.common.extension
 
 import com.fasterxml.jackson.datatype.guava.GuavaModule
 import com.fasterxml.jackson.module.kotlin.jsonMapper

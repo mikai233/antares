@@ -8,7 +8,7 @@ import akka.actor.typed.javadsl.*
 import com.google.protobuf.GeneratedMessageV3
 import com.mikai233.common.core.actor.ActorCoroutine
 import com.mikai233.common.core.actor.safeActorCoroutine
-import com.mikai233.common.ext.*
+import com.mikai233.common.extension.*
 import com.mikai233.common.inject.XKoin
 import com.mikai233.player.component.PlayerMessageDispatcher
 import com.mikai233.player.component.PlayerScriptSupport

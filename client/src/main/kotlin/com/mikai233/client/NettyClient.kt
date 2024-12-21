@@ -1,8 +1,8 @@
 package com.mikai233.client
 
-import com.mikai233.common.ext.Platform
-import com.mikai233.common.ext.getPlatform
-import com.mikai233.common.ext.logger
+import com.mikai233.common.extension.Platform
+import com.mikai233.common.extension.getPlatform
+import com.mikai233.common.extension.logger
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.ChannelFuture
 import io.netty.channel.ChannelInitializer

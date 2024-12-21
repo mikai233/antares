@@ -12,8 +12,8 @@ import com.mikai233.common.conf.GlobalData
 import com.mikai233.common.conf.GlobalProto
 import com.mikai233.common.crypto.ECDH
 import com.mikai233.common.crypto.KeyPair
-import com.mikai233.common.ext.logger
-import com.mikai233.common.ext.tryCatch
+import com.mikai233.common.extension.logger
+import com.mikai233.common.extension.tryCatch
 import com.mikai233.protocol.MsgCs.MessageClientToServer
 import com.mikai233.protocol.MsgSc
 import com.mikai233.protocol.loginReq

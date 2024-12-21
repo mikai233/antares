@@ -3,8 +3,8 @@ package com.mikai233.world.component
 import akka.cluster.Cluster
 import com.mikai233.common.core.component.AkkaSystem
 import com.mikai233.common.core.component.WorldConfigHolder
-import com.mikai233.common.ext.logger
-import com.mikai233.common.ext.shardingEnvelope
+import com.mikai233.common.extension.logger
+import com.mikai233.common.extension.shardingEnvelope
 import com.mikai233.common.inject.XKoin
 import com.mikai233.shared.message.WakeupGameWorld
 import com.mikai233.world.WorldSystemMessage

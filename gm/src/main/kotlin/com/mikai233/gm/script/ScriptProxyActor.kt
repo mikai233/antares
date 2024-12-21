@@ -13,10 +13,10 @@ import com.mikai233.common.core.actor.safeActorCoroutine
 import com.mikai233.common.core.component.Role
 import com.mikai233.common.core.component.ZookeeperConfigCenter
 import com.mikai233.common.core.component.config.*
-import com.mikai233.common.ext.actorLogger
-import com.mikai233.common.ext.runnableAdapter
-import com.mikai233.common.ext.shardingEnvelope
-import com.mikai233.common.ext.startBroadcastClusterRouterGroup
+import com.mikai233.common.extension.actorLogger
+import com.mikai233.common.extension.runnableAdapter
+import com.mikai233.common.extension.shardingEnvelope
+import com.mikai233.common.extension.startBroadcastClusterRouterGroup
 import com.mikai233.common.inject.XKoin
 import com.mikai233.gm.component.GmSharding
 import com.mikai233.shared.message.*

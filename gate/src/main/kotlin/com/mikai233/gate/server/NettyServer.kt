@@ -5,9 +5,9 @@ import com.mikai233.common.core.component.ZookeeperConfigCenter
 import com.mikai233.common.core.component.config.NettyConfig
 import com.mikai233.common.core.component.config.getConfigEx
 import com.mikai233.common.core.component.config.serverNetty
-import com.mikai233.common.ext.Platform
-import com.mikai233.common.ext.getPlatform
-import com.mikai233.common.ext.logger
+import com.mikai233.common.extension.Platform
+import com.mikai233.common.extension.getPlatform
+import com.mikai233.common.extension.logger
 import com.mikai233.common.inject.XKoin
 import com.mikai233.gate.GateNode
 import io.netty.bootstrap.ServerBootstrap

@@ -6,9 +6,9 @@ import com.mikai233.common.core.component.Role
 import com.mikai233.common.core.component.config.Node
 import com.mikai233.common.core.component.config.nodePath
 import com.mikai233.common.core.component.config.serverHostPath
-import com.mikai233.common.ext.Json
-import com.mikai233.common.ext.buildSimpleZkClient
-import com.mikai233.common.ext.logger
+import com.mikai233.common.extension.Json
+import com.mikai233.common.extension.buildSimpleZkClient
+import com.mikai233.common.extension.logger
 import com.mikai233.gate.GateNode
 import com.mikai233.global.GlobalNode
 import com.mikai233.gm.GmNode

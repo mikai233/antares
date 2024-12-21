@@ -5,7 +5,7 @@ import akka.actor.typed.ActorSystem
 import akka.cluster.sharding.typed.ShardingEnvelope
 import com.mikai233.common.core.component.Role
 import com.mikai233.common.core.component.ShardEntityType
-import com.mikai233.common.ext.startShardingProxy
+import com.mikai233.common.extension.startShardingProxy
 import com.mikai233.shared.message.PlayerMessageExtractor
 import com.mikai233.shared.message.SerdePlayerMessage
 import com.mikai233.shared.message.SerdeWorldMessage

@@ -11,8 +11,8 @@ import com.mikai233.common.core.Launcher
 import com.mikai233.common.core.Server
 import com.mikai233.common.core.State
 import com.mikai233.common.core.component.*
-import com.mikai233.common.ext.closeableSingle
-import com.mikai233.common.ext.registerService
+import com.mikai233.common.extension.closeableSingle
+import com.mikai233.common.extension.registerService
 import com.mikai233.common.inject.XKoin
 import com.mikai233.protocol.MsgCs
 import com.mikai233.protocol.MsgSc

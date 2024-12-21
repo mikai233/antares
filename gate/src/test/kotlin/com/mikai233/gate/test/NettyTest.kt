@@ -2,8 +2,8 @@ package com.mikai233.gate.test
 
 import com.google.protobuf.GeneratedMessageV3
 import com.mikai233.common.conf.GlobalProto
-import com.mikai233.common.ext.logger
-import com.mikai233.common.ext.protobufJsonPrinter
+import com.mikai233.common.extension.logger
+import com.mikai233.common.extension.protobufJsonPrinter
 import com.mikai233.protocol.MsgCs.MessageClientToServer
 import com.mikai233.protocol.MsgSc.MessageServerToClient
 import com.mikai233.protocol.loginReq

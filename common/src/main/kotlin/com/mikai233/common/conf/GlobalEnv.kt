@@ -1,6 +1,6 @@
 package com.mikai233.common.conf
 
-import com.mikai233.common.ext.getenv
+import com.mikai233.common.extension.getenv
 
 
 object GlobalEnv {

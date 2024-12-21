@@ -1,6 +1,6 @@
 package com.mikai233.common.core.component.config
 
-import com.mikai233.common.ext.Json
+import com.mikai233.common.extension.Json
 
 interface ConfigCenter {
     fun addConfig(config: Config)

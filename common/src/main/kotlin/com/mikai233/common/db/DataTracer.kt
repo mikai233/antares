@@ -7,10 +7,10 @@ import com.google.common.hash.Hashing
 import com.mikai233.common.conf.GlobalData
 import com.mikai233.common.core.actor.ActorCoroutine
 import com.mikai233.common.entity.*
-import com.mikai233.common.ext.Json
-import com.mikai233.common.ext.logger
-import com.mikai233.common.ext.timestampToLocalDateTime
-import com.mikai233.common.ext.unixTimestamp
+import com.mikai233.common.extension.Json
+import com.mikai233.common.extension.logger
+import com.mikai233.common.extension.timestampToLocalDateTime
+import com.mikai233.common.extension.unixTimestamp
 import com.mongodb.client.MongoClients
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
