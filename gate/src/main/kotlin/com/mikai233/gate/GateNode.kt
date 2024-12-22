@@ -8,7 +8,7 @@ import akka.actor.typed.javadsl.Receive
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.conf.GlobalProto
 import com.mikai233.common.core.Launcher
-import com.mikai233.common.core.Server
+import com.mikai233.common.core.Node
 import com.mikai233.common.core.State
 import com.mikai233.common.core.component.*
 import com.mikai233.common.extension.actorLogger
@@ -78,15 +78,15 @@ class GateNode(private val port: Int = 2334, private val sameJvm: Boolean = fals
     }
 
     override fun launch() {
-        val server = koin.get<Server>()
-        server.state = State.Initializing
-        server.onInit()
-        server.state = State.Running
+        val node = koin.get<Node>()
+        node.state = State.Initializing
+        node.onInit()
+        node.state = State.Running
     }
 
     private fun serverModule() = module(createdAtStart = true) {
         single { this@GateNode }
-        single { Server(koin) }
+        single { Node(koin) }
         closeableSingle { ZookeeperConfigCenter() }
         single { NodeConfigHolder(koin, Role.Gate, port, sameJvm) }
         single {

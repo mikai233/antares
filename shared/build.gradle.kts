@@ -2,10 +2,6 @@ plugins {
 //    alias(tool.plugins.ksp)
 }
 
-repositories {
-    mavenCentral()
-}
-
 dependencies {
     testImplementation(platform(test.junit.bom))
     testImplementation(test.junit.jupiter)
@@ -20,7 +16,6 @@ dependencies {
     implementation(tool.guava)
     implementation(tool.lz4)
     implementation(tool.netty)
-    implementation(tool.koin)
     implementation(tool.bundles.jackson)
 //    implementation(tool.symbol.processing)
     implementation(tool.spring.data.mongodb)

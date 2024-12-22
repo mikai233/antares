@@ -1,32 +1,18 @@
 package com.mikai233.player
 
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
-import akka.actor.typed.PostStop
-import akka.actor.typed.Terminated
-import akka.actor.typed.javadsl.*
-import com.google.protobuf.GeneratedMessageV3
+import akka.actor.AbstractActor
 import com.mikai233.common.core.actor.ActorCoroutine
 import com.mikai233.common.core.actor.safeActorCoroutine
 import com.mikai233.common.extension.*
-import com.mikai233.common.inject.XKoin
 import com.mikai233.player.component.PlayerMessageDispatcher
 import com.mikai233.player.component.PlayerScriptSupport
 import com.mikai233.player.component.PlayerSharding
-import com.mikai233.protocol.ProtoLogin.ConnectionExpiredNotify
 import com.mikai233.shared.logMessage
 import com.mikai233.shared.message.*
-import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import kotlin.time.Duration.Companion.milliseconds
 
-class PlayerActor(
-    context: ActorContext<PlayerMessage>,
-    private val buffer: StashBuffer<PlayerMessage>,
-    private val timers: TimerScheduler<PlayerMessage>,
-    val playerId: Long,
-    val koin: XKoin,
-) : AbstractBehavior<PlayerMessage>(context), KoinComponent by koin {
+class PlayerActor(val playerId: Long) : AbstractActor() {
     companion object {
         val playerTick = 100.milliseconds
     }

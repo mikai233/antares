@@ -6,7 +6,7 @@ enum class WorldActionType(val id: Int) {
     ;
 
     companion object {
-        private val v = values().associateBy { it.id }
+        private val v = entries.associateBy { it.id }
         operator fun get(id: Int) = requireNotNull(v[id]) { "worldActionType of id:$id not found" }
     }
 }

@@ -1,8 +1,8 @@
 package com.mikai233.common.core.component
 
 import com.mikai233.common.conf.GlobalEnv
-import com.mikai233.common.core.component.config.Config
 import com.mikai233.common.core.component.config.ConfigCenter
+import com.mikai233.common.core.component.config.ZookeeperConfigCache
 import com.mikai233.common.extension.Json
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.CuratorFrameworkFactory
@@ -29,9 +29,9 @@ class ZookeeperConfigCenter(connectionString: String = GlobalEnv.zkConnect) : Co
         asyncClient = AsyncCuratorFramework.wrap(client)
     }
 
-    override fun addConfig(config: Config) {
-        val path = config.path()
-        val value = Json.toBytes(config, true)
+    override fun addConfig(configCache: ZookeeperConfigCache) {
+        val path = configCache.path()
+        val value = Json.toBytes(configCache, true)
         if (exists(path).not()) {
             client.create().creatingParentsIfNeeded().forPath(path, value)
         } else {

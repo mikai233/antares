@@ -3,7 +3,6 @@ package com.mikai233.common.serde
 import akka.actor.ExtendedActorSystem
 import com.esotericsoftware.kryo.serializers.FieldSerializer
 import com.mikai233.common.extension.logger
-import com.mikai233.common.msg.SerdeMessage
 import io.altoo.akka.serialization.kryo.DefaultKryoInitializer
 import io.altoo.akka.serialization.kryo.serializer.scala.ScalaKryo
 import org.reflections.Reflections

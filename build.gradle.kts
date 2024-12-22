@@ -2,17 +2,20 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
+    idea
     alias(kt.plugins.jvm)
     alias(kt.plugins.allopen)
     alias(kt.plugins.noarg)
-    alias(kt.plugins.serialization)
     alias(tool.plugins.detekt)
     alias(tool.plugins.dokka)
     alias(tool.plugins.boot) apply false
 }
 
-repositories {
-    mavenCentral()
+idea {
+    module {
+        isDownloadJavadoc = true
+        isDownloadSources = true
+    }
 }
 
 dependencies {
@@ -34,7 +37,6 @@ subprojects {
     apply(plugin = "kotlin-noarg")
     apply(plugin = "io.gitlab.arturbosch.detekt")
     apply(plugin = "org.jetbrains.dokka")
-    apply(plugin = "org.jetbrains.kotlin.plugin.serialization")
     if (Boot.contains(project.name)) {
         apply(plugin = "org.springframework.boot")
     }
@@ -130,7 +132,7 @@ tasks.register("buildAllNodeJar") {
     doLast {
         Boot.forEach {
             copy {
-                from("${project(it).buildDir}/libs")
+                from("${project(it).layout.buildDirectory}/libs")
                 into("$releaseDir/$it")
             }
         }

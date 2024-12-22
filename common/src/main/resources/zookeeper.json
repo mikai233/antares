@@ -1,0 +1,30 @@
+{
+  "class": null,
+  "name": "game_server",
+  "data": null,
+  "children": [
+    {
+      "class": null,
+      "name": "server_hosts",
+      "data": "TODO",
+      "children": [
+        {
+          "class": null,
+          "name": "127.0.0.1",
+          "data": null,
+          "children": [
+            {
+              "class": "com.mikai233.common.core.component.config.TestConfig",
+              "name": "player:2552",
+              "data": {
+                "name": "player",
+                "port": 2552,
+                "seed": false
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

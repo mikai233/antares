@@ -4,17 +4,12 @@ plugins {
     java
 }
 
-repositories {
-    mavenCentral()
-}
-
 dependencies {
     testImplementation(platform(test.junit.bom))
     testImplementation(test.junit.jupiter)
     implementation(tool.kotlinpoet)
     implementation(log.bundles.common)
     implementation(ktx.datetime)
-    implementation(ktx.bundles.serialization)
     implementation(kt.reflect)
     implementation(tool.bundles.curator)
     implementation(tool.guava)

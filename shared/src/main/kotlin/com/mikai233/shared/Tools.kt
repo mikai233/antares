@@ -22,11 +22,11 @@ fun logMessage(logger: Logger, message: Any, msgHeader: () -> String = { "" }) {
             }
 
             is ClientMessage -> {
-                "${message.inner::class.simpleName} ${ProtobufPrinter.printer.print(message.inner)}"
+                "${message.message::class.simpleName} ${ProtobufPrinter.printer.print(message.message)}"
             }
 
             is ChannelProtobufEnvelope -> {
-                "${message.inner::class.simpleName} ${ProtobufPrinter.printer.print(message.inner)}"
+                "${message.message::class.simpleName} ${ProtobufPrinter.printer.print(message.message)}"
             }
 
             is PlayerProtobufEnvelope -> {

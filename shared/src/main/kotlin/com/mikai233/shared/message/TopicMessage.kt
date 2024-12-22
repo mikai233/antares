@@ -1,7 +1,6 @@
 package com.mikai233.shared.message
 
 import com.google.protobuf.GeneratedMessageV3
-import com.mikai233.common.msg.SerdeMessage
 
 sealed interface WorldTopicMessage : SerdeMessage
 

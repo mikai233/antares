@@ -2,14 +2,10 @@ package com.mikai233.common.core.component
 
 import akka.Done
 import akka.actor.CoordinatedShutdown
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.Behavior
-import com.mikai233.common.core.Server
+import com.mikai233.common.core.Node
 import com.mikai233.common.core.State
 import com.mikai233.common.inject.XKoin
 import com.mikai233.common.msg.Message
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 import java.util.function.Supplier
@@ -38,7 +34,7 @@ open class AkkaSystem<T : GuardianMessage>(private val koin: XKoin, private val 
     KoinComponent by koin {
     lateinit var system: ActorSystem<T>
         private set
-    private val server: Server by inject()
+    private val node: Node by inject()
     private val nodeConfigHolder: NodeConfigHolder by inject()
 
     init {
@@ -61,13 +57,13 @@ open class AkkaSystem<T : GuardianMessage>(private val koin: XKoin, private val 
     private fun addCoordinatedShutdownTasks() {
         with(CoordinatedShutdown.get(system)) {
             addTask(CoordinatedShutdown.PhaseBeforeServiceUnbind(), "change-server-state-stopping", taskSupplier {
-                server.state = State.Stopping
+                node.state = State.Stopping
             })
             addTask(CoordinatedShutdown.PhaseBeforeActorSystemTerminate(), "stop-services", taskSupplier {
-                server.onStop()
+                node.onStop()
             })
             addTask(CoordinatedShutdown.PhaseActorSystemTerminate(), "change-server-state-stopped", taskSupplier {
-                server.state = State.Stopped
+                node.state = State.Stopped
             })
         }
     }

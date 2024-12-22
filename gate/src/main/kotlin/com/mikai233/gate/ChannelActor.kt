@@ -154,7 +154,7 @@ class ChannelActor(
     }
 
     private fun handleClientConnectMessage(message: ClientMessage): Behavior<ChannelMessage> {
-        val inner = message.inner
+        val inner = message.message
         return if (inner is LoginReq && state == State.Connected) {
             state = State.WaitForAuth
             clientPublicKey = inner.clientPublicKey.toByteArray()
@@ -168,7 +168,7 @@ class ChannelActor(
     }
 
     private fun handleWaitForAuthResultMessage(message: ChannelProtobufEnvelope): Behavior<ChannelMessage> {
-        val inner = message.inner
+        val inner = message.message
         return if (inner is LoginResp) {
             when (inner.result) {
                 ProtoLogin.LoginResult.Success -> {
@@ -325,7 +325,7 @@ class ChannelActor(
     }
 
     private fun forwardClientMessage(message: ClientMessage) {
-        val inner = message.inner
+        val inner = message.message
         if (inner is PingReq) {
             handlePingReq(inner)
         } else {
@@ -356,8 +356,8 @@ class ChannelActor(
             logger.warn("proto: {} has no target forward actor", message.id)
         } else {
             when (target) {
-                Forward.PlayerActor -> tellPlayer(playerId, PlayerProtobufEnvelope(message.inner))
-                Forward.WorldActor -> tellWorld(worldId, WorldProtobufEnvelope(message.inner))
+                Forward.PlayerActor -> tellPlayer(playerId, PlayerProtobufEnvelope(message.message))
+                Forward.WorldActor -> tellWorld(worldId, WorldProtobufEnvelope(message.message))
             }
         }
     }

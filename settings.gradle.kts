@@ -2,27 +2,31 @@ rootProject.name = "antares"
 
 val kotlinVersion = "2.1.0"
 val kotlinxVersion = "1.10.0"
-val akkaVersion = "2.8.2"
-val akkaManagementVersion = "1.4.1"
+val akkaVersion = "2.10.0"
+val akkaManagementVersion = "1.6.0"
 val scalaVersion = "2.13"
-val ktorClientVersion = "2.3.0"
-val ktorServerVersion = "2.3.0"
-val jacksonVersion = "2.15.0"
-val curatorVersion = "5.5.0"
+val ktorClientVersion = "3.0.3"
+val ktorServerVersion = "3.0.3"
+val jacksonVersion = "2.18.2"
+val curatorVersion = "5.7.1"
 val junitVersion = "5.9.3"
-val protobufVersion = "3.23.0"
-val atomicfuVersion = "0.20.2"
-val datetimeVersion = "0.4.0"
+val protobufVersion = "4.29.2"
+val atomicfuVersion = "0.26.1"
+val datetimeVersion = "0.6.1"
 val kotlinpoetVersion = "2.0.0"
 val kspVersion = "1.0.11"
 
 dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        maven("https://repo.akka.io/maven/")
+        mavenCentral()
+    }
     versionCatalogs {
         create("kt") {
             plugin("jvm", "org.jetbrains.kotlin.jvm").version(kotlinVersion)
             plugin("allopen", "org.jetbrains.kotlin.plugin.allopen").version(kotlinVersion)
             plugin("noarg", "org.jetbrains.kotlin.plugin.noarg").version(kotlinVersion)
-            plugin("serialization", "org.jetbrains.kotlin.plugin.serialization").version("2.1.0")
             library("stdlib", "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion")
             library("jdk8", "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
             library("reflect", "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion")
@@ -41,18 +45,14 @@ dependencyResolutionManagement {
             library("atomicfu.jvm", "org.jetbrains.kotlinx:atomicfu-jvm:$atomicfuVersion")
             library("datetime", "org.jetbrains.kotlinx:kotlinx-datetime:$datetimeVersion")
             library("datetime.jvm", "org.jetbrains.kotlinx:kotlinx-datetime-jvm:$datetimeVersion")
-            library("serialization.protobuf", "org.jetbrains.kotlinx:kotlinx-serialization-protobuf-jvm:1.5.1")
-            library("serialization.json", "org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.5.1")
-            library("serialization.core", "org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.5.1")
-            bundle("serialization", listOf("serialization.protobuf", "serialization.json", "serialization.core"))
         }
         create("akka") {
-            library("actor", "com.typesafe.akka:akka-actor-typed_$scalaVersion:$akkaVersion")
-            library("cluster", "com.typesafe.akka:akka-cluster-typed_$scalaVersion:$akkaVersion")
-            library("testkit", "com.typesafe.akka:akka-actor-testkit-typed_$scalaVersion:$akkaVersion")
-            library("sharding", "com.typesafe.akka:akka-cluster-sharding-typed_$scalaVersion:$akkaVersion")
+            library("actor", "com.typesafe.akka:akka-actor_$scalaVersion:$akkaVersion")
+            library("cluster", "com.typesafe.akka:akka-cluster_$scalaVersion:$akkaVersion")
+            library("testkit", "com.typesafe.akka:akka-actor-testkit_$scalaVersion:$akkaVersion")
+            library("sharding", "com.typesafe.akka:akka-cluster-sharding_$scalaVersion:$akkaVersion")
             library("slf4j", "com.typesafe.akka:akka-slf4j_$scalaVersion:$akkaVersion")
-            library("stream", "com.typesafe.akka:akka-stream-typed_$scalaVersion:$akkaVersion")
+            library("stream", "com.typesafe.akka:akka-stream_$scalaVersion:$akkaVersion")
             bundle("common", listOf("actor", "cluster", "sharding", "slf4j"))
             library("discovery", "com.typesafe.akka:akka-discovery_$scalaVersion:$akkaVersion")
             library(
@@ -74,7 +74,6 @@ dependencyResolutionManagement {
         create("tool") {
             version("protobuf", protobufVersion)
 
-            library("jetcd", "io.etcd:jetcd-core:0.7.5")
             library("curator.framework", "org.apache.curator:curator-framework:$curatorVersion")
             library("curator.recipes", "org.apache.curator:curator-recipes:$curatorVersion")
             library("curator.async", "org.apache.curator:curator-x-async:$curatorVersion")
@@ -94,7 +93,7 @@ dependencyResolutionManagement {
             library("netty", "io.netty:netty-all:4.1.92.Final")
             library("lz4", "org.lz4:lz4-java:1.8.0")
             library("bcprov", "org.bouncycastle:bcprov-jdk15on:1.70")
-            library("akka.kryo", "io.altoo:akka-kryo-serialization-typed_$scalaVersion:2.5.0")
+            library("akka.kryo", "io.altoo:akka-kryo-serialization_$scalaVersion:2.5.0")
             plugin("detekt", "io.gitlab.arturbosch.detekt").version("1.23.0-RC3")
             library("caffeine", "com.github.ben-manes.caffeine:caffeine:3.1.6")
             library("groovy", "org.apache.groovy:groovy:4.0.12")
@@ -102,13 +101,10 @@ dependencyResolutionManagement {
             plugin("dokka", "org.jetbrains.dokka").version("1.8.10")
             library("kotlinpoet", "com.squareup:kotlinpoet:$kotlinpoetVersion")
             library("kotlinpoet.ksp", "com.squareup:kotlinpoet-ksp:$kotlinpoetVersion")
-            library("koin", "io.insert-koin:koin-core-jvm:3.4.0")
-            library("koin.slf4j", "io.insert-koin:koin-logger-slf4j:3.4.0")
-            bundle("koin", listOf("koin", "koin.slf4j"))
-            library("poi.ooxml", "org.apache.poi:poi-ooxml:5.2.3")
+//            library("poi.ooxml", "org.apache.poi:poi-ooxml:5.2.3")
             library("easyexcel", "com.alibaba:easyexcel:4.0.3")
-            plugin("boot", "org.springframework.boot").version("3.1.0")
-            library("guava", "com.google.guava:guava:31.1-jre")
+            plugin("boot", "org.springframework.boot").version("3.4.1")
+            library("guava", "com.google.guava:guava:33.4.0-jre")
 //            library("symbol.processing.api", "com.google.devtools.ksp:symbol-processing-api:$kotlinVersion-$kspVersion")
 //            library("symbol.processing", "com.google.devtools.ksp:symbol-processing:$kotlinVersion-$kspVersion")
 //            plugin("ksp", "com.google.devtools.ksp").version("${kotlinVersion}-${kspVersion}")
@@ -123,6 +119,7 @@ dependencyResolutionManagement {
         }
     }
 }
+
 include("common")
 include("gate")
 include("tools")

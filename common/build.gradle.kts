@@ -2,10 +2,6 @@ plugins {
     java
 }
 
-repositories {
-    mavenCentral()
-}
-
 dependencies {
     testImplementation(platform(test.junit.bom))
     testImplementation(test.junit.jupiter)
@@ -14,7 +10,6 @@ dependencies {
     implementation(ktx.core)
     runtimeOnly(ktx.core.jvm)
     implementation(ktx.datetime)
-    implementation(ktx.bundles.serialization)
     implementation(tool.bundles.curator)
     runtimeOnly(log.logback)
     implementation(log.api)
@@ -26,9 +21,7 @@ dependencies {
     implementation(tool.bcprov)
     implementation(tool.akka.kryo)
     implementation(tool.groovy.all)
-    implementation(tool.bundles.koin)
     implementation(tool.guava)
-    implementation(tool.poi.ooxml)
     implementation(tool.easyexcel)
     implementation(tool.spring.data.mongodb)
     implementation(tool.mongodb.driver.sync)

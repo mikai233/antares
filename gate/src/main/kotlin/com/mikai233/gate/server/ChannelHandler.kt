@@ -1,7 +1,7 @@
 package com.mikai233.gate.server
 
 import akka.actor.typed.ActorRef
-import com.mikai233.common.core.Server
+import com.mikai233.common.core.Node
 import com.mikai233.common.core.State
 import com.mikai233.common.core.component.AkkaSystem
 import com.mikai233.common.extension.logger
@@ -26,7 +26,7 @@ class ChannelHandler(private val koin: XKoin) : ChannelInboundHandlerAdapter(), 
         const val CHANNEL_ACTOR_KEY = "CHANNEL_ACTOR_KEY"
     }
 
-    private val server by inject<Server>()
+    private val node by inject<Node>()
     private val akkaSystem by inject<AkkaSystem<GateSystemMessage>>()
     private val actorKey = AttributeKey.valueOf<ActorRef<ChannelMessage>>(CHANNEL_ACTOR_KEY)
     private val logger = logger()
@@ -41,8 +41,8 @@ class ChannelHandler(private val koin: XKoin) : ChannelInboundHandlerAdapter(), 
     }
 
     override fun channelActive(ctx: ChannelHandlerContext) {
-        val state = server.state
-        if (server.state == State.Running) {
+        val state = node.state
+        if (node.state == State.Running) {
             val actorRef = spawnChannelActor(ctx)
             ctx.channel().attr(actorKey).set(actorRef)
         } else {

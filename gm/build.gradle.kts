@@ -2,10 +2,6 @@ plugins {
     java
 }
 
-repositories {
-    mavenCentral()
-}
-
 dependencies {
     testImplementation(platform(test.junit.bom))
     testImplementation(test.junit.jupiter)
@@ -15,7 +11,6 @@ dependencies {
     implementation(akka.management.cluster.http)
     implementation(ktx.core)
     runtimeOnly(ktx.core.jvm)
-    implementation(tool.bundles.koin)
     implementation(project(":common"))
     implementation(project(":shared"))
 }

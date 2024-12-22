@@ -4,10 +4,6 @@ plugins {
     alias(tool.plugins.protobuf)
 }
 
-repositories {
-    mavenCentral()
-}
-
 protobuf {
     protoc {
         val version = tool.versions.protobuf.get()

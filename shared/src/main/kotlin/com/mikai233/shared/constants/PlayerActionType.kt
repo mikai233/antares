@@ -6,7 +6,7 @@ enum class PlayerActionType(val id: Int) {
     ;
 
     companion object {
-        private val v = PlayerActionType.values().associateBy { it.id }
+        private val v = entries.associateBy { it.id }
         operator fun get(id: Int) = requireNotNull(v[id]) { "playerActionType of id:$id not found" }
     }
 }

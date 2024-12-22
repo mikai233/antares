@@ -8,7 +8,7 @@ import io.netty.util.AttributeKey
 
 class CryptoCodec : ByteToMessageCodec<ByteArray>() {
     companion object {
-        val cryptoKey = AttributeKey.valueOf<ByteArray>("TEA_KEA")
+        val cryptoKey: AttributeKey<ByteArray> = AttributeKey.valueOf("TEA_KEA")
     }
 
 

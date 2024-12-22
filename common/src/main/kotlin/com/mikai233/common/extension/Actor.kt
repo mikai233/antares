@@ -1,124 +1,78 @@
 package com.mikai233.common.extension
 
-import akka.actor.typed.ActorRef
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.Behavior
-import akka.actor.typed.Scheduler
-import akka.actor.typed.eventstream.EventStream
-import akka.actor.typed.javadsl.*
-import akka.actor.typed.receptionist.Receptionist
-import akka.actor.typed.receptionist.ServiceKey
+import akka.actor.*
 import akka.cluster.routing.ClusterRouterGroup
 import akka.cluster.routing.ClusterRouterGroupSettings
+import akka.cluster.sharding.ClusterSharding
+import akka.cluster.sharding.ClusterShardingSettings
 import akka.cluster.sharding.ShardCoordinator
-import akka.cluster.sharding.typed.ClusterShardingSettings
-import akka.cluster.sharding.typed.ShardingEnvelope
-import akka.cluster.sharding.typed.ShardingMessageExtractor
-import akka.cluster.sharding.typed.javadsl.ClusterSharding
-import akka.cluster.sharding.typed.javadsl.Entity
-import akka.cluster.sharding.typed.javadsl.EntityContext
-import akka.cluster.sharding.typed.javadsl.EntityTypeKey
-import akka.cluster.typed.ClusterSingleton
-import akka.cluster.typed.ClusterSingletonSettings
-import akka.cluster.typed.SingletonActor
+import akka.cluster.sharding.ShardRegion
+import akka.cluster.singleton.ClusterSingletonManager
+import akka.cluster.singleton.ClusterSingletonManagerSettings
+import akka.cluster.singleton.ClusterSingletonProxy
+import akka.cluster.singleton.ClusterSingletonProxySettings
+import akka.event.Logging
+import akka.event.LoggingAdapter
+import akka.pattern.Patterns
 import akka.routing.BroadcastGroup
 import com.mikai233.common.core.component.Role
 import com.mikai233.common.msg.Message
 import kotlinx.coroutines.future.await
-import org.slf4j.Logger
+import java.util.concurrent.TimeUnit
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.toJavaDuration
 
-inline fun <reified T> AbstractBehavior<T>.actorLogger(): Logger {
-    return context.log
+fun AbstractActor.actorLogger(): LoggingAdapter {
+    return Logging.getLogger(context.system, javaClass)
 }
 
-fun <T> AbstractBehavior<T>.runnableAdapter(block: (Runnable) -> T): ActorRef<Runnable> {
-    return context.messageAdapter(Runnable::class.java, block)
+infix fun ActorRef.tell(message: Any) {
+    this.tell(message, ActorRef.noSender())
 }
 
-infix fun <T> ActorRef<T>.tell(msg: T) {
-    tell(msg)
+@Suppress("UNCHECKED_CAST")
+suspend fun <Req, Resp> ActorRef.ask(
+    message: Any,
+    timeout: Duration = 3.minutes
+): Resp where Req : Message, Resp : Message {
+    return Patterns.ask(this, message, timeout.toJavaDuration()).await() as Resp
 }
 
-suspend fun <Req : M, Resp, M> ask(
-    target: ActorRef<M>,
-    scheduler: Scheduler,
-    timeout: Duration = 3.minutes,
-    requestFunction: (ActorRef<Resp>) -> Req
-): Resp {
-    return AskPattern.ask<M, Resp>(
-        target,
-        { replyTo -> requestFunction(replyTo) },
-        timeout.toJavaDuration(),
-        scheduler,
-    ).await()
+@Suppress("UNCHECKED_CAST")
+fun <Req, Resp> ActorRef.blockingAsk(
+    message: Any,
+    timeout: Duration = 3.minutes
+): Resp where Req : Message, Resp : Message {
+    return Patterns.ask(this, message, timeout.toJavaDuration()).toCompletableFuture()
+        .get(timeout.inWholeMilliseconds, TimeUnit.MILLISECONDS) as Resp
 }
 
-fun <Req : M, Resp, M> syncAsk(
-    target: ActorRef<M>,
-    scheduler: Scheduler,
-    timeout: Duration = 3.minutes,
-    requestFunction: (ActorRef<Resp>) -> Req
-): Resp {
-    val completionStage = AskPattern.ask<M, Resp>(
-        target,
-        { replyTo -> requestFunction(replyTo) },
-        timeout.toJavaDuration(),
-        scheduler
-    )
-    return completionStage.toCompletableFuture().get()
+fun ActorSystem.startSingleton(name: String, role: Role, props: Props, handoffMessage: Message): ActorRef {
+    val settings = ClusterSingletonManagerSettings.create(this).withRole(role.name)
+    val singletonProps = ClusterSingletonManager.props(props, handoffMessage, settings)
+    return actorOf(singletonProps, name)
 }
 
-fun <T : Message> ActorSystem<*>.startSingleton(
-    behavior: Behavior<T>,
-    name: String,
+fun ActorSystem.startSingletonProxy(name: String, role: Role): ActorRef {
+    val settings = ClusterSingletonProxySettings.create(this).withRole(role.name)
+    return actorOf(ClusterSingletonProxy.props("/user/${name}", settings))
+}
+
+fun ActorSystem.startSharding(
+    typename: String,
     role: Role,
-    settings: ClusterSingletonSettings? = null
-): ActorRef<T> {
-    val singleton = ClusterSingleton.get(this)
-    val singletonSettings = settings ?: ClusterSingletonSettings.create(this).withRole(role.name)
-    val singletonActor = SingletonActor.of(behavior, name).withSettings(singletonSettings)
-    return singleton.init(singletonActor)
+    props: Props,
+    handoffMessage: Message,
+    extractor: ShardRegion.MessageExtractor,
+    strategy: ShardCoordinator.ShardAllocationStrategy,
+): ActorRef {
+    val settings = ClusterShardingSettings.create(this).withRole(role.name)
+    return ClusterSharding.get(this).start(typename, props, settings, extractor, strategy, handoffMessage)
 }
 
-inline fun <reified M, N> ActorSystem<*>.startSharding(
-    name: String,
-    role: Role,
-    extractor: ShardingMessageExtractor<ShardingEnvelope<out M>, M>,
-    stopMessage: M,
-    shardingSettings: ClusterShardingSettings? = null,
-    noinline builder: (EntityContext<M>) -> Behavior<M>
-): ActorRef<ShardingEnvelope<N>> where N : M {
-    val sharding = ClusterSharding.get(this)
-    val key = EntityTypeKey.create(M::class.java, name)
-    val entity = Entity.of(key, builder)
-        .withRole(role.name)
-        .withMessageExtractor(extractor)
-        .withAllocationStrategy(ShardCoordinator.LeastShardAllocationStrategy(10, 3))
-        .withStopMessage(stopMessage)
-        .run {
-            shardingSettings?.let {
-                withSettings(shardingSettings)
-            } ?: this
-        }
-    return sharding.init(entity).narrow()
-}
-
-inline fun <reified M, N> ActorSystem<*>.startShardingProxy(
-    name: String,
-    role: Role,
-    extractor: ShardingMessageExtractor<ShardingEnvelope<out M>, M>
-): ActorRef<ShardingEnvelope<N>> where N : M {
-    val sharding = ClusterSharding.get(this)
-    val key = EntityTypeKey.create(M::class.java, name)
-    val entity = Entity.of(key) {
-        Behaviors.empty()
-    }
-        .withRole(role.name)
-        .withMessageExtractor(extractor)
-    return sharding.init(entity).narrow()
+fun ActorSystem.startShardingProxy(typename: String): ActorRef {
+    return ClusterSharding.get(this).shardRegion(typename)
 }
 
 fun <M> ActorSystem<*>.publish(message: M) {
@@ -137,11 +91,11 @@ inline fun <reified M> shardingEnvelope(entityId: String, message: M): ShardingE
     return ShardingEnvelope(entityId, message)
 }
 
-fun <T> ActorSystem<*>.registerService(key: ServiceKey<T>, service: ActorRef<T>) {
+fun ActorSystem<*>.registerService(key: ServiceKey, service: ActorRef) {
     receptionist().tell(Receptionist.register(key, service))
 }
 
-fun <T> ActorSystem<*>.deregisterService(key: ServiceKey<T>, service: ActorRef<T>) {
+fun ActorSystem<*>.deregisterService(key: ServiceKey, service: ActorRef) {
     receptionist().tell(Receptionist.deregister(key, service))
 }
 
@@ -158,46 +112,46 @@ fun <M> ActorContext<*>.startBroadcastClusterRouterGroup(
     return Adapter.toTyped<M>(ref)
 }
 
-fun <T> TimerScheduler<T>.startPeriodicTimer(key: Any, msg: T, interval: Duration) {
-    startPeriodicTimer(key, msg, interval.toJavaDuration())
+fun TimerScheduler.startPeriodicTimer(key: Any, message: Message, interval: Duration) {
+    startPeriodicTimer(key, message, interval.toJavaDuration())
 }
 
-fun <T> TimerScheduler<T>.startSingleTimer(key: Any, msg: T, delay: Duration) {
-    startSingleTimer(key, msg, delay.toJavaDuration())
+fun TimerScheduler.startSingleTimer(key: Any, message: Message, delay: Duration) {
+    startSingleTimer(key, message, delay.toJavaDuration())
 }
 
-fun <T> TimerScheduler<T>.startSingleTimer(msg: T, delay: Duration) {
-    startSingleTimer(msg, delay.toJavaDuration())
+fun TimerScheduler.startSingleTimer(message: Any, delay: Duration) {
+    startSingleTimer(message, delay.toJavaDuration())
 }
 
-fun <T> TimerScheduler<T>.startTimerAtFixedRate(key: Any, msg: T, initialDelay: Duration, interval: Duration) {
-    startTimerAtFixedRate(key, msg, initialDelay.toJavaDuration(), interval.toJavaDuration())
+fun TimerScheduler.startTimerAtFixedRate(key: Any, message: Message, initialDelay: Duration, interval: Duration) {
+    startTimerAtFixedRate(key, message, initialDelay.toJavaDuration(), interval.toJavaDuration())
 }
 
-fun <T> TimerScheduler<T>.startTimerAtFixedRate(key: Any, msg: T, interval: Duration) {
-    startTimerAtFixedRate(key, msg, interval.toJavaDuration())
+fun TimerScheduler.startTimerAtFixedRate(key: Any, message: Message, interval: Duration) {
+    startTimerAtFixedRate(key, message, interval.toJavaDuration())
 }
 
-fun <T> TimerScheduler<T>.startTimerAtFixedRate(msg: T, interval: Duration) {
-    startTimerAtFixedRate(msg, interval.toJavaDuration())
+fun TimerScheduler.startTimerAtFixedRate(message: Message, interval: Duration) {
+    startTimerAtFixedRate(message, interval.toJavaDuration())
 }
 
-fun <T> TimerScheduler<T>.startTimerAtFixedRate(msg: T, initialDelay: Duration, interval: Duration) {
-    startTimerAtFixedRate(msg, initialDelay.toJavaDuration(), interval.toJavaDuration())
+fun TimerScheduler.startTimerAtFixedRate(message: Message, initialDelay: Duration, interval: Duration) {
+    startTimerAtFixedRate(message, initialDelay.toJavaDuration(), interval.toJavaDuration())
 }
 
-fun <T> TimerScheduler<T>.startTimerWithFixedDelay(msg: T, delay: Duration) {
-    startTimerWithFixedDelay(msg, delay.toJavaDuration())
+fun TimerScheduler.startTimerWithFixedDelay(message: Message, delay: Duration) {
+    startTimerWithFixedDelay(message, delay.toJavaDuration())
 }
 
-fun <T> TimerScheduler<T>.startTimerWithFixedDelay(key: Any, msg: T, delay: Duration) {
-    startTimerWithFixedDelay(key, msg, delay.toJavaDuration())
+fun TimerScheduler.startTimerWithFixedDelay(key: Any, message: Message, delay: Duration) {
+    startTimerWithFixedDelay(key, message, delay.toJavaDuration())
 }
 
-fun <T> TimerScheduler<T>.startTimerWithFixedDelay(msg: T, initialDelay: Duration, delay: Duration) {
-    startTimerWithFixedDelay(msg, initialDelay.toJavaDuration(), delay.toJavaDuration())
+fun TimerScheduler.startTimerWithFixedDelay(message: Message, initialDelay: Duration, delay: Duration) {
+    startTimerWithFixedDelay(message, initialDelay.toJavaDuration(), delay.toJavaDuration())
 }
 
-fun <T> TimerScheduler<T>.startTimerWithFixedDelay(key: Any, msg: T, initialDelay: Duration, delay: Duration) {
-    startTimerWithFixedDelay(key, msg, initialDelay.toJavaDuration(), delay.toJavaDuration())
+fun TimerScheduler.startTimerWithFixedDelay(key: Any, message: Message, initialDelay: Duration, delay: Duration) {
+    startTimerWithFixedDelay(key, message, initialDelay.toJavaDuration(), delay.toJavaDuration())
 }

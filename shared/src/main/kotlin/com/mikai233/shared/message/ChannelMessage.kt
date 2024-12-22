@@ -1,20 +1,20 @@
 package com.mikai233.shared.message
 
-import com.google.protobuf.GeneratedMessageV3
+import com.google.protobuf.GeneratedMessage
 
 
-data class ChannelProtobufEnvelope(val inner: GeneratedMessageV3) : SerdeChannelMessage
+data class ChannelProtobufEnvelope(val message: GeneratedMessage) : SerdeChannelMessage
 
-data class ClientMessage(val id: Int, val inner: GeneratedMessageV3) : ChannelMessage
+data class ClientMessage(val id: Int, val message: GeneratedMessage) : ChannelMessage
 
-object StopChannel : ChannelMessage
+data object StopChannel : ChannelMessage
 
 data class ChannelExpired(val reason: Int) : SerdeChannelMessage
 
-object ChannelAuthorized : ChannelMessage
+data object ChannelAuthorized : ChannelMessage
 
 data class ChannelWorldTopic(val inner: WorldTopicMessage) : ChannelMessage
 
 data class ChannelAllWorldTopic(val inner: AllWorldTopicMessage) : ChannelMessage
 
-object ChannelReceiveTimeout : ChannelMessage
+data object ChannelReceiveTimeout : ChannelMessage

@@ -8,7 +8,7 @@ import akka.actor.typed.javadsl.Receive
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.conf.GlobalProto
 import com.mikai233.common.core.Launcher
-import com.mikai233.common.core.Server
+import com.mikai233.common.core.Node
 import com.mikai233.common.core.State
 import com.mikai233.common.core.component.*
 import com.mikai233.common.extension.closeableSingle
@@ -64,15 +64,15 @@ class WorldNode(private val port: Int = 2336, private val sameJvm: Boolean = fal
     }
 
     override fun launch() {
-        val server = koin.get<Server>()
-        server.state = State.Initializing
-        server.onInit()
-        server.state = State.Running
+        val node = koin.get<Node>()
+        node.state = State.Initializing
+        node.onInit()
+        node.state = State.Running
     }
 
     private fun serverModule() = module(createdAtStart = true) {
         single { this@WorldNode }
-        single { Server(koin) }
+        single { Node(koin) }
         single { WorldMessageDispatcher(koin) }
         closeableSingle { ZookeeperConfigCenter() }
         closeableSingle { MongoHolder(koin) }

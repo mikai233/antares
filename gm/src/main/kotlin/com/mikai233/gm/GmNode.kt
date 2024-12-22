@@ -8,7 +8,7 @@ import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.Launcher
-import com.mikai233.common.core.Server
+import com.mikai233.common.core.Node
 import com.mikai233.common.core.State
 import com.mikai233.common.core.component.AkkaSystem
 import com.mikai233.common.core.component.NodeConfigHolder
@@ -95,15 +95,15 @@ class GmNode(private val port: Int = 2339, private val sameJvm: Boolean = false)
     }
 
     override fun launch() {
-        val server = koin.get<Server>()
-        server.state = State.Initializing
-        server.onInit()
-        server.state = State.Running
+        val node = koin.get<Node>()
+        node.state = State.Initializing
+        node.onInit()
+        node.state = State.Running
     }
 
     private fun serverModule() = module(createdAtStart = true) {
         single { this@GmNode }
-        single { Server(koin) }
+        single { Node(koin) }
         closeableSingle { ZookeeperConfigCenter() }
         single { GmNodeConfigHolder(koin, Role.Gm, port, sameJvm) } bind NodeConfigHolder::class
         single { ExcelConfigHolder(koin) }

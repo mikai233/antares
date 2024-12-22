@@ -21,7 +21,7 @@ class ClientPacketCodec : MessageToMessageCodec<ByteArray, Packet>() {
         //ignore index
         val protoId = msg.toInt(Int.SIZE_BYTES)
         val originLen = msg.toInt(2 * Int.SIZE_BYTES)
-        val body = msg.sliceArray(3 * Int.SIZE_BYTES until msg.size)
+        val body = msg.sliceArray(3 * Int.SIZE_BYTES..<msg.size)
         out.add(Packet(packetIndex, protoId, originLen, body))
     }
 }

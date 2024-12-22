@@ -1,7 +1,6 @@
 package com.mikai233.shared.message
 
 import com.mikai233.common.msg.Message
-import com.mikai233.common.msg.SerdeMessage
 
 data class ActorNamedRunnable(
     val name: String,

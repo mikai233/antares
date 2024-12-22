@@ -1,7 +1,7 @@
 package com.mikai233.common.msg
 
-import akka.actor.typed.javadsl.AbstractBehavior
+import akka.actor.AbstractActor
 
-interface Handler<A : AbstractBehavior<in M>, M : Message> {
+interface Handler<A : AbstractActor, M : Message> {
     fun handle(actor: A, msg: M)
 }
