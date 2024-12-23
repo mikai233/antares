@@ -1,6 +1,5 @@
 package com.mikai233.player.data
 
-import com.mikai233.common.core.component.ActorDatabase
 import com.mikai233.common.db.MemData
 import com.mikai233.player.PlayerActor
 import com.mikai233.shared.entity.Player

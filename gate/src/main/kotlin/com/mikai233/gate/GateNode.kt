@@ -79,7 +79,7 @@ class GateNode(private val port: Int = 2334, private val sameJvm: Boolean = fals
 
     override fun launch() {
         val node = koin.get<Node>()
-        node.state = State.Initializing
+        node.state = State.Starting
         node.onInit()
         node.state = State.Running
     }

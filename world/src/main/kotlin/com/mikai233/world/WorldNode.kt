@@ -65,7 +65,7 @@ class WorldNode(private val port: Int = 2336, private val sameJvm: Boolean = fal
 
     override fun launch() {
         val node = koin.get<Node>()
-        node.state = State.Initializing
+        node.state = State.Starting
         node.onInit()
         node.state = State.Running
     }

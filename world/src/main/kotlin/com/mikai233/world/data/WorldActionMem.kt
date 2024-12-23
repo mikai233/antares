@@ -1,6 +1,5 @@
 package com.mikai233.world.data
 
-import com.mikai233.common.core.component.ActorDatabase
 import com.mikai233.common.db.MemData
 import com.mikai233.shared.constants.WorldActionType
 import com.mikai233.shared.entity.WorldAction

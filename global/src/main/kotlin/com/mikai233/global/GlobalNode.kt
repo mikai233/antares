@@ -12,7 +12,6 @@ import com.mikai233.common.core.State
 import com.mikai233.common.core.component.AkkaSystem
 import com.mikai233.common.core.component.NodeConfigHolder
 import com.mikai233.common.core.component.Role
-import com.mikai233.common.core.component.ZookeeperConfigCenter
 import com.mikai233.common.extension.closeableSingle
 import com.mikai233.common.extension.registerService
 import com.mikai233.common.inject.XKoin
@@ -63,7 +62,7 @@ class GlobalNode(private val port: Int = 2338, private val sameJvm: Boolean = fa
 
     override fun launch() {
         val node = koin.get<Node>()
-        node.state = State.Initializing
+        node.state = State.Starting
         node.onInit()
         node.state = State.Running
     }

@@ -64,7 +64,7 @@ class PlayerNode(private val port: Int = 2337, private val sameJvm: Boolean = fa
 
     override fun launch() {
         val node = koin.get<Node>()
-        node.state = State.Initializing
+        node.state = State.Starting
         node.onInit()
         node.state = State.Running
     }

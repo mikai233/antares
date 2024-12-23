@@ -1,19 +1,13 @@
 package com.mikai233.common.core.actor
 
-import akka.actor.typed.ActorRef
-import akka.actor.typed.javadsl.AbstractBehavior
+import akka.actor.ActorRef
 import kotlinx.coroutines.*
 import java.util.concurrent.Executor
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
-
-fun ActorRef<Runnable>.safeActorCoroutine(): CoroutineScope {
-    return CoroutineScope(Executor { tell(it) }.asCoroutineDispatcher())
-}
-
-fun <T> AbstractBehavior<T>.unsafeActorCoroutine(): CoroutineScope {
-    return CoroutineScope(context.executionContext.asCoroutineDispatcher())
+fun ActorRef.safeActorCoroutine(): CoroutineScope {
+    return CoroutineScope(Executor { tell(it, ActorRef.noSender()) }.asCoroutineDispatcher())
 }
 
 class ActorCoroutine(private val scope: CoroutineScope) {

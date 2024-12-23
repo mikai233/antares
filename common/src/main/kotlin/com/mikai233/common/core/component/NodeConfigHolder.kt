@@ -1,13 +1,10 @@
 package com.mikai233.common.core.component
 
 import com.mikai233.common.conf.GlobalEnv
-import com.mikai233.common.core.component.config.*
+import com.mikai233.common.core.config.NodeConfig
 import com.mikai233.common.extension.logger
-import com.mikai233.common.inject.XKoin
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 
 /**
  * @author mikai233
@@ -15,13 +12,11 @@ import org.koin.core.component.inject
  * @date 2023/5/11
  */
 open class NodeConfigHolder(
-    private val koin: XKoin,
     private val role: Role,
     private val port: Int,
     private val sameJvm: Boolean,
-) : KoinComponent by koin {
+) {
     private val logger = logger()
-    private val configCenter: ZookeeperConfigCenter by inject()
     lateinit var selfNode: Node
         private set
     lateinit var akkaSystemName: String
@@ -55,7 +50,7 @@ open class NodeConfigHolder(
         return centerConfig.withFallback(roleConfig)
     }
 
-    private fun getAllNodes(): Map<String, List<Node>> {
+    private fun getAllNodes(): Map<String, List<NodeConfig>> {
         val allNodes = mutableMapOf<String, MutableList<Node>>()
         with(configCenter) {
             val serverHostsPath = serverHostsPath()

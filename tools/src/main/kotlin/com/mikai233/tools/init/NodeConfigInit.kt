@@ -2,7 +2,6 @@ package com.mikai233.tools.init
 
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.component.Role
-import com.mikai233.common.core.component.ZookeeperConfigCenter
 import com.mikai233.common.core.component.config.*
 
 private var PORT_ALLOC = 2333

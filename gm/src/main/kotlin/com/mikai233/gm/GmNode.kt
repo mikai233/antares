@@ -13,7 +13,6 @@ import com.mikai233.common.core.State
 import com.mikai233.common.core.component.AkkaSystem
 import com.mikai233.common.core.component.NodeConfigHolder
 import com.mikai233.common.core.component.Role
-import com.mikai233.common.core.component.ZookeeperConfigCenter
 import com.mikai233.common.extension.closeableSingle
 import com.mikai233.common.extension.registerService
 import com.mikai233.common.extension.startBroadcastClusterRouterGroup
@@ -96,7 +95,7 @@ class GmNode(private val port: Int = 2339, private val sameJvm: Boolean = false)
 
     override fun launch() {
         val node = koin.get<Node>()
-        node.state = State.Initializing
+        node.state = State.Starting
         node.onInit()
         node.state = State.Running
     }

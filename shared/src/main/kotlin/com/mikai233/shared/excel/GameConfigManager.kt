@@ -45,11 +45,8 @@ class GameConfigManager(private val version: String) {
      */
     suspend fun load(excelDir: String) {
         check(configs.isEmpty()) { "GameConfigManager already loaded" }
-        val configClasses = CONFIGS_IMPL
-        val loadFirstClasses = loadFirst()
-        val loadSecondClasses = configClasses.filter { it !in loadFirstClasses }
         val loadedGameConfigs = coroutineScope {
-            (loadFirstClasses + loadSecondClasses).map { configClazz ->
+            CONFIGS_IMPL.map { configClazz ->
                 val primaryConstructor =
                     requireNotNull(configClazz.primaryConstructor) { "GameConfigs ${configClazz.simpleName} must have a empty primary constructor" }
                 async(Dispatchers.IO) {
@@ -92,13 +89,6 @@ class GameConfigManager(private val version: String) {
             }
             throw IllegalStateException("GameConfigManager validate failed")
         }
-    }
-
-    /**
-     * 优先解析的配置表
-     */
-    private fun loadFirst(): List<KClass<out V>> {
-        return listOf()
     }
 
     /**

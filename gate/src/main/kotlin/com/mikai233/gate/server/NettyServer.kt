@@ -1,7 +1,6 @@
 package com.mikai233.gate.server
 
 import com.mikai233.common.conf.GlobalEnv
-import com.mikai233.common.core.component.ZookeeperConfigCenter
 import com.mikai233.common.core.component.config.getConfigEx
 import com.mikai233.common.core.component.config.serverNetty
 import com.mikai233.common.extension.Platform

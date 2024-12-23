@@ -1,7 +1,6 @@
 package com.mikai233.tools.init
 
 import com.mikai233.common.conf.GlobalEnv
-import com.mikai233.common.core.component.ZookeeperConfigCenter
 import com.mikai233.common.core.component.config.WorldConfig
 import com.mikai233.common.core.component.config.WorldData
 

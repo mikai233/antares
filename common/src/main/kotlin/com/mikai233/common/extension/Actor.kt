@@ -1,8 +1,6 @@
 package com.mikai233.common.extension
 
 import akka.actor.*
-import akka.cluster.routing.ClusterRouterGroup
-import akka.cluster.routing.ClusterRouterGroupSettings
 import akka.cluster.sharding.ClusterSharding
 import akka.cluster.sharding.ClusterShardingSettings
 import akka.cluster.sharding.ShardCoordinator
@@ -14,8 +12,6 @@ import akka.cluster.singleton.ClusterSingletonProxySettings
 import akka.event.Logging
 import akka.event.LoggingAdapter
 import akka.pattern.Patterns
-import akka.routing.BroadcastGroup
-import com.mikai233.common.core.component.Role
 import com.mikai233.common.msg.Message
 import kotlinx.coroutines.future.await
 import java.util.concurrent.TimeUnit
@@ -73,43 +69,6 @@ fun ActorSystem.startSharding(
 
 fun ActorSystem.startShardingProxy(typename: String): ActorRef {
     return ClusterSharding.get(this).shardRegion(typename)
-}
-
-fun <M> ActorSystem<*>.publish(message: M) {
-    eventStream().tell(EventStream.Publish(message))
-}
-
-inline fun <E, reified M> ActorSystem<*>.subscribe(subscriber: ActorRef<E>) where M : E {
-    eventStream().tell(EventStream.Subscribe(M::class.java, subscriber.narrow<M>()))
-}
-
-inline fun <reified E> ActorSystem<*>.unsubscribe(subscriber: ActorRef<E>) {
-    eventStream().tell(EventStream.Unsubscribe(subscriber))
-}
-
-inline fun <reified M> shardingEnvelope(entityId: String, message: M): ShardingEnvelope<M> {
-    return ShardingEnvelope(entityId, message)
-}
-
-fun ActorSystem<*>.registerService(key: ServiceKey, service: ActorRef) {
-    receptionist().tell(Receptionist.register(key, service))
-}
-
-fun ActorSystem<*>.deregisterService(key: ServiceKey, service: ActorRef) {
-    receptionist().tell(Receptionist.deregister(key, service))
-}
-
-fun <M> ActorContext<*>.startBroadcastClusterRouterGroup(
-    routeesPaths: Set<String>,
-    useRoles: Set<Role>,
-    totalInstances: Int = 10000
-): ActorRef<M> {
-    val group = ClusterRouterGroup(
-        BroadcastGroup(routeesPaths),
-        ClusterRouterGroupSettings(totalInstances, routeesPaths, true, useRoles.map { it.name }.toSet())
-    )
-    val ref = Adapter.actorOf(this, group.props())
-    return Adapter.toTyped<M>(ref)
 }
 
 fun TimerScheduler.startPeriodicTimer(key: Any, message: Message, interval: Duration) {

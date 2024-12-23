@@ -47,21 +47,14 @@ fun buildGameConfigs(
 ): TypeSpec {
     val gameConfigClass = ClassName(GENERATE_PACKAGE, "${configName}Config")
     val superClassGameConfigs = GAME_CONFIGS.parameterizedBy(id.type, gameConfigClass)
-    val superClassMap = Map::class.asClassName().parameterizedBy(id.type, gameConfigClass)
     return TypeSpec.classBuilder("${configName}Configs")
         .addAnnotation(NoArg::class)
         .superclass(superClassGameConfigs)
-        .addSuperinterface(superClassMap)
-        .addFunctions(buildGameConfigsFunctions(excelName, gameConfigClass, id, fields))
+        .addFunctions(buildGameConfigsFunctions(excelName, gameConfigClass, fields))
         .build()
 }
 
-fun buildGameConfigsFunctions(
-    excelName: String,
-    configClass: ClassName,
-    id: ExcelField,
-    fields: List<ExcelField>
-): List<FunSpec> {
+fun buildGameConfigsFunctions(excelName: String, configClass: ClassName, fields: List<ExcelField>): List<FunSpec> {
     return listOf(
         FunSpec.builder("excelName")
             .addModifiers(KModifier.OVERRIDE)

@@ -11,7 +11,6 @@ import akka.actor.typed.receptionist.ServiceKey
 import com.mikai233.common.core.actor.ActorCoroutine
 import com.mikai233.common.core.actor.safeActorCoroutine
 import com.mikai233.common.core.component.Role
-import com.mikai233.common.core.component.ZookeeperConfigCenter
 import com.mikai233.common.core.component.config.*
 import com.mikai233.common.extension.actorLogger
 import com.mikai233.common.extension.runnableAdapter

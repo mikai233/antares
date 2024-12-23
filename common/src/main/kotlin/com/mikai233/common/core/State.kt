@@ -1,8 +1,8 @@
 package com.mikai233.common.core
 
 enum class State {
-    Uninitialized,
-    Initializing,
+    Unstarted,
+    Starting,
     Running,
     Stopping,
     Stopped,

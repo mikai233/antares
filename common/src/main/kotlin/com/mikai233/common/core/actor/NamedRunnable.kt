@@ -7,9 +7,3 @@ data class NamedRunnable(val name: String, private val block: () -> Unit) : Runn
         block()
     }
 }
-
-data class RunnableWrap<R : Runnable>(private val block: R) : Runnable, NotInfluenceReceiveTimeout {
-    override fun run() {
-        block.run()
-    }
-}
