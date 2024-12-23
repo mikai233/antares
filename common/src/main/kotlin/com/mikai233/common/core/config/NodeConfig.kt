@@ -6,4 +6,4 @@ data class NodeConfig(
     val role: Role,
     val port: Int,
     val seed: Boolean,
-) : Config
+)

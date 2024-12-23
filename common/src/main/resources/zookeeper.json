@@ -14,7 +14,7 @@
           "data": null,
           "children": [
             {
-              "class": "com.mikai233.common.core.component.config.TestConfig",
+              "class": "com.mikai233.common.core.config.TestConfig",
               "name": "player:2552",
               "data": {
                 "name": "player",

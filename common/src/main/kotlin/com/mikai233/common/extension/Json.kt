@@ -50,6 +50,10 @@ object Json {
         }
     }
 
+    fun <T> toBytes(value: Any, clazz: KClass<T>, pretty: Boolean = false): ByteArray where T : Any {
+        return mapper.writeValueAsBytes(value)
+    }
+
     inline fun <reified T> copy(value: T): T {
         return fromBytes(toBytes(value))
     }
