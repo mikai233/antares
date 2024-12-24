@@ -14,7 +14,7 @@ class PlayerProtobufSerializer : JSerializer() {
 
     override fun toBinary(o: Any): ByteArray {
         o as PlayerProtobufEnvelope
-        return protoMsgToPacket(o.inner, true)
+        return protoMsgToPacket(o.message, true)
     }
 
     override fun includeManifest(): Boolean {

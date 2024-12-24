@@ -30,11 +30,11 @@ fun logMessage(logger: Logger, message: Any, msgHeader: () -> String = { "" }) {
             }
 
             is PlayerProtobufEnvelope -> {
-                "${message.inner::class.simpleName} ${ProtobufPrinter.printer.print(message.inner)}"
+                "${message.message::class.simpleName} ${ProtobufPrinter.printer.print(message.message)}"
             }
 
             is WorldProtobufEnvelope -> {
-                "${message.inner::class.simpleName} ${ProtobufPrinter.printer.print(message.inner)}"
+                "${message.message::class.simpleName} ${ProtobufPrinter.printer.print(message.message)}"
             }
 
 

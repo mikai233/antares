@@ -2,7 +2,7 @@ package com.mikai233.player.component
 
 import com.google.protobuf.GeneratedMessageV3
 import com.mikai233.common.inject.XKoin
-import com.mikai233.common.msg.MessageDispatcher
+import com.mikai233.common.message.MessageDispatcher
 import com.mikai233.shared.message.BusinessPlayerMessage
 import org.koin.core.component.KoinComponent
 

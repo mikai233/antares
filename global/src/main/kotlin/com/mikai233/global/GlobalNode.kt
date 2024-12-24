@@ -19,9 +19,8 @@ import com.mikai233.global.component.GlobalActorDispatcher
 import com.mikai233.global.component.GlobalScriptSupport
 import com.mikai233.global.component.GlobalSharding
 import com.mikai233.shared.component.ExcelConfigHolder
-import com.mikai233.shared.script.ScriptActor
+import com.mikai233.common.script.ScriptActor
 import com.mikai233.shared.scriptActorServiceKey
-import org.koin.core.component.get
 import org.koin.dsl.koinApplication
 import org.koin.dsl.module
 import org.koin.logger.slf4jLogger
@@ -64,7 +63,7 @@ class GlobalNode(private val port: Int = 2338, private val sameJvm: Boolean = fa
         val node = koin.get<Node>()
         node.state = State.Starting
         node.onInit()
-        node.state = State.Running
+        node.state = State.Started
     }
 
     private fun serverModule() = module(createdAtStart = true) {

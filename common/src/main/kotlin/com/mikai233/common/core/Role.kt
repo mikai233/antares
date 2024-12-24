@@ -6,7 +6,7 @@ package com.mikai233.common.core
  * @date 2023/5/10
  */
 enum class Role {
-    Player,
+    Home,
     Gate,
     World,
     Global,

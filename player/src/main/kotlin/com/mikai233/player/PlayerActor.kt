@@ -1,15 +1,13 @@
 package com.mikai233.player
 
 import akka.actor.AbstractActor
+import akka.actor.ActorRef
 import com.mikai233.common.core.actor.ActorCoroutine
 import com.mikai233.common.core.actor.safeActorCoroutine
 import com.mikai233.common.extension.*
-import com.mikai233.player.component.PlayerMessageDispatcher
-import com.mikai233.player.component.PlayerScriptSupport
-import com.mikai233.player.component.PlayerSharding
+import com.mikai233.common.message.CompileScript
 import com.mikai233.shared.logMessage
 import com.mikai233.shared.message.*
-import org.koin.core.component.inject
 import kotlin.time.Duration.Companion.milliseconds
 
 class PlayerActor(val playerId: Long) : AbstractActor() {
@@ -18,13 +16,8 @@ class PlayerActor(val playerId: Long) : AbstractActor() {
     }
 
     private val logger = actorLogger()
-    private val runnableAdapter = runnableAdapter { ActorNamedRunnable("playerActorCoroutine", it::run) }
-    private val coroutine = ActorCoroutine(runnableAdapter.safeActorCoroutine())
-    private var channelActor: ActorRef<SerdeChannelMessage>? = null
-    private val dispatcher by inject<PlayerMessageDispatcher>()
-    private val protobufDispatcher = dispatcher.protobufDispatcher
-    private val internalDispatcher = dispatcher.internalDispatcher
-    private val playerSharding by inject<PlayerSharding>()
+    private val coroutine = ActorCoroutine(context.self.safeActorCoroutine())
+    private var channelActor: ActorRef? = null
     private val playerActorSharding = playerSharding.playerActorSharding
     private val worldActorSharding = playerSharding.worldActorSharding
     private val playerScriptSupport by inject<PlayerScriptSupport>()
@@ -92,7 +85,7 @@ class PlayerActor(val playerId: Long) : AbstractActor() {
                     return@onMessage stopping()
                 }
 
-                is ExecutePlayerScript -> {
+                is ExecuteScript -> {
                     message.script.invoke(this)
                 }
 
@@ -121,7 +114,7 @@ class PlayerActor(val playerId: Long) : AbstractActor() {
     }
 
     private fun handlePlayerProtobufEnvelope(message: PlayerProtobufEnvelope) {
-        val inner = message.inner
+        val inner = message.message
         protobufDispatcher.dispatch(inner::class, this, inner)
     }
 
@@ -146,7 +139,7 @@ class PlayerActor(val playerId: Long) : AbstractActor() {
                     return@onMessage Behaviors.stopped()
                 }
 
-                is ExecutePlayerScript -> {
+                is ExecuteScript -> {
                     executePlayerScript(message)
                 }
 
@@ -197,10 +190,10 @@ class PlayerActor(val playerId: Long) : AbstractActor() {
     }
 
     private fun compilePlayerScript(message: PlayerScript) {
-        localScriptActor.tell(CompilePlayerActorScript(message.script, context.self))
+        localScriptActor.tell(CompileScript(message.script, context.self))
     }
 
-    private fun executePlayerScript(message: ExecutePlayerScript) {
+    private fun executePlayerScript(message: ExecuteScript) {
         message.script.invoke(this)
     }
 

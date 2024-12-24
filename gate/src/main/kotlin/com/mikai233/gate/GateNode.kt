@@ -21,9 +21,8 @@ import com.mikai233.gate.server.NettyServer
 import com.mikai233.protocol.MsgCs
 import com.mikai233.protocol.MsgSc
 import com.mikai233.shared.message.ChannelMessage
-import com.mikai233.shared.script.ScriptActor
+import com.mikai233.common.script.ScriptActor
 import com.mikai233.shared.scriptActorServiceKey
-import org.koin.core.component.get
 import org.koin.dsl.koinApplication
 import org.koin.dsl.module
 import org.koin.logger.slf4jLogger
@@ -81,7 +80,7 @@ class GateNode(private val port: Int = 2334, private val sameJvm: Boolean = fals
         val node = koin.get<Node>()
         node.state = State.Starting
         node.onInit()
-        node.state = State.Running
+        node.state = State.Started
     }
 
     private fun serverModule() = module(createdAtStart = true) {

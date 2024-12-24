@@ -1,6 +1,8 @@
 package com.mikai233.shared.message
 
-import com.mikai233.common.msg.Message
+import com.mikai233.common.message.Message
+
+object HandoffShardActor : Message
 
 data class ActorNamedRunnable(
     val name: String,
@@ -15,26 +17,22 @@ data class ExcelUpdate(val hashcode: Int) : BusinessPlayerMessage, BusinessWorld
 
 sealed interface ChannelMessage : Message
 
-sealed interface SerdeChannelMessage : ChannelMessage, SerdeMessage
+sealed interface SerdeChannelMessage : ChannelMessage
 
 sealed interface PlayerMessage : Message
 
-sealed interface SerdePlayerMessage : PlayerMessage, SerdeMessage
+sealed interface SerdePlayerMessage : PlayerMessage
 
 sealed interface BusinessPlayerMessage : SerdePlayerMessage
 
 sealed interface WorldMessage : Message
 
-sealed interface SerdeWorldMessage : WorldMessage, SerdeMessage
+sealed interface SerdeWorldMessage : WorldMessage
 
 sealed interface BusinessWorldMessage : SerdeWorldMessage
 
-sealed interface ScriptMessage : Message
-
-sealed interface SerdeScriptMessage : ScriptMessage, SerdeMessage
-
 sealed interface GlobalUidMessage : Message
 
-sealed interface SerdeGlobalUidMessage : GlobalUidMessage, SerdeMessage
+sealed interface SerdeGlobalUidMessage : GlobalUidMessage
 
 sealed interface BusinessSerdeGlobalUidMessage : SerdeGlobalUidMessage

@@ -10,5 +10,7 @@ object GlobalEnv {
     val machineIp: String = "127.0.0.1"
     val serverMode = ServerMode.DevMode
 
-    const val loginPort = 6666
+    const val LOGIN_PORT = 6666
+
+    const val SYSTEM_NAME = com.mikai233.common.core.config.SYSTEM_NAME
 }

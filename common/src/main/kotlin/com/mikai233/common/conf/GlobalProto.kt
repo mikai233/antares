@@ -1,15 +1,15 @@
 package com.mikai233.common.conf
 
 import com.google.protobuf.Descriptors
-import com.google.protobuf.GeneratedMessageV3
+import com.google.protobuf.GeneratedMessage
 import com.google.protobuf.Parser
 import com.mikai233.common.extension.logger
 import org.reflections.Reflections
 import kotlin.reflect.KClass
 import kotlin.reflect.full.declaredFunctions
 
-private typealias Message = KClass<out GeneratedMessageV3>
-private typealias MessageParser = Parser<out GeneratedMessageV3>
+private typealias Message = KClass<out GeneratedMessage>
+private typealias MessageParser = Parser<out GeneratedMessage>
 private typealias MessageMap = MutableMap<Message, Int>
 private typealias ParserMap = MutableMap<Int, MessageParser>
 
@@ -45,14 +45,14 @@ object GlobalProto {
 
     private fun scanAllProtoParser(pkg: String): Map<Message, MessageParser> {
         val allParsers = mutableMapOf<Message, MessageParser>()
-        Reflections(pkg).getSubTypesOf(GeneratedMessageV3::class.java).forEach { messageClazz ->
+        Reflections(pkg).getSubTypesOf(GeneratedMessage::class.java).forEach { messageClazz ->
             val clazz = messageClazz.kotlin
             val parserFunction = clazz.declaredFunctions.find { it.name == "parser" }
             if (parserFunction == null) {
                 logger.warn("parser of proto message:${clazz.qualifiedName} not found")
             } else {
                 @Suppress("UNCHECKED_CAST")
-                val parser = parserFunction.call() as Parser<out GeneratedMessageV3>
+                val parser = parserFunction.call() as Parser<out GeneratedMessage>
                 allParsers[clazz] = parser
             }
         }
@@ -84,7 +84,7 @@ object GlobalProto {
     private fun checkReqResp() {
         val incorrectMessage = mutableSetOf<String>()
         client2ServerMessage.forEach { (key, _) ->
-            val simpleName = kotlin.requireNotNull(key.simpleName) { "$key simple name not found" }
+            val simpleName = requireNotNull(key.simpleName) { "$key simple name not found" }
             if (simpleName.endsWith("Req").not()) {
                 val qualifiedName = requireNotNull(key.qualifiedName) { "$key qualified name not found" }
                 incorrectMessage.add(qualifiedName)

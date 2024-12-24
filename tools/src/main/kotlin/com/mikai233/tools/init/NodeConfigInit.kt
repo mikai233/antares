@@ -37,7 +37,7 @@ internal fun ZookeeperConfigCenter.createServerHosts(systemName: String) {
 }
 
 internal fun ZookeeperConfigCenter.createNettyConfig() {
-    val nettyConfig = NettyConfig(GlobalEnv.machineIp, GlobalEnv.loginPort)
+    val nettyConfig = NettyConfig(GlobalEnv.machineIp, GlobalEnv.LOGIN_PORT)
     addConfig(nettyConfig)
 }
 

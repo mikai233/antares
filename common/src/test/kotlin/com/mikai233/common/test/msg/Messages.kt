@@ -4,8 +4,8 @@ package com.mikai233.common.test.msg
 
 import com.mikai233.common.annotation.AllOpen
 import com.mikai233.common.extension.logger
-import com.mikai233.common.msg.Message
-import com.mikai233.common.msg.MessageHandler
+import com.mikai233.common.message.Message
+import com.mikai233.common.message.MessageHandler
 
 object HandlerCtx
 

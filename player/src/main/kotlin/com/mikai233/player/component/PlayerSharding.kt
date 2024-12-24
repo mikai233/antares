@@ -1,24 +1,14 @@
 package com.mikai233.player.component
 
-import akka.actor.typed.ActorRef
-import akka.actor.typed.SupervisorStrategy
-import akka.actor.typed.javadsl.Behaviors
-import akka.cluster.sharding.typed.ShardingEnvelope
-import com.mikai233.common.core.component.AkkaSystem
-import com.mikai233.common.core.component.Role
-import com.mikai233.common.core.component.ShardEntityType
 import com.mikai233.common.extension.startSharding
 import com.mikai233.common.extension.startShardingProxy
-import com.mikai233.common.inject.XKoin
 import com.mikai233.player.PlayerActor
 import com.mikai233.player.PlayerSystemMessage
 import com.mikai233.shared.PlayerShardNum
 import com.mikai233.shared.WorldShardNum
 import com.mikai233.shared.message.*
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 
-class PlayerSharding(private val koin: XKoin) : KoinComponent by koin {
+class PlayerSharding() : KoinComponent by koin {
     private val akkaSystem: AkkaSystem<PlayerSystemMessage> by inject()
     lateinit var playerActorSharding: ActorRef<ShardingEnvelope<SerdePlayerMessage>>
         private set

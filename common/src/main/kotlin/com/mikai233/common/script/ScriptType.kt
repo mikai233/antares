@@ -1,4 +1,4 @@
-package com.mikai233.shared.script
+package com.mikai233.common.script
 
 enum class ScriptType {
     GroovyScript,

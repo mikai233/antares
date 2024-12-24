@@ -1,4 +1,4 @@
-package com.mikai233.common.msg
+package com.mikai233.common.message
 
 import com.mikai233.common.extension.logger
 import org.reflections.Reflections

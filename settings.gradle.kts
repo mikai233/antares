@@ -112,6 +112,7 @@ dependencyResolutionManagement {
             library("mongodb.driver.sync", "org.mongodb:mongodb-driver-sync:4.9.1")
             library("agrona", "org.agrona:agrona:1.18.1")
             library("kryo", "com.esotericsoftware:kryo:5.6.2")
+            library("jcommander", "org.jcommander:jcommander:2.0")
         }
         create("test") {
             library("junit.bom", "org.junit:junit-bom:$junitVersion")

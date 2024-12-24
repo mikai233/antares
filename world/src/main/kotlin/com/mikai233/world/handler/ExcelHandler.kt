@@ -1,6 +1,6 @@
 package com.mikai233.world.handler
 
-import com.mikai233.common.msg.MessageHandler
+import com.mikai233.common.message.MessageHandler
 import com.mikai233.shared.constants.WorldActionType
 import com.mikai233.shared.message.ExcelUpdate
 import com.mikai233.world.WorldActor

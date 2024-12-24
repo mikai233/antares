@@ -1,10 +1,10 @@
 package com.mikai233.common.db
 
-import akka.actor.typed.javadsl.AbstractBehavior
+import akka.actor.AbstractActor
 import org.reflections.Reflections
 import kotlin.reflect.KClass
 
-abstract class DataManager<A>(memDataPackage: String) where A : AbstractBehavior<*> {
+abstract class DataManager<A>(memDataPackage: String) where A : AbstractActor {
     val managers: MutableMap<KClass<out MemData<A, *>>, MemData<A, in Any>> =
         mutableMapOf()
 

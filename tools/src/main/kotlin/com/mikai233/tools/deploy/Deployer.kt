@@ -5,12 +5,12 @@ import com.mikai233.common.core.component.config.Node
 import com.mikai233.common.core.component.config.nodePath
 import com.mikai233.common.core.component.config.serverHostPath
 import com.mikai233.common.extension.Json
-import com.mikai233.common.extension.buildSimpleZkClient
+import com.mikai233.common.extension.asyncZookeeperClient
 import java.io.File
 
 object Deployer {
     private val hostFullPath = serverHostPath(GlobalEnv.machineIp)
-    private val curator = buildSimpleZkClient(GlobalEnv.zkConnect).apply {
+    private val curator = asyncZookeeperClient(GlobalEnv.zkConnect).apply {
         start()
     }
 

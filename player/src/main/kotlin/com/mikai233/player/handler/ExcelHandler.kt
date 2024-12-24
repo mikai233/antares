@@ -1,6 +1,6 @@
 package com.mikai233.player.handler
 
-import com.mikai233.common.msg.MessageHandler
+import com.mikai233.common.message.MessageHandler
 import com.mikai233.player.PlayerActor
 import com.mikai233.player.data.PlayerActionMem
 import com.mikai233.shared.constants.PlayerActionType

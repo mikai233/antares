@@ -17,13 +17,12 @@ import com.mikai233.common.inject.XKoin
 import com.mikai233.protocol.MsgCs
 import com.mikai233.protocol.MsgSc
 import com.mikai233.shared.component.ExcelConfigHolder
-import com.mikai233.shared.script.ScriptActor
+import com.mikai233.common.script.ScriptActor
 import com.mikai233.shared.scriptActorServiceKey
 import com.mikai233.world.component.WorldMessageDispatcher
 import com.mikai233.world.component.WorldScriptSupport
 import com.mikai233.world.component.WorldSharding
 import com.mikai233.world.component.WorldWaker
-import org.koin.core.component.get
 import org.koin.dsl.koinApplication
 import org.koin.dsl.module
 import org.koin.logger.slf4jLogger
@@ -67,7 +66,7 @@ class WorldNode(private val port: Int = 2336, private val sameJvm: Boolean = fal
         val node = koin.get<Node>()
         node.state = State.Starting
         node.onInit()
-        node.state = State.Running
+        node.state = State.Started
     }
 
     private fun serverModule() = module(createdAtStart = true) {

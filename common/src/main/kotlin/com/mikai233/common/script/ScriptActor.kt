@@ -1,17 +1,16 @@
-package com.mikai233.shared.script
+package com.mikai233.common.script
 
-import akka.actor.typed.javadsl.AbstractBehavior
-import akka.actor.typed.javadsl.ActorContext
-import akka.actor.typed.javadsl.Behaviors
-import akka.actor.typed.javadsl.Receive
+import akka.actor.AbstractActor
+import akka.actor.ActorRef
+import akka.actor.Props
+import akka.cluster.Cluster
 import akka.cluster.Member
-import akka.cluster.typed.Cluster
-import com.github.benmanes.caffeine.cache.Cache
-import com.github.benmanes.caffeine.cache.Caffeine
 import com.mikai233.common.conf.GlobalEnv
-import com.mikai233.common.core.Launcher
+import com.mikai233.common.core.Node
 import com.mikai233.common.extension.actorLogger
-import com.mikai233.shared.message.*
+import com.mikai233.common.message.CompileScript
+import com.mikai233.common.message.ExecuteNodeRoleScript
+import com.mikai233.common.message.ExecuteNodeScript
 import groovy.lang.GroovyClassLoader
 import java.io.File
 import java.net.URLClassLoader
@@ -20,8 +19,7 @@ import kotlin.reflect.KClass
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.toJavaDuration
 
-class ScriptActor(context: ActorContext<ScriptMessage>, private val node: Launcher) :
-    AbstractBehavior<ScriptMessage>(context) {
+class ScriptActor(private val node: Node) : AbstractActor() {
     private val logger = actorLogger()
     private val selfMember: Member
     private val classCache: Cache<String, KClass<*>> = Caffeine.newBuilder()
@@ -30,9 +28,13 @@ class ScriptActor(context: ActorContext<ScriptMessage>, private val node: Launch
         .build()
 
     companion object {
-        const val ScriptClassName = "Script-Class"
+        const val SCRIPT_CLASS_NAME = "Script-Class"
         fun name() = "scriptActor@${GlobalEnv.machineIp}"
         fun path() = "/user/${name()}"
+
+        fun props(node: Node): Props {
+            return Props.create(ScriptActor::class.java) { ScriptActor(node) }
+        }
     }
 
     init {
@@ -40,27 +42,19 @@ class ScriptActor(context: ActorContext<ScriptMessage>, private val node: Launch
         selfMember = Cluster.get(context.system).selfMember()
     }
 
-    override fun createReceive(): Receive<ScriptMessage> {
-        return newReceiveBuilder().onMessage(ScriptMessage::class.java) { message ->
-            logger.info("{} handle {}", selfMember.address(), message)
-            try {
-                when (message) {
-                    is ExecuteNodeRoleScript -> handleNodeRoleScript(message)
-                    is ExecuteNodeScript -> handleNodeScript(message)
-                    is CompilePlayerActorScript -> handlePlayerActorScript(message)
-                    is CompileWorldActorScript -> handleWorldActorScript(message)
-                }
-            } catch (throwable: Throwable) {
-                logger.error("{} handle {}", selfMember.address(), message, throwable)
-            }
-            Behaviors.same()
-        }.build()
+
+    override fun createReceive(): Receive {
+        return receiveBuilder()
+            .match(ExecuteNodeRoleScript::class.java) { handleNodeRoleScript(it) }
+            .match(ExecuteNodeScript::class.java) { handleNodeScript(it) }
+            .match(CompileScript::class.java) { handleCompileScript(it) }
+            .build()
     }
 
     private fun handleNodeRoleScript(message: ExecuteNodeRoleScript) {
         val targetRole = message.role.name
         if (selfMember.hasRole(targetRole)) {
-            val script = instanceScript<NodeRoleScriptFunction<in Launcher>>(message.script)
+            val script = instanceScript<NodeRoleScriptFunction<in Node>>(message.script)
             script.invoke(node)
         } else {
             logger.error(
@@ -73,18 +67,13 @@ class ScriptActor(context: ActorContext<ScriptMessage>, private val node: Launch
     }
 
     private fun handleNodeScript(message: ExecuteNodeScript) {
-        val script = instanceScript<NodeScriptFunction<in Launcher>>(message.script)
+        val script = instanceScript<NodeScriptFunction<in Node>>(message.script)
         script.invoke(node)
     }
 
-    private fun handlePlayerActorScript(message: CompilePlayerActorScript) {
-        val script = instanceScript<ActorScriptFunction<AbstractBehavior<*>>>(message.script)
-        message.replyTo.tell(ExecutePlayerScript(script))
-    }
-
-    private fun handleWorldActorScript(message: CompileWorldActorScript) {
-        val script = instanceScript<ActorScriptFunction<AbstractBehavior<*>>>(message.script)
-        message.replyTo.tell(ExecuteWorldScript(script))
+    private fun handleCompileScript(message: CompileScript) {
+        val script = instanceScript<ActorScriptFunction<AbstractActor>>(message.script)
+        sender.tell(ExecuteScript(script), ActorRef.noSender())
     }
 
     private fun loadClassWithCache(script: Script): KClass<*> {
@@ -110,7 +99,7 @@ class ScriptActor(context: ActorContext<ScriptMessage>, private val node: Launch
                 val file = File.createTempFile(script.name, ".jar")
                 file.writeBytes(script.body)
                 val jarfile = JarFile(file)
-                val scriptName = jarfile.manifest.mainAttributes.getValue(ScriptClassName)
+                val scriptName = jarfile.manifest.mainAttributes.getValue(SCRIPT_CLASS_NAME)
                 val loader = URLClassLoader(arrayOf(file.toURI().toURL()))
                 loader.loadClass(scriptName).kotlin
             }

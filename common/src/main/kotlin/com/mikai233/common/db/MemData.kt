@@ -1,9 +1,9 @@
 package com.mikai233.common.db
 
-import akka.actor.typed.javadsl.AbstractBehavior
+import akka.actor.AbstractActor
 import org.springframework.data.mongodb.core.MongoTemplate
 
-interface MemData<A, D> where A : AbstractBehavior<*>, D : Any {
+interface MemData<A, D> where A : AbstractActor, D : Any {
     /**
      * do not modify actor state in this function
      * because it's exec on other thread

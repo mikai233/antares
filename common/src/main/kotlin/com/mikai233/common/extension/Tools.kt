@@ -4,18 +4,15 @@ import com.google.common.base.CaseFormat
 import com.google.protobuf.util.JsonFormat
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.conf.ServerMode
-import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.CuratorFrameworkFactory
 import org.apache.curator.retry.ExponentialBackoffRetry
-import org.koin.core.definition.Definition
-import org.koin.core.definition.KoinDefinition
-import org.koin.core.module.Module
-import org.koin.core.qualifier.Qualifier
-import org.koin.dsl.onClose
+import org.apache.curator.x.async.AsyncCuratorFramework
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.Inet4Address
 import java.net.NetworkInterface
+
+private val logger = LoggerFactory.getLogger("ToolsKt")
 
 fun getMachineIp(): String {
     return getInet4Address()?.hostAddress ?: "127.0.0.1"
@@ -31,18 +28,23 @@ fun getInet4Address(): Inet4Address? {
 
 fun getenv(name: String): String? = System.getenv(name)
 
-fun buildSimpleZkClient(connectionString: String): CuratorFramework {
+fun asyncZookeeperClient(connectionString: String): AsyncCuratorFramework {
     val retryPolicy = ExponentialBackoffRetry(1000, 3)
-    return CuratorFrameworkFactory.builder()
+    val client = CuratorFrameworkFactory.builder()
         .connectString(connectionString)
         .sessionTimeoutMs(5000)
         .connectionTimeoutMs(5000)
         .retryPolicy(retryPolicy)
         .build()
+    client.start()
+    return AsyncCuratorFramework.wrap(client)
 }
 
 enum class Platform {
-    Windows, MacOS, Linux, Unknown
+    Windows,
+    MacOS,
+    Linux,
+    Unknown
 }
 
 fun getPlatform(): Platform {
@@ -52,7 +54,7 @@ fun getPlatform(): Platform {
         os.contains("Mac OS", true) -> Platform.MacOS
         os.contains("Linux", true) -> Platform.Linux
         else -> {
-            LoggerFactory.getLogger("ToolsKt").warn("unknown os:{}", os)
+            logger.warn("unknown os:{}", os)
             Platform.Unknown
         }
     }
@@ -77,25 +79,15 @@ fun String.camelCaseToSnakeCase(): String = CaseFormat.LOWER_CAMEL.to(CaseFormat
 
 fun String.upperCamelToLowerCamel(): String = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, this)
 
-inline fun <reified T : AutoCloseable> Module.closeableSingle(
-    qualifier: Qualifier? = null,
-    createdAtStart: Boolean = false,
-    noinline definition: Definition<T>
-): KoinDefinition<T> = single(qualifier, createdAtStart, definition) onClose {
-    tryCatch({ T::class.logger() }) {
-        it?.close()
-    }
-}
-
-fun tryCatch(logger: () -> Logger, block: () -> Unit) {
+fun tryCatch(logger: Logger, block: () -> Unit) {
     try {
         block()
     } catch (t: Throwable) {
-        logger().error("", t)
+        logger.error("", t)
     }
 }
 
-fun tryCatch(logger: Logger, block: () -> Unit) {
+suspend fun tryCatchSuspend(logger: Logger, block: suspend () -> Unit): Unit {
     try {
         block()
     } catch (t: Throwable) {

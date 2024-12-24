@@ -1,14 +1,13 @@
 package com.mikai233.shared.message
 
-import akka.actor.typed.receptionist.Receptionist
 import com.mikai233.common.annotation.AllOpen
-import com.mikai233.common.core.component.Role
-import com.mikai233.common.msg.Message
-import com.mikai233.shared.script.Script
+import com.mikai233.common.core.Role
+import com.mikai233.common.message.Message
+import com.mikai233.common.script.Script
 
 sealed interface ScriptProxyMessage : Message
 
-sealed interface SerdeScriptProxyMessage : ScriptProxyMessage, SerdeMessage
+sealed interface SerdeScriptProxyMessage : ScriptProxyMessage
 
 data class ServiceList(val inner: Receptionist.Listing) : ScriptProxyMessage
 

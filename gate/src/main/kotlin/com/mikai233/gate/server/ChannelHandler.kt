@@ -42,7 +42,7 @@ class ChannelHandler(private val koin: XKoin) : ChannelInboundHandlerAdapter(), 
 
     override fun channelActive(ctx: ChannelHandlerContext) {
         val state = node.state
-        if (node.state == State.Running) {
+        if (node.state == State.Started) {
             val actorRef = spawnChannelActor(ctx)
             ctx.channel().attr(actorKey).set(actorRef)
         } else {

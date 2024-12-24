@@ -1,8 +1,8 @@
 package com.mikai233.common.test
 
 import com.mikai233.common.annotation.AllOpen
-import com.mikai233.common.msg.Message
-import com.mikai233.common.msg.MessageDispatcher
+import com.mikai233.common.message.Message
+import com.mikai233.common.message.MessageDispatcher
 import com.mikai233.common.test.msg.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

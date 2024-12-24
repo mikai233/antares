@@ -18,8 +18,8 @@ fun main() {
 
 internal fun ZookeeperConfigCenter.createGameWorld() {
     val gameWorlds = listOf(
-        WorldConfig(1000, 0, emptyList(), WorldData("world1000", "${GlobalEnv.machineIp}:${GlobalEnv.loginPort}")),
-        WorldConfig(1001, 0, emptyList(), WorldData("world1001", "${GlobalEnv.machineIp}:${GlobalEnv.loginPort}"))
+        WorldConfig(1000, 0, emptyList(), WorldData("world1000", "${GlobalEnv.machineIp}:${GlobalEnv.LOGIN_PORT}")),
+        WorldConfig(1001, 0, emptyList(), WorldData("world1001", "${GlobalEnv.machineIp}:${GlobalEnv.LOGIN_PORT}"))
     )
     gameWorlds.forEach { worldConfig ->
         addConfig(worldConfig)

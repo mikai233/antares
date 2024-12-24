@@ -14,7 +14,7 @@ class WorldProtobufSerializer : JSerializer() {
 
     override fun toBinary(o: Any): ByteArray {
         o as WorldProtobufEnvelope
-        return protoMsgToPacket(o.inner, true)
+        return protoMsgToPacket(o.message, true)
     }
 
     override fun includeManifest(): Boolean {

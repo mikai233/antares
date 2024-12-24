@@ -3,8 +3,8 @@ package com.mikai233.player.handler
 import com.mikai233.common.annotation.AllOpen
 import com.mikai233.common.extension.logger
 import com.mikai233.common.extension.tell
-import com.mikai233.common.msg.Handler
-import com.mikai233.common.msg.MessageHandler
+import com.mikai233.common.message.Handler
+import com.mikai233.common.message.MessageHandler
 import com.mikai233.player.PlayerActor
 import com.mikai233.player.service.loginService
 import com.mikai233.protocol.testNotify

@@ -156,7 +156,7 @@ class WorldActor(
     }
 
     private fun handleWorldProtobufEnvelope(message: WorldProtobufEnvelope) {
-        val inner = message.inner
+        val inner = message.message
         protobufDispatcher.dispatch(inner::class, this, inner)
     }
 

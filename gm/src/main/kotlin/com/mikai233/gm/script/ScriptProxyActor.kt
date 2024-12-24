@@ -17,10 +17,12 @@ import com.mikai233.common.extension.runnableAdapter
 import com.mikai233.common.extension.shardingEnvelope
 import com.mikai233.common.extension.startBroadcastClusterRouterGroup
 import com.mikai233.common.inject.XKoin
+import com.mikai233.common.message.ExecuteNodeRoleScript
+import com.mikai233.common.message.ExecuteNodeScript
 import com.mikai233.gm.component.GmSharding
 import com.mikai233.shared.message.*
-import com.mikai233.shared.script.NodeKey
-import com.mikai233.shared.script.ScriptActor
+import com.mikai233.common.script.NodeKey
+import com.mikai233.common.script.ScriptActor
 import com.mikai233.shared.scriptActorServiceKey
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject

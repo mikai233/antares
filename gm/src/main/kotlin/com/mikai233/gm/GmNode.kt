@@ -26,9 +26,8 @@ import com.mikai233.gm.script.ScriptProxyActor
 import com.mikai233.shared.component.ExcelConfigHolder
 import com.mikai233.shared.message.ScriptProxyMessage
 import com.mikai233.shared.message.SerdeScriptMessage
-import com.mikai233.shared.script.ScriptActor
+import com.mikai233.common.script.ScriptActor
 import com.mikai233.shared.scriptActorServiceKey
-import org.koin.core.component.get
 import org.koin.dsl.bind
 import org.koin.dsl.koinApplication
 import org.koin.dsl.module
@@ -97,7 +96,7 @@ class GmNode(private val port: Int = 2339, private val sameJvm: Boolean = false)
         val node = koin.get<Node>()
         node.state = State.Starting
         node.onInit()
-        node.state = State.Running
+        node.state = State.Started
     }
 
     private fun serverModule() = module(createdAtStart = true) {

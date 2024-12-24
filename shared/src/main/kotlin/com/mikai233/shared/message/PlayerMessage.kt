@@ -1,10 +1,9 @@
 package com.mikai233.shared.message
 
-import akka.actor.typed.ActorRef
-import akka.actor.typed.javadsl.AbstractBehavior
-import com.google.protobuf.GeneratedMessageV3
-import com.mikai233.shared.script.ActorScriptFunction
-import com.mikai233.shared.script.Script
+import akka.actor.AbstractActor
+import com.google.protobuf.GeneratedMessage
+import com.mikai233.common.script.ActorScriptFunction
+import com.mikai233.common.script.Script
 
 object StopPlayer : SerdePlayerMessage
 
@@ -14,19 +13,17 @@ object PlayerInitDone : PlayerMessage
 
 object PlayerTick : PlayerMessage
 
-data class ExecutePlayerScript(val script: ActorScriptFunction<in AbstractBehavior<*>>) : PlayerMessage
+data class ExecuteScript(val script: ActorScriptFunction<in AbstractActor>) : PlayerMessage
 
-data class PlayerProtobufEnvelope(val inner: GeneratedMessageV3) : BusinessPlayerMessage
+data class PlayerProtobufEnvelope(val message: GeneratedMessage) : BusinessPlayerMessage
 
 data class WHPlayerLogin(
-    val channelActor: ActorRef<SerdeChannelMessage>,
     val account: String,
     val playerId: Long,
     val worldId: Long
 ) : BusinessPlayerMessage
 
 data class WHPlayerCreate(
-    val channelActor: ActorRef<SerdeChannelMessage>,
     val account: String,
     val playerId: Long,
     val worldId: Long,
