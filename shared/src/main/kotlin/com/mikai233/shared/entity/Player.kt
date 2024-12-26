@@ -1,6 +1,5 @@
 package com.mikai233.shared.entity
 
-import com.mikai233.common.entity.TraceableFieldEntity
 import org.springframework.data.annotation.Id
 
 data class Player(
@@ -11,7 +10,7 @@ data class Player(
     var nickname: String,
     var level: Int,
 ) : TraceableFieldEntity<Long> {
-    override fun key(): Long {
+    override fun id(): Long {
         return id
     }
 }

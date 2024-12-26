@@ -1,7 +1,8 @@
 package com.mikai233.common.entity
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.mikai233.common.db.Entity
 import org.springframework.data.annotation.Id
+import org.springframework.data.annotation.PersistenceCreator
 
 data class Room(
     @Id
@@ -16,14 +17,29 @@ data class Room(
     val trackChild: TrackChild,
     var animals: MutableList<Animal>,
     var directInterface: Animal,
-) : TraceableFieldEntity<Int> {
-    override fun key(): Int {
-        return id
+) : Entity {
+    companion object {
+        @JvmStatic
+        @PersistenceCreator
+        fun create(): Room {
+            return Room(
+                0,
+                "",
+                0,
+                false,
+                "",
+                hashMapOf(),
+                DirectObj("", 0, 0, false),
+                null,
+                TrackChild("", "cc"),
+                mutableListOf(),
+                Cat("", 0)
+            )
+        }
     }
 }
 
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
 interface Player
 
 data class RoomPlayer(val id: Int, var level: Int) : Player
@@ -32,7 +48,6 @@ data class DirectObj(val a: String, var b: Int, var c: Long, var d: Boolean)
 
 data class TrackChild(val a: String, var b: String)
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
 interface Animal
 
 data class Cat(val name: String, val age: Int) : Animal

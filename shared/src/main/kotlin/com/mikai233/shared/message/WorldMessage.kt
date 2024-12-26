@@ -3,18 +3,17 @@ package com.mikai233.shared.message
 import akka.actor.AbstractActor
 import akka.actor.ActorRef
 import com.google.protobuf.GeneratedMessage
-import com.mikai233.protocol.ProtoLogin.LoginReq
 import com.mikai233.common.script.ActorScriptFunction
 
 data class ExecuteWorldScript(val script: ActorScriptFunction<in AbstractActor>) : WorldMessage
 
-object StopWorld : SerdeWorldMessage
+data object StopWorld : SerdeWorldMessage
 
-object WakeupGameWorld : SerdeWorldMessage
+data object WakeupGameWorld : SerdeWorldMessage
 
-object WorldInitDone : WorldMessage
+data object WorldInitDone : WorldMessage
 
-object WorldTick : WorldMessage
+data object WorldTick : WorldMessage
 
 data class WorldProtobufEnvelope(val message: GeneratedMessage) : BusinessWorldMessage
 

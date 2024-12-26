@@ -14,12 +14,14 @@ annotation class IgnoreHandleMe
 data class MessageFunction(
     val clazz: KClass<out MessageHandler>,
     var handler: MessageHandler,
-    val func: KFunction<*>,
-)
+    val func: KFunction<Unit>,
+) : KFunction<Unit> by func
 
 class MessageDispatcher<M : Any>(private val message: KClass<M>, vararg packages: String) {
     private val logger = logger()
     private val packages = packages.toSet()
+
+    @Volatile
     private var handlers: Map<KClass<out MessageHandler>, MessageHandler>
     private val messages: Map<KClass<out M>, MessageFunction>
 
@@ -52,7 +54,7 @@ class MessageDispatcher<M : Any>(private val message: KClass<M>, vararg packages
                     check(
                         messages.containsKey(key).not()
                     ) { "duplicate message handle function:${key}, if this is not a handle function, add @IgnoreHandleMe to this function" }
-                    messages[key] = MessageFunction(clazz, handler, mf)
+                    messages[key] = MessageFunction(clazz, handler, mf as KFunction<Unit>)
                     logger.debug("add message handle function:{}", key)
                 }
             }
@@ -63,7 +65,7 @@ class MessageDispatcher<M : Any>(private val message: KClass<M>, vararg packages
     fun dispatch(hint: KClass<out M>, vararg params: Any) {
         val methodFun = messages[hint]
         if (methodFun != null) {
-            methodFun.func.call(methodFun.handler, *params)
+            methodFun.call(methodFun.handler, *params)
         } else {
             logger.error("no message handler for:{} was found", hint)
         }

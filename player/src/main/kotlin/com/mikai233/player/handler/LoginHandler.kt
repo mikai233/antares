@@ -7,7 +7,6 @@ import com.mikai233.common.message.Handler
 import com.mikai233.common.message.MessageHandler
 import com.mikai233.player.PlayerActor
 import com.mikai233.player.service.loginService
-import com.mikai233.protocol.testNotify
 import com.mikai233.shared.message.PlayerInitDone
 import com.mikai233.shared.message.WHPlayerCreate
 import com.mikai233.shared.message.WHPlayerLogin
@@ -22,7 +21,8 @@ import kotlin.random.Random
 class LoginHandler : MessageHandler {
     private val logger = logger()
     fun handleWHPlayerLogin(player: PlayerActor, playerLogin: WHPlayerLogin) {
-        player.bindChannelActor(playerLogin.channelActor)
+        val channelActor = player.sender
+        player.bindChannelActor(channelActor)
         //event
         val resp = loginService.loginSuccessResp(player)
         player.write(resp)
@@ -34,7 +34,8 @@ class LoginHandler : MessageHandler {
     }
 
     fun handleWHPlayerCreate(player: PlayerActor, playerCreate: WHPlayerCreate) {
-        player.bindChannelActor(playerCreate.channelActor)
+        val channelActor = player.sender
+        player.bindChannelActor(channelActor)
         //event
         loginService.createPlayer(player, playerCreate)
         player.context.self tell PlayerInitDone
@@ -48,7 +49,7 @@ class LoginHandler : MessageHandler {
  */
 class WHPlayerLoginHandler : Handler<PlayerActor, WHPlayerLogin> {
     override fun handle(actor: PlayerActor, msg: WHPlayerLogin) {
-        actor.context.system.scheduler().
+        actor.context.system.scheduler()
         TODO("Not yet implemented")
     }
 }

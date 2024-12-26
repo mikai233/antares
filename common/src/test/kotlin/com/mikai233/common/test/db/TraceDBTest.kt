@@ -2,8 +2,6 @@ package com.mikai233.common.test.db
 
 import com.mikai233.common.core.actor.ActorCoroutine
 import com.mikai233.common.db.*
-import com.mikai233.common.entity.TraceableFieldEntity
-import com.mikai233.common.entity.TraceableRootEntity
 import com.mongodb.client.MongoClients
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -25,7 +23,7 @@ class TraceDBTest {
         var field5: HashMap<Int, String?>,
         var field6: ChildData?,
     ) : TraceableRootEntity<Long> {
-        override fun key(): Long {
+        override fun id(): Long {
             return id
         }
     }
@@ -38,7 +36,7 @@ class TraceDBTest {
         var field4: MutableSet<Int>?,
         var field5: ChildData?,
     ) : TraceableFieldEntity<Long> {
-        override fun key(): Long {
+        override fun id(): Long {
             return id
         }
     }
@@ -47,7 +45,7 @@ class TraceDBTest {
     fun traceRootEntity() {
         val client = MongoClients.create()
         val template = MongoTemplate(SimpleMongoClientDatabaseFactory(client, "test"))
-        val db = DataTracer(
+        val db = Tracer(
             { template },
             ActorCoroutine(CoroutineScope(Executor { it.run() }.asCoroutineDispatcher())),
             fullHashThreshold = 1
@@ -63,27 +61,27 @@ class TraceDBTest {
             field6 = null,
         )
         val root = entity::class
-        val query = Query.query(Criteria.where("_id").`is`(entity.key()))
+        val query = Query.query(Criteria.where("_id").`is`(entity.id()))
         val key = TKey(root, query, null, TType.Data)
         db.traceEntity(entity)
         entity.field3 = hashMapOf()
         var operation = db.checkDataHash(traceMap[key]!!)
-        assert(operation == Operation.Update)
+        assert(operation == Operation.Unset)
         operation = db.checkDataHash(traceMap[key]!!)
         assert(operation == null)
         entity.field6 = ChildData("hello", 1L)
         operation = db.checkDataHash(traceMap[key]!!)
-        assert(operation == Operation.Update)
+        assert(operation == Operation.Unset)
         entity.field6?.field2 = 2
         operation = db.checkDataHash(traceMap[key]!!)
-        assert(operation == Operation.Update)
+        assert(operation == Operation.Unset)
     }
 
     @Test
     fun traceFieldEntity() {
         val client = MongoClients.create()
         val template = MongoTemplate(SimpleMongoClientDatabaseFactory(client, "test"))
-        val db = DataTracer(
+        val db = Tracer(
             { template },
             ActorCoroutine(CoroutineScope(Executor { it.run() }.asCoroutineDispatcher())),
             fullHashThreshold = 1
@@ -98,7 +96,7 @@ class TraceDBTest {
             field5 = ChildData("mikai", 12),
         )
         val root = entity::class
-        val query = Query.query(Criteria.where("_id").`is`(entity.key()))
+        val query = Query.query(Criteria.where("_id").`is`(entity.id()))
         db.traceEntity(entity)
         entity.field3.clear()
         entity.field3[2] = 2
@@ -136,6 +134,6 @@ class TraceDBTest {
         val data = traceMap[keyOfField4]!!
         data.inner = entity.field4
         val operation = db.checkDataHash(data)
-        assert(operation == Operation.Update)
+        assert(operation == Operation.Unset)
     }
 }

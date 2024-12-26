@@ -6,7 +6,6 @@ package com.mikai233.common.db
  * @date 2023/6/1
  */
 enum class Operation {
-    Save,
-    Update,
-    Delete,
+    Set,
+    Unset,
 }

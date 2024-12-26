@@ -1,4 +1,4 @@
-package com.mikai233.shared.excel
+package com.mikai233.common.serde
 
 import java.util.*
 import java.util.concurrent.*

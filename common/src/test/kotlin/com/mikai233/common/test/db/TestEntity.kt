@@ -1,6 +1,5 @@
 package com.mikai233.common.test.db
 
-import com.mikai233.common.entity.TraceableFieldEntity
 import org.springframework.data.annotation.Id
 
 data class TestEntity(
@@ -8,7 +7,7 @@ data class TestEntity(
     var name: String,
     var age: Int
 ) : TraceableFieldEntity<Int> {
-    override fun key(): Int {
+    override fun id(): Int {
         return id
     }
 }

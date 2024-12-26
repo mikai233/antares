@@ -1,14 +1,15 @@
 package com.mikai233.common.script
 
 import akka.actor.AbstractActor
-import akka.actor.ActorRef
 import akka.actor.Props
 import akka.cluster.Cluster
-import akka.cluster.Member
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.Node
 import com.mikai233.common.extension.actorLogger
-import com.mikai233.common.message.CompileScript
+import com.mikai233.common.message.ExecuteActorFunction
+import com.mikai233.common.message.ExecuteActorScript
 import com.mikai233.common.message.ExecuteNodeRoleScript
 import com.mikai233.common.message.ExecuteNodeScript
 import groovy.lang.GroovyClassLoader
@@ -20,13 +21,6 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.toJavaDuration
 
 class ScriptActor(private val node: Node) : AbstractActor() {
-    private val logger = actorLogger()
-    private val selfMember: Member
-    private val classCache: Cache<String, KClass<*>> = Caffeine.newBuilder()
-        .maximumSize(20L)
-        .expireAfterWrite(10.minutes.toJavaDuration())
-        .build()
-
     companion object {
         const val SCRIPT_CLASS_NAME = "Script-Class"
         fun name() = "scriptActor@${GlobalEnv.machineIp}"
@@ -37,24 +31,29 @@ class ScriptActor(private val node: Node) : AbstractActor() {
         }
     }
 
-    init {
-        logger.info("{} started", context.self)
-        selfMember = Cluster.get(context.system).selfMember()
-    }
+    private val logger = actorLogger()
+    private val selfMember = Cluster.get(context.system).selfMember()
+    private val classCache: Cache<String, KClass<*>> = Caffeine.newBuilder()
+        .maximumSize(20L)
+        .expireAfterWrite(10.minutes.toJavaDuration())
+        .build()
 
+    override fun preStart() {
+        logger.info("{} started", context.self)
+    }
 
     override fun createReceive(): Receive {
         return receiveBuilder()
             .match(ExecuteNodeRoleScript::class.java) { handleNodeRoleScript(it) }
             .match(ExecuteNodeScript::class.java) { handleNodeScript(it) }
-            .match(CompileScript::class.java) { handleCompileScript(it) }
+            .match(ExecuteActorScript::class.java) { handleExecuteActorScript(it) }
             .build()
     }
 
     private fun handleNodeRoleScript(message: ExecuteNodeRoleScript) {
         val targetRole = message.role.name
         if (selfMember.hasRole(targetRole)) {
-            val script = instanceScript<NodeRoleScriptFunction<in Node>>(message.script)
+            val script = scriptInstance<NodeRoleScriptFunction<in Node>>(message.script)
             script.invoke(node)
         } else {
             logger.error(
@@ -67,13 +66,13 @@ class ScriptActor(private val node: Node) : AbstractActor() {
     }
 
     private fun handleNodeScript(message: ExecuteNodeScript) {
-        val script = instanceScript<NodeScriptFunction<in Node>>(message.script)
+        val script = scriptInstance<NodeScriptFunction<in Node>>(message.script)
         script.invoke(node)
     }
 
-    private fun handleCompileScript(message: CompileScript) {
-        val script = instanceScript<ActorScriptFunction<AbstractActor>>(message.script)
-        sender.tell(ExecuteScript(script), ActorRef.noSender())
+    private fun handleExecuteActorScript(message: ExecuteActorScript) {
+        val script = scriptInstance<ActorScriptFunction<AbstractActor>>(message.script)
+        sender.tell(ExecuteActorFunction(script), self)
     }
 
     private fun loadClassWithCache(script: Script): KClass<*> {
@@ -98,15 +97,15 @@ class ScriptActor(private val node: Node) : AbstractActor() {
             ScriptType.KotlinScript -> {
                 val file = File.createTempFile(script.name, ".jar")
                 file.writeBytes(script.body)
-                val jarfile = JarFile(file)
-                val scriptName = jarfile.manifest.mainAttributes.getValue(SCRIPT_CLASS_NAME)
+                val jarFile = JarFile(file)
+                val scriptName = jarFile.manifest.mainAttributes.getValue(SCRIPT_CLASS_NAME)
                 val loader = URLClassLoader(arrayOf(file.toURI().toURL()))
                 loader.loadClass(scriptName).kotlin
             }
         }
     }
 
-    private fun <T> instanceScript(script: Script): T {
+    private fun <T> scriptInstance(script: Script): T {
         val scriptClass = loadClassWithCache(script)
         val constructor =
             requireNotNull(scriptClass.constructors.find { it.parameters.isEmpty() }) { "$scriptClass empty constructor not found" }

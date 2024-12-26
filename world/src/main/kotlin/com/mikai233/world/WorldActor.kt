@@ -1,42 +1,26 @@
 package com.mikai233.world
 
-import akka.actor.typed.Behavior
-import akka.actor.typed.PostStop
-import akka.actor.typed.javadsl.*
+import akka.actor.AbstractActor
 import com.mikai233.common.core.actor.ActorCoroutine
 import com.mikai233.common.core.actor.safeActorCoroutine
 import com.mikai233.common.extension.*
-import com.mikai233.common.inject.XKoin
 import com.mikai233.shared.message.*
 import com.mikai233.shared.startAllWorldTopicActor
 import com.mikai233.shared.startWorldTopicActor
 import com.mikai233.world.component.WorldMessageDispatcher
-import com.mikai233.world.component.WorldSharding
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.toJavaDuration
 
-class WorldActor(
-    context: ActorContext<WorldMessage>,
-    private val buffer: StashBuffer<WorldMessage>,
-    val timers: TimerScheduler<WorldMessage>,
-    val worldId: Long,
-    val koin: XKoin,
-) : AbstractBehavior<WorldMessage>(context), KoinComponent by koin {
+class WorldActor(val worldId: Long) : AbstractActor() {
     companion object {
         val worldTick = 100.milliseconds
     }
 
     private val logger = actorLogger()
-    private val runnableAdapter = runnableAdapter { ActorNamedRunnable("worldActorCoroutine", it::run) }
-    val coroutine = ActorCoroutine(runnableAdapter.safeActorCoroutine())
+    val coroutine = ActorCoroutine(context.self.safeActorCoroutine())
     private val dispatcher: WorldMessageDispatcher by inject()
     private val protobufDispatcher = dispatcher.protobufDispatcher
     private val internalDispatcher = dispatcher.internalDispatcher
-    private val worldSharding by inject<WorldSharding>()
-    private val playerActorSharding = worldSharding.playerActorSharding
-    private val worldActorSharding = worldSharding.worldActorSharding
     val sessionManager = WorldSessionManager(this)
     val manager = WorldDataManager(this, coroutine)
     val worldTopic = context.startWorldTopicActor(worldId)
@@ -48,7 +32,7 @@ class WorldActor(
         context.system.subscribe<WorldMessage, ExcelUpdate>(context.self)
     }
 
-    override fun createReceive(): Receive<WorldMessage> {
+    override fun createReceive(): Receive {
         return newReceiveBuilder().onMessage(WorldMessage::class.java) { message ->
             when (message) {
                 is ExecuteWorldScript -> {

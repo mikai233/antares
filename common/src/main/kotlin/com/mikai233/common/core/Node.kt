@@ -10,6 +10,7 @@ import com.mikai233.common.core.config.nodePath
 import com.mikai233.common.core.config.serverHostsPath
 import com.mikai233.common.extension.Json
 import com.mikai233.common.extension.logger
+import com.mikai233.common.script.ScriptActor
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import kotlinx.coroutines.async
@@ -37,12 +38,12 @@ import java.util.function.Supplier
  * @param zookeeperConnectString zookeeper连接字符串
  */
 open class Node(
-    val addr: InetSocketAddress,
+    private val addr: InetSocketAddress,
     val role: Role,
     val name: String,
     val config: Config,
     zookeeperConnectString: String,
-    val sameJvm: Boolean = false,
+    private val sameJvm: Boolean = false,
 ) {
     val logger = logger()
 
@@ -59,7 +60,7 @@ open class Node(
     }
 
     lateinit var scriptActor: ActorRef
-        private set
+        protected set
 
     @Volatile
     private var state: State = State.Unstarted
@@ -93,6 +94,7 @@ open class Node(
         val config = remoteConfig.withFallback(config)
         system = ActorSystem.create(name, config)
         addCoordinatedShutdownTasks()
+        spawnScriptActor()
         changeState(State.Starting)
     }
 
@@ -120,12 +122,12 @@ open class Node(
         }
     }
 
-    fun formatSeedNode(systemName: String, host: String, port: Int) = "akka://$systemName@$host:$port"
+    private fun formatSeedNode(systemName: String, host: String, port: Int) = "akka://$systemName@$host:$port"
 
     /**
      * 获取zookeeper中整个集群的种子节点配置
      */
-    protected suspend fun resolveRemoteConfig(): Config {
+    protected open suspend fun resolveRemoteConfig(): Config {
         val nodeConfigs = coroutineScope {
             val nodePaths = zookeeper.children.forPath(ServerHosts).await().map { host ->
                 val hostPath = serverHostsPath(host)
@@ -157,7 +159,7 @@ open class Node(
         return ConfigFactory.parseMap(configs)
     }
 
-    fun spawnScriptActor() {
-        scriptActor = system.actorOf(ScriptActor.props(), "script-actor")
+    private fun spawnScriptActor() {
+        scriptActor = system.actorOf(ScriptActor.props(this), ScriptActor.name())
     }
 }

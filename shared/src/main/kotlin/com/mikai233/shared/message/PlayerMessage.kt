@@ -1,19 +1,15 @@
 package com.mikai233.shared.message
 
-import akka.actor.AbstractActor
 import com.google.protobuf.GeneratedMessage
-import com.mikai233.common.script.ActorScriptFunction
 import com.mikai233.common.script.Script
 
-object StopPlayer : SerdePlayerMessage
+data object StopPlayer : SerdePlayerMessage
 
 data class PlayerScript(val script: Script) : SerdePlayerMessage
 
-object PlayerInitDone : PlayerMessage
+data object PlayerInitDone : PlayerMessage
 
-object PlayerTick : PlayerMessage
-
-data class ExecuteScript(val script: ActorScriptFunction<in AbstractActor>) : PlayerMessage
+data object PlayerTick : PlayerMessage
 
 data class PlayerProtobufEnvelope(val message: GeneratedMessage) : BusinessPlayerMessage
 

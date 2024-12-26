@@ -39,7 +39,7 @@
     <logger name="akka.serialization" level="info"/>
     <logger name="org.mongodb.driver" level="info"/>
     <logger name="akka" level="info"/>
-    <logger name="com.mikai233.common.db" level="info"/>
+    <logger name="com.mikai233.common.db" level="trace"/>
     <if condition='p("CONSOLE_LOG").equals("true")'>
         <then>
             <root level="info">

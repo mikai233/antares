@@ -1,13 +1,24 @@
 package com.mikai233.world.data
 
 import com.mikai233.common.db.MemData
+import com.mikai233.common.db.Tracer
 import com.mikai233.common.entity.PlayerAbstract
 import com.mikai233.world.WorldActor
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.where
 
-class PlayerAbstractMem : MemData<WorldActor, List<PlayerAbstract>> {
+class PlayerAbstractMem : MemData<PlayerAbstract> {
+    override val tracer: Tracer? = Tracer()
+
+    override fun init() {
+        TODO("Not yet implemented")
+    }
+
+    override fun traceValues(): List<PlayerAbstract> {
+        TODO("Not yet implemented")
+    }
+
     private lateinit var worldActor: WorldActor
     private val playerAbstracts: MutableMap<Long, PlayerAbstract> = mutableMapOf()
     private val accountToAbstracts: MutableMap<String, PlayerAbstract> = mutableMapOf()

@@ -14,7 +14,7 @@ dependencies {
     implementation(tool.jackson.yaml)
     implementation(tool.reflections)
     runtimeOnly(log.logback)
-    implementation(log.api)
+//    implementation(log.api)
     implementation(project(":common"))
     implementation(project(":shared"))
     implementation(project(":proto"))

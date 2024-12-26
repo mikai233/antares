@@ -2,6 +2,8 @@ package com.mikai233.shared.excel
 
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
+import com.mikai233.common.serde.DEPS_EXTRA
+import com.mikai233.common.serde.KryoPool
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream

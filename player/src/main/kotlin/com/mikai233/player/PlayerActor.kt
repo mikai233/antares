@@ -5,7 +5,7 @@ import akka.actor.ActorRef
 import com.mikai233.common.core.actor.ActorCoroutine
 import com.mikai233.common.core.actor.safeActorCoroutine
 import com.mikai233.common.extension.*
-import com.mikai233.common.message.CompileScript
+import com.mikai233.common.message.ExecuteActorScript
 import com.mikai233.shared.logMessage
 import com.mikai233.shared.message.*
 import kotlin.time.Duration.Companion.milliseconds
@@ -190,7 +190,7 @@ class PlayerActor(val playerId: Long) : AbstractActor() {
     }
 
     private fun compilePlayerScript(message: PlayerScript) {
-        localScriptActor.tell(CompileScript(message.script, context.self))
+        localScriptActor.tell(ExecuteActorScript(message.script, context.self))
     }
 
     private fun executePlayerScript(message: ExecuteScript) {

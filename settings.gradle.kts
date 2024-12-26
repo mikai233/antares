@@ -14,7 +14,7 @@ val protobufVersion = "4.29.2"
 val atomicfuVersion = "0.26.1"
 val datetimeVersion = "0.6.1"
 val kotlinpoetVersion = "2.0.0"
-val kspVersion = "1.0.11"
+val kspVersion = "1.0.29"
 
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
@@ -65,11 +65,11 @@ dependencyResolutionManagement {
             )
         }
         create("log") {
-            library("api", "org.slf4j:slf4j-api:2.0.7")
-            library("logback", "ch.qos.logback:logback-classic:1.4.7")
-            library("log4j.to.slf4j", "org.apache.logging.log4j:log4j-to-slf4j:2.20.0")
-            library("janino", "org.codehaus.janino:janino:3.1.9")
-            bundle("common", listOf("api", "logback", "log4j.to.slf4j", "janino"))
+//            library("api", "org.slf4j:slf4j-api:2.0.7")
+            library("logback", "ch.qos.logback:logback-classic:1.5.15")
+//            library("log4j.to.slf4j", "org.apache.logging.log4j:log4j-to-slf4j:2.20.0")
+            library("janino", "org.codehaus.janino:janino:3.1.12")
+            bundle("common", listOf("logback", "janino"))
         }
         create("tool") {
             version("protobuf", protobufVersion)
@@ -105,10 +105,11 @@ dependencyResolutionManagement {
             library("easyexcel", "com.alibaba:easyexcel:4.0.3")
             plugin("boot", "org.springframework.boot").version("3.4.1")
             library("guava", "com.google.guava:guava:33.4.0-jre")
-//            library("symbol.processing.api", "com.google.devtools.ksp:symbol-processing-api:$kotlinVersion-$kspVersion")
+            library("symbol.processing.api", "com.google.devtools.ksp:symbol-processing-api:$kotlinVersion-$kspVersion")
 //            library("symbol.processing", "com.google.devtools.ksp:symbol-processing:$kotlinVersion-$kspVersion")
-//            plugin("ksp", "com.google.devtools.ksp").version("${kotlinVersion}-${kspVersion}")
+            plugin("ksp", "com.google.devtools.ksp").version("${kotlinVersion}-${kspVersion}")
             library("spring.data.mongodb", "org.springframework.data:spring-data-mongodb:4.1.0")
+            library("spring.retry", "org.springframework.retry:spring-retry:2.0.11")
             library("mongodb.driver.sync", "org.mongodb:mongodb-driver-sync:4.9.1")
             library("agrona", "org.agrona:agrona:1.18.1")
             library("kryo", "com.esotericsoftware:kryo:5.6.2")

@@ -1,6 +1,5 @@
 package com.mikai233.shared.entity
 
-import com.mikai233.common.entity.TraceableRootEntity
 import org.springframework.data.annotation.Id
 
 data class PlayerAction(
@@ -11,7 +10,7 @@ data class PlayerAction(
     var latestActionMills: Long,
     var actionParam: Long,
 ) : TraceableRootEntity<Long> {
-    override fun key(): Long {
+    override fun id(): Long {
         return playerId
     }
 }

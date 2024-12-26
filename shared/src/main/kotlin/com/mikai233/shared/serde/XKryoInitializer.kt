@@ -1,19 +1,20 @@
-package com.mikai233.common.serde
+package com.mikai233.shared.serde
 
 import akka.actor.ExtendedActorSystem
 import com.esotericsoftware.kryo.serializers.FieldSerializer
 import com.mikai233.common.extension.logger
+import com.mikai233.common.message.Message
 import io.altoo.akka.serialization.kryo.DefaultKryoInitializer
 import io.altoo.akka.serialization.kryo.serializer.scala.ScalaKryo
 import org.reflections.Reflections
 
 object KryoMapper {
-    val mapper: Map<Int, Class<out SerdeMessage>>
+    val mapper: Map<Int, Class<out Message>>
 
     init {
         val allInternalMessages =
             Reflections("com.mikai233.shared.message")
-                .getSubTypesOf(SerdeMessage::class.java)
+                .getSubTypesOf(Message::class.java)
                 .asSequence()
                 .filter { !it.isInterface }
                 .sortedBy { it.name }
