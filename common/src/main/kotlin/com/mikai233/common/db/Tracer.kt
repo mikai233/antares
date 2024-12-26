@@ -81,6 +81,10 @@ class Tracer<K, E>(
         deleteEntities(currentEntities)
     }
 
+    /**
+     * 对[Entity]中的直接非Map类型的字段进行标脏操作
+     * 通过反射获取字段的值，计算hash值，如果hash值发生变化，则标记为[Status.Set]
+     */
     private fun traceNormalFields(id: K, entity: E) {
         val valueByFieldName = normalValues.computeIfAbsent(id) { mutableMapOf() }
         normalFields.forEach { (name, property) ->
@@ -91,17 +95,21 @@ class Tracer<K, E>(
         }
     }
 
+    /**
+     * 对[Entity]中的Map类型的字段进行标脏操作
+     * 通过反射获取字段的值，然后迭代这个Map，计算Map中每个Value的hash值，如果hash值发生变化，则标记为[Status.Set]
+     * 同时和之前的[mapValues]进行比对，如果之前的Map中有的Key在当前Map中不存在，则标记为[Status.Unset]
+     */
     private fun traceMapFields(id: K, entity: E) {
         val valueByFieldName = mapValues.computeIfAbsent(id) { mutableMapOf() }
         mapFields.forEach { (name, property) ->
             val currentMap = property.get(entity)
             logger.trace("trace map field:{}, value:{}", name, currentMap)
             val valueByMapKey = valueByFieldName.computeIfAbsent(name) { mutableMapOf() }
-            val deletedMapKeys = mutableSetOf<Any?>()
             //TODO replace . to _ in k
-            valueByMapKey.keys.forEach { k ->
+            valueByMapKey.forEach { (k, v) ->
                 if (k !in currentMap) {
-                    deletedMapKeys.add(k)
+                    v.status = Status.Unset
                 }
             }
             currentMap.forEach { (k, v) ->
@@ -111,8 +119,13 @@ class Tracer<K, E>(
         }
     }
 
+    /**
+     * 计算哈希值，如果哈希值发生变化，将计算哈希的对象存入[Record.value]中，用于写库，并标记为[Status.Set]
+     * 计算哈希时，首先会计算普通哈希值，如果这个对象连续多次计算普通哈希都相同，那么会计算一次复杂哈希
+     * 复杂哈希是通过将这个对象进行序列化之后计算的
+     */
     private fun hash(name: String, obj: Any?, record: Record) {
-        if (record.dirty) {
+        if (record.status.isDirty()) {
             //虽然这个字段已经被标记为脏，但是后续也可能会继续改动此值，需要保持脏数据为最新值
             record.value = obj
             logger.trace("field:{} is dirty, skip", name)
@@ -122,12 +135,12 @@ class Tracer<K, E>(
         record.hashCode = obj.hashCode()
         if (preHashCode != record.hashCode) {
             record.hashSameCount = 0
-            record.dirty = true
+            record.status = Status.Set
             record.value = obj
         } else {
             record.hashSameCount++
         }
-        if (record.dirty) {
+        if (record.status.isDirty()) {
             logger.trace("field:{} is dirty", name)
             return
         }
@@ -135,7 +148,7 @@ class Tracer<K, E>(
             val preFullHashCode = record.fullHashCode
             record.fullHashCode = fullHashCode(obj)
             if (preFullHashCode != record.fullHashCode) {
-                record.dirty = true
+                record.status = Status.Set
                 record.value = obj
                 logger.trace("field:{} is dirty", name)
             }
@@ -150,7 +163,7 @@ class Tracer<K, E>(
         value.hashSameCount = 0
         value.hashCode = obj.hashCode()
         value.fullHashCode = fullHashCode(obj)
-        value.dirty = false
+        value.status = Status.Clean
         value.value = null
         logger.trace("field:{} is clean", name)
     }
@@ -160,17 +173,53 @@ class Tracer<K, E>(
             return
         }
         val template = mongoTemplate()
-        val upsertList = mutableListOf<Upsert>()
+        val updateOpList = mutableListOf<UpdateOp>()
         var anyValueDirty = false
         normalValues.forEach { (id, valueByFieldName) ->
             valueByFieldName.forEach { (fieldName, record) ->
-                val value = record.value
-                if (value != null) {
+                if (record.status.isDirty()) {
                     anyValueDirty = true
+                    val value = record.value
                     val criteria = Criteria.where(idField.name).`is`(id)
                     val update = Update.update(fieldName, deepCopy(value))
-                    upsertList.add(Upsert(Query.query(criteria), update, record))
+                    updateOpList.add(UpdateOp(Query.query(criteria), update, record))
                     cleanup(fieldName, value, record)
+                }
+            }
+        }
+        //map中已删除的字段在执行unset失败时，进行回滚的function
+        val rollbackFunction: MutableMap<Int, () -> Unit> = mutableMapOf()
+        mapValues.forEach { (id, valueByFieldName) ->
+            valueByFieldName.forEach { (fieldName, valueByMapKey) ->
+                val iter = valueByMapKey.iterator()
+                while (iter.hasNext()) {
+                    val (k, record) = iter.next()
+                    when (record.status) {
+                        Status.Clean -> Unit
+                        Status.Set -> {
+                            anyValueDirty = true
+                            val value = record.value
+                            val criteria = Criteria.where(idField.name).`is`(id)
+                            val update = Update.update("$fieldName.$k", deepCopy(value))
+                            updateOpList.add(UpdateOp(Query.query(criteria), update, record))
+                            //TODO: 移除k中的特殊值
+                            cleanup("$fieldName.$k", value, record)
+                        }
+
+                        Status.Unset -> {
+                            anyValueDirty = true
+                            val criteria = Criteria.where(idField.name).`is`(id)
+                            val update = Update().unset("$fieldName.$k")
+                            updateOpList.add(UpdateOp(Query.query(criteria), update, record))
+                            iter.remove()
+                            rollbackFunction[updateOpList.lastIndex] = {
+                                //如果回滚的时候已经有值了，说明是删除后又新增了，保持原来的值不变，不是这种情况才进行回滚
+                                if (valueByMapKey[k] == null) {
+                                    valueByMapKey[k] = record
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -178,20 +227,48 @@ class Tracer<K, E>(
             return
         }
         updateJob = coroutine.launch {
-            val upsertResults = upsertList.map { upsert ->
+            val updateResults = updateOpList.map { updateOp ->
                 async(Dispatchers.IO) {
-                    runCatching { template.upsert(upsert.query, upsert.update, entityClass.java) }
+                    runCatching {
+                        if (updateOp.record.status == Status.Unset) {
+                            template.updateFirst(updateOp.query, updateOp.update, entityClass.java)
+                        } else {
+                            template.upsert(updateOp.query, updateOp.update, entityClass.java)
+                        }
+                    }
                 }
             }.awaitAll()
-            upsertResults.forEachIndexed { index, result ->
+            //下面的逻辑已经从IO线程回到主线程了，这些操作不会和[trace]操作冲突
+            updateResults.forEachIndexed { index, result ->
                 if (result.isFailure) {
-                    val upsert = upsertList[index]
+                    val op = updateOpList[index]
                     logger.error(
-                        "upsert failed, query:${upsert.query}, update:${upsert.update}, record:${upsert.record}",
+                        "update failed, query:${op.query}, update:${op.update}, record:${op.record}",
                         result.exceptionOrNull()
                     )
                     //写入失败，将记录标记为脏数据，下次继续尝试写入
-                    upsert.record.dirty = true
+                    when (op.record.status) {
+                        Status.Clean -> {
+                            //之前的状态是Set 因为做了cleanup 所以是Clean
+                            op.record.status = Status.Set
+                        }
+
+                        Status.Set -> error("should not happen")
+                        Status.Unset -> {
+                            //Unset失败了，重新加回去，下次继续尝试删除
+                            rollbackFunction[index]?.invoke()
+                        }
+                    }
+                } else {
+                    val updateResult = result.getOrThrow()
+                    val op = updateOpList[index]
+                    logger.debug(
+                        "update success, query:{}, update:{}, record:{}, result:{}",
+                        op.query,
+                        op.update,
+                        op.record,
+                        updateResult
+                    )
                 }
             }
         }
@@ -202,7 +279,7 @@ class Tracer<K, E>(
         entities.entries.removeIf { (id, _) -> id !in currentEntities }
         coroutine.launch {
             val template = mongoTemplate()
-            val results = entities.map { (id, entity) ->
+            val results = deletedEntities.map { (id, entity) ->
                 val retryTemplate = retryTemplate()
                 async(Dispatchers.IO) {
                     id to runCatching {
@@ -212,16 +289,19 @@ class Tracer<K, E>(
                     }
                 }
             }.awaitAll()
+            //下面的逻辑已经从IO线程回到主线程了，这些操作不会和[trace]操作冲突
             results.forEach { (id, result) ->
                 if (result.isFailure) {
                     logger.error("delete failed, entity:${entities[id]}", result.exceptionOrNull())
-                } else {
                     //删失败了，重新加回去，下次继续尝试删除
                     val deletedEntity = deletedEntities[id]
                     //entities中又有该id的数据了，说明是删除后又新增了
                     if (entities[id] == null && deletedEntity != null) {
                         entities[id] = deletedEntity
                     }
+                } else {
+                    val deleteResult = result.getOrThrow()
+                    logger.debug("delete success, entity:{}, result:{}", entities[id], deleteResult)
                 }
             }
         }
@@ -336,7 +416,7 @@ fun main() {
     room.players[3] = RoomPlayer(12, 12)
 //    db.delete(room)
     while (true) {
-        Thread.sleep(200)
+        Thread.sleep(1000)
         db.trace(mapOf(1 to room))
         while (pendingRunnable.isNotEmpty()) {
             pendingRunnable.poll().run()

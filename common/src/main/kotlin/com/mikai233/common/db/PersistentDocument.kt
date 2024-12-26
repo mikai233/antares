@@ -8,6 +8,6 @@ import org.springframework.data.mongodb.core.MongoTemplate
  * @date 2023/6/1
  */
 class PersistentDocument(
-    val operation: Operation,
+    val status: Status,
     val block: (MongoTemplate) -> Unit
 )

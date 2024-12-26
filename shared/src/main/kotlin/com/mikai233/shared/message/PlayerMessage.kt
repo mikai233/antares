@@ -1,27 +1,28 @@
 package com.mikai233.shared.message
 
 import com.google.protobuf.GeneratedMessage
+import com.mikai233.common.message.Message
 import com.mikai233.common.script.Script
 
-data object StopPlayer : SerdePlayerMessage
+data object StopPlayer : Message
 
-data class PlayerScript(val script: Script) : SerdePlayerMessage
+data class PlayerScript(val script: Script) : Message
 
-data object PlayerInitDone : PlayerMessage
+data object PlayerInitDone : Message
 
-data object PlayerTick : PlayerMessage
+data object PlayerTick : Message
 
-data class PlayerProtobufEnvelope(val message: GeneratedMessage) : BusinessPlayerMessage
+data class PlayerProtobufEnvelope(override val playerId: Long, val message: GeneratedMessage) : PlayerMessage
 
 data class WHPlayerLogin(
     val account: String,
-    val playerId: Long,
+    override val playerId: Long,
     val worldId: Long
-) : BusinessPlayerMessage
+) : PlayerMessage
 
 data class WHPlayerCreate(
     val account: String,
-    val playerId: Long,
+    override val playerId: Long,
     val worldId: Long,
     val nickname: String,
-) : BusinessPlayerMessage
+) : PlayerMessage

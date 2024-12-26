@@ -1,6 +1,6 @@
 package com.mikai233.shared
 
-import com.google.protobuf.GeneratedMessageV3
+import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.conf.ServerMode
 import com.mikai233.common.extension.invokeOnTargetMode
 import com.mikai233.common.extension.protobufJsonPrinter
@@ -17,7 +17,7 @@ object ProtobufPrinter {
 fun logMessage(logger: Logger, message: Any, msgHeader: () -> String = { "" }) {
     invokeOnTargetMode(setOf(ServerMode.DevMode)) {
         val formattedMessage = when (message) {
-            is GeneratedMessageV3 -> {
+            is GeneratedMessage -> {
                 "${message::class.simpleName} ${ProtobufPrinter.printer.print(message)}"
             }
 
