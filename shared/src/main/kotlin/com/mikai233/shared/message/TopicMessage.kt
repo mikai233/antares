@@ -1,11 +1,13 @@
 package com.mikai233.shared.message
 
-import com.google.protobuf.GeneratedMessageV3
+import com.google.protobuf.GeneratedMessage
+import com.mikai233.common.message.Message
 
-sealed interface WorldTopicMessage : SerdeMessage
 
-data class ProtobufEnvelopeToWorldClient(val inner: GeneratedMessageV3) : WorldTopicMessage
+sealed interface WorldTopicMessage : Message
 
-sealed interface AllWorldTopicMessage : SerdeMessage
+data class ProtobufEnvelopeToWorldClient(val inner: GeneratedMessage) : WorldTopicMessage
 
-data class ProtobufEnvelopeToAllWorldClient(val inner: GeneratedMessageV3) : AllWorldTopicMessage
+sealed interface AllWorldTopicMessage : Message
+
+data class ProtobufEnvelopeToAllWorldClient(val inner: GeneratedMessage) : AllWorldTopicMessage

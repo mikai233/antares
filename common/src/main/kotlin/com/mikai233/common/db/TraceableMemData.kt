@@ -1,6 +1,6 @@
 package com.mikai233.common.db
 
-import com.mikai233.common.core.actor.ActorCoroutine
+import com.mikai233.common.core.actor.TrackingCoroutineScope
 import com.mikai233.common.serde.KryoPool
 import org.springframework.data.mongodb.core.MongoTemplate
 import kotlin.reflect.KClass
@@ -8,7 +8,7 @@ import kotlin.reflect.KClass
 abstract class TraceableMemData<K, E>(
     entityClass: KClass<E>,
     kryoPool: KryoPool,
-    coroutine: ActorCoroutine,
+    coroutine: TrackingCoroutineScope,
     mongoTemplate: () -> MongoTemplate
 ) : MemData<E> where K : Any, E : Entity {
     private val tracer = Tracer<K, E>(entityClass, kryoPool, coroutine, mongoTemplate)
@@ -19,6 +19,7 @@ abstract class TraceableMemData<K, E>(
         tracer.trace(entities())
     }
 
-    fun flush() {
+    fun flush(): Boolean {
+        return tracer.flush(entities())
     }
 }

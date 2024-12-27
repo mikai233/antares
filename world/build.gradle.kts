@@ -15,6 +15,7 @@ dependencies {
     implementation(tool.spring.data.mongodb)
     implementation(tool.mongodb.driver.sync)
     implementation(tool.reflections)
+    implementation(tool.jcommander)
     implementation(project(":common"))
     implementation(project(":shared"))
     implementation(project(":proto"))

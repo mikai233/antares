@@ -1,30 +1,36 @@
 package com.mikai233.common.core.actor
 
 import akka.actor.ActorRef
+import com.mikai233.common.extension.tell
 import kotlinx.coroutines.*
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executor
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
-fun ActorRef.safeActorCoroutine(): CoroutineScope {
-    return CoroutineScope(Executor { tell(it, ActorRef.noSender()) }.asCoroutineDispatcher())
+data class ActorCoroutineRunnable(val runnable: Runnable) : Runnable by runnable
+
+fun ActorRef.safeActorCoroutineScope(): TrackingCoroutineScope {
+    val dispatcher = Executor { tell(ActorCoroutineRunnable(it)) }.asCoroutineDispatcher()
+    return TrackingCoroutineScope(dispatcher + SupervisorJob())
 }
 
-class ActorCoroutine(private val scope: CoroutineScope) {
-    private val jobs: ArrayList<Job> = arrayListOf()
+class TrackingCoroutineScope(context: CoroutineContext) : CoroutineScope {
+    private val job = Job(context[Job])
+    override val coroutineContext: CoroutineContext = context + job
+
+    private val jobs = ConcurrentHashMap.newKeySet<Job>()
+
     fun launch(
         context: CoroutineContext = EmptyCoroutineContext,
         start: CoroutineStart = CoroutineStart.DEFAULT,
         block: suspend CoroutineScope.() -> Unit
     ): Job {
-        val job = scope.launch(context + SupervisorJob(), start, block)
-        jobs.add(job)
-        return job
+        val newJob = launch(context, start, block)
+        jobs.add(newJob)
+        newJob.invokeOnCompletion { jobs.remove(newJob) }
+        return newJob
     }
 
-    fun cancelAll(reason: String) {
-        jobs.forEach {
-            it.cancel(CancellationException(reason))
-        }
-    }
+    fun getAllJobs(): Set<Job> = jobs
 }

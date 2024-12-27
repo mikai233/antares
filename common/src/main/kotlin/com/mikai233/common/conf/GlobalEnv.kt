@@ -12,5 +12,5 @@ object GlobalEnv {
 
     const val LOGIN_PORT = 6666
 
-    const val SYSTEM_NAME = com.mikai233.common.core.config.SYSTEM_NAME
+    const val SYSTEM_NAME = com.mikai233.common.core.config.SystemName
 }

@@ -59,6 +59,8 @@ open class Node(
         AsyncCuratorFramework.wrap(client)
     }
 
+    val mongoDB = MongoDB(zookeeper)
+
     lateinit var scriptActor: ActorRef
         protected set
 

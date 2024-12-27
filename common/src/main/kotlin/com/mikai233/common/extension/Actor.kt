@@ -29,20 +29,22 @@ infix fun ActorRef.tell(message: Any) {
 }
 
 @Suppress("UNCHECKED_CAST")
-suspend fun <Req, Resp> ActorRef.ask(
+suspend fun <R> ActorRef.ask(
     message: Any,
     timeout: Duration = 3.minutes
-): Resp where Req : Message, Resp : Message {
-    return Patterns.ask(this, message, timeout.toJavaDuration()).await() as Resp
+): Result<R> where  R : Message {
+    return runCatching { Patterns.ask(this, message, timeout.toJavaDuration()).await() as R }
 }
 
 @Suppress("UNCHECKED_CAST")
-fun <Req, Resp> ActorRef.blockingAsk(
+fun <R> ActorRef.blockingAsk(
     message: Any,
     timeout: Duration = 3.minutes
-): Resp where Req : Message, Resp : Message {
-    return Patterns.ask(this, message, timeout.toJavaDuration()).toCompletableFuture()
-        .get(timeout.inWholeMilliseconds, TimeUnit.MILLISECONDS) as Resp
+): Result<R> where  R : Message {
+    return runCatching {
+        Patterns.ask(this, message, timeout.toJavaDuration()).toCompletableFuture()
+            .get(timeout.inWholeMilliseconds, TimeUnit.MILLISECONDS) as R
+    }
 }
 
 fun ActorSystem.startSingleton(name: String, role: Role, props: Props, handoffMessage: Message): ActorRef {

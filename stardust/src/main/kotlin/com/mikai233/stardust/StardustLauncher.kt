@@ -12,7 +12,7 @@ import com.mikai233.common.extension.logger
 import com.mikai233.gate.GateNode
 import com.mikai233.global.GlobalNode
 import com.mikai233.gm.GmNode
-import com.mikai233.player.HomeNode
+import com.mikai233.player.PlayerNode
 import com.mikai233.world.WorldNode
 import com.typesafe.config.ConfigFactory
 import kotlinx.coroutines.async
@@ -32,7 +32,7 @@ object StardustLauncher {
 
     init {
         nodeByRole[Role.Gate] = GateNode::class
-        nodeByRole[Role.Home] = HomeNode::class
+        nodeByRole[Role.Player] = PlayerNode::class
         nodeByRole[Role.World] = WorldNode::class
         nodeByRole[Role.Gm] = GmNode::class
         nodeByRole[Role.Global] = GlobalNode::class

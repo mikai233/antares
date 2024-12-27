@@ -26,6 +26,7 @@
             <option value="$PROJECT_DIR$/gate" />
             <option value="$PROJECT_DIR$/global" />
             <option value="$PROJECT_DIR$/gm" />
+            <option value="$PROJECT_DIR$/mixin" />
             <option value="$PROJECT_DIR$/player" />
             <option value="$PROJECT_DIR$/processor" />
             <option value="$PROJECT_DIR$/proto" />

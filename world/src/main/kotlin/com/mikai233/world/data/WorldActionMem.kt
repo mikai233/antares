@@ -1,26 +1,27 @@
 package com.mikai233.world.data
 
-import com.mikai233.common.db.MemData
+import com.mikai233.common.core.actor.TrackingCoroutineScope
+import com.mikai233.common.db.TraceableMemData
+import com.mikai233.common.serde.KryoPool
 import com.mikai233.shared.constants.WorldActionType
 import com.mikai233.shared.entity.WorldAction
-import com.mikai233.world.WorldActor
 import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.where
 
-class WorldActionMem : MemData<WorldActor, List<WorldAction>> {
-    private lateinit var worldActor: WorldActor
+class WorldActionMem(
+    private val worldId: Long,
+    private val mongoTemplate: MongoTemplate,
+    kryoPool: KryoPool,
+    coroutineScope: TrackingCoroutineScope,
+) : TraceableMemData<Int, WorldAction>(WorldAction::class, kryoPool, coroutineScope, { mongoTemplate }) {
     private var maxActionId: Long = 0
     private val worldAction: MutableMap<Int, WorldAction> = mutableMapOf()
 
-    override fun load(actor: WorldActor, mongoTemplate: MongoTemplate): List<WorldAction> {
-        return mongoTemplate.find(Query.query(where(WorldAction::worldId).`is`(actor.worldId)), WorldAction::class.java)
-    }
-
-    override fun onComplete(actor: WorldActor, db: ActorDatabase, data: List<WorldAction>) {
-        worldActor = actor
-        data.forEach {
-            db.tracer.traceEntity(it)
+    override fun init() {
+        val actions = mongoTemplate.find<WorldAction>(Query.query(where(WorldAction::worldId).`is`(worldId)))
+        actions.forEach {
             val id = it.id.split("_").last().toLong()
             if (id > maxActionId) {
                 maxActionId = id
@@ -29,16 +30,14 @@ class WorldActionMem : MemData<WorldActor, List<WorldAction>> {
         }
     }
 
+    override fun entities(): Map<Int, WorldAction> {
+        return worldAction
+    }
+
     fun getOrCreateAction(actionId: Int): WorldAction {
-        val action = worldAction[actionId]
-        return if (action != null) {
-            action
-        } else {
-            val id = "${worldActor.worldId}_${++maxActionId}"
-            val newAction = WorldAction(id, worldActor.worldId, actionId, 0L, 0L)
-            worldAction[actionId] = newAction
-            worldActor.manager.tracer.saveAndTrace(newAction)
-            newAction
+        return worldAction.getOrPut(actionId) {
+            val id = "${worldId}_${++maxActionId}"
+            WorldAction(id, worldId, actionId, 0L, 0L)
         }
     }
 
@@ -47,9 +46,7 @@ class WorldActionMem : MemData<WorldActor, List<WorldAction>> {
     }
 
     fun delAction(actionId: Int) {
-        worldAction.remove(actionId)?.also {
-            worldActor.manager.tracer.deleteAndCancelTrace(it)
-        }
+        worldAction.remove(actionId)
     }
 
     fun delAction(type: WorldActionType) {

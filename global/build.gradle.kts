@@ -12,6 +12,7 @@ dependencies {
     implementation(tool.groovy.all)
     implementation(tool.spring.data.mongodb)
     implementation(tool.mongodb.driver.sync)
+    implementation(tool.jcommander)
     implementation(project(":common"))
     implementation(project(":shared"))
 }

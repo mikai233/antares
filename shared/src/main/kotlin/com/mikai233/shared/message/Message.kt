@@ -2,8 +2,6 @@ package com.mikai233.shared.message
 
 import com.mikai233.common.message.Message
 
-object HandoffShardActor : Message
-
 data class ActorNamedRunnable(
     val name: String,
     val block: () -> Unit
@@ -17,11 +15,11 @@ data class ExcelUpdate(val hashcode: Int) : Message
 
 sealed interface ChannelMessage : Message
 
-sealed interface PlayerMessage : Message {
+interface PlayerMessage : Message {
     val playerId: Long
 }
 
-sealed interface WorldMessage : Message {
+interface WorldMessage : Message {
     val worldId: Long
 }
 

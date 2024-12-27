@@ -5,9 +5,9 @@ import com.mikai233.common.entity.PlayerAbstract
 import com.mikai233.common.extension.unixTimestamp
 import com.mikai233.common.message.MessageHandler
 import com.mikai233.protocol.testNotify
-import com.mikai233.shared.message.PlayerLogin
-import com.mikai233.shared.message.WHPlayerCreate
-import com.mikai233.shared.message.WHPlayerLogin
+import com.mikai233.shared.message.player.WHPlayerCreate
+import com.mikai233.shared.message.player.WHPlayerLogin
+import com.mikai233.shared.message.world.PlayerLogin
 import com.mikai233.world.WorldActor
 import com.mikai233.world.data.PlayerAbstractMem
 import kotlinx.coroutines.delay
@@ -26,7 +26,7 @@ class WorldLoginHandler : MessageHandler {
             val playerId = Random.nextUInt().toLong()
             world.sessionManager.createOrUpdateSession(playerId, channelActor)
             val abstract = PlayerAbstract(playerId, world.worldId, loginReq.account, "", 1, unixTimestamp())
-            abstractMem.createAbstract(abstract)
+            abstractMem.addAbstract(abstract)
             world.tellPlayer(playerId, WHPlayerCreate(channelActor, loginReq.account, playerId, world.worldId, ""))
         } else {
             //exists player

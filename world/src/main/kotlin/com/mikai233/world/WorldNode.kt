@@ -1,95 +1,91 @@
 package com.mikai233.world
 
-import akka.actor.typed.SupervisorStrategy
-import akka.actor.typed.javadsl.AbstractBehavior
-import akka.actor.typed.javadsl.ActorContext
-import akka.actor.typed.javadsl.Behaviors
-import akka.actor.typed.javadsl.Receive
+import akka.actor.ActorRef
+import akka.cluster.sharding.ShardCoordinator
+import com.beust.jcommander.JCommander
+import com.beust.jcommander.Parameter
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.conf.GlobalProto
 import com.mikai233.common.core.Launcher
 import com.mikai233.common.core.Node
-import com.mikai233.common.core.State
-import com.mikai233.common.core.component.*
-import com.mikai233.common.extension.closeableSingle
-import com.mikai233.common.extension.registerService
-import com.mikai233.common.inject.XKoin
+import com.mikai233.common.core.Role
+import com.mikai233.common.core.ShardEntityType
+import com.mikai233.common.extension.startSharding
+import com.mikai233.common.extension.startShardingProxy
 import com.mikai233.protocol.MsgCs
 import com.mikai233.protocol.MsgSc
-import com.mikai233.shared.component.ExcelConfigHolder
-import com.mikai233.common.script.ScriptActor
-import com.mikai233.shared.scriptActorServiceKey
-import com.mikai233.world.component.WorldMessageDispatcher
-import com.mikai233.world.component.WorldScriptSupport
-import com.mikai233.world.component.WorldSharding
-import com.mikai233.world.component.WorldWaker
-import org.koin.dsl.koinApplication
-import org.koin.dsl.module
-import org.koin.logger.slf4jLogger
+import com.mikai233.shared.message.WorldMessageExtractor
+import com.mikai233.shared.message.world.HandoffWorld
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import java.net.InetSocketAddress
 
-class WorldNode(private val port: Int = 2336, private val sameJvm: Boolean = false) : Launcher {
-    lateinit var koin: XKoin
-        private set
-
-    inner class WorldNodeGuardian(context: ActorContext<WorldSystemMessage>) :
-        AbstractBehavior<WorldSystemMessage>(context) {
-
-        override fun createReceive(): Receive<WorldSystemMessage> {
-            return newReceiveBuilder().onMessage(WorldSystemMessage::class.java) { message ->
-                when (message) {
-                    is SpawnScriptActorReq -> handleSpawnScriptActorReq(message)
-                }
-                Behaviors.same()
-            }.build()
-        }
-
-        private fun handleSpawnScriptActorReq(message: SpawnScriptActorReq) {
-            val scriptActor = context.spawn(Behaviors.setup { ScriptActor(it, this@WorldNode) }, ScriptActor.name())
-            context.system.registerService(
-                scriptActorServiceKey(GlobalEnv.machineIp, port),
-                scriptActor.narrow()
-            )
-            message.replyTo.tell(SpawnScriptActorResp(scriptActor))
-        }
-    }
+class WorldNode(
+    addr: InetSocketAddress,
+    name: String,
+    config: Config,
+    zookeeperConnectString: String,
+    sameJvm: Boolean = false
+) : Launcher, Node(addr, Role.World, name, config, zookeeperConnectString, sameJvm) {
 
     init {
         GlobalProto.init(MsgCs.MessageClientToServer.getDescriptor(), MsgSc.MessageServerToClient.getDescriptor())
-        koinApplication {
-            this@WorldNode.koin = XKoin(this)
-            slf4jLogger()
-            modules(serverModule())
-        }
     }
 
-    override fun launch() {
-        val node = koin.get<Node>()
-        node.state = State.Starting
-        node.onInit()
-        node.state = State.Started
+    lateinit var playerSharding: ActorRef
+        private set
+
+    lateinit var worldSharding: ActorRef
+        private set
+
+    override suspend fun launch() = start()
+
+    override suspend fun afterStart() {
+        startPlayerSharding()
+        startWorldSharding()
+        super.afterStart()
     }
 
-    private fun serverModule() = module(createdAtStart = true) {
-        single { this@WorldNode }
-        single { Node(koin) }
-        single { WorldMessageDispatcher(koin) }
-        closeableSingle { ZookeeperConfigCenter() }
-        closeableSingle { MongoHolder(koin) }
-        single { NodeConfigHolder(koin, Role.World, port, sameJvm) }
-        single { ExcelConfigHolder(koin) }
-        single {
-            AkkaSystem(koin, Behaviors.supervise(Behaviors.setup {
-                WorldNodeGuardian(it)
-            }).onFailure(SupervisorStrategy.resume()))
-        }
-        single { WorldSharding(koin) }
-        single { WorldScriptSupport(koin) }
-        single { WorldConfigHolder(koin) }
-        single { WorldWaker(koin) }
+    private fun startPlayerSharding() {
+        playerSharding = system.startShardingProxy(ShardEntityType.PlayerActor.name)
+    }
+
+    private fun startWorldSharding() {
+        worldSharding = system.startSharding(
+            ShardEntityType.WorldActor.name,
+            Role.World,
+            WorldActor.props(this),
+            HandoffWorld,
+            WorldMessageExtractor(3000),
+            ShardCoordinator.LeastShardAllocationStrategy(1, 3),
+        )
     }
 }
 
-fun main(args: Array<String>) {
-    val port = args[0].toInt()
-    WorldNode(port = port).launch()
+class Cli {
+    @Parameter(names = ["-h", "--host"], description = "host")
+    var host: String = GlobalEnv.machineIp
+
+    @Parameter(names = ["-p", "--port"], description = "port")
+    var port: Int = 2336
+
+    @Parameter(names = ["-p", "--conf"], description = "conf")
+    var conf: String = "world.conf"
+
+    @Parameter(names = ["-z", "--zookeeper"], description = "zookeeper")
+    var zookeeper: String = GlobalEnv.zkConnect
+
+    @Parameter(names = ["-n", "--name"], description = "system name")
+    var name: String = GlobalEnv.SYSTEM_NAME
+}
+
+suspend fun main(args: Array<String>) {
+    val cli = Cli()
+    JCommander.newBuilder()
+        .addObject(cli)
+        .build()
+        .parse(*args)
+    val addr = InetSocketAddress(cli.host, cli.port)
+    val config = ConfigFactory.load(cli.conf)
+    WorldNode(addr, cli.name, config, cli.zookeeper).launch()
 }

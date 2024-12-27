@@ -1,187 +1,101 @@
 package com.mikai233.player
 
-import akka.actor.AbstractActor
 import akka.actor.ActorRef
-import com.mikai233.common.core.actor.ActorCoroutine
-import com.mikai233.common.core.actor.safeActorCoroutine
-import com.mikai233.common.extension.*
+import akka.actor.Props
+import akka.cluster.sharding.ShardRegion
+import com.google.protobuf.GeneratedMessage
+import com.mikai233.common.core.actor.StatefulActor
+import com.mikai233.common.extension.ask
+import com.mikai233.common.extension.tell
+import com.mikai233.common.message.ExecuteActorFunction
 import com.mikai233.common.message.ExecuteActorScript
-import com.mikai233.shared.logMessage
+import com.mikai233.common.message.Message
+import com.mikai233.protocol.ProtoLogin
 import com.mikai233.shared.message.*
-import kotlin.time.Duration.Companion.milliseconds
+import com.mikai233.shared.message.player.*
+import kotlin.time.Duration.Companion.seconds
 
-class PlayerActor(val playerId: Long) : AbstractActor() {
+class PlayerActor(node: PlayerNode) : StatefulActor<PlayerNode>(node) {
     companion object {
-        val playerTick = 100.milliseconds
+        val TickDuration = 1.seconds
+
+        fun props(node: PlayerNode): Props = Props.create(PlayerActor::class.java, node)
     }
 
-    private val logger = actorLogger()
-    private val coroutine = ActorCoroutine(context.self.safeActorCoroutine())
+    val playerId: Long = self.path().name().toLong()
+
     private var channelActor: ActorRef? = null
-    private val playerActorSharding = playerSharding.playerActorSharding
-    private val worldActorSharding = playerSharding.worldActorSharding
-    private val playerScriptSupport by inject<PlayerScriptSupport>()
-    private val localScriptActor = playerScriptSupport.localScriptActor
-    val manager = PlayerDataManager(this, coroutine)
+    val manager = PlayerDataManager(this, coroutineScope)
 
-    init {
-        logger.info("{} preStart", playerId)
-        context.system.subscribe<PlayerMessage, ExcelUpdate>(context.self)
-    }
-
-    override fun createReceive(): Receive<PlayerMessage> {
-        return newReceiveBuilder().onMessage(PlayerMessage::class.java) { message ->
-            logMessage(logger, message) { "playerId:$playerId" }
-            when (message) {
-                StopPlayer -> {
-                    return@onMessage Behaviors.stopped()
-                }
-
-                PlayerInitDone -> {
-                    timers.startTimerWithFixedDelay(PlayerTick, playerTick)
-                    return@onMessage buffer.unstashAll(active())
-                }
-
-                is ActorNamedRunnable -> {
-                    handlePlayerActorRunnable(message)
-                }
-
-                is WHPlayerCreate -> {
-                    handleBusinessPlayerMessage(message)
-                }
-
-                else -> {
-                    startLoadingPlayerData(message)
-                }
+    override fun createReceive(): Receive {
+        return receiveBuilder()
+            .match(HandoffPlayer::class.java) { context.stop(self) }
+            .match(ActorNamedRunnable::class.java) { handleRunnable(it) }
+            .matchAny {
+                stash()
+                context.become(initialize())
             }
-            Behaviors.same()
-        }.build()
+            .build()
     }
 
-    private fun startLoadingPlayerData(message: PlayerMessage) {
-        buffer.stash(message)
-        runCatching(manager::loadAll).onFailure {
-            logger.error("$playerId load data error, stop the player", it)
-            stop()
-        }
-    }
-
-    private fun active(): Behavior<PlayerMessage> {
-        return newReceiveBuilder().onMessage(PlayerMessage::class.java) { message ->
-            when (message) {
-                is PlayerProtobufEnvelope -> {
-                    logMessage(logger, message) { "playerId:$playerId" }
-                    handlePlayerProtobufEnvelope(message)
-                }
-
-                is ActorNamedRunnable -> {
-                    handlePlayerActorRunnable(message)
-                }
-
-                PlayerInitDone -> unexpectedMessage(message)
-
-                StopPlayer -> {
-                    manager.stopAndFlush()
-                    return@onMessage stopping()
-                }
-
-                is ExecuteScript -> {
-                    message.script.invoke(this)
-                }
-
-                is PlayerScript -> {
-                    compilePlayerScript(message)
-                }
-
-                is BusinessPlayerMessage -> {
-                    logMessage(logger, message) { "playerId:$playerId" }
-                    handleBusinessPlayerMessage(message)
-                }
-
-                PlayerTick -> {
-                    manager.tick()
-                }
+    private fun initialize(): Receive {
+        return receiveBuilder()
+            .match(PlayerInitialized::class.java) {
+                unstashAll()
+                startTimerWithFixedDelay(PlayerTick, PlayerTick, TickDuration)
+                context.become(active())
             }
-            Behaviors.same()
-        }.onSignal(Terminated::class.java) { terminated ->
-            val who = terminated.ref
-            if (who == channelActor) {
-                channelActor = null
-                logger.info("player:{} channel actor:{} terminated", playerId, who)
-            }
-            Behaviors.same()
-        }.build()
+            .match(ActorNamedRunnable::class.java) { handleRunnable(it) }
+            .match(HandoffPlayer::class.java) { context.stop(self) }
+            .matchAny { stash() }
+            .build()
     }
 
-    private fun handlePlayerProtobufEnvelope(message: PlayerProtobufEnvelope) {
-        val inner = message.message
-        protobufDispatcher.dispatch(inner::class, this, inner)
+    private fun active(): Receive {
+        return receiveBuilder()
+            .match(ActorNamedRunnable::class.java) { handleRunnable(it) }
+            .match(HandoffPlayer::class.java) { context.become(stopping()) }
+            .match(PlayerTick::class.java) {}
+            .build()
     }
 
-    private fun handleBusinessPlayerMessage(message: BusinessPlayerMessage) {
-        internalDispatcher.dispatch(message::class, this, message)
+    private fun stopping(): Receive {
+        return receiveBuilder()
+            .match(ActorNamedRunnable::class.java) { handleRunnable(it) }
+            .match(PlayerUnloaded::class.java) { context.stop(self) }
+            .match(PlayerTick::class.java) {}
+            .build()
     }
 
-    private fun stopping(): Behavior<PlayerMessage> {
-        return newReceiveBuilder().onMessage(PlayerMessage::class.java) { message ->
-            when (message) {
-                is ActorNamedRunnable -> {
-                    handlePlayerActorRunnable(message)
-                }
+    private fun handleProtobufEnvelope(message: ProtobufEnvelope) {
 
-                PlayerInitDone -> unexpectedMessage(message)
+    }
 
-                is BusinessPlayerMessage -> Unit
-
-                StopPlayer -> {
-                    context.system.unsubscribe(context.self)
-                    coroutine.cancelAll("StopPlayer_$playerId")
-                    return@onMessage Behaviors.stopped()
-                }
-
-                is ExecuteScript -> {
-                    executePlayerScript(message)
-                }
-
-                is PlayerScript -> {
-                    compilePlayerScript(message)
-                }
-
-                PlayerTick -> {
-                    if (manager.stopAndFlush()) {
-                        stop()
-                    }
-                }
-            }
-            Behaviors.same()
-        }.onSignal(PostStop::class.java) { message ->
-            logger.info("player:{} {}", playerId, message)
-            Behaviors.same()
-        }.build()
+    private fun handlePlayerMessage(message: PlayerMessage) {
     }
 
     fun isOnline() = channelActor != null
 
-    fun write(message: GeneratedMessageV3) {
+    fun send(message: GeneratedMessage) {
         val channel = channelActor
         if (channel != null) {
             val envelope = ChannelProtobufEnvelope(message)
             channel tell envelope
         } else {
-            logger.warn("player:{} unable to write message to channel actor, because channel actor is null", playerId)
+            logger.warning("player:{} unable to send message to channel actor, because channel actor is null", playerId)
         }
     }
 
-    fun stop() {
-        context.self tell StopPlayer
+    fun passivate() {
+        context.parent.tell(ShardRegion.Passivate(HandoffPlayer), self)
     }
 
-    fun bindChannelActor(incomingChannelActor: ActorRef<SerdeChannelMessage>) {
+    fun bindChannelActor(incomingChannelActor: ActorRef) {
         if (incomingChannelActor != channelActor) {
             channelActor?.let {
                 context.unwatch(it)
                 logger.info("player:{} unbind old channel actor:{}", playerId, it)
-                it tell ChannelExpired(ConnectionExpiredNotify.Reason.MultiLogin_VALUE)
+                it tell ChannelExpired(ProtoLogin.ConnectionExpiredNotify.Reason.MultiLogin_VALUE)
             }
             channelActor = incomingChannelActor
             context.watch(channelActor)
@@ -190,29 +104,44 @@ class PlayerActor(val playerId: Long) : AbstractActor() {
     }
 
     private fun compilePlayerScript(message: PlayerScript) {
-        localScriptActor.tell(ExecuteActorScript(message.script, context.self))
+        node.scriptActor.tell(ExecuteActorScript(message.script), self)
     }
 
-    private fun executePlayerScript(message: ExecuteScript) {
-        message.script.invoke(this)
+    private fun executeActorFunction(message: ExecuteActorFunction) {
+        message.function.invoke(this)
     }
 
-    fun tellPlayer(playerId: Long, message: SerdePlayerMessage) {
-        playerActorSharding.tell(shardingEnvelope("$playerId", message))
+    fun tellPlayer(message: PlayerMessage) {
+        node.playerSharding.tell(message, self)
     }
 
-    fun tellWorld(worldId: Long, message: SerdeWorldMessage) {
-        worldActorSharding.tell(shardingEnvelope("$worldId", message))
+    fun forwardPlayer(message: PlayerMessage) {
+        node.playerSharding.forward(message, context)
     }
 
-    private fun handlePlayerActorRunnable(message: ActorNamedRunnable): Behavior<WorldMessage> {
+    suspend fun <R> askPlayer(message: PlayerMessage): Result<R> where  R : Message {
+        return node.playerSharding.ask(message)
+    }
+
+    fun tellWorld(message: WorldMessage) {
+        node.worldSharding.tell(message, self)
+    }
+
+    fun forwardWorld(message: WorldMessage) {
+        node.worldSharding.forward(message, context)
+    }
+
+    suspend fun <R> askWorld(message: WorldMessage): Result<R> where R : Message {
+        return node.worldSharding.ask(message)
+    }
+
+    private fun handleRunnable(message: ActorNamedRunnable) {
         runCatching(message::run).onFailure {
-            logger.error("player actor handle runnable:{} failed", message.name, it)
+            logger.error(it, "player:{} handle runnable:{} failed", playerId, message.name)
         }
-        return Behaviors.same()
     }
 
-    fun submit(name: String, block: () -> Unit) {
-        context.self tell ActorNamedRunnable(name, block)
+    fun execute(name: String, block: () -> Unit) {
+        self tell ActorNamedRunnable(name, block)
     }
 }

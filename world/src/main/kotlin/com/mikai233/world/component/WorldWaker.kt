@@ -6,7 +6,7 @@ import com.mikai233.common.core.component.WorldConfigHolder
 import com.mikai233.common.extension.logger
 import com.mikai233.common.extension.shardingEnvelope
 import com.mikai233.common.inject.XKoin
-import com.mikai233.shared.message.WakeupGameWorld
+import com.mikai233.shared.message.world.WakeupWorld
 import com.mikai233.world.WorldSystemMessage
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -30,7 +30,7 @@ class WorldWaker(private val koin: XKoin) : KoinComponent by koin {
     private fun wakeupWorld() {
         logger.info("start wakeup world")
         worldConfigHolder.getWorldConfig().forEach { (worldId, worldConfig) ->
-            worldSharding.worldActorSharding.tell(shardingEnvelope("$worldId", WakeupGameWorld))
+            worldSharding.worldActorSharding.tell(shardingEnvelope("$worldId", WakeupWorld))
         }
     }
 }

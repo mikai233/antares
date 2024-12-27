@@ -12,6 +12,7 @@ import com.mikai233.common.extension.startSharding
 import com.mikai233.common.inject.XKoin
 import com.mikai233.shared.WorldShardNum
 import com.mikai233.shared.message.*
+import com.mikai233.shared.message.world.StopWorld
 import com.mikai233.shared.startPlayerActorShardingProxy
 import com.mikai233.world.WorldActor
 import com.mikai233.world.WorldSystemMessage

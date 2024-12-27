@@ -8,10 +8,18 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.where
 
-class PlayerActionMem : MemData<PlayerActor, List<PlayerAction>> {
+class PlayerActionMem : MemData<PlayerAction> {
     private lateinit var playerActor: PlayerActor
     private var maxActionId: Long = 0
     private val worldAction: MutableMap<Int, PlayerAction> = mutableMapOf()
+
+    override fun init() {
+        TODO("Not yet implemented")
+    }
+
+    override fun traceValues(): List<PlayerAction> {
+
+    }
 
     override fun load(actor: PlayerActor, mongoTemplate: MongoTemplate): List<PlayerAction> {
         return mongoTemplate.find(
@@ -40,7 +48,6 @@ class PlayerActionMem : MemData<PlayerActor, List<PlayerAction>> {
             val id = "${playerActor.playerId}_${++maxActionId}"
             val newAction = PlayerAction(id, playerActor.playerId, actionId, 0L, 0L)
             worldAction[actionId] = newAction
-            playerActor.manager.tracer.saveAndTrace(newAction)
             newAction
         }
     }
@@ -50,9 +57,7 @@ class PlayerActionMem : MemData<PlayerActor, List<PlayerAction>> {
     }
 
     fun delAction(actionId: Int) {
-        worldAction.remove(actionId)?.also {
-            playerActor.manager.tracer.deleteAndCancelTrace(it)
-        }
+        worldAction.remove(actionId)
     }
 
     fun delAction(type: PlayerActionType) {

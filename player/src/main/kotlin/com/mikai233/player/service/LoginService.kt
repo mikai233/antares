@@ -8,7 +8,7 @@ import com.mikai233.protocol.ProtoLogin.LoginResp
 import com.mikai233.protocol.loginResp
 import com.mikai233.protocol.playerData
 import com.mikai233.shared.entity.Player
-import com.mikai233.shared.message.WHPlayerCreate
+import com.mikai233.shared.message.player.WHPlayerCreate
 
 /**
  * @author mikai233

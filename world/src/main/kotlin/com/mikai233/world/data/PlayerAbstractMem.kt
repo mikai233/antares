@@ -1,61 +1,49 @@
 package com.mikai233.world.data
 
-import com.mikai233.common.db.MemData
-import com.mikai233.common.db.Tracer
+import com.mikai233.common.core.actor.TrackingCoroutineScope
+import com.mikai233.common.db.TraceableMemData
 import com.mikai233.common.entity.PlayerAbstract
-import com.mikai233.world.WorldActor
+import com.mikai233.common.serde.KryoPool
 import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.where
 
-class PlayerAbstractMem : MemData<PlayerAbstract> {
-    override val tracer: Tracer? = Tracer()
-
-    override fun init() {
-        TODO("Not yet implemented")
-    }
-
-    override fun traceValues(): List<PlayerAbstract> {
-        TODO("Not yet implemented")
-    }
-
-    private lateinit var worldActor: WorldActor
+class PlayerAbstractMem(
+    private val worldId: Long,
+    private val mongoTemplate: MongoTemplate,
+    kryoPool: KryoPool,
+    coroutineScope: TrackingCoroutineScope,
+) :
+    TraceableMemData<Long, PlayerAbstract>(PlayerAbstract::class, kryoPool, coroutineScope, { mongoTemplate }) {
     private val playerAbstracts: MutableMap<Long, PlayerAbstract> = mutableMapOf()
     private val accountToAbstracts: MutableMap<String, PlayerAbstract> = mutableMapOf()
 
-    override fun load(actor: WorldActor, mongoTemplate: MongoTemplate): List<PlayerAbstract> {
-        return mongoTemplate.find(
-            Query.query(where(PlayerAbstract::worldId).`is`(actor.worldId)),
-            PlayerAbstract::class.java
-        )
-    }
-
-    override fun onComplete(actor: WorldActor, db: ActorDatabase, data: List<PlayerAbstract>) {
-        worldActor = actor
-        data.forEach {
-            db.tracer.traceEntity(it)
+    override fun init() {
+        val playerAbstractList =
+            mongoTemplate.find<PlayerAbstract>(Query.query(where(PlayerAbstract::worldId).`is`(worldId)))
+        playerAbstractList.forEach {
             playerAbstracts[it.playerId] = it
             accountToAbstracts[it.account] = it
         }
     }
 
-    fun createAbstract(playerAbstract: PlayerAbstract) {
-        check(
-            playerAbstracts.containsKey(playerAbstract.playerId).not()
-        ) { "abstract:${playerAbstract.playerId} already exists" }
-        playerAbstracts[playerAbstract.playerId] = playerAbstract
-        accountToAbstracts[playerAbstract.account] = playerAbstract
-        worldActor.manager.tracer.saveAndTrace(playerAbstract)
+    override fun entities(): Map<Long, PlayerAbstract> {
+        return playerAbstracts
     }
 
-    operator fun get(playerId: Long) = playerAbstracts[playerId]
+    fun addAbstract(abstract: PlayerAbstract) {
+        check(playerAbstracts.containsKey(abstract.playerId).not()) { "abstract:${abstract.playerId} already exists" }
+        playerAbstracts[abstract.playerId] = abstract
+        accountToAbstracts[abstract.account] = abstract
+    }
 
     fun delAbstract(playerAbstract: PlayerAbstract) {
         accountToAbstracts.remove(playerAbstract.account)
-        playerAbstracts.remove(playerAbstract.playerId)?.also {
-            worldActor.manager.tracer.deleteAndCancelTrace(playerAbstract)
-        }
+        playerAbstracts.remove(playerAbstract.playerId)
     }
+
+    operator fun get(playerId: Long) = playerAbstracts[playerId]
 
     fun getByAccount(account: String) = accountToAbstracts[account]
 }

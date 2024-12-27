@@ -7,10 +7,6 @@ import com.mikai233.common.script.Script
 
 sealed interface ScriptProxyMessage : Message
 
-sealed interface SerdeScriptProxyMessage : ScriptProxyMessage
-
-data class ServiceList(val inner: Receptionist.Listing) : ScriptProxyMessage
-
 @AllOpen
 sealed class DispatchScript : ScriptProxyMessage
 

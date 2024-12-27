@@ -3,7 +3,7 @@ package com.mikai233.common.db
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
 import com.google.common.hash.Hashing
-import com.mikai233.common.core.actor.ActorCoroutine
+import com.mikai233.common.core.actor.TrackingCoroutineScope
 import com.mikai233.common.entity.*
 import com.mikai233.common.extension.Json
 import com.mikai233.common.extension.logger
@@ -41,7 +41,7 @@ const val FULL_HASH_THRESHOLD = 100
 class Tracer<K, E>(
     private val entityClass: KClass<E>,
     private val kryoPool: KryoPool,
-    private val coroutine: ActorCoroutine,
+    private val coroutine: TrackingCoroutineScope,
     private val mongoTemplate: () -> MongoTemplate
 ) where K : Any, E : Entity {
     private val logger = logger()
@@ -66,6 +66,9 @@ class Tracer<K, E>(
 
     private fun fullHashCode(obj: Any?) = hashFunction.hashBytes(Json.toBytes(obj))
 
+    /**
+     * TODO: 将每个字段的标脏操作均匀的分摊到一个时间段内
+     */
     fun trace(currentEntities: Map<K, E>) {
         check(!flushing) { "tracer ${entityClass::class.qualifiedName} is flushing" }
         trace0(currentEntities)
@@ -214,9 +217,7 @@ class Tracer<K, E>(
                             iter.remove()
                             rollbackFunction[updateOpList.lastIndex] = {
                                 //如果回滚的时候已经有值了，说明是删除后又新增了，保持原来的值不变，不是这种情况才进行回滚
-                                if (valueByMapKey[k] == null) {
-                                    valueByMapKey[k] = record
-                                }
+                                valueByMapKey.putIfAbsent(k, record)
                             }
                         }
                     }
@@ -382,9 +383,7 @@ fun main() {
     val template = MongoTemplate(SimpleMongoClientDatabaseFactory(client, "test"))
     val r = template.findById(1, Room::class.java)
     val pendingRunnable = LinkedList<Runnable>()
-    val executor = Executor {
-        pendingRunnable.add(it)
-    }
+    val executor = Executor { pendingRunnable.add(it) }
     val pool = KryoPool(
         DEPS_EXTRA + arrayOf(
             Room::class,
@@ -395,84 +394,87 @@ fun main() {
             Bird::class
         )
     )
-    val actorCoroutine = ActorCoroutine(CoroutineScope(executor.asCoroutineDispatcher()))
+    val actorCoroutine = TrackingCoroutineScope(executor.asCoroutineDispatcher())
     val db = Tracer<Int, Room>(Room::class, pool, actorCoroutine) { template }
-    val room = Room(
-        1,
-        "mikai",
-        unixTimestamp(),
-        false,
-        "",
-        hashMapOf(1 to RoomPlayer(1, 1), 2 to RoomPlayer(2, 2)),
-        DirectObj(",", 12, 12, false),
-        mutableListOf(),
-        TrackChild("hello", "world"),
-        mutableListOf(Cat("a", 1), Bird("bb")),
-        Cat("asdlfkjalsdk", 1)
-    )
-//    template.save(room)
-//    db.traceEntity(room)
-    room.players.clear()
-    room.players[3] = RoomPlayer(12, 12)
-//    db.delete(room)
+    val rooms = mutableMapOf<Int, Room>()
+    repeat(3000) {
+        val room = Room(
+            it + 1,
+            "mikai",
+            unixTimestamp(),
+            false,
+            "",
+            hashMapOf(1 to RoomPlayer(1, 1), 2 to RoomPlayer(2, 2)),
+            DirectObj(",", 12, 12, false),
+            mutableListOf(),
+            TrackChild("hello", "world"),
+            mutableListOf(Cat("a", 1), Bird("bb")),
+            Cat("asdlfkjalsdk", 1)
+        )
+        rooms[room.id] = room
+    }
     while (true) {
-        Thread.sleep(1000)
-        db.trace(mapOf(1 to room))
+        Thread.sleep(5 * 1000)
+        db.trace(rooms)
         while (pendingRunnable.isNotEmpty()) {
             pendingRunnable.poll().run()
         }
-        room.changeableBoolean = Random.nextBoolean()
-        if (Random.nextBoolean()) {
-            room.players[Random.nextInt()] = RoomPlayer(Random.nextInt(), Random.nextInt())
-        }
-        if (Random.nextBoolean()) {
-            room.players.keys.randomOrNull()?.let {
-                val player = requireNotNull(room.players[it])
-                if (player is RoomPlayer) {
-                    player.level = Random.nextInt()
-                }
+        rooms.values.shuffled().take(100).forEach { randomOp(it) }
+    }
+}
+
+fun randomOp(room: Room) {
+    room.changeableBoolean = Random.nextBoolean()
+    if (Random.nextBoolean()) {
+        room.players[Random.nextInt()] = RoomPlayer(Random.nextInt(), Random.nextInt())
+    }
+    if (Random.nextBoolean()) {
+        room.players.keys.randomOrNull()?.let {
+            val player = requireNotNull(room.players[it])
+            if (player is RoomPlayer) {
+                player.level = Random.nextInt()
             }
         }
-        if (Random.nextBoolean()) {
-            room.players.keys.randomOrNull()?.let {
-                room.players.remove(it)
-            }
+    }
+    if (Random.nextBoolean()) {
+        room.players.keys.randomOrNull()?.let {
+            room.players.remove(it)
         }
-        if (Random.nextBoolean()) {
-            room.changeableString = Random.nextLong().toString()
+    }
+    if (Random.nextBoolean()) {
+        room.changeableString = Random.nextLong().toString()
+    }
+    if (Random.nextBoolean()) {
+        room.directObj.c = Random.nextLong()
+    }
+    if (Random.nextBoolean()) {
+        room.listObj = null
+    }
+    if (Random.nextBoolean()) {
+        room.listObj =
+            generateSequence(1) { it + 1 }.take(Random.nextInt(1..20)).map { it.toString() }.toMutableList()
+    }
+    if (Random.nextBoolean()) {
+        room.trackChild.b = Random.nextLong().toString()
+    }
+    if (Random.nextBoolean()) {
+        room.animals.randomOrNull()?.let {
+            room.animals.remove(it)
         }
-        if (Random.nextBoolean()) {
-            room.directObj.c = Random.nextLong()
-        }
-        if (Random.nextBoolean()) {
-            room.listObj = null
-        }
-        if (Random.nextBoolean()) {
-            room.listObj =
-                generateSequence(1) { it + 1 }.take(Random.nextInt(1..20)).map { it.toString() }.toMutableList()
-        }
-        if (Random.nextBoolean()) {
-            room.trackChild.b = Random.nextLong().toString()
-        }
-        if (Random.nextBoolean()) {
-            room.animals.randomOrNull()?.let {
-                room.animals.remove(it)
-            }
-        }
-        if (Random.nextBoolean()) {
-            room.animals.add(Bird(Random.nextLong().toString()))
-        }
-        if (Random.nextBoolean()) {
-            room.animals.add(Cat(Random.nextLong().toString(), Random.nextInt()))
-        }
-        if (Random.nextBoolean()) {
-            room.animals = mutableListOf()
-        }
-        if (Random.nextBoolean()) {
-            room.directInterface = Cat(Random.nextLong().toString(), Random.nextInt())
-        }
-        if (Random.nextBoolean()) {
-            room.directInterface = Bird(Random.nextLong().toString())
-        }
+    }
+    if (Random.nextBoolean()) {
+        room.animals.add(Bird(Random.nextLong().toString()))
+    }
+    if (Random.nextBoolean()) {
+        room.animals.add(Cat(Random.nextLong().toString(), Random.nextInt()))
+    }
+    if (Random.nextBoolean()) {
+        room.animals = mutableListOf()
+    }
+    if (Random.nextBoolean()) {
+        room.directInterface = Cat(Random.nextLong().toString(), Random.nextInt())
+    }
+    if (Random.nextBoolean()) {
+        room.directInterface = Bird(Random.nextLong().toString())
     }
 }

@@ -1,45 +1,40 @@
 package com.mikai233.world
 
-import akka.actor.typed.ActorRef
-import akka.actor.typed.pubsub.Topic
-import com.google.protobuf.GeneratedMessageV3
+import akka.actor.ActorRef
+import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.extension.logger
+import com.mikai233.common.extension.tell
 import com.mikai233.shared.logMessage
+import com.mikai233.shared.message.ChannelMessage
 import com.mikai233.shared.message.ChannelProtobufEnvelope
-import com.mikai233.shared.message.ProtobufEnvelopeToAllWorldClient
-import com.mikai233.shared.message.ProtobufEnvelopeToWorldClient
-import com.mikai233.shared.message.SerdeChannelMessage
 
 class WorldSessionManager(val world: WorldActor) {
-    private val logger = logger()
-    private val sessions: LinkedHashMap<Long, WorldSession> = LinkedHashMap(1000)
+    private val sessions: MutableMap<Long, WorldSession> = mutableMapOf()
 
-    inner class WorldSession(private val playerId: Long, private val channelActor: ActorRef<SerdeChannelMessage>) {
+    inner class WorldSession(private val playerId: Long, private val channelActor: ActorRef) {
         private val logger = logger()
-        val world = this@WorldSessionManager.world
-        val worldId = world.worldId
 
-        fun write(message: SerdeChannelMessage) {
+        fun sendChannel(message: ChannelMessage) {
             channelActor.tell(message)
-            logMessage(logger, message) { "playerId:$playerId worldId:$worldId" }
+            logMessage(logger, message) { "playerId:$playerId worldId:${world.worldId}" }
         }
 
-        fun writeProtobuf(message: GeneratedMessageV3) {
-            write(ChannelProtobufEnvelope(message))
+        fun send(message: GeneratedMessage) {
+            sendChannel(ChannelProtobufEnvelope(message))
         }
     }
 
-    fun createOrUpdateSession(playerId: Long, channelActor: ActorRef<SerdeChannelMessage>): WorldSession {
+    fun createOrUpdateSession(playerId: Long, channelActor: ActorRef): WorldSession {
         val session = WorldSession(playerId, channelActor)
         sessions[playerId] = session
         return session
     }
 
-    fun broadcastWorldClient(message: GeneratedMessageV3) {
-        world.worldTopic.tell(Topic.publish(ProtobufEnvelopeToWorldClient(message)))
+    fun broadcastWorldClient(message: GeneratedMessage) {
+        //TODO
     }
 
-    fun broadcastAllWorldClient(message: GeneratedMessageV3) {
-        world.allWorldTopic.tell(Topic.publish(ProtobufEnvelopeToAllWorldClient(message)))
+    fun broadcastAllWorldClient(message: GeneratedMessage) {
+        //TODO
     }
 }

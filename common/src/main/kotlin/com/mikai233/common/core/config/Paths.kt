@@ -1,10 +1,12 @@
 package com.mikai233.common.core.config
 
-const val SYSTEM_NAME = "antares"
+const val SystemName = "antares"
 
-const val Root = "/$SYSTEM_NAME"
+const val Root = "/$SystemName"
 
 const val ServerHosts = "$Root/server_hosts"
+
+const val DataSourceGame = "$Root/data_source/game"
 
 fun serverHostsPath(hostname: String) = "$ServerHosts/$hostname"
 

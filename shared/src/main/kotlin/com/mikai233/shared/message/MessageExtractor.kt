@@ -4,7 +4,7 @@ import akka.cluster.sharding.ShardRegion
 import kotlin.math.abs
 
 class PlayerMessageExtractor(private val numberOfShards: Int) : ShardRegion.MessageExtractor {
-    override fun entityId(message: Any?): String {
+    override fun entityId(message: Any): String {
         return when (message) {
             is PlayerMessage -> message.playerId.toString()
             else -> error("Unknown message type: $message")
@@ -15,13 +15,16 @@ class PlayerMessageExtractor(private val numberOfShards: Int) : ShardRegion.Mess
         return message
     }
 
-    override fun shardId(entityId: String): String {
-        return (abs(entityId.toLong()) % numberOfShards).toString()
+    override fun shardId(message: Any): String {
+        return when (message) {
+            is PlayerMessage -> (abs(message.playerId) % numberOfShards).toString()
+            else -> error("Unknown message type: $message")
+        }
     }
 }
 
 class WorldMessageExtractor(private val numberOfShards: Int) : ShardRegion.MessageExtractor {
-    override fun entityId(message: Any?): String {
+    override fun entityId(message: Any): String {
         return when (message) {
             is WorldMessage -> message.worldId.toString()
             else -> error("Unknown message type: $message")
@@ -32,7 +35,10 @@ class WorldMessageExtractor(private val numberOfShards: Int) : ShardRegion.Messa
         return message
     }
 
-    override fun shardId(entityId: String): String {
-        return (abs(entityId.toLong()) % numberOfShards).toString()
+    override fun shardId(message: Any): String {
+        return when (message) {
+            is WorldMessage -> (abs(message.worldId) % numberOfShards).toString()
+            else -> error("Unknown message type: $message")
+        }
     }
 }

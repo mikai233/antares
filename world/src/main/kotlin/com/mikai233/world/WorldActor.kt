@@ -1,38 +1,31 @@
 package com.mikai233.world
 
-import akka.actor.AbstractActor
-import com.mikai233.common.core.actor.ActorCoroutine
-import com.mikai233.common.core.actor.safeActorCoroutine
+import akka.actor.Props
+import akka.cluster.sharding.ShardRegion
+import com.mikai233.common.core.actor.StatefulActor
 import com.mikai233.common.extension.*
 import com.mikai233.shared.message.*
-import com.mikai233.shared.startAllWorldTopicActor
-import com.mikai233.shared.startWorldTopicActor
-import com.mikai233.world.component.WorldMessageDispatcher
-import kotlin.time.Duration.Companion.milliseconds
+import com.mikai233.shared.message.world.HandoffWorld
+import com.mikai233.shared.message.world.StopWorld
+import com.mikai233.shared.message.world.WakeupWorld
+import com.mikai233.shared.message.world.WorldProtobufEnvelope
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
-class WorldActor(val worldId: Long) : AbstractActor() {
+class WorldActor(node: WorldNode) : StatefulActor<WorldNode>(node) {
     companion object {
-        val worldTick = 100.milliseconds
+        val WorldTick = 1.seconds
+
+        fun props(node: WorldNode): Props = Props.create(WorldActor::class.java, node)
     }
 
-    private val logger = actorLogger()
-    val coroutine = ActorCoroutine(context.self.safeActorCoroutine())
-    private val dispatcher: WorldMessageDispatcher by inject()
-    private val protobufDispatcher = dispatcher.protobufDispatcher
-    private val internalDispatcher = dispatcher.internalDispatcher
+    val worldId: Long = self.path().name().toLong()
+
     val sessionManager = WorldSessionManager(this)
-    val manager = WorldDataManager(this, coroutine)
-    val worldTopic = context.startWorldTopicActor(worldId)
-    val allWorldTopic = context.startAllWorldTopicActor()
-
-    init {
-        val address = context.system.address()
-        logger.info("worldId:{} preStart {}", worldId, context.self)
-        context.system.subscribe<WorldMessage, ExcelUpdate>(context.self)
-    }
+    val manager = WorldDataManager(this)
 
     override fun createReceive(): Receive {
+        receiveBuilder().build()
         return newReceiveBuilder().onMessage(WorldMessage::class.java) { message ->
             when (message) {
                 is ExecuteWorldScript -> {
@@ -43,7 +36,7 @@ class WorldActor(val worldId: Long) : AbstractActor() {
                     return@onMessage Behaviors.stopped()
                 }
 
-                WakeupGameWorld -> {
+                WakeupWorld -> {
                     manager.loadAll()
                 }
 
@@ -56,7 +49,7 @@ class WorldActor(val worldId: Long) : AbstractActor() {
                 }
 
                 WorldInitDone -> {
-                    timers.startTimerAtFixedRate(WorldTick, worldTick.toJavaDuration())
+                    timers.startTimerAtFixedRate(WorldTick, WorldTick.toJavaDuration())
                     return@onMessage buffer.unstashAll(active())
                 }
 
@@ -69,7 +62,7 @@ class WorldActor(val worldId: Long) : AbstractActor() {
         }.build()
     }
 
-    private fun active(): Behavior<WorldMessage> {
+    private fun active(): Receive {
         return newReceiveBuilder().onMessage(WorldMessage::class.java) { message ->
             when (message) {
                 is ExecuteWorldScript -> {
@@ -85,7 +78,7 @@ class WorldActor(val worldId: Long) : AbstractActor() {
                     handleWorldActorRunnable(message)
                 }
 
-                WakeupGameWorld,
+                WakeupWorld,
                 WorldInitDone -> Unit
 
                 is WorldProtobufEnvelope -> {
@@ -121,7 +114,7 @@ class WorldActor(val worldId: Long) : AbstractActor() {
                     handleWorldActorRunnable(message)
                 }
 
-                WakeupGameWorld,
+                WakeupWorld,
                 WorldInitDone,
                 is BusinessWorldMessage -> Unit
 
@@ -144,8 +137,8 @@ class WorldActor(val worldId: Long) : AbstractActor() {
         protobufDispatcher.dispatch(inner::class, this, inner)
     }
 
-    fun stop() {
-        context.self.tell(StopWorld)
+    fun passivate() {
+        context.parent.tell(ShardRegion.Passivate(HandoffWorld), self)
     }
 
     private fun executeWorldScript(message: ExecuteWorldScript) {

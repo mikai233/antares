@@ -7,9 +7,9 @@ import com.mikai233.common.message.Handler
 import com.mikai233.common.message.MessageHandler
 import com.mikai233.player.PlayerActor
 import com.mikai233.player.service.loginService
-import com.mikai233.shared.message.PlayerInitDone
-import com.mikai233.shared.message.WHPlayerCreate
-import com.mikai233.shared.message.WHPlayerLogin
+import com.mikai233.shared.message.player.PlayerInitialized
+import com.mikai233.shared.message.player.WHPlayerCreate
+import com.mikai233.shared.message.player.WHPlayerLogin
 import kotlin.random.Random
 
 /**
@@ -25,9 +25,9 @@ class LoginHandler : MessageHandler {
         player.bindChannelActor(channelActor)
         //event
         val resp = loginService.loginSuccessResp(player)
-        player.write(resp)
+        player.send(resp)
         repeat(100) {
-            player.write(testNotify {
+            player.send(testNotify {
                 data = Random.nextDouble().toString()
             })
         }
@@ -38,9 +38,9 @@ class LoginHandler : MessageHandler {
         player.bindChannelActor(channelActor)
         //event
         loginService.createPlayer(player, playerCreate)
-        player.context.self tell PlayerInitDone
+        player.context.self tell PlayerInitialized
         val resp = loginService.loginSuccessResp(player)
-        player.write(resp)
+        player.send(resp)
     }
 }
 
