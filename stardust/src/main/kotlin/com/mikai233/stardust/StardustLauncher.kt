@@ -19,6 +19,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.future.await
+import kotlinx.coroutines.launch
 import java.net.InetSocketAddress
 import java.util.*
 import kotlin.reflect.KClass
@@ -49,23 +50,27 @@ object StardustLauncher {
                     Json.fromBytes<NodeConfig>(bytes)
                 }
             }.awaitAll()
-        }.sortedBy { it.seed }
+        }.sortedByDescending { it.seed }
         val zookeeperConnectString = GlobalEnv.zkConnect
         val systemName = GlobalEnv.SYSTEM_NAME
-        nodeConfigs.forEach { nodeConfig ->
-            logger.info("{} launch node with config:{}", hostname, nodeConfig)
-            val nodeClass = nodeByRole[nodeConfig.role]
-            if (nodeClass != null) {
-                val constructor =
-                    requireNotNull(nodeClass.primaryConstructor) { "$nodeClass primaryConstructor not found" }
-                val addr = InetSocketAddress(hostname, nodeConfig.port)
-                val config = ConfigFactory.load("${nodeConfig.role.name.lowercase()}.conf")
-                val sameJvm = true
-                val node = constructor.call(addr, systemName, config, zookeeperConnectString, sameJvm)
-                node.launch()
-                nodes.add(node)
-            } else {
-                logger.error("node of role:{} not register", nodeConfig.role)
+        coroutineScope {
+            nodeConfigs.forEach { nodeConfig ->
+                launch {
+                    logger.info("{} launch node with config:{}", hostname, nodeConfig)
+                    val nodeClass = nodeByRole[nodeConfig.role]
+                    if (nodeClass != null) {
+                        val constructor =
+                            requireNotNull(nodeClass.primaryConstructor) { "$nodeClass primaryConstructor not found" }
+                        val addr = InetSocketAddress(hostname, nodeConfig.port)
+                        val config = ConfigFactory.load("${nodeConfig.role.name.lowercase()}.conf")
+                        val sameJvm = true
+                        val node = constructor.call(addr, systemName, config, zookeeperConnectString, sameJvm)
+                        node.launch()
+                        nodes.add(node)
+                    } else {
+                        logger.error("node of role:{} not register", nodeConfig.role)
+                    }
+                }
             }
         }
     }

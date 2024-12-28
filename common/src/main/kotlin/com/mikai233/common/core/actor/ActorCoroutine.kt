@@ -26,7 +26,7 @@ class TrackingCoroutineScope(context: CoroutineContext) : CoroutineScope {
         start: CoroutineStart = CoroutineStart.DEFAULT,
         block: suspend CoroutineScope.() -> Unit
     ): Job {
-        val newJob = launch(context, start, block)
+        val newJob = (CoroutineScope::launch)(this, context, start, block)
         jobs.add(newJob)
         newJob.invokeOnCompletion { jobs.remove(newJob) }
         return newJob

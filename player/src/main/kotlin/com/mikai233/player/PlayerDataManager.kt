@@ -2,6 +2,7 @@ package com.mikai233.player
 
 import com.mikai233.common.core.actor.TrackingCoroutineScope
 import com.mikai233.common.db.DataManager
+import com.mikai233.common.db.TraceableMemData
 import com.mikai233.common.extension.logger
 import com.mikai233.common.extension.tell
 import com.mikai233.shared.message.player.PlayerInitialized
@@ -26,6 +27,7 @@ class PlayerDataManager(private val player: PlayerActor, private val coroutine: 
                     logger.info("player:{} load {} complete", player.playerId, manager.simpleName)
                 }
             }.awaitAll()
+            managers.values.filterIsInstance<TraceableMemData<*, *>>().forEach { it.markCleanup() }
             logger.info("player:{} data load complete", player.playerId)
             player.self tell PlayerInitialized
         }

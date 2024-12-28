@@ -13,6 +13,8 @@ import com.mikai233.common.serde.KryoPool
 import com.mongodb.*
 import com.mongodb.client.MongoClients
 import kotlinx.coroutines.*
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import org.springframework.dao.DataAccessException
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -34,44 +36,85 @@ import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.isSubclassOf
 import kotlin.reflect.jvm.javaField
 import kotlin.reflect.jvm.jvmErasure
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 
 const val FULL_HASH_THRESHOLD = 100
 
+/**
+ * @param kryoPool 用于对象深拷贝的对象池，数据写入在IO线程中操作，需要将数据拷贝一份进行操作
+ * @param coroutine 用于执行IO操作的协程
+ * @param mongoTemplate 用于执行数据库操作的模板
+ * @param period 数据标脏时间分摊，每个字段的标脏操作均匀的分摊到一个时间段内，保证这个时间周期内完成一次所有字段的标脏操作
+ * @param tick 外部调用[trace]的时间间隔，用于计算标脏操作的时间分布，例如当前追踪的[entityClass]内部有10个字段，[period]为100s，
+ * [tick]为1s，那么每执行10个[trace]，才会进行一个字段的标脏操作，一个[period]完成一次所有字段的标脏操作；如果[tick]为10s，那么每次
+ * 执行[trace]就会做一次字段的标脏操操作。
+ */
 class Tracer<K, E>(
     private val entityClass: KClass<E>,
     private val kryoPool: KryoPool,
     private val coroutine: TrackingCoroutineScope,
-    private val mongoTemplate: () -> MongoTemplate
+    private val period: Duration,
+    private val tick: Duration,
+    private val mongoTemplate: () -> MongoTemplate,
 ) where K : Any, E : Entity {
     private val logger = logger()
     private val idField = idField()
     private val entities: MutableMap<K, E> = mutableMapOf()
 
-    //<field, property>
-    private val normalFields: Map<String, KProperty1<E, *>> = normalFields()
+    private val normalFields: List<KProperty1<E, *>> = normalFields()
 
     //<id, <field, value> >
     private val normalValues: MutableMap<K, MutableMap<String, Record>> = mutableMapOf()
 
-    //<field, property>
-    private val mapFields: Map<String, KProperty1<E, Map<*, *>>> = mapFields()
+    private val mapFields: List<KProperty1<E, Map<*, *>>> = mapFields()
 
     //<id, <field, <key, value> > >
     private val mapValues: MutableMap<K, MutableMap<String, MutableMap<Any?, Record>>> = mutableMapOf()
+
+    //当前标脏到哪个字段了
+    private var nextFieldIndex = 0
+
+    //一个完整标脏周期的开始时间
+    private var periodStartInstant: Instant = Clock.System.now()
 
     private val hashFunction = Hashing.goodFastHash(128)
     private var updateJob: Job? = null
     private var flushing = false
 
+    init {
+        check(period > tick) { "period:${period} should be greater than tick:${tick}" }
+        check(normalFields.size + mapFields.size > 0) { "entity class:${entityClass.qualifiedName} has no field" }
+        logger.info(
+            "tracer[{}] trace each field duration {}",
+            entityClass,
+            period / (normalFields.size + mapFields.size)
+        )
+    }
+
     private fun fullHashCode(obj: Any?) = hashFunction.hashBytes(Json.toBytes(obj))
 
-    /**
-     * TODO: 将每个字段的标脏操作均匀的分摊到一个时间段内
-     */
     fun trace(currentEntities: Map<K, E>) {
         check(!flushing) { "tracer ${entityClass::class.qualifiedName} is flushing" }
-        trace0(currentEntities)
+        val now = Clock.System.now()
+        val totalFields = normalFields.size + mapFields.size
+        val durationPerField = period / totalFields
+        val fieldsIndexElapsed = ((now - periodStartInstant) / durationPerField).toInt()
+        var n = fieldsIndexElapsed - nextFieldIndex
+        //如果n大于总字段数，那么只需执行一次覆盖类中所有字段的标脏操作就行了，没有必要重复执行
+        if (n >= totalFields) {
+            n = totalFields
+        }
+        repeat(n) {
+            trace0(currentEntities)
+            nextFieldIndex++
+            if (nextFieldIndex >= normalFields.size + mapFields.size - 1) {
+                nextFieldIndex = 0
+                periodStartInstant = Clock.System.now()
+            }
+        }
     }
 
     private fun trace0(currentEntities: Map<K, E>) {
@@ -90,12 +133,27 @@ class Tracer<K, E>(
      */
     private fun traceNormalFields(id: K, entity: E) {
         val valueByFieldName = normalValues.computeIfAbsent(id) { mutableMapOf() }
-        normalFields.forEach { (name, property) ->
-            val currentValue = property.get(entity)
-            logger.trace("trace field:{}, value:{}", name, currentValue)
-            val record = valueByFieldName.computeIfAbsent(name) { Record.default() }
-            hash(name, currentValue, record)
+        if (flushing) {
+            normalFields.forEach { property ->
+                traceNormalField(property, entity, valueByFieldName)
+            }
+        } else {
+            normalFields.getOrNull(nextFieldIndex)?.let { property ->
+                traceNormalField(property, entity, valueByFieldName)
+            }
         }
+    }
+
+    private fun traceNormalField(
+        property: KProperty1<E, *>,
+        entity: E,
+        valueByFieldName: MutableMap<String, Record>
+    ) {
+        val name = property.name
+        val currentValue = property.get(entity)
+        logger.trace("trace field:{}, value:{}", name, currentValue)
+        val record = valueByFieldName.computeIfAbsent(name) { Record.default() }
+        hash(name, currentValue, record)
     }
 
     /**
@@ -105,20 +163,35 @@ class Tracer<K, E>(
      */
     private fun traceMapFields(id: K, entity: E) {
         val valueByFieldName = mapValues.computeIfAbsent(id) { mutableMapOf() }
-        mapFields.forEach { (name, property) ->
-            val currentMap = property.get(entity)
-            logger.trace("trace map field:{}, value:{}", name, currentMap)
-            val valueByMapKey = valueByFieldName.computeIfAbsent(name) { mutableMapOf() }
-            //TODO replace . to _ in k
-            valueByMapKey.forEach { (k, v) ->
-                if (k !in currentMap) {
-                    v.status = Status.Unset
-                }
+        if (flushing) {
+            mapFields.forEach { property ->
+                traceMapField(property, entity, valueByFieldName)
             }
-            currentMap.forEach { (k, v) ->
-                val record = valueByMapKey.computeIfAbsent(k) { Record.default() }
-                hash("$name.$k", v, record)
+        } else {
+            mapFields.getOrNull(nextFieldIndex - normalFields.size)?.let { property ->
+                traceMapField(property, entity, valueByFieldName)
             }
+        }
+    }
+
+    private fun traceMapField(
+        property: KProperty1<E, Map<*, *>>,
+        entity: E,
+        valueByFieldName: MutableMap<String, MutableMap<Any?, Record>>
+    ) {
+        val name = property.name
+        val currentMap = property.get(entity)
+        logger.trace("trace map field:{}, value:{}", name, currentMap)
+        val valueByMapKey = valueByFieldName.computeIfAbsent(name) { mutableMapOf() }
+        //TODO replace . to _ in k
+        valueByMapKey.forEach { (k, v) ->
+            if (k !in currentMap) {
+                v.status = Status.Unset
+            }
+        }
+        currentMap.forEach { (k, v) ->
+            val record = valueByMapKey.computeIfAbsent(k) { Record.default() }
+            hash("$name.$k", v, record)
         }
     }
 
@@ -169,6 +242,36 @@ class Tracer<K, E>(
         value.status = Status.Clean
         value.value = null
         logger.trace("field:{} is clean", name)
+    }
+
+    /**
+     * 在将数据从库中加载到内存后，调用此方法，将全部数据标记为干净数据避免下一次标脏产生大量假的脏数据
+     */
+    fun cleanupAll(entities: Map<K, E>) {
+        this.entities.putAll(entities)
+        entities.forEach { (id, entity) ->
+            normalFields.forEach { property ->
+                val name = property.name
+                val valueByFieldName = normalValues.computeIfAbsent(id) { mutableMapOf() }
+                val record = valueByFieldName.computeIfAbsent(name) { Record.default() }
+                cleanup(name, property.get(entity), record)
+            }
+            mapFields.forEach { property ->
+                val name = property.name
+                val valueByFieldName = mapValues.computeIfAbsent(id) { mutableMapOf() }
+                val valueByMapKey = valueByFieldName.computeIfAbsent(name) { mutableMapOf() }
+                val currentMap = property.get(entity)
+                valueByMapKey.forEach { (k, v) ->
+                    if (k !in currentMap) {
+                        v.status = Status.Unset
+                    }
+                }
+                currentMap.forEach { (k, v) ->
+                    val record = valueByMapKey.computeIfAbsent(k) { Record.default() }
+                    cleanup("$name.$k", v, record)
+                }
+            }
+        }
     }
 
     private fun updateEntities() {
@@ -277,6 +380,9 @@ class Tracer<K, E>(
 
     private fun deleteEntities(currentEntities: Map<K, E>) {
         val deletedEntities = entities.filter { it.key !in currentEntities }
+        if (deletedEntities.isEmpty()) {
+            return
+        }
         entities.entries.removeIf { (id, _) -> id !in currentEntities }
         coroutine.launch {
             val template = mongoTemplate()
@@ -327,17 +433,17 @@ class Tracer<K, E>(
         return requireNotNull(idProperty) { "entity class:${entityClass.qualifiedName} has no id property" } as KProperty1<E, K>
     }
 
-    private fun normalFields(): Map<String, KProperty1<E, *>> {
+    private fun normalFields(): List<KProperty1<E, *>> {
         return entityClass.declaredMemberProperties.filter {
             !it.returnType.jvmErasure.isSubclassOf(Map::class)
-        }.associateBy { it.name }
+        }
     }
 
-    private fun mapFields(): Map<String, KProperty1<E, Map<*, *>>> {
+    private fun mapFields(): List<KProperty1<E, Map<*, *>>> {
         @Suppress("UNCHECKED_CAST")
         return entityClass.declaredMemberProperties.filter {
             it.returnType.jvmErasure.isSubclassOf(Map::class)
-        }.associate { it.name to it as KProperty1<E, Map<*, *>> }
+        } as List<KProperty1<E, Map<*, *>>>
     }
 
     private fun retryTemplate(): RetryTemplate {
@@ -395,7 +501,7 @@ fun main() {
         )
     )
     val actorCoroutine = TrackingCoroutineScope(executor.asCoroutineDispatcher())
-    val db = Tracer<Int, Room>(Room::class, pool, actorCoroutine) { template }
+    val tracer = Tracer<Int, Room>(Room::class, pool, actorCoroutine, 2.minutes, 1.seconds) { template }
     val rooms = mutableMapOf<Int, Room>()
     repeat(3000) {
         val room = Room(
@@ -413,9 +519,10 @@ fun main() {
         )
         rooms[room.id] = room
     }
+    tracer.cleanupAll(rooms)
     while (true) {
-        Thread.sleep(5 * 1000)
-        db.trace(rooms)
+        Thread.sleep(1000)
+        tracer.trace(rooms)
         while (pendingRunnable.isNotEmpty()) {
             pendingRunnable.poll().run()
         }
