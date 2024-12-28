@@ -1,54 +1,43 @@
 package com.mikai233.player.data
 
-import com.mikai233.common.db.MemData
-import com.mikai233.player.PlayerActor
+import com.mikai233.common.core.actor.TrackingCoroutineScope
+import com.mikai233.common.db.TraceableMemData
+import com.mikai233.common.serde.KryoPool
 import com.mikai233.shared.constants.PlayerActionType
 import com.mikai233.shared.entity.PlayerAction
 import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.where
 
-class PlayerActionMem : MemData<PlayerAction> {
-    private lateinit var playerActor: PlayerActor
-    private var maxActionId: Long = 0
-    private val worldAction: MutableMap<Int, PlayerAction> = mutableMapOf()
+class PlayerActionMem(
+    private val playerId: Long,
+    private val mongoTemplate: MongoTemplate,
+    kryoPool: KryoPool,
+    coroutineScope: TrackingCoroutineScope,
+) : TraceableMemData<Int, PlayerAction>(PlayerAction::class, kryoPool, coroutineScope, { mongoTemplate }) {
+    private var maxActionId: Int = 0
+    private val playerAction: MutableMap<Int, PlayerAction> = mutableMapOf()
 
     override fun init() {
-        TODO("Not yet implemented")
-    }
-
-    override fun traceValues(): List<PlayerAction> {
-
-    }
-
-    override fun load(actor: PlayerActor, mongoTemplate: MongoTemplate): List<PlayerAction> {
-        return mongoTemplate.find(
-            Query.query(where(PlayerAction::playerId).`is`(actor.playerId)),
-            PlayerAction::class.java
-        )
-    }
-
-    override fun onComplete(actor: PlayerActor, db: ActorDatabase, data: List<PlayerAction>) {
-        playerActor = actor
-        data.forEach {
-            db.tracer.traceEntity(it)
-            val id = it.id.split("_").last().toLong()
+        val actions = mongoTemplate.find<PlayerAction>(Query.query(where(PlayerAction::playerId).`is`(playerId)))
+        actions.forEach {
+            val id = it.id.split("_").last().toInt()
             if (id > maxActionId) {
                 maxActionId = id
             }
-            worldAction[it.actionId] = it
+            playerAction[it.actionId] = it
         }
     }
 
+    override fun entities(): Map<Int, PlayerAction> {
+        return playerAction
+    }
+
     fun getOrCreateAction(actionId: Int): PlayerAction {
-        val action = worldAction[actionId]
-        return if (action != null) {
-            action
-        } else {
-            val id = "${playerActor.playerId}_${++maxActionId}"
-            val newAction = PlayerAction(id, playerActor.playerId, actionId, 0L, 0L)
-            worldAction[actionId] = newAction
-            newAction
+        return playerAction.getOrPut(actionId) {
+            val id = "${playerId}_${++maxActionId}"
+            PlayerAction(id, playerId, actionId, 0L, 0L)
         }
     }
 
@@ -57,7 +46,7 @@ class PlayerActionMem : MemData<PlayerAction> {
     }
 
     fun delAction(actionId: Int) {
-        worldAction.remove(actionId)
+        playerAction.remove(actionId)
     }
 
     fun delAction(type: PlayerActionType) {

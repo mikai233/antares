@@ -3,43 +3,37 @@ package com.mikai233.world
 import com.mikai233.common.db.DataManager
 import com.mikai233.common.extension.logger
 import com.mikai233.common.extension.tell
-import kotlinx.coroutines.*
-import kotlinx.datetime.Clock
+import com.mikai233.shared.message.world.WorldInitialized
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 
 class WorldDataManager(private val world: WorldActor) :
     DataManager<WorldActor>("com.mikai233.world.data") {
     private val logger = logger()
-    private val clock = Clock.System
 
-    override fun loadAll() {
+    override fun init() {
         logger.info("{} start loading data", world.worldId)
         world.coroutineScope.launch(CoroutineExceptionHandler { _, throwable ->
             logger.error("{} loading data failed, world will stop", world.worldId, throwable)
-            world.passvite()
+            world.passivate()
         }) {
             managers.map { (manager, mem) ->
-                launch {
-                    val data = withContext(Dispatchers.IO) {
-                        mem.load(world, template)
-                    }
-                    mem.onComplete(world, db, data!!)
-                    logger.info("{} load {} complete", world.worldId, manager.simpleName)
+                async(Dispatchers.IO) {
+                    mem.init()
+                    logger.info("world:{} load {} complete", world.worldId, manager.simpleName)
                 }
-            }.joinAll()
-            loadComplete()
+            }.awaitAll()
+            logger.info("world:{} data load complete", world.worldId)
+            world.self tell WorldInitialized
         }
     }
 
-    override fun loadComplete() {
-        logger.info("{} data load complete", world.worldId)
-        world.context.self tell WorldInitDone
-    }
-
-    fun tickDatabase() {
-        tracer.tick(clock.now())
+    fun tick() {
     }
 
     fun stopAndFlush(): Boolean {
-        return db.stopAndFlushAll()
+        TODO()
     }
 }

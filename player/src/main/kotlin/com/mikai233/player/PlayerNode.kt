@@ -15,6 +15,7 @@ import com.mikai233.common.extension.startShardingProxy
 import com.mikai233.protocol.MsgCs
 import com.mikai233.protocol.MsgSc
 import com.mikai233.shared.message.PlayerMessageExtractor
+import com.mikai233.shared.message.WorldMessageExtractor
 import com.mikai233.shared.message.player.HandoffPlayer
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
@@ -51,13 +52,13 @@ class PlayerNode(
             Role.Player,
             PlayerActor.props(this),
             HandoffPlayer,
-            PlayerMessageExtractor(3000),
+            PlayerMessageExtractor,
             ShardCoordinator.LeastShardAllocationStrategy(1, 3),
         )
     }
 
     private fun startWorldSharding() {
-        worldSharding = system.startShardingProxy(ShardEntityType.WorldActor.name)
+        worldSharding = system.startShardingProxy(ShardEntityType.WorldActor.name, Role.World, WorldMessageExtractor)
     }
 }
 
@@ -68,7 +69,7 @@ class Cli {
     @Parameter(names = ["-p", "--port"], description = "port")
     var port: Int = 2333
 
-    @Parameter(names = ["-p", "--conf"], description = "conf")
+    @Parameter(names = ["-c", "--conf"], description = "conf")
     var conf: String = "player.conf"
 
     @Parameter(names = ["-z", "--zookeeper"], description = "zookeeper")

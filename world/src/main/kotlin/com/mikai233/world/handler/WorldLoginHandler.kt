@@ -5,8 +5,7 @@ import com.mikai233.common.entity.PlayerAbstract
 import com.mikai233.common.extension.unixTimestamp
 import com.mikai233.common.message.MessageHandler
 import com.mikai233.protocol.testNotify
-import com.mikai233.shared.message.player.WHPlayerCreate
-import com.mikai233.shared.message.player.WHPlayerLogin
+import com.mikai233.shared.message.player.PlayerCreate
 import com.mikai233.shared.message.world.PlayerLogin
 import com.mikai233.world.WorldActor
 import com.mikai233.world.data.PlayerAbstractMem
@@ -18,25 +17,28 @@ import kotlin.random.nextUInt
 class WorldLoginHandler : MessageHandler {
     fun handlePlayerLogin(world: WorldActor, playerLogin: PlayerLogin) {
         val loginReq = playerLogin.req
-        val channelActor = playerLogin.channelActor
+        val channelActor = world.sender
         val abstractMem = world.manager.get<PlayerAbstractMem>()
-        val mayExistsAbstract = abstractMem.getByAccount(loginReq.account)
-        if (mayExistsAbstract == null) {
+        val playerAbstract = abstractMem.getByAccount(loginReq.account)
+        if (playerAbstract == null) {
             //new player TODO generate player id
             val playerId = Random.nextUInt().toLong()
             world.sessionManager.createOrUpdateSession(playerId, channelActor)
             val abstract = PlayerAbstract(playerId, world.worldId, loginReq.account, "", 1, unixTimestamp())
             abstractMem.addAbstract(abstract)
-            world.tellPlayer(playerId, WHPlayerCreate(channelActor, loginReq.account, playerId, world.worldId, ""))
+            world.forwardPlayer(PlayerCreate(loginReq.account, playerId, world.worldId, ""))
         } else {
             //exists player
-            world.sessionManager.createOrUpdateSession(mayExistsAbstract.playerId, channelActor)
-            world.tellPlayer(
-                mayExistsAbstract.playerId,
-                WHPlayerLogin(channelActor, loginReq.account, mayExistsAbstract.playerId, mayExistsAbstract.worldId)
+            world.sessionManager.createOrUpdateSession(playerAbstract.playerId, channelActor)
+            world.forwardPlayer(
+                com.mikai233.shared.message.player.PlayerLogin(
+                    loginReq.account,
+                    playerAbstract.playerId,
+                    playerAbstract.worldId
+                )
             )
         }
-        world.coroutine.launch {
+        world.launch {
             delay(3000)
             repeat(10) {
                 world.sessionManager.broadcastWorldClient(testNotify { data = "test notify:$it" })

@@ -1,6 +1,6 @@
 package com.mikai233.gate
 
-import com.google.protobuf.GeneratedMessageV3
+import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.conf.GlobalProto
 import com.mikai233.common.message.IgnoreHandleMe
 import com.mikai233.common.message.MessageHandler
@@ -24,7 +24,7 @@ enum class Forward {
 }
 
 object MessageForward {
-    private val forwardTarget = mutableMapOf<String, Forward>(
+    private val forwardTarget = mutableMapOf(
         "com.mikai233.player.handler" to Forward.PlayerActor,
         "com.mikai233.world.handler" to Forward.WorldActor,
     )
@@ -51,14 +51,14 @@ object MessageForward {
                         return@funcForeach
                     }
                     mf.parameters.find { kp ->
-                        kp.type.isSubtypeOf(typeOf<GeneratedMessageV3>())
+                        kp.type.isSubtypeOf(typeOf<GeneratedMessage>())
                     }?.let {
                         val protoType = it.type.classifier!!
                         @Suppress("UNCHECKED_CAST") val id =
-                            GlobalProto.getClientMessageId(protoType as KClass<out GeneratedMessageV3>)
+                            GlobalProto.getClientMessageId(protoType as KClass<out GeneratedMessage>)
                         val mayExistsTarget = forwardMap[id]
                         if (mayExistsTarget != null) {
-                            error("proto id$id already has a forward target")
+                            error("proto id:$id already has a forward target")
                         }
                         forwardMap[id] = target
                     }

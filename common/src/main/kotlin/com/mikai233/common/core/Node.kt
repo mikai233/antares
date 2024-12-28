@@ -5,9 +5,10 @@ import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.CoordinatedShutdown
 import com.mikai233.common.core.config.NodeConfig
-import com.mikai233.common.core.config.ServerHosts
+import com.mikai233.common.core.config.SERVER_HOSTS
 import com.mikai233.common.core.config.nodePath
 import com.mikai233.common.core.config.serverHostsPath
+import com.mikai233.common.db.MongoDB
 import com.mikai233.common.extension.Json
 import com.mikai233.common.extension.logger
 import com.mikai233.common.script.ScriptActor
@@ -50,7 +51,7 @@ open class Node(
     lateinit var system: ActorSystem
         protected set
 
-    private val zookeeper: AsyncCuratorFramework by lazy {
+    val zookeeper: AsyncCuratorFramework by lazy {
         val client = CuratorFrameworkFactory.newClient(
             zookeeperConnectString,
             ExponentialBackoffRetry(2000, 10, 60000)
@@ -65,7 +66,8 @@ open class Node(
         protected set
 
     @Volatile
-    private var state: State = State.Unstarted
+    var state: State = State.Unstarted
+        private set
 
     protected open suspend fun changeState(newState: State) {
         val previousState = state
@@ -131,7 +133,7 @@ open class Node(
      */
     protected open suspend fun resolveRemoteConfig(): Config {
         val nodeConfigs = coroutineScope {
-            val nodePaths = zookeeper.children.forPath(ServerHosts).await().map { host ->
+            val nodePaths = zookeeper.children.forPath(SERVER_HOSTS).await().map { host ->
                 val hostPath = serverHostsPath(host)
                 async {
                     val nodeNames = zookeeper.children.forPath(hostPath).await()

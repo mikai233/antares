@@ -14,13 +14,13 @@ data object PlayerUnloaded : Message
 
 data object PlayerTick : Message
 
-data class WHPlayerLogin(
+data class PlayerLogin(
     val account: String,
     override val playerId: Long,
     val worldId: Long
 ) : PlayerMessage
 
-data class WHPlayerCreate(
+data class PlayerCreate(
     val account: String,
     override val playerId: Long,
     val worldId: Long,

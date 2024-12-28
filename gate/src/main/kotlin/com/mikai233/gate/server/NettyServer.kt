@@ -1,12 +1,8 @@
 package com.mikai233.gate.server
 
-import com.mikai233.common.conf.GlobalEnv
-import com.mikai233.common.core.component.config.getConfigEx
-import com.mikai233.common.core.component.config.serverNetty
 import com.mikai233.common.extension.Platform
 import com.mikai233.common.extension.getPlatform
 import com.mikai233.common.extension.logger
-import com.mikai233.common.inject.XKoin
 import com.mikai233.gate.GateNode
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.ChannelFuture
@@ -21,18 +17,13 @@ import io.netty.channel.socket.ServerSocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.handler.logging.LogLevel
 import io.netty.handler.logging.LoggingHandler
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 import kotlin.concurrent.thread
 
-class NettyServer(private val koin: XKoin) : KoinComponent by koin, AutoCloseable {
+class NettyServer(private val node: GateNode) : AutoCloseable {
     private val logger = logger()
-    private val gate: GateNode by inject()
     private val name: String = "netty-server"
     private val bossGroup: EventLoopGroup
     private val workGroup: EventLoopGroup
-    private lateinit var nettyConfig: NettyConfig
-    private val configCenter: ZookeeperConfigCenter by inject()
 
     init {
         when (getPlatform()) {
@@ -52,14 +43,12 @@ class NettyServer(private val koin: XKoin) : KoinComponent by koin, AutoCloseabl
             }
         }
         logger.info(
-            "{} using bossGroup:{}, workGroup:{}", name, bossGroup.javaClass.simpleName, workGroup.javaClass.simpleName
+            "{} using bossGroup:{}, workGroup:{}",
+            name,
+            bossGroup.javaClass.simpleName,
+            workGroup.javaClass.simpleName
         )
-        initNettyConfig()
         start()
-    }
-
-    private fun initNettyConfig() {
-        nettyConfig = configCenter.getConfigEx(serverNetty(GlobalEnv.machineIp))
     }
 
     private fun start(): Thread {
@@ -89,13 +78,13 @@ class NettyServer(private val koin: XKoin) : KoinComponent by koin, AutoCloseabl
             .group(bossGroup, workGroup)
             .channel(getServerSocketChannel())
             .handler(LoggingHandler(LogLevel.INFO))
-            .childHandler(ServerChannelInitializer(koin, null))
+            .childHandler(ServerChannelInitializer(node, null))
             .option(ChannelOption.SO_BACKLOG, 128)
             .option(ChannelOption.SO_REUSEADDR, true)
             .childOption(ChannelOption.SO_KEEPALIVE, true)
             .childOption(ChannelOption.TCP_NODELAY, true)
 
-        val ports = listOf(nettyConfig.port)
+        val ports = listOf(node.nettyConfig.port)
         val futures = ports.map {
             bootstrap.bind(it).also { future ->
                 future.sync()

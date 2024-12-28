@@ -21,7 +21,7 @@ dependencies {
     implementation(tool.easyexcel)
     implementation(tool.kryo)
     implementation(tool.akka.kryo)
-    runtimeOnly(log.bundles.common)
+    implementation(log.bundles.common)
     implementation(project(":common"))
     implementation(project(":proto"))
 //    implementation(project(":processor"))

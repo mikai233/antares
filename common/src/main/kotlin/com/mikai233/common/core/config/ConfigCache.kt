@@ -13,17 +13,19 @@ class ConfigCache<C>(
     val path: String,
     val clazz: KClass<C>,
     onUpdate: ((C) -> Unit)? = null
-) where C : Any {
+) : AutoCloseable where C : Any {
     val logger = logger()
 
     @Volatile
     var config: C
         private set
 
+    private val cache: CuratorCache
+
     init {
         val bytes = zookeeper.unwrap().data.forPath(path)
         config = Json.fromBytes(bytes, clazz)
-        val cache = CuratorCache.build(zookeeper.unwrap(), path)
+        cache = CuratorCache.build(zookeeper.unwrap(), path)
         cache.listenable().addListener { type, oldData, data ->
             when (type) {
                 CuratorCacheListener.Type.NODE_CREATED -> {
@@ -51,5 +53,9 @@ class ConfigCache<C>(
     suspend fun update(newConfig: C) {
         val bytes = Json.toBytes(newConfig, clazz)
         zookeeper.setData().forPath(path, bytes).await()
+    }
+
+    override fun close() {
+        cache.close()
     }
 }

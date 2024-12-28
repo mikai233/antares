@@ -2,25 +2,20 @@ package com.mikai233.shared.message
 
 import com.mikai233.common.message.Message
 
-data class ActorNamedRunnable(
-    val name: String,
-    val block: () -> Unit
-) : Runnable, Message {
-    override fun run() {
-        block()
-    }
-}
-
 data class ExcelUpdate(val hashcode: Int) : Message
 
 sealed interface ChannelMessage : Message
 
-interface PlayerMessage : Message {
+interface PlayerMessage : Message, ShardMessage<Long> {
     val playerId: Long
+    override val id: Long
+        get() = playerId
 }
 
-interface WorldMessage : Message {
+interface WorldMessage : Message, ShardMessage<Long> {
     val worldId: Long
+    override val id: Long
+        get() = worldId
 }
 
 sealed interface GlobalUidMessage : Message

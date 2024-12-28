@@ -1,20 +1,24 @@
 package com.mikai233.world
 
+import akka.actor.ActorRef
 import akka.actor.Props
 import akka.cluster.sharding.ShardRegion
 import com.mikai233.common.core.actor.StatefulActor
-import com.mikai233.common.extension.*
-import com.mikai233.shared.message.*
+import com.mikai233.common.extension.ask
+import com.mikai233.common.message.ExecuteActorFunction
+import com.mikai233.common.message.Message
+import com.mikai233.shared.message.PlayerMessage
+import com.mikai233.shared.message.ProtobufEnvelope
+import com.mikai233.shared.message.WorldMessage
 import com.mikai233.shared.message.world.HandoffWorld
-import com.mikai233.shared.message.world.StopWorld
-import com.mikai233.shared.message.world.WakeupWorld
-import com.mikai233.shared.message.world.WorldProtobufEnvelope
+import com.mikai233.shared.message.world.WorldInitialized
+import com.mikai233.shared.message.world.WorldTick
+import com.mikai233.shared.message.world.WorldUnloaded
 import kotlin.time.Duration.Companion.seconds
-import kotlin.time.toJavaDuration
 
 class WorldActor(node: WorldNode) : StatefulActor<WorldNode>(node) {
     companion object {
-        val WorldTick = 1.seconds
+        val WorldTickDuration = 1.seconds
 
         fun props(node: WorldNode): Props = Props.create(WorldActor::class.java, node)
     }
@@ -25,142 +29,81 @@ class WorldActor(node: WorldNode) : StatefulActor<WorldNode>(node) {
     val manager = WorldDataManager(this)
 
     override fun createReceive(): Receive {
-        receiveBuilder().build()
-        return newReceiveBuilder().onMessage(WorldMessage::class.java) { message ->
-            when (message) {
-                is ExecuteWorldScript -> {
-                    executeWorldScript(message)
-                }
-
-                StopWorld -> {
-                    return@onMessage Behaviors.stopped()
-                }
-
-                WakeupWorld -> {
-                    manager.loadAll()
-                }
-
-                is ActorNamedRunnable -> {
-                    handleWorldActorRunnable(message)
-                }
-
-                is BusinessWorldMessage -> {
-                    buffer.stash(message)
-                }
-
-                WorldInitDone -> {
-                    timers.startTimerAtFixedRate(WorldTick, WorldTick.toJavaDuration())
-                    return@onMessage buffer.unstashAll(active())
-                }
-
-                WorldTick -> Unit
+        return receiveBuilder()
+            .match(HandoffWorld::class.java) { context.stop(self) }
+            .matchAny {
+                stash()
+                context.become(initialize())
             }
-            Behaviors.same()
-        }.onSignal(PostStop::class.java) { message ->
-            logger.info("worldId:{} {}", worldId, message)
-            Behaviors.same()
-        }.build()
+            .build()
+    }
+
+    private fun initialize(): Receive {
+        return receiveBuilder()
+            .match(WorldInitialized::class.java) {
+                unstashAll()
+                startTimerWithFixedDelay(WorldTick, WorldTick, WorldTickDuration)
+                context.become(active())
+            }
+            .match(HandoffWorld::class.java) { context.stop(self) }
+            .matchAny { stash() }
+            .build()
     }
 
     private fun active(): Receive {
-        return newReceiveBuilder().onMessage(WorldMessage::class.java) { message ->
-            when (message) {
-                is ExecuteWorldScript -> {
-                    executeWorldScript(message)
-                }
-
-                StopWorld -> {
-                    manager.stopAndFlush()
-                    return@onMessage stopping()
-                }
-
-                is ActorNamedRunnable -> {
-                    handleWorldActorRunnable(message)
-                }
-
-                WakeupWorld,
-                WorldInitDone -> Unit
-
-                is WorldProtobufEnvelope -> {
-                    handleWorldProtobufEnvelope(message)
-                }
-
-                is BusinessWorldMessage -> {
-                    handleBusinessWorldMessage(message)
-                }
-
-                WorldTick -> {
-                    manager.tickDatabase()
-                }
-            }
-            Behaviors.same()
-        }.build()
+        return receiveBuilder()
+            .match(HandoffWorld::class.java) { context.become(stopping()) }
+            .match(WorldTick::class.java) {}
+            .match(ProtobufEnvelope::class.java) { handleProtobufEnvelope(it) }
+            .match(WorldMessage::class.java) { handleWorldMessage(it) }
+            .build()
     }
 
-    private fun stopping(): Behavior<WorldMessage> {
-        return newReceiveBuilder().onMessage(WorldMessage::class.java) { message ->
-            when (message) {
-                is ExecuteWorldScript -> {
-                    executeWorldScript(message)
-                }
-
-                StopWorld -> {
-                    context.system.unsubscribe(context.self)
-                    coroutine.cancelAll("StopWorld_$worldId")
-                    return@onMessage Behaviors.stopped()
-                }
-
-                is ActorNamedRunnable -> {
-                    handleWorldActorRunnable(message)
-                }
-
-                WakeupWorld,
-                WorldInitDone,
-                is BusinessWorldMessage -> Unit
-
-                WorldTick -> {
-                    if (manager.stopAndFlush()) {
-                        context.self tell StopWorld
-                    }
-                }
-            }
-            Behaviors.same()
-        }.build()
+    private fun stopping(): Receive {
+        return receiveBuilder()
+            .match(WorldUnloaded::class.java) { context.stop(self) }
+            .match(WorldTick::class.java) {}
+            .build()
     }
 
-    private fun handleBusinessWorldMessage(message: BusinessWorldMessage) {
-        internalDispatcher.dispatch(message::class, this, message)
+    private fun handleWorldMessage(message: WorldMessage) {
+        node.internalDispatcher.dispatch(message::class, this, message)
     }
 
-    private fun handleWorldProtobufEnvelope(message: WorldProtobufEnvelope) {
-        val inner = message.message
-        protobufDispatcher.dispatch(inner::class, this, inner)
+    private fun handleProtobufEnvelope(envelope: ProtobufEnvelope) {
+        val message = envelope.message
+        node.protobufDispatcher.dispatch(message::class, this, message)
     }
 
     fun passivate() {
         context.parent.tell(ShardRegion.Passivate(HandoffWorld), self)
     }
 
-    private fun executeWorldScript(message: ExecuteWorldScript) {
-        message.script.invoke(this)
+    private fun executeWorldScript(message: ExecuteActorFunction) {
+        message.function.invoke(this)
     }
 
-    fun tellPlayer(playerId: Long, message: SerdePlayerMessage) {
-        playerActorSharding.tell(shardingEnvelope("$playerId", message))
+    fun tellPlayer(message: PlayerMessage, sender: ActorRef = self) {
+        node.playerSharding.tell(message, sender)
     }
 
-    fun tellWorld(worldId: Long, message: SerdeWorldMessage) {
-        worldActorSharding.tell(shardingEnvelope("$worldId", message))
+    fun forwardPlayer(message: PlayerMessage) {
+        node.playerSharding.forward(message, context)
     }
 
-    private fun handleWorldActorRunnable(message: ActorNamedRunnable): Behavior<WorldMessage> {
-        runCatching(message::run).onFailure {
-            logger.error("world actor handle runnable:{} failed", message.name, it)
-        }
-        return Behaviors.same()
+    suspend fun <R> askPlayer(message: PlayerMessage): Result<R> where R : Message {
+        return node.playerSharding.ask(message)
     }
 
-    fun submit(name: String, block: () -> Unit) {
-        context.self tell ActorNamedRunnable(name, block)
+    fun tellWorld(message: WorldMessage, sender: ActorRef = self) {
+        node.worldSharding.tell(message, sender)
+    }
+
+    fun forwardWorld(message: WorldMessage) {
+        node.worldSharding.forward(message, context)
+    }
+
+    suspend fun <R> askWorld(message: WorldMessage): Result<R> where R : Message {
+        return node.worldSharding.ask(message)
     }
 }

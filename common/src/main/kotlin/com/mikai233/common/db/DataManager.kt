@@ -20,6 +20,5 @@ abstract class DataManager<A>(memDataPackage: String) where A : AbstractActor {
         return requireNotNull(managers[T::class]) { "manager:${T::class} not found" } as T
     }
 
-    abstract fun loadAll()
-    abstract fun loadComplete()
+    abstract fun init()
 }

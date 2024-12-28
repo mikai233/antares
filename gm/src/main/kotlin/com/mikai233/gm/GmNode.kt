@@ -9,6 +9,8 @@ import com.mikai233.common.core.Node
 import com.mikai233.common.core.Role
 import com.mikai233.common.core.ShardEntityType
 import com.mikai233.common.extension.startShardingProxy
+import com.mikai233.shared.message.PlayerMessageExtractor
+import com.mikai233.shared.message.WorldMessageExtractor
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import java.net.InetSocketAddress
@@ -38,11 +40,12 @@ class GmNode(
     }
 
     private fun startPlayerSharding() {
-        playerSharding = system.startShardingProxy(ShardEntityType.PlayerActor.name)
+        playerSharding =
+            system.startShardingProxy(ShardEntityType.PlayerActor.name, Role.Player, PlayerMessageExtractor)
     }
 
     private fun startWorldSharding() {
-        worldSharding = system.startShardingProxy(ShardEntityType.WorldActor.name)
+        worldSharding = system.startShardingProxy(ShardEntityType.WorldActor.name, Role.World, WorldMessageExtractor)
     }
 }
 
@@ -53,7 +56,7 @@ class Cli {
     @Parameter(names = ["-p", "--port"], description = "port")
     var port: Int = 2336
 
-    @Parameter(names = ["-p", "--conf"], description = "conf")
+    @Parameter(names = ["-c", "--conf"], description = "conf")
     var conf: String = "gm.conf"
 
     @Parameter(names = ["-z", "--zookeeper"], description = "zookeeper")

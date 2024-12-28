@@ -15,11 +15,11 @@ dependencies {
     implementation(tool.reflections)
     implementation(tool.protobuf.kotlin)
     implementation(tool.protobuf.java.util)
+    implementation(tool.bundles.curator)
+    implementation(tool.jcommander)
     implementation(project(":common"))
     implementation(project(":shared"))
     implementation(project(":proto"))
-    implementation(project(":player"))
-    implementation(project(":world"))
 }
 
 tasks.test {

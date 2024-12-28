@@ -1,13 +1,13 @@
 package com.mikai233.shared.serde
 
 import akka.serialization.JSerializer
-import com.mikai233.shared.message.ChannelProtobufEnvelope
 import com.mikai233.shared.message.ProtobufEnvelopeToAllWorldClient
 import com.mikai233.shared.message.ProtobufEnvelopeToWorldClient
+import com.mikai233.shared.message.ServerProtobuf
 
 class ChannelProtobufSerializer : JSerializer() {
     override fun fromBinaryJava(bytes: ByteArray, manifest: Class<*>?): Any {
-        return ChannelProtobufEnvelope(packetToProtoMsg(bytes, false))
+        return ServerProtobuf(packetToProtoMsg(bytes, false))
     }
 
     override fun identifier(): Int {
@@ -15,7 +15,7 @@ class ChannelProtobufSerializer : JSerializer() {
     }
 
     override fun toBinary(o: Any): ByteArray {
-        o as ChannelProtobufEnvelope
+        o as ServerProtobuf
         return protoMsgToPacket(o.message, false)
     }
 

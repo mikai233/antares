@@ -7,9 +7,10 @@ import com.mikai233.common.message.Handler
 import com.mikai233.common.message.MessageHandler
 import com.mikai233.player.PlayerActor
 import com.mikai233.player.service.loginService
+import com.mikai233.protocol.testNotify
+import com.mikai233.shared.message.player.PlayerCreate
 import com.mikai233.shared.message.player.PlayerInitialized
-import com.mikai233.shared.message.player.WHPlayerCreate
-import com.mikai233.shared.message.player.WHPlayerLogin
+import com.mikai233.shared.message.player.PlayerLogin
 import kotlin.random.Random
 
 /**
@@ -20,7 +21,7 @@ import kotlin.random.Random
 @AllOpen
 class LoginHandler : MessageHandler {
     private val logger = logger()
-    fun handleWHPlayerLogin(player: PlayerActor, playerLogin: WHPlayerLogin) {
+    fun handleWHPlayerLogin(player: PlayerActor, playerLogin: PlayerLogin) {
         val channelActor = player.sender
         player.bindChannelActor(channelActor)
         //event
@@ -33,7 +34,7 @@ class LoginHandler : MessageHandler {
         }
     }
 
-    fun handleWHPlayerCreate(player: PlayerActor, playerCreate: WHPlayerCreate) {
+    fun handleWHPlayerCreate(player: PlayerActor, playerCreate: PlayerCreate) {
         val channelActor = player.sender
         player.bindChannelActor(channelActor)
         //event
@@ -47,8 +48,8 @@ class LoginHandler : MessageHandler {
 /**
  * TODO test only
  */
-class WHPlayerLoginHandler : Handler<PlayerActor, WHPlayerLogin> {
-    override fun handle(actor: PlayerActor, msg: WHPlayerLogin) {
+class WHPlayerLoginHandler : Handler<PlayerActor, PlayerLogin> {
+    override fun handle(actor: PlayerActor, msg: PlayerLogin) {
         actor.context.system.scheduler()
         TODO("Not yet implemented")
     }

@@ -15,6 +15,7 @@ import akka.pattern.Patterns
 import com.mikai233.common.core.Role
 import com.mikai233.common.message.Message
 import kotlinx.coroutines.future.await
+import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
@@ -70,8 +71,8 @@ fun ActorSystem.startSharding(
     return ClusterSharding.get(this).start(typename, props, settings, extractor, strategy, handoffMessage)
 }
 
-fun ActorSystem.startShardingProxy(typename: String): ActorRef {
-    return ClusterSharding.get(this).shardRegion(typename)
+fun ActorSystem.startShardingProxy(typename: String, role: Role, extractor: ShardRegion.MessageExtractor): ActorRef {
+    return ClusterSharding.get(this).startProxy(typename, Optional.of(role.name), extractor)
 }
 
 fun TimerScheduler.startSingleTimer(key: Any, message: Any, delay: Duration) {

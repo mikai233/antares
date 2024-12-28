@@ -2,11 +2,13 @@ package com.mikai233.world
 
 import akka.actor.ActorRef
 import com.google.protobuf.GeneratedMessage
+import com.mikai233.common.conf.ServerMode
+import com.mikai233.common.extension.invokeOnTargetMode
 import com.mikai233.common.extension.logger
 import com.mikai233.common.extension.tell
-import com.mikai233.shared.logMessage
+import com.mikai233.shared.formatMessage
 import com.mikai233.shared.message.ChannelMessage
-import com.mikai233.shared.message.ChannelProtobufEnvelope
+import com.mikai233.shared.message.ServerProtobuf
 
 class WorldSessionManager(val world: WorldActor) {
     private val sessions: MutableMap<Long, WorldSession> = mutableMapOf()
@@ -14,13 +16,16 @@ class WorldSessionManager(val world: WorldActor) {
     inner class WorldSession(private val playerId: Long, private val channelActor: ActorRef) {
         private val logger = logger()
 
-        fun sendChannel(message: ChannelMessage) {
+        private fun sendChannel(message: ChannelMessage) {
             channelActor.tell(message)
-            logMessage(logger, message) { "playerId:$playerId worldId:${world.worldId}" }
+            invokeOnTargetMode(setOf(ServerMode.DevMode)) {
+                val formattedMessage = formatMessage(message)
+                logger.debug("send message:{} to playerId:{} worldId:{}", formattedMessage, playerId, world.worldId)
+            }
         }
 
         fun send(message: GeneratedMessage) {
-            sendChannel(ChannelProtobufEnvelope(message))
+            sendChannel(ServerProtobuf(message))
         }
     }
 

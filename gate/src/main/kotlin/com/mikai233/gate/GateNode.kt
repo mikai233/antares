@@ -1,106 +1,91 @@
 package com.mikai233.gate
 
-import akka.actor.typed.SupervisorStrategy
-import akka.actor.typed.javadsl.AbstractBehavior
-import akka.actor.typed.javadsl.ActorContext
-import akka.actor.typed.javadsl.Behaviors
-import akka.actor.typed.javadsl.Receive
+import akka.actor.ActorRef
+import com.beust.jcommander.JCommander
+import com.beust.jcommander.Parameter
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.conf.GlobalProto
 import com.mikai233.common.core.Launcher
 import com.mikai233.common.core.Node
-import com.mikai233.common.core.State
-import com.mikai233.common.core.component.*
-import com.mikai233.common.extension.actorLogger
-import com.mikai233.common.extension.closeableSingle
-import com.mikai233.common.extension.registerService
-import com.mikai233.common.inject.XKoin
-import com.mikai233.gate.component.GateSharding
-import com.mikai233.gate.component.ScriptSupport
-import com.mikai233.gate.server.NettyServer
+import com.mikai233.common.core.Role
+import com.mikai233.common.core.ShardEntityType
+import com.mikai233.common.core.config.ConfigCache
+import com.mikai233.common.core.config.NettyConfig
+import com.mikai233.common.core.config.nettyConfigPath
+import com.mikai233.common.extension.startShardingProxy
 import com.mikai233.protocol.MsgCs
 import com.mikai233.protocol.MsgSc
-import com.mikai233.shared.message.ChannelMessage
-import com.mikai233.common.script.ScriptActor
-import com.mikai233.shared.scriptActorServiceKey
-import org.koin.dsl.koinApplication
-import org.koin.dsl.module
-import org.koin.logger.slf4jLogger
+import com.mikai233.shared.message.PlayerMessageExtractor
+import com.mikai233.shared.message.WorldMessageExtractor
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import java.net.InetSocketAddress
 
 
-class GateNode(private val port: Int = 2334, private val sameJvm: Boolean = false) : Launcher {
-    lateinit var koin: XKoin
-        private set
-
-    inner class GateNodeGuardian(context: ActorContext<GateSystemMessage>) :
-        AbstractBehavior<GateSystemMessage>(context) {
-        private val logger = actorLogger()
-
-        override fun createReceive(): Receive<GateSystemMessage> {
-            return newReceiveBuilder().onMessage(GateSystemMessage::class.java) { message ->
-                when (message) {
-                    is SpawnChannelActorReq -> handleSpawnChannelActorReq(message)
-
-                    is SpawnScriptActorReq -> handleSpawnScriptActorReq(message)
-                }
-                Behaviors.same()
-            }.build()
-        }
-
-        private fun handleSpawnChannelActorReq(message: SpawnChannelActorReq) {
-            val behavior = Behaviors.setup<ChannelMessage> {
-                Behaviors.withTimers { timers ->
-                    Behaviors.withStash(100) { buffer ->
-                        ChannelActor(it, message.ctx, timers, buffer, koin)
-                    }
-                }
-            }
-            val actorRef = context.spawnAnonymous(Behaviors.supervise(behavior).onFailure(SupervisorStrategy.resume()))
-            logger.debug("spawn channel actor:{}", message.ctx.name())
-            message.replyTo.tell(SpawnChannelActorResp(actorRef))
-        }
-
-        private fun handleSpawnScriptActorReq(message: SpawnScriptActorReq) {
-            val scriptActor = context.spawn(Behaviors.setup { ScriptActor(it, this@GateNode) }, ScriptActor.name())
-            context.system.registerService(scriptActorServiceKey(GlobalEnv.machineIp, port), scriptActor.narrow())
-            message.replyTo.tell(SpawnScriptActorResp((scriptActor)))
-        }
-    }
+class GateNode(
+    addr: InetSocketAddress,
+    name: String,
+    config: Config,
+    zookeeperConnectString: String,
+    sameJvm: Boolean = false
+) : Launcher, Node(addr, Role.Gate, name, config, zookeeperConnectString, sameJvm) {
 
     init {
         GlobalProto.init(MsgCs.MessageClientToServer.getDescriptor(), MsgSc.MessageServerToClient.getDescriptor())
-        XKoin(koinApplication {
-            this@GateNode.koin = XKoin(this)
-            slf4jLogger()
-            modules(serverModule())
-        })
     }
 
-    override fun launch() {
-        val node = koin.get<Node>()
-        node.state = State.Starting
-        node.onInit()
-        node.state = State.Started
+    lateinit var playerSharding: ActorRef
+        private set
+
+    lateinit var worldSharding: ActorRef
+        private set
+
+    private val nettyConfigCache = ConfigCache(zookeeper, nettyConfigPath(GlobalEnv.machineIp), NettyConfig::class)
+
+    val nettyConfig get() = nettyConfigCache.config
+
+    override suspend fun launch() = start()
+
+    override suspend fun afterStart() {
+        startPlayerSharding()
+        startWorldSharding()
+        super.afterStart()
     }
 
-    private fun serverModule() = module(createdAtStart = true) {
-        single { this@GateNode }
-        single { Node(koin) }
-        closeableSingle { ZookeeperConfigCenter() }
-        single { NodeConfigHolder(koin, Role.Gate, port, sameJvm) }
-        single {
-            AkkaSystem(koin, Behaviors.supervise(Behaviors.setup {
-                GateNodeGuardian(it)
-            }).onFailure(SupervisorStrategy.resume()))
-        }
-        single { NettyConfigHolder(koin) }
-        closeableSingle { NettyServer(koin) }
-        single { GateSharding(koin) }
-        single { ScriptSupport(koin) }
+    private fun startPlayerSharding() {
+        playerSharding =
+            system.startShardingProxy(ShardEntityType.PlayerActor.name, Role.Player, PlayerMessageExtractor)
+    }
+
+    private fun startWorldSharding() {
+        worldSharding = system.startShardingProxy(ShardEntityType.WorldActor.name, Role.World, WorldMessageExtractor)
     }
 }
 
-fun main(args: Array<String>) {
-    val port = args[0].toInt()
-    GateNode(port = port).launch()
+class Cli {
+    @Parameter(names = ["-h", "--host"], description = "host")
+    var host: String = GlobalEnv.machineIp
+
+    @Parameter(names = ["-p", "--port"], description = "port")
+    var port: Int = 2334
+
+    @Parameter(names = ["-c", "--conf"], description = "conf")
+    var conf: String = "world.conf"
+
+    @Parameter(names = ["-z", "--zookeeper"], description = "zookeeper")
+    var zookeeper: String = GlobalEnv.zkConnect
+
+    @Parameter(names = ["-n", "--name"], description = "system name")
+    var name: String = GlobalEnv.SYSTEM_NAME
+}
+
+suspend fun main(args: Array<String>) {
+    val cli = Cli()
+    JCommander.newBuilder()
+        .addObject(cli)
+        .build()
+        .parse(*args)
+    val addr = InetSocketAddress(cli.host, cli.port)
+    val config = ConfigFactory.load(cli.conf)
+    GateNode(addr, cli.name, config, cli.zookeeper).launch()
 }

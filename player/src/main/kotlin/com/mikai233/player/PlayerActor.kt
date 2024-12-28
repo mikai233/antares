@@ -17,7 +17,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class PlayerActor(node: PlayerNode) : StatefulActor<PlayerNode>(node) {
     companion object {
-        val TickDuration = 1.seconds
+        val PlayerTickDuration = 1.seconds
 
         fun props(node: PlayerNode): Props = Props.create(PlayerActor::class.java, node)
     }
@@ -30,7 +30,6 @@ class PlayerActor(node: PlayerNode) : StatefulActor<PlayerNode>(node) {
     override fun createReceive(): Receive {
         return receiveBuilder()
             .match(HandoffPlayer::class.java) { context.stop(self) }
-            .match(ActorNamedRunnable::class.java) { handleRunnable(it) }
             .matchAny {
                 stash()
                 context.become(initialize())
@@ -42,10 +41,9 @@ class PlayerActor(node: PlayerNode) : StatefulActor<PlayerNode>(node) {
         return receiveBuilder()
             .match(PlayerInitialized::class.java) {
                 unstashAll()
-                startTimerWithFixedDelay(PlayerTick, PlayerTick, TickDuration)
+                startTimerWithFixedDelay(PlayerTick, PlayerTick, PlayerTickDuration)
                 context.become(active())
             }
-            .match(ActorNamedRunnable::class.java) { handleRunnable(it) }
             .match(HandoffPlayer::class.java) { context.stop(self) }
             .matchAny { stash() }
             .build()
@@ -53,15 +51,15 @@ class PlayerActor(node: PlayerNode) : StatefulActor<PlayerNode>(node) {
 
     private fun active(): Receive {
         return receiveBuilder()
-            .match(ActorNamedRunnable::class.java) { handleRunnable(it) }
             .match(HandoffPlayer::class.java) { context.become(stopping()) }
             .match(PlayerTick::class.java) {}
+            .match(ProtobufEnvelope::class.java) { handleProtobufEnvelope(it) }
+            .match(PlayerMessage::class.java) { handlePlayerMessage(it) }
             .build()
     }
 
     private fun stopping(): Receive {
         return receiveBuilder()
-            .match(ActorNamedRunnable::class.java) { handleRunnable(it) }
             .match(PlayerUnloaded::class.java) { context.stop(self) }
             .match(PlayerTick::class.java) {}
             .build()
@@ -79,7 +77,7 @@ class PlayerActor(node: PlayerNode) : StatefulActor<PlayerNode>(node) {
     fun send(message: GeneratedMessage) {
         val channel = channelActor
         if (channel != null) {
-            val envelope = ChannelProtobufEnvelope(message)
+            val envelope = ServerProtobuf(message)
             channel tell envelope
         } else {
             logger.warning("player:{} unable to send message to channel actor, because channel actor is null", playerId)
@@ -133,15 +131,5 @@ class PlayerActor(node: PlayerNode) : StatefulActor<PlayerNode>(node) {
 
     suspend fun <R> askWorld(message: WorldMessage): Result<R> where R : Message {
         return node.worldSharding.ask(message)
-    }
-
-    private fun handleRunnable(message: ActorNamedRunnable) {
-        runCatching(message::run).onFailure {
-            logger.error(it, "player:{} handle runnable:{} failed", playerId, message.name)
-        }
-    }
-
-    fun execute(name: String, block: () -> Unit) {
-        self tell ActorNamedRunnable(name, block)
     }
 }

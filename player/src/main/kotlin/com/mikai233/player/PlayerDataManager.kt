@@ -14,7 +14,7 @@ class PlayerDataManager(private val player: PlayerActor, private val coroutine: 
     DataManager<PlayerActor>("com.mikai233.player.data") {
     private val logger = logger()
 
-    override fun loadAll() {
+    override fun init() {
         logger.info("{} start loading data", player.playerId)
         coroutine.launch(CoroutineExceptionHandler { _, throwable ->
             logger.error("{} loading data failed, player will stop", player.playerId, throwable)
@@ -23,16 +23,12 @@ class PlayerDataManager(private val player: PlayerActor, private val coroutine: 
             managers.map { (manager, mem) ->
                 async(Dispatchers.IO) {
                     mem.init()
-                    logger.info("{} load {} complete", player.playerId, manager.simpleName)
+                    logger.info("player:{} load {} complete", player.playerId, manager.simpleName)
                 }
             }.awaitAll()
-            loadComplete()
+            logger.info("player:{} data load complete", player.playerId)
+            player.self tell PlayerInitialized
         }
-    }
-
-    override fun loadComplete() {
-        logger.info("{} data load complete", player.playerId)
-        player.self tell PlayerInitialized
     }
 
     fun tick() {

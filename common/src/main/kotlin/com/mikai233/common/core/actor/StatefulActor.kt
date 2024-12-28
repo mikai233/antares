@@ -4,10 +4,17 @@ import akka.actor.AbstractActorWithStash
 import akka.actor.ActorRef
 import com.mikai233.common.core.Node
 import com.mikai233.common.extension.*
+import com.mikai233.common.message.ActorNamedRunnable
+import com.mikai233.common.message.ExecuteActorFunction
+import com.mikai233.common.message.ExecuteActorScript
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import scala.PartialFunction
 import scala.runtime.BoxedUnit
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 
 abstract class StatefulActor<N>(val node: N) : AbstractActorWithStash() where N : Node {
     val logger = actorLogger()
@@ -21,14 +28,34 @@ abstract class StatefulActor<N>(val node: N) : AbstractActorWithStash() where N 
     }
 
     override fun aroundReceive(receive: PartialFunction<Any, BoxedUnit>?, msg: Any?) {
-        if (msg is ActorCoroutineRunnable) {
-            try {
-                msg.run()
-            } catch (e: Exception) {
-                logger.error(e, "{} failed to execute {}", self.path(), ActorCoroutineRunnable::class.java)
+        when (msg) {
+            is ActorCoroutineRunnable -> {
+                handleRunnable<ActorCoroutineRunnable> { msg.run() }
             }
-        } else {
-            super.aroundReceive(receive, msg)
+
+            is ActorNamedRunnable -> {
+                handleRunnable<ActorNamedRunnable> { msg.block() }
+            }
+
+            is ExecuteActorScript -> {
+                node.scriptActor.tell(msg, self)
+            }
+
+            is ExecuteActorFunction -> {
+                msg.function.invoke(this)
+            }
+
+            else -> {
+                super.aroundReceive(receive, msg)
+            }
+        }
+    }
+
+    private inline fun <reified T> handleRunnable(runnable: () -> Unit) {
+        try {
+            runnable()
+        } catch (e: Exception) {
+            logger.error(e, "{} failed to execute {}", self.path(), T::class.java)
         }
     }
 
@@ -72,5 +99,32 @@ abstract class StatefulActor<N>(val node: N) : AbstractActorWithStash() where N 
     fun startTimerWithFixedDelay(key: Any, msg: Any, delay: Duration) {
         val interaction = TimersInteraction { it.startTimerWithFixedDelay(key, msg, delay) }
         timers.tell(interaction)
+    }
+
+    fun launch(
+        context: CoroutineContext = EmptyCoroutineContext,
+        start: CoroutineStart = CoroutineStart.DEFAULT,
+        timeout: Duration? = 3.minutes,
+        block: suspend CoroutineScope.() -> Unit
+    ): Job {
+        return if (timeout == null) {
+            coroutineScope.launch(context, start, block)
+        } else {
+            coroutineScope.launch(context, start) {
+                withTimeout(timeout, block)
+            }
+        }
+    }
+
+    fun <T> async(
+        context: CoroutineContext = EmptyCoroutineContext,
+        start: CoroutineStart = CoroutineStart.DEFAULT,
+        block: suspend CoroutineScope.() -> T
+    ): Deferred<T> {
+        return coroutineScope.async(context, start, block)
+    }
+
+    fun execute(name: String, block: () -> Unit) {
+        self tell ActorNamedRunnable(name, block)
     }
 }

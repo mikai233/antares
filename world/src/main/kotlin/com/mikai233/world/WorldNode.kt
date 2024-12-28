@@ -4,6 +4,7 @@ import akka.actor.ActorRef
 import akka.cluster.sharding.ShardCoordinator
 import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
+import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.conf.GlobalProto
 import com.mikai233.common.core.Launcher
@@ -12,8 +13,11 @@ import com.mikai233.common.core.Role
 import com.mikai233.common.core.ShardEntityType
 import com.mikai233.common.extension.startSharding
 import com.mikai233.common.extension.startShardingProxy
+import com.mikai233.common.message.Message
+import com.mikai233.common.message.MessageDispatcher
 import com.mikai233.protocol.MsgCs
 import com.mikai233.protocol.MsgSc
+import com.mikai233.shared.message.PlayerMessageExtractor
 import com.mikai233.shared.message.WorldMessageExtractor
 import com.mikai233.shared.message.world.HandoffWorld
 import com.typesafe.config.Config
@@ -38,6 +42,10 @@ class WorldNode(
     lateinit var worldSharding: ActorRef
         private set
 
+    val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, "com.mikai233.world.handler")
+
+    val internalDispatcher = MessageDispatcher(Message::class, "com.mikai233.world.handler")
+
     override suspend fun launch() = start()
 
     override suspend fun afterStart() {
@@ -47,7 +55,8 @@ class WorldNode(
     }
 
     private fun startPlayerSharding() {
-        playerSharding = system.startShardingProxy(ShardEntityType.PlayerActor.name)
+        playerSharding =
+            system.startShardingProxy(ShardEntityType.PlayerActor.name, Role.Player, PlayerMessageExtractor)
     }
 
     private fun startWorldSharding() {
@@ -56,7 +65,7 @@ class WorldNode(
             Role.World,
             WorldActor.props(this),
             HandoffWorld,
-            WorldMessageExtractor(3000),
+            WorldMessageExtractor,
             ShardCoordinator.LeastShardAllocationStrategy(1, 3),
         )
     }
@@ -69,7 +78,7 @@ class Cli {
     @Parameter(names = ["-p", "--port"], description = "port")
     var port: Int = 2336
 
-    @Parameter(names = ["-p", "--conf"], description = "conf")
+    @Parameter(names = ["-c", "--conf"], description = "conf")
     var conf: String = "world.conf"
 
     @Parameter(names = ["-z", "--zookeeper"], description = "zookeeper")

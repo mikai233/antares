@@ -1,6 +1,5 @@
 package com.mikai233.player.script
 
-import com.mikai233.common.core.component.Role
 import com.mikai233.common.script.NodeRoleScriptFunction
 import com.mikai233.player.PlayerNode
 import kotlin.Unit
@@ -13,10 +12,5 @@ class TestGroovyScript implements NodeRoleScriptFunction<PlayerNode> {
     Unit invoke(PlayerNode playerNode) {
         logger.info("hello world")
         return null
-    }
-
-    @Override
-    Role getRole() {
-        return Role.Player
     }
 }

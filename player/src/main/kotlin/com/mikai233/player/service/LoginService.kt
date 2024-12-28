@@ -8,7 +8,7 @@ import com.mikai233.protocol.ProtoLogin.LoginResp
 import com.mikai233.protocol.loginResp
 import com.mikai233.protocol.playerData
 import com.mikai233.shared.entity.Player
-import com.mikai233.shared.message.player.WHPlayerCreate
+import com.mikai233.shared.message.player.PlayerCreate
 
 /**
  * @author mikai233
@@ -17,7 +17,7 @@ import com.mikai233.shared.message.player.WHPlayerCreate
  */
 @AllOpen
 class LoginService {
-    fun createPlayer(player: PlayerActor, playerCreate: WHPlayerCreate) {
+    fun createPlayer(player: PlayerActor, playerCreate: PlayerCreate) {
         val entity = Player(
             id = playerCreate.playerId,
             account = playerCreate.account,
@@ -25,7 +25,7 @@ class LoginService {
             nickname = playerCreate.nickname,
             level = 1
         )
-        player.manager.get<PlayerMem>().initPlayer(player, entity)
+        player.manager.get<PlayerMem>().initPlayer(entity)
     }
 
     fun loginSuccessResp(player: PlayerActor): LoginResp {

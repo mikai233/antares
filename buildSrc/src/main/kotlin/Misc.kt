@@ -1,1 +1,1 @@
-val Boot = setOf("gate", "global", "gm", "player", "stardust", "world", "tools", "client")
+val Boot = setOf("gate", "global", "gm", "player", "stardust", "world", "tools")
