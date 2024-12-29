@@ -11,6 +11,7 @@ dependencies {
     implementation(akka.management.cluster.http)
     implementation(ktx.core)
     runtimeOnly(ktx.core.jvm)
+    implementation(ktor.bundles.common)
     implementation(tool.jcommander)
     implementation(project(":common"))
     implementation(project(":shared"))

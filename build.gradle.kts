@@ -78,24 +78,26 @@ subprojects {
         }
     }
 
-    tasks.register<Jar>("buildKotlinScript") {
-        group = "script"
-        val scriptClass: String? by project
-        val classSimpleName = scriptClass?.split(".")?.last()
-        archiveFileName.set("${rootProject.name}_${project.name}_${classSimpleName}.jar")
-        val script = sourceSets["script"]
-        manifest {
-            attributes("Script-Class" to (scriptClass ?: "undefined"))
-        }
-        from(script.output)
-        include("com/mikai233/${project.name}/script/*")
-
-        doFirst {
-            val containsTarget = script.output.classesDirs.any {
-                it.walk().any { file -> file.name == "${classSimpleName}.class" }
+    if (Boot.contains(project.name)) {
+        tasks.register<Jar>("buildKotlinScript") {
+            group = "script"
+            val scriptClass: String? by project
+            val classSimpleName = scriptClass?.split(".")?.last()
+            archiveFileName.set("${rootProject.name}_${project.name}_${classSimpleName}.jar")
+            val script = sourceSets["script"]
+            manifest {
+                attributes("Script-Class" to (scriptClass ?: "undefined"))
             }
-            check(containsTarget) { "cannot find ${scriptClass}.class in build dir" }
-            check(scriptClass != null) { "missing property scriptClass" }
+            from(script.output)
+            include("com/mikai233/${project.name}/script/*")
+
+            doFirst {
+                val containsTarget = script.output.classesDirs.any {
+                    it.walk().any { file -> file.name == "${classSimpleName}.class" }
+                }
+                check(containsTarget) { "cannot find ${scriptClass}.class in build dir" }
+                check(scriptClass != null) { "missing property scriptClass" }
+            }
         }
     }
 }

@@ -9,6 +9,7 @@ import com.mikai233.common.core.Node
 import com.mikai233.common.core.Role
 import com.mikai233.common.core.ShardEntityType
 import com.mikai233.common.extension.startShardingProxy
+import com.mikai233.gm.web.Engine
 import com.mikai233.shared.message.PlayerMessageExtractor
 import com.mikai233.shared.message.WorldMessageExtractor
 import com.typesafe.config.Config
@@ -29,11 +30,13 @@ class GmNode(
     lateinit var worldSharding: ActorRef
         private set
 
+    private lateinit var engine: Engine
+
 
     override suspend fun launch() = start()
 
-
     override suspend fun afterStart() {
+        startWebEngine()
         startPlayerSharding()
         startWorldSharding()
         super.afterStart()
@@ -46,6 +49,11 @@ class GmNode(
 
     private fun startWorldSharding() {
         worldSharding = system.startShardingProxy(ShardEntityType.WorldActor.name, Role.World, WorldMessageExtractor)
+    }
+
+    private fun startWebEngine() {
+        engine = Engine(this)
+        engine.start()
     }
 }
 

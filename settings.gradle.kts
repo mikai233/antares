@@ -36,10 +36,29 @@ dependencyResolutionManagement {
             bundle("common", listOf("stdlib", "jdk8", "reflect"))
         }
         create("ktor") {
-//            library("client.core", "io.ktor:ktor-client-core:$ktorClientVersion")
-            library("client.cio.jvm", "io.ktor:ktor-client-cio-jvm:$ktorClientVersion")
-//            library("server.core", "io.ktor:ktor-server-core:$ktorServerVersion")
-            library("server.netty", "io.ktor:ktor-server-netty:$ktorServerVersion")
+            library("client.core", "io.ktor:ktor-client-core-jvm:$ktorClientVersion")
+            library("client.cio", "io.ktor:ktor-client-cio-jvm:$ktorClientVersion")
+            library("server.netty", "io.ktor:ktor-server-netty-jvm:$ktorServerVersion")
+            library("server.host.common", "io.ktor:ktor-server-host-common-jvm:$ktorServerVersion")
+            library("server.content.negotiation", "io.ktor:ktor-server-content-negotiation-jvm:$ktorServerVersion")
+            library("serialization.jackson", "io.ktor:ktor-serialization-jackson-jvm:$ktorServerVersion")
+            library("server.status.pages", "io.ktor:ktor-server-status-pages-jvm:$ktorServerVersion")
+            library("server.request.validation", "io.ktor:ktor-server-request-validation-jvm:$ktorServerVersion")
+            library("server.cors", "io.ktor:ktor-server-cors-jvm:$ktorServerVersion")
+            bundle(
+                "common",
+                listOf(
+                    "client.core",
+                    "client.cio",
+                    "server.netty",
+                    "server.host.common",
+                    "server.content.negotiation",
+                    "serialization.jackson",
+                    "server.status.pages",
+                    "server.request.validation",
+                    "server.cors"
+                )
+            )
         }
         create("ktx") {
             library("core", "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.0")
@@ -104,7 +123,6 @@ dependencyResolutionManagement {
             plugin("dokka", "org.jetbrains.dokka").version("1.8.10")
             library("kotlinpoet", "com.squareup:kotlinpoet:$kotlinpoetVersion")
             library("kotlinpoet.ksp", "com.squareup:kotlinpoet-ksp:$kotlinpoetVersion")
-//            library("poi.ooxml", "org.apache.poi:poi-ooxml:5.2.3")
             library("easyexcel", "com.alibaba:easyexcel:4.0.3")
             plugin("boot", "org.springframework.boot").version("3.4.1")
             library("guava", "com.google.guava:guava:33.4.0-jre")

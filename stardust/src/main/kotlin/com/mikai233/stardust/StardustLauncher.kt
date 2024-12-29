@@ -15,15 +15,13 @@ import com.mikai233.gm.GmNode
 import com.mikai233.player.PlayerNode
 import com.mikai233.world.WorldNode
 import com.typesafe.config.ConfigFactory
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.*
 import kotlinx.coroutines.future.await
-import kotlinx.coroutines.launch
 import java.net.InetSocketAddress
 import java.util.*
 import kotlin.reflect.KClass
 import kotlin.reflect.full.primaryConstructor
+import kotlin.system.exitProcess
 
 object StardustLauncher {
     private val logger = logger()
@@ -53,9 +51,13 @@ object StardustLauncher {
         }.sortedByDescending { it.seed }
         val zookeeperConnectString = GlobalEnv.zkConnect
         val systemName = GlobalEnv.SYSTEM_NAME
-        coroutineScope {
+        val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
+            logger.error("launch node error", throwable)
+            exitProcess(-1)
+        }
+        supervisorScope {
             nodeConfigs.forEach { nodeConfig ->
-                launch {
+                launch(exceptionHandler) {
                     logger.info("{} launch node with config:{}", hostname, nodeConfig)
                     val nodeClass = nodeByRole[nodeConfig.role]
                     if (nodeClass != null) {

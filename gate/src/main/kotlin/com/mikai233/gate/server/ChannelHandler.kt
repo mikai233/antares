@@ -14,12 +14,10 @@ import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
 import io.netty.util.AttributeKey
 
+const val CHANNEL_ACTOR_KEY = "CHANNEL_ACTOR_KEY"
+
 @ChannelHandler.Sharable
 class ChannelHandler(private val node: GateNode) : ChannelInboundHandlerAdapter() {
-    companion object {
-        const val CHANNEL_ACTOR_KEY = "CHANNEL_ACTOR_KEY"
-    }
-
     private val actorKey = AttributeKey.valueOf<ActorRef>(CHANNEL_ACTOR_KEY)
     private val logger = logger()
 

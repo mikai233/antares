@@ -7,6 +7,7 @@ import com.google.protobuf.GeneratedMessage
 import com.google.protobuf.kotlin.toByteString
 import com.mikai233.common.conf.ServerMode
 import com.mikai233.common.core.actor.StatefulActor
+import com.mikai233.common.crypto.AESCipher
 import com.mikai233.common.crypto.ECDH
 import com.mikai233.common.extension.invokeOnTargetMode
 import com.mikai233.common.extension.tell
@@ -17,7 +18,7 @@ import com.mikai233.protocol.ProtoLogin.LoginResp
 import com.mikai233.protocol.ProtoSystem.PingReq
 import com.mikai233.protocol.connectionExpiredNotify
 import com.mikai233.protocol.pingResp
-import com.mikai233.shared.codec.CryptoCodec
+import com.mikai233.shared.codec.CIPHER_KEY
 import com.mikai233.shared.formatMessage
 import com.mikai233.shared.message.*
 import com.mikai233.shared.message.world.PlayerLogin
@@ -118,7 +119,7 @@ class ChannelActor(node: GateNode, private val handlerContext: ChannelHandlerCon
         write(keyResp) {
             if (it.isDone) {
                 val shareKey = ECDH.calculateShareKey(serverKeyPair.privateKey, clientPublicKey)
-                handlerContext.channel().attr(CryptoCodec.cryptoKey).set(shareKey)
+                handlerContext.channel().attr(CIPHER_KEY).set(AESCipher(shareKey))
                 self tell ChannelAuthorized
             }
         }
