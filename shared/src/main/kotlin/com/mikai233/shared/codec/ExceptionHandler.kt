@@ -7,6 +7,7 @@ import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelPromise
 import java.net.SocketAddress
+import java.net.SocketException
 
 @Sharable
 class ExceptionHandler : ChannelDuplexHandler() {
@@ -33,5 +34,13 @@ class ExceptionHandler : ChannelDuplexHandler() {
                 logger.error("", it.cause())
             }
         }))
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
+        if (cause !is SocketException) {
+            logger.error("", cause)
+        }
+        ctx.close()
     }
 }

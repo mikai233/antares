@@ -278,8 +278,7 @@ dependencies = [
     "serde",
     "serde_yaml",
     "sha2",
-    "silu-derive",
-    "strum 0.26.3",
+    "strum",
     "tokio",
     "tokio-util",
     "tracing",
@@ -303,15 +302,6 @@ name = "colorchoice"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d3fd119d74b830634cea2a0f58bbd0d54540518a14397557951e79340abc28c0"
-
-[[package]]
-name = "convert_case"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec182b0ca2f35d8fc196cf3404988fd8b8c739a4d270ff118a398feb0cbec1ca"
-dependencies = [
-    "unicode-segmentation",
-]
 
 [[package]]
 name = "core-foundation-sys"
@@ -1428,17 +1418,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "silu-derive"
-version = "0.1.0"
-dependencies = [
-    "convert_case",
-    "proc-macro2",
-    "quote",
-    "strum 0.24.1",
-    "syn 1.0.109",
-]
-
-[[package]]
 name = "slab"
 version = "0.4.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1483,33 +1462,11 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
 name = "strum"
-version = "0.24.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "063e6045c0e62079840579a7e47a355ae92f60eb74daaf156fb1e84ba164e63f"
-dependencies = [
-    "strum_macros 0.24.3",
-]
-
-[[package]]
-name = "strum"
 version = "0.26.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8fec0f0aef304996cf250b31b5a10dee7980c85da9d759361292b8bca5a18f06"
 dependencies = [
-    "strum_macros 0.26.4",
-]
-
-[[package]]
-name = "strum_macros"
-version = "0.24.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e385be0d24f186b4ce2f9982191e7101bb737312ad61c1f2f984f34bcf85d59"
-dependencies = [
-    "heck 0.4.1",
-    "proc-macro2",
-    "quote",
-    "rustversion",
-    "syn 1.0.109",
+    "strum_macros",
 ]
 
 [[package]]
@@ -1532,7 +1489,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b64191b275b66ffe2469e8af2c1cfe3bafa67b529ead792a6d0160888b4237"
 dependencies = [
     "proc-macro2",
-    "quote",
     "unicode-ident",
 ]
 

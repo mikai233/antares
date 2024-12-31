@@ -29,7 +29,6 @@ walkdir = "2.3.2"
 lexical-sort = "0.3.1"
 md5 = "0.7.0"
 strum = { version = "0.26.2", features = ["derive"] }
-silu-derive = { path = "silu-derive" }
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9"
 trust-dns-resolver = "0.23.2"

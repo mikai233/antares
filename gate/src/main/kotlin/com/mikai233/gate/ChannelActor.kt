@@ -11,13 +11,11 @@ import com.mikai233.common.crypto.AESCipher
 import com.mikai233.common.crypto.ECDH
 import com.mikai233.common.extension.invokeOnTargetMode
 import com.mikai233.common.extension.tell
-import com.mikai233.common.extension.unixTimestamp
+import com.mikai233.common.message.Message
 import com.mikai233.protocol.ProtoLogin
 import com.mikai233.protocol.ProtoLogin.LoginReq
 import com.mikai233.protocol.ProtoLogin.LoginResp
-import com.mikai233.protocol.ProtoSystem.PingReq
 import com.mikai233.protocol.connectionExpiredNotify
-import com.mikai233.protocol.pingResp
 import com.mikai233.shared.codec.CIPHER_KEY
 import com.mikai233.shared.formatMessage
 import com.mikai233.shared.message.*
@@ -67,11 +65,9 @@ class ChannelActor(node: GateNode, private val handlerContext: ChannelHandlerCon
             .build()
     }
 
-    private fun write(message: GeneratedMessage, listener: ChannelFutureListener? = null) {
+    fun write(message: GeneratedMessage, listener: ChannelFutureListener? = null) {
         val future = handlerContext.writeAndFlush(message)
-        listener?.let {
-            future.addListener(listener)
-        }
+        listener?.let { future.addListener(it) }
     }
 
     private fun handleClientConnectMessage(clientProtobuf: ClientProtobuf) {
@@ -122,10 +118,13 @@ class ChannelActor(node: GateNode, private val handlerContext: ChannelHandlerCon
         val serverKeyPair = ECDH.genKeyPair()
         val keyResp = resp.toBuilder().setServerPublicKey(serverKeyPair.publicKey.toByteString()).build()
         write(keyResp) {
-            if (it.isDone) {
+            if (it.isSuccess) {
                 val shareKey = ECDH.calculateSharedKey(serverKeyPair.privateKey, clientPublicKey)
                 handlerContext.channel().attr(CIPHER_KEY).set(AESCipher(shareKey))
                 self tell ChannelAuthorized
+            } else {
+                logger.error(it.cause(), "write server key to client failed, stop the channel")
+                stopChannel()
             }
         }
     }
@@ -178,13 +177,14 @@ class ChannelActor(node: GateNode, private val handlerContext: ChannelHandlerCon
                 }
                 write(it.message)
             }
-            .match(ReceiveTimeout::class.java) { stopChannel() }
             .match(StopChannel::class.java) { stopChannel() }
+            .match(ReceiveTimeout::class.java) { stopChannel() }
+            .match(Message::class.java) { handleChannelMessage(it) }
             .build()
     }
 
     /**
-     * 客户端主动断开连接
+     * 断开和客户端的连接
      */
     private fun stopChannel() {
         if (handlerContext.channel().isActive) {
@@ -195,24 +195,11 @@ class ChannelActor(node: GateNode, private val handlerContext: ChannelHandlerCon
     }
 
     private fun forwardClientMessage(clientProtobuf: ClientProtobuf) {
-        val message = clientProtobuf.message
-        if (message is PingReq) {
-            handlePingReq()
-        } else {
-            forwardToActor(clientProtobuf)
-        }
-    }
-
-    private fun handlePingReq() {
-        write(pingResp { serverTimestamp = unixTimestamp() })
-    }
-
-    private fun forwardToActor(clientProtobuf: ClientProtobuf) {
         val (id, message) = clientProtobuf
         val target = MessageForward.whichActor(id)
         logger.debug("forward message:{} to target:{}", formatMessage(message), target)
         if (target == null) {
-            logger.warning("proto: {} has no target forward actor", clientProtobuf.id)
+            logger.warning("proto: {} has no target to forward", clientProtobuf.id)
         } else {
             when (target) {
                 Forward.PlayerActor -> {
@@ -232,7 +219,27 @@ class ChannelActor(node: GateNode, private val handlerContext: ChannelHandlerCon
                         logger.warning("try to send message to uninitialized worldId, this message will be dropped")
                     }
                 }
+
+                Forward.ChannelActor -> {
+                    handleProtobuf(message)
+                }
             }
+        }
+    }
+
+    private fun handleProtobuf(message: GeneratedMessage) {
+        try {
+            node.protobufDispatcher.dispatch(message::class, this, message)
+        } catch (e: Exception) {
+            logger.error(e, "channel:{} handle protobuf message:{} failed", self, message)
+        }
+    }
+
+    private fun handleChannelMessage(message: Message) {
+        try {
+            node.internalDispatcher.dispatch(message::class, this, message)
+        } catch (e: Exception) {
+            logger.error(e, "channel:{} handle message:{} failed", self, message)
         }
     }
 }

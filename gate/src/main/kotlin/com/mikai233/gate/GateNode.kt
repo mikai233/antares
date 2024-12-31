@@ -3,6 +3,7 @@ package com.mikai233.gate
 import akka.actor.ActorRef
 import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
+import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.conf.GlobalProto
 import com.mikai233.common.core.Launcher
@@ -13,6 +14,8 @@ import com.mikai233.common.core.config.ConfigCache
 import com.mikai233.common.core.config.NettyConfig
 import com.mikai233.common.core.config.nettyConfigPath
 import com.mikai233.common.extension.startShardingProxy
+import com.mikai233.common.message.Message
+import com.mikai233.common.message.MessageDispatcher
 import com.mikai233.gate.server.NettyServer
 import com.mikai233.protocol.MsgCs
 import com.mikai233.protocol.MsgSc
@@ -40,6 +43,10 @@ class GateNode(
 
     lateinit var worldSharding: ActorRef
         private set
+
+    val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, "com.mikai233.gate.handler")
+
+    val internalDispatcher = MessageDispatcher(Message::class, "com.mikai233.gate.handler")
 
     private val nettyServer = NettyServer(this)
 

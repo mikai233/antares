@@ -29,16 +29,16 @@ class TestMessageDispatcher {
     }
 
     @Test
-    fun testUpdateHandler() {
+    fun testReplaceHandler() {
         val dispatcher = MessageDispatcher(Message::class, "com.mikai233.common.test.msg")
         with(dispatcher) {
             dispatch(TestMessageA::class, HandlerCtx, TestMessageA("hello"))
-            updateHandler(MessageHandlerA::class, MessageHandlerAFix())
+            replaceHandler(MessageHandlerA::class, MessageHandlerAFix())
             assertThrows<Exception> {
                 dispatch(TestMessageA::class, HandlerCtx, TestMessageA("hello"))
             }
             assertThrows<IllegalStateException> {
-                updateHandler(MessageHandlerB::class, MessageHandlerAFix())
+                replaceHandler(MessageHandlerB::class, MessageHandlerAFix())
             }
         }
     }

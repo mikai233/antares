@@ -5,9 +5,7 @@ use anyhow::{anyhow, Context};
 use futures::{SinkExt, StreamExt};
 use mlua::prelude::LuaFunction;
 use mlua::Lua;
-use ring::error::Unspecified;
 use rustyline::hint::HistoryHinter;
-use silu_derive::lua_helper;
 use tokio::net::TcpStream;
 use tokio::select;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
@@ -73,9 +71,10 @@ impl ScheduleChannel {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub enum ClientState {
+pub enum ClientStatus {
     Init,
     Connected,
+    Authenticating,
     Authorised,
 }
 
@@ -83,14 +82,13 @@ pub struct Client {
     pub lua: Lua,
     pub key_pair: KeyPair,
     pub config: Config,
-    pub state: ClientState,
+    pub status: ClientStatus,
     pub proto_channel: ProtoChannel,
     pub event_channel: EventChannel,
     pub schedule_channel: ScheduleChannel,
     pub schedules: HashMap<String, JoinHandle<()>>,
 }
 
-#[lua_helper]
 impl Client {
     pub fn new(config: Config) -> anyhow::Result<Self> {
         let lua = unsafe { Lua::unsafe_new() };
@@ -103,7 +101,7 @@ impl Client {
             lua,
             key_pair,
             config,
-            state: ClientState::Init,
+            status: ClientStatus::Init,
             proto_channel,
             event_channel,
             schedule_channel,
@@ -137,7 +135,7 @@ impl Client {
 
     pub async fn start(&mut self) -> anyhow::Result<()> {
         let stream = TcpStream::connect(self.config.socket_addr.unwrap()).await?;
-        self.state = ClientState::Connected;
+        self.status = ClientStatus::Connected;
         self.publish_lua_event(Rust2LuaEvent::Connected, None);
         let mut framed = Framed::new(stream, ProtoCodec::new());
         let config = rustyline::Config::builder().build();
@@ -151,13 +149,17 @@ impl Client {
         loop {
             select! {
                 biased;
-                packet = framed.next(), if self.state == ClientState::Connected || self.state == ClientState::Authorised => {
+                packet = framed.next(), if self.status == ClientStatus::Connected || self.status == ClientStatus::Authorised => {
                     match packet {
                         None => {
                             info!("connection closed");
                             break;
                         }
                         Some(packet) => {
+                            // 登录回包之前都不要接收新的包，因为要等回包之后的AES密钥设置成功
+                            if matches!(self.status, ClientStatus::Connected) {
+                                self.status = ClientStatus::Authenticating;
+                            }
                             self.handle_proto_message(packet);
                         }
                     }
@@ -225,7 +227,7 @@ impl Client {
                         ECDH::calculate_shared_key(self_private_key, remote_public_key.as_slice());
                     match shared_key {
                         Ok(shared_key) => {
-                            self.state = ClientState::Authorised;
+                            self.status = ClientStatus::Authorised;
                             let mut shared_key_array = [0u8; 32];
                             shared_key_array.copy_from_slice(shared_key.as_slice());
                             framed.codec_mut().set_share_key(shared_key_array);

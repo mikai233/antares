@@ -64,11 +64,9 @@ impl Decoder for ProtoCodec {
             let _ = src.split_to(12);
             let mut body = src.to_vec();
 
-            if origin_len > 0 {
-                let mut decompressed = vec![0u8; origin_len as usize];
-                lz4_flex::decompress_into(&body, &mut decompressed).map_err(|e| anyhow!(e))?;
-                body = decompressed;
-            }
+            let mut decompressed = vec![0u8; origin_len as usize];
+            lz4_flex::decompress_into(&body, &mut decompressed).map_err(|e| anyhow!(e))?;
+            body = decompressed;
             Ok(Some(ProtobufPacket::new(id, body)))
         }
     }
@@ -123,13 +121,6 @@ impl Display for ProtoCodecError {
             }
         }
     }
-}
-
-fn peek_u16(src: &BytesMut, offset: usize) -> anyhow::Result<u16> {
-    let mut u16_bytes = [0u8; 2];
-    u16_bytes.copy_from_slice(&src[offset..(offset + 2)]);
-    let num_u16 = u16::from_be_bytes(u16_bytes);
-    Ok(num_u16)
 }
 
 fn peek_i32(src: &BytesMut, offset: usize) -> anyhow::Result<i32> {
