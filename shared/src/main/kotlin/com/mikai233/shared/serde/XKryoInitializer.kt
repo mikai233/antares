@@ -29,7 +29,7 @@ class XKryoInitializer : DefaultKryoInitializer() {
     override fun preInit(kryo: ScalaKryo, system: ExtendedActorSystem) {
         kryo.setDefaultSerializer(FieldSerializer::class.java)
         KryoMapper.mapper.forEach { (id, clazz) ->
-            logger.info("register {} with id:{}", clazz, id)
+            logger.debug("register {} with id:{}", clazz, id)
             kryo.register(clazz, id)
         }
     }

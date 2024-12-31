@@ -7,7 +7,7 @@ import kotlin.reflect.KClass
  * 所有[GameConfig]的实现类
  * 使用静态注册而不使用运行时反射的原因是为了加快启动速度
  */
-public val CONFIG_IMPL: Array<KClass<out GameConfig<*>>> = arrayOf(
+public val ConfigImpl: Array<KClass<out GameConfig<*>>> = arrayOf(
 
 )
 
@@ -16,6 +16,6 @@ public val CONFIG_IMPL: Array<KClass<out GameConfig<*>>> = arrayOf(
  * 所有[GameConfigs]的实现类
  * 使用静态注册而不使用运行时反射的原因是为了加快启动速度
  */
-public val CONFIGS_IMPL: Array<KClass<out GameConfigs<*, *>>> = arrayOf(
+public val ConfigsImpl: Array<KClass<out GameConfigs<*, *>>> = arrayOf(
 
 )

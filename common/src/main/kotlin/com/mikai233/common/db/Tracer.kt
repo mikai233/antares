@@ -8,7 +8,7 @@ import com.mikai233.common.entity.*
 import com.mikai233.common.extension.Json
 import com.mikai233.common.extension.logger
 import com.mikai233.common.extension.unixTimestamp
-import com.mikai233.common.serde.DEPS_EXTRA
+import com.mikai233.common.serde.DepsExtra
 import com.mikai233.common.serde.KryoPool
 import com.mongodb.*
 import com.mongodb.client.MongoClients
@@ -491,7 +491,7 @@ fun main() {
     val pendingRunnable = LinkedList<Runnable>()
     val executor = Executor { pendingRunnable.add(it) }
     val pool = KryoPool(
-        DEPS_EXTRA + arrayOf(
+        DepsExtra + arrayOf(
             Room::class,
             RoomPlayer::class,
             DirectObj::class,

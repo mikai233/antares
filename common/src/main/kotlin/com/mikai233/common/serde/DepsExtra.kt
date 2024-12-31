@@ -4,7 +4,7 @@ import java.util.*
 import java.util.concurrent.*
 import kotlin.reflect.KClass
 
-val DEPS_EXTRA = arrayOf<KClass<*>>(
+val DepsExtra = arrayOf<KClass<*>>(
     emptyList<Int>()::class,
     emptyMap<Int, Int>()::class,
     emptySet<Int>()::class,

@@ -48,10 +48,9 @@ class NettyServer(private val node: GateNode) : AutoCloseable {
             bossGroup.javaClass.simpleName,
             workGroup.javaClass.simpleName
         )
-        start()
     }
 
-    private fun start(): Thread {
+    fun start(): Thread {
         return thread(name = name, isDaemon = true) {
             try {
                 val futures = startServer()

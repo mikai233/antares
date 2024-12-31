@@ -4,6 +4,7 @@ import akka.actor.ActorRef
 import akka.cluster.sharding.ShardCoordinator
 import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
+import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.conf.GlobalProto
 import com.mikai233.common.core.Launcher
@@ -12,6 +13,8 @@ import com.mikai233.common.core.Role
 import com.mikai233.common.core.ShardEntityType
 import com.mikai233.common.extension.startSharding
 import com.mikai233.common.extension.startShardingProxy
+import com.mikai233.common.message.Message
+import com.mikai233.common.message.MessageDispatcher
 import com.mikai233.protocol.MsgCs
 import com.mikai233.protocol.MsgSc
 import com.mikai233.shared.message.PlayerMessageExtractor
@@ -37,6 +40,10 @@ class PlayerNode(
 
     lateinit var worldSharding: ActorRef
         private set
+
+    val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, "com.mikai233.player.handler")
+
+    val internalDispatcher = MessageDispatcher(Message::class, "com.mikai233.player.handler")
 
     override suspend fun launch() = start()
 

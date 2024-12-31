@@ -8,6 +8,7 @@ dependencies {
     testImplementation(platform(test.junit.bom))
     testImplementation(test.junit.jupiter)
     implementation(akka.bundles.common)
+    implementation(kt.reflect)
     implementation(ktx.core)
     implementation(ktx.datetime.jvm)
     runtimeOnly(ktx.core.jvm)

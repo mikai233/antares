@@ -13,6 +13,7 @@ import com.mikai233.common.core.config.ConfigCache
 import com.mikai233.common.core.config.NettyConfig
 import com.mikai233.common.core.config.nettyConfigPath
 import com.mikai233.common.extension.startShardingProxy
+import com.mikai233.gate.server.NettyServer
 import com.mikai233.protocol.MsgCs
 import com.mikai233.protocol.MsgSc
 import com.mikai233.shared.message.PlayerMessageExtractor
@@ -40,11 +41,18 @@ class GateNode(
     lateinit var worldSharding: ActorRef
         private set
 
+    private val nettyServer = NettyServer(this)
+
     private val nettyConfigCache = ConfigCache(zookeeper, nettyConfigPath(GlobalEnv.machineIp), NettyConfig::class)
 
     val nettyConfig get() = nettyConfigCache.config
 
     override suspend fun launch() = start()
+
+    override suspend fun beforeStart() {
+        nettyServer.start()
+        super.beforeStart()
+    }
 
     override suspend fun afterStart() {
         startPlayerSharding()

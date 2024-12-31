@@ -8,6 +8,8 @@ import io.netty.handler.codec.MessageToMessageCodec
 
 class PacketCodec : MessageToMessageCodec<ByteArray, Packet>() {
     private val logger = logger()
+
+    // 0-65535
     private var packetIndex = 0
 
     override fun encode(ctx: ChannelHandlerContext, msg: Packet, out: MutableList<Any>) {
@@ -29,6 +31,6 @@ class PacketCodec : MessageToMessageCodec<ByteArray, Packet>() {
         val originLen = msg.toInt(2 * Int.SIZE_BYTES)
         val body = msg.sliceArray(3 * Int.SIZE_BYTES..<msg.size)
         out.add(Packet(protoId, originLen, body))
-        packetIndex = ++packetIndex % 65535
+        packetIndex = ++packetIndex % 65536
     }
 }

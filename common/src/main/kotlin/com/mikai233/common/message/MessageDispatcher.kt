@@ -9,13 +9,13 @@ import kotlin.reflect.full.*
 
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.FUNCTION)
-annotation class IgnoreHandleMe
+annotation class Handle
 
-data class MessageFunction(
+data class MessageHandle(
     val clazz: KClass<out MessageHandler>,
     var handler: MessageHandler,
-    val func: KFunction<Unit>,
-) : KFunction<Unit> by func
+    val handle: KFunction<Unit>,
+) : KFunction<Unit> by handle
 
 class MessageDispatcher<M : Any>(private val message: KClass<M>, vararg packages: String) {
     private val logger = logger()
@@ -23,7 +23,7 @@ class MessageDispatcher<M : Any>(private val message: KClass<M>, vararg packages
 
     @Volatile
     private var handlers: Map<KClass<out MessageHandler>, MessageHandler>
-    private val messages: Map<KClass<out M>, MessageFunction>
+    private val messages: Map<KClass<out M>, MessageHandle>
 
     init {
         handlers = initHandlers()
@@ -41,21 +41,19 @@ class MessageDispatcher<M : Any>(private val message: KClass<M>, vararg packages
         return handlers
     }
 
-    private fun initMessages(): Map<KClass<out M>, MessageFunction> {
-        val messages = mutableMapOf<KClass<out M>, MessageFunction>()
+    private fun initMessages(): Map<KClass<out M>, MessageHandle> {
+        val messages = mutableMapOf<KClass<out M>, MessageHandle>()
         handlers.forEach { (clazz, handler) ->
-            clazz.declaredMemberFunctions.forEach funcForeach@{ mf ->
-                if (mf.findAnnotation<IgnoreHandleMe>() != null) {
-                    return@funcForeach
-                }
-                val kClassifier = message.createType().classifier!!
-                mf.parameters.find { kp -> kp.type.isSubtypeOf(kClassifier.createType()) }?.let {
-                    @Suppress("UNCHECKED_CAST") val key = it.type.classifier as KClass<out M>
-                    check(
-                        messages.containsKey(key).not()
-                    ) { "duplicate message handle function:${key}, if this is not a handle function, add @IgnoreHandleMe to this function" }
-                    messages[key] = MessageFunction(clazz, handler, mf as KFunction<Unit>)
-                    logger.debug("add message handle function:{}", key)
+            clazz.declaredMemberFunctions.forEach { kFunction ->
+                if (kFunction.findAnnotation<Handle>() != null) {
+                    if (kFunction.parameters[2].type.isSubtypeOf(message.createType())) {
+                        @Suppress("UNCHECKED_CAST")
+                        val message = kFunction.parameters[2].type.classifier as KClass<out M>
+                        check(!messages.containsKey(message)) { "duplicate message handle function for message:${message}" }
+                        @Suppress("UNCHECKED_CAST")
+                        messages[message] = MessageHandle(clazz, handler, kFunction as KFunction<Unit>)
+                        logger.debug("add message handle function:{}", message)
+                    }
                 }
             }
         }
@@ -63,9 +61,9 @@ class MessageDispatcher<M : Any>(private val message: KClass<M>, vararg packages
     }
 
     fun dispatch(hint: KClass<out M>, vararg params: Any) {
-        val methodFun = messages[hint]
-        if (methodFun != null) {
-            methodFun.call(methodFun.handler, *params)
+        val messageHandle = messages[hint]
+        if (messageHandle != null) {
+            messageHandle.call(messageHandle.handler, *params)
         } else {
             logger.error("no message handler for:{} was found", hint)
         }

@@ -12,6 +12,9 @@ import io.netty.handler.ssl.SslContext
  */
 class ServerChannelInitializer(node: GateNode, private val sslContext: SslContext? = null) :
     ChannelInitializer<SocketChannel>() {
+    //100k
+    private val frameCodec = FrameCodec(1024 * 100)
+    private val cryptoCodec = CryptoCodec()
     private val lZ4Codec = LZ4Codec()
     private val protobufCodec = ProtobufCodec()
     private val channelHandler = ChannelHandler(node)
@@ -21,9 +24,8 @@ class ServerChannelInitializer(node: GateNode, private val sslContext: SslContex
             sslContext?.let {
                 addLast(it.newHandler(ch.alloc()))
             }
-            //100k
-            addLast(FrameDecoder(1024 * 100))
-            addLast(CryptoCodec())
+            addLast(frameCodec)
+            addLast(cryptoCodec)
             addLast(PacketCodec())
             addLast(lZ4Codec)
             addLast(protobufCodec)

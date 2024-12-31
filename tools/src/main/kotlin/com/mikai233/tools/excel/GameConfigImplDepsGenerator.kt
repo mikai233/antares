@@ -43,7 +43,7 @@ fun main() {
         .filter { it !in PrimitiveTypes }
     val configImplFile = FileSpec.builder("com.mikai233.shared.excel", "ConfigImpl")
         .addProperty(
-            PropertySpec.builder("CONFIG_IMPL", configImplType)
+            PropertySpec.builder("ConfigImpl", configImplType)
                 .initializer(buildCodeBlock {
                     add("arrayOf(\n")
                     gameConfigImpls.forEachIndexed { index, gameConfigImpl ->
@@ -59,7 +59,7 @@ fun main() {
                 .build()
         )
         .addProperty(
-            PropertySpec.builder("CONFIGS_IMPL", configsImplType)
+            PropertySpec.builder("ConfigsImpl", configsImplType)
                 .initializer(buildCodeBlock {
                     add("arrayOf(\n")
                     gameConfigsImpls.forEachIndexed { index, gameConfigImpl ->
@@ -78,7 +78,7 @@ fun main() {
     configImplFile.writeTo(Path("shared/src/main/kotlin"))
     val configDepsFile = FileSpec.builder("com.mikai233.shared.excel", "ConfigDeps")
         .addProperty(
-            PropertySpec.builder("CONFIG_DEPS", configDepsType)
+            PropertySpec.builder("ConfigDeps", configDepsType)
                 .initializer(buildCodeBlock {
                     add("arrayOf(\n")
                     add("%T::class,\n", GameConfigManager::class)

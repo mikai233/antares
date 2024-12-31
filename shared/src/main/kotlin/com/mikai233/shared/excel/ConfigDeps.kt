@@ -7,7 +7,7 @@ import kotlin.reflect.KClass
  * 所有[GameConfig]的实现类的依赖
  * 使用静态注册而不使用运行时反射的原因是为了加快启动速度
  */
-public val CONFIG_DEPS: Array<KClass<*>> = arrayOf(
+public val ConfigDeps: Array<KClass<*>> = arrayOf(
     GameConfigManager::class,
 
     )

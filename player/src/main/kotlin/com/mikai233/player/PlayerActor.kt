@@ -2,6 +2,7 @@ package com.mikai233.player
 
 import akka.actor.ActorRef
 import akka.actor.Props
+import akka.actor.Terminated
 import akka.cluster.sharding.ShardRegion
 import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.core.actor.StatefulActor
@@ -25,14 +26,25 @@ class PlayerActor(node: PlayerNode) : StatefulActor<PlayerNode>(node) {
     val playerId: Long = self.path().name().toLong()
 
     private var channelActor: ActorRef? = null
-    val manager = PlayerDataManager(this, coroutineScope)
+    val manager = PlayerDataManager(this)
+
+    override fun preStart() {
+        super.preStart()
+        logger.info("PlayerActor[{}] started", self)
+    }
+
+    override fun postStop() {
+        super.postStop()
+        logger.info("PlayerActor[{}] stopped", self)
+    }
 
     override fun createReceive(): Receive {
         return receiveBuilder()
             .match(HandoffPlayer::class.java) { context.stop(self) }
             .matchAny {
-                stash()
                 context.become(initialize())
+                manager.init()
+                stash()
             }
             .build()
     }
@@ -52,24 +64,47 @@ class PlayerActor(node: PlayerNode) : StatefulActor<PlayerNode>(node) {
     private fun active(): Receive {
         return receiveBuilder()
             .match(HandoffPlayer::class.java) { context.become(stopping()) }
-            .match(PlayerTick::class.java) {}
+            .match(PlayerTick::class.java) { manager.tick() }
             .match(ProtobufEnvelope::class.java) { handleProtobufEnvelope(it) }
-            .match(PlayerMessage::class.java) { handlePlayerMessage(it) }
+            .match(Terminated::class.java) { handleTerminated(it) }
+            .match(Message::class.java) { handlePlayerMessage(it) }
             .build()
+    }
+
+    private fun handleTerminated(it: Terminated) {
+        if (it.actor == channelActor) {
+            logger.info("player:{} channel actor:{} terminated", playerId, channelActor)
+            channelActor = null
+        }
     }
 
     private fun stopping(): Receive {
         return receiveBuilder()
             .match(PlayerUnloaded::class.java) { context.stop(self) }
-            .match(PlayerTick::class.java) {}
+            .match(Terminated::class.java) { handleTerminated(it) }
+            .match(PlayerTick::class.java) {
+                if (manager.flush()) {
+                    self tell PlayerUnloaded
+                }
+            }
             .build()
     }
 
-    private fun handleProtobufEnvelope(message: ProtobufEnvelope) {
-
+    private fun handleProtobufEnvelope(envelope: ProtobufEnvelope) {
+        val message = envelope.message
+        try {
+            node.protobufDispatcher.dispatch(message::class, this, message)
+        } catch (e: Exception) {
+            logger.error(e, "player:{} handle protobuf message:{} failed", playerId, message)
+        }
     }
 
-    private fun handlePlayerMessage(message: PlayerMessage) {
+    private fun handlePlayerMessage(message: Message) {
+        try {
+            node.internalDispatcher.dispatch(message::class, this, message)
+        } catch (e: Exception) {
+            logger.error(e, "player:{} handle message:{} failed", playerId, message)
+        }
     }
 
     fun isOnline() = channelActor != null

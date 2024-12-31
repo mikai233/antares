@@ -2,7 +2,7 @@ package com.mikai233.shared.excel
 
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
-import com.mikai233.common.serde.DEPS_EXTRA
+import com.mikai233.common.serde.DepsExtra
 import com.mikai233.common.serde.KryoPool
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -14,7 +14,7 @@ import java.util.zip.GZIPOutputStream
 import kotlin.reflect.full.primaryConstructor
 import kotlin.system.measureTimeMillis
 
-val GAME_CONFIG_KRYO_POOL = KryoPool(CONFIG_DEPS + CONFIG_IMPL + CONFIGS_IMPL + DEPS_EXTRA)
+val GameConfigKryoPool = KryoPool(ConfigDeps + ConfigImpl + ConfigsImpl + DepsExtra)
 
 /**
  * 由于Kryo序列化的一些限制，不能把[GameConfigManager]整个对象进行序列化和反序列化，而是需要把每个[GameConfigs]进行序列化和反序列化
@@ -40,7 +40,7 @@ object ConfigManagerSerializer {
     }
 
     private fun deserialize(input: Input): GameConfigManager {
-        return GAME_CONFIG_KRYO_POOL.use {
+        return GameConfigKryoPool.use {
             val manager = readObject(input, GameConfigManager::class.java)
             val size = readObject(input, Int::class.java)
             repeat(size) {
@@ -58,7 +58,7 @@ object ConfigManagerSerializer {
     }
 
     private fun serialize(manager: GameConfigManager, output: Output) {
-        GAME_CONFIG_KRYO_POOL.use {
+        GameConfigKryoPool.use {
             writeObject(output, manager)
             writeObject(output, manager.configs.size)
             manager.configs.values.forEach {

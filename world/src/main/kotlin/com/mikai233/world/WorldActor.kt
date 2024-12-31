@@ -5,6 +5,7 @@ import akka.actor.Props
 import akka.cluster.sharding.ShardRegion
 import com.mikai233.common.core.actor.StatefulActor
 import com.mikai233.common.extension.ask
+import com.mikai233.common.extension.tell
 import com.mikai233.common.message.ExecuteActorFunction
 import com.mikai233.common.message.Message
 import com.mikai233.shared.message.PlayerMessage
@@ -28,12 +29,23 @@ class WorldActor(node: WorldNode) : StatefulActor<WorldNode>(node) {
     val sessionManager = WorldSessionManager(this)
     val manager = WorldDataManager(this)
 
+    override fun preStart() {
+        super.preStart()
+        logger.info("WorldActor[{}] started", self)
+    }
+
+    override fun postStop() {
+        clearStash()
+        logger.info("WorldActor[{}] stopped", self)
+    }
+
     override fun createReceive(): Receive {
         return receiveBuilder()
             .match(HandoffWorld::class.java) { context.stop(self) }
             .matchAny {
-                stash()
                 context.become(initialize())
+                stash()
+                manager.init()
             }
             .build()
     }
@@ -53,26 +65,38 @@ class WorldActor(node: WorldNode) : StatefulActor<WorldNode>(node) {
     private fun active(): Receive {
         return receiveBuilder()
             .match(HandoffWorld::class.java) { context.become(stopping()) }
-            .match(WorldTick::class.java) {}
+            .match(WorldTick::class.java) { manager.tick() }
             .match(ProtobufEnvelope::class.java) { handleProtobufEnvelope(it) }
-            .match(WorldMessage::class.java) { handleWorldMessage(it) }
+            .match(Message::class.java) { handleWorldMessage(it) }
             .build()
     }
 
     private fun stopping(): Receive {
         return receiveBuilder()
             .match(WorldUnloaded::class.java) { context.stop(self) }
-            .match(WorldTick::class.java) {}
+            .match(WorldTick::class.java) {
+                if (manager.flush()) {
+                    self tell WorldUnloaded
+                }
+            }
             .build()
     }
 
-    private fun handleWorldMessage(message: WorldMessage) {
-        node.internalDispatcher.dispatch(message::class, this, message)
+    private fun handleWorldMessage(message: Message) {
+        try {
+            node.internalDispatcher.dispatch(message::class, this, message)
+        } catch (e: Exception) {
+            logger.error(e, "world:{} handle message:{} failed", worldId, message)
+        }
     }
 
     private fun handleProtobufEnvelope(envelope: ProtobufEnvelope) {
         val message = envelope.message
-        node.protobufDispatcher.dispatch(message::class, this, message)
+        try {
+            node.protobufDispatcher.dispatch(message::class, this, message)
+        } catch (e: Exception) {
+            logger.error(e, "world:{} handle protobuf message:{} failed", worldId, message)
+        }
     }
 
     fun passivate() {

@@ -46,7 +46,7 @@ class GameConfigManager(private val version: String) {
     suspend fun load(excelDir: String) {
         check(configs.isEmpty()) { "GameConfigManager already loaded" }
         val loadedGameConfigs = coroutineScope {
-            CONFIGS_IMPL.map { configClazz ->
+            ConfigsImpl.map { configClazz ->
                 val primaryConstructor =
                     requireNotNull(configClazz.primaryConstructor) { "GameConfigs ${configClazz.simpleName} must have a empty primary constructor" }
                 async(Dispatchers.IO) {

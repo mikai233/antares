@@ -9,6 +9,7 @@ dependencies {
     implementation(akka.bundles.common)
     implementation(ktx.core)
     runtimeOnly(ktx.core.jvm)
+    implementation(kt.reflect)
     implementation(ktx.datetime.jvm)
     implementation(tool.protobuf.java.util)
     implementation(tool.protobuf.kotlin)

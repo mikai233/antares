@@ -2,19 +2,17 @@ package com.mikai233.gate
 
 import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.conf.GlobalProto
-import com.mikai233.common.message.IgnoreHandleMe
 import com.mikai233.common.message.MessageHandler
 import com.mikai233.protocol.MsgCs.MessageClientToServer
 import com.mikai233.protocol.MsgSc.MessageServerToClient
 import org.reflections.Reflections
 import kotlin.reflect.KClass
 import kotlin.reflect.full.declaredMemberFunctions
-import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.isSubtypeOf
 import kotlin.reflect.typeOf
 
 /**
- * @author mikai233(dairch)
+ * @author mikai233
  * @date 2023/6/16
  */
 
@@ -46,11 +44,8 @@ object MessageForward {
     private fun buildForwardMap() {
         forwardTarget.forEach { (pkg, target) ->
             Reflections(pkg).getSubTypesOf(MessageHandler::class.java).forEach { clazz ->
-                clazz.kotlin.declaredMemberFunctions.forEach funcForeach@{ mf ->
-                    if (mf.findAnnotation<IgnoreHandleMe>() != null) {
-                        return@funcForeach
-                    }
-                    mf.parameters.find { kp ->
+                clazz.kotlin.declaredMemberFunctions.forEach { kFunction ->
+                    kFunction.parameters.find { kp ->
                         kp.type.isSubtypeOf(typeOf<GeneratedMessage>())
                     }?.let {
                         val protoType = it.type.classifier!!

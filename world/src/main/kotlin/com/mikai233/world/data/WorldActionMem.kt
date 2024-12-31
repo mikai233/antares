@@ -2,8 +2,8 @@ package com.mikai233.world.data
 
 import com.mikai233.common.core.actor.TrackingCoroutineScope
 import com.mikai233.common.db.TraceableMemData
-import com.mikai233.common.serde.KryoPool
 import com.mikai233.shared.constants.WorldActionType
+import com.mikai233.shared.entity.EntityKryoPool
 import com.mikai233.shared.entity.WorldAction
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
@@ -12,15 +12,15 @@ import org.springframework.data.mongodb.core.query.where
 
 class WorldActionMem(
     private val worldId: Long,
-    private val mongoTemplate: MongoTemplate,
-    kryoPool: KryoPool,
+    private val mongoTemplate: () -> MongoTemplate,
     coroutineScope: TrackingCoroutineScope,
-) : TraceableMemData<Int, WorldAction>(WorldAction::class, kryoPool, coroutineScope, { mongoTemplate }) {
+) : TraceableMemData<Int, WorldAction>(WorldAction::class, EntityKryoPool, coroutineScope, mongoTemplate) {
     private var maxActionId: Long = 0
     private val worldAction: MutableMap<Int, WorldAction> = mutableMapOf()
 
     override fun init() {
-        val actions = mongoTemplate.find<WorldAction>(Query.query(where(WorldAction::worldId).`is`(worldId)))
+        val template = mongoTemplate()
+        val actions = template.find<WorldAction>(Query.query(where(WorldAction::worldId).`is`(worldId)))
         actions.forEach {
             val id = it.id.split("_").last().toLong()
             if (id > maxActionId) {

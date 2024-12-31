@@ -33,7 +33,7 @@ object ECDH {
 
     private val secureRandom = SecureRandom()
 
-    fun calculateShareKey(selfPrivateKeyBytes: ByteArray, remotePublicKeyBytes: ByteArray): ByteArray {
+    fun calculateSharedKey(selfPrivateKeyBytes: ByteArray, remotePublicKeyBytes: ByteArray): ByteArray {
         val agreement = X25519Agreement()
         val result = ByteArray(agreement.agreementSize)
         agreement.init(X25519PrivateKeyParameters(selfPrivateKeyBytes))

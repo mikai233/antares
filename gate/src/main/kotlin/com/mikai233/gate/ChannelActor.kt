@@ -24,12 +24,12 @@ import com.mikai233.shared.message.*
 import com.mikai233.shared.message.world.PlayerLogin
 import io.netty.channel.ChannelFutureListener
 import io.netty.channel.ChannelHandlerContext
-import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.toJavaDuration
 
 class ChannelActor(node: GateNode, private val handlerContext: ChannelHandlerContext) : StatefulActor<GateNode>(node) {
     companion object {
-        val MaxIdleDuration = 10.seconds
+        val MaxIdleDuration = 1.minutes
 
         fun props(node: GateNode, handlerContext: ChannelHandlerContext): Props =
             Props.create(ChannelActor::class.java, node, handlerContext)
@@ -42,8 +42,13 @@ class ChannelActor(node: GateNode, private val handlerContext: ChannelHandlerCon
 
     override fun preStart() {
         super.preStart()
-        logger.debug("{} preStart", self)
+        logger.debug("ChannelActor[{}] started", self)
         context.setReceiveTimeout(MaxIdleDuration.toJavaDuration())
+    }
+
+    override fun postStop() {
+        super.postStop()
+        logger.debug("ChannelActor[{}] stopped", self)
     }
 
     override fun createReceive(): Receive {
@@ -106,19 +111,19 @@ class ChannelActor(node: GateNode, private val handlerContext: ChannelHandlerCon
                 }
             }
         } else {
-            logger.error("unexpected server message:{} while authenticating", formatMessage(message))
-            stopChannel()
+            stash()
         }
     }
 
     private fun handleLoginSuccess(resp: LoginResp) {
+        context.cancelReceiveTimeout()
         val playerData = resp.data
         playerId = playerData.playerId
         val serverKeyPair = ECDH.genKeyPair()
         val keyResp = resp.toBuilder().setServerPublicKey(serverKeyPair.publicKey.toByteString()).build()
         write(keyResp) {
             if (it.isDone) {
-                val shareKey = ECDH.calculateShareKey(serverKeyPair.privateKey, clientPublicKey)
+                val shareKey = ECDH.calculateSharedKey(serverKeyPair.privateKey, clientPublicKey)
                 handlerContext.channel().attr(CIPHER_KEY).set(AESCipher(shareKey))
                 self tell ChannelAuthorized
             }
@@ -144,7 +149,10 @@ class ChannelActor(node: GateNode, private val handlerContext: ChannelHandlerCon
             .match(ChannelExpired::class.java) { handleChannelExpired(it) }
             .match(ServerProtobuf::class.java) { tryJudgeAuthResult(it.message) }
             .match(StopChannel::class.java) { stopChannel() }
-            .match(ChannelAuthorized::class.java) { context.become(authorized()) }
+            .match(ChannelAuthorized::class.java) {
+                unstashAll()
+                context.become(authorized())
+            }
             .match(ReceiveTimeout::class.java) { stopChannel() }
             .build()
     }
@@ -170,6 +178,7 @@ class ChannelActor(node: GateNode, private val handlerContext: ChannelHandlerCon
                 }
                 write(it.message)
             }
+            .match(ReceiveTimeout::class.java) { stopChannel() }
             .match(StopChannel::class.java) { stopChannel() }
             .build()
     }
@@ -178,8 +187,11 @@ class ChannelActor(node: GateNode, private val handlerContext: ChannelHandlerCon
      * 客户端主动断开连接
      */
     private fun stopChannel() {
-        handlerContext.close()
-        context.stop(self)
+        if (handlerContext.channel().isActive) {
+            handlerContext.close()
+        } else {
+            context.stop(self)
+        }
     }
 
     private fun forwardClientMessage(clientProtobuf: ClientProtobuf) {

@@ -8,7 +8,7 @@ import com.mikai233.protocol.ProtoLogin.LoginResp
 import com.mikai233.protocol.loginResp
 import com.mikai233.protocol.playerData
 import com.mikai233.shared.entity.Player
-import com.mikai233.shared.message.player.PlayerCreate
+import com.mikai233.shared.message.player.PlayerCreateReq
 
 /**
  * @author mikai233
@@ -17,12 +17,12 @@ import com.mikai233.shared.message.player.PlayerCreate
  */
 @AllOpen
 class LoginService {
-    fun createPlayer(player: PlayerActor, playerCreate: PlayerCreate) {
+    fun createPlayer(player: PlayerActor, playerCreateReq: PlayerCreateReq) {
         val entity = Player(
-            id = playerCreate.playerId,
-            account = playerCreate.account,
-            worldId = playerCreate.worldId,
-            nickname = playerCreate.nickname,
+            id = playerCreateReq.playerId,
+            account = playerCreateReq.account,
+            worldId = playerCreateReq.worldId,
+            nickname = playerCreateReq.nickname,
             level = 1
         )
         player.manager.get<PlayerMem>().initPlayer(entity)
