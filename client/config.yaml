@@ -1,0 +1,7 @@
+lua_init: "lua/init.lua"
+log_level: "debug" # error warn info debug trace off
+remote_addr: "127.0.0.1:6666"
+client_ip: "127.0.0.1"
+world_id: 16801
+account: "a1"
+sex: 0 #for create role only

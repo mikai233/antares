@@ -1,0 +1,39 @@
+[package]
+edition = "2021"
+name = "client"
+version = "0.1.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+
+[dependencies]
+anyhow = "1.0.75"
+base64 = "0.21.0"
+bytes = "1.2.1"
+futures = "0.3.25"
+lz4_flex = "0.11.3"
+ring = "0.17.8"
+rust-crypto = "0.2.36"
+sha2 = "0.10.0"
+rand = "0.8.5"
+tokio = { version = "1.23.0", features = ["full"] }
+tokio-util = { version = "0.7.4", features = ["codec"] }
+mlua = { version = "0.9.9", features = ["luajit", "vendored"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["ansi", "chrono"] }
+dynfmt = { version = "0.1.5", features = ["curly"] }
+walkdir = "2.3.2"
+lexical-sort = "0.3.1"
+md5 = "0.7.0"
+strum = { version = "0.26.2", features = ["derive"] }
+silu-derive = { path = "silu-derive" }
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.9"
+trust-dns-resolver = "0.23.2"
+lua-protobuf-rs = { version = "0.1.2", features = ["luajit"], default-features = false }
+uuid = { version = "1.5.0", features = ["v4"] }
+clap = { version = "4.5.4", features = ["derive"] }
+rustyline = "14.0.0"
