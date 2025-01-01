@@ -13,7 +13,7 @@ object KryoMapper {
 
     init {
         val allInternalMessages =
-            Reflections("com.mikai233.shared.message")
+            Reflections("com.mikai233.common.message", "com.mikai233.shared.message")
                 .getSubTypesOf(Message::class.java)
                 .asSequence()
                 .filter { !it.isInterface }

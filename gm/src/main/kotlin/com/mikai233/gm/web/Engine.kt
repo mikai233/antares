@@ -1,17 +1,19 @@
 package com.mikai233.gm.web
 
-import com.mikai233.common.extension.logger
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.mikai233.gm.GmNode
 import com.mikai233.gm.web.plugins.*
+import com.mikai233.gm.web.route.patchRoutes
+import com.mikai233.gm.web.route.scriptRoutes
 import io.ktor.server.application.*
 import io.ktor.server.config.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
+import io.ktor.util.*
+import java.util.*
 
 class Engine(private val node: GmNode) {
-    private val logger = logger()
     private val environment = applicationEnvironment {
         config = HoconApplicationConfig(node.config)
     }
@@ -23,20 +25,28 @@ class Engine(private val node: GmNode) {
     })
 
     fun start() {
+        server.application.attributes.put(NodeKey, node)
+        server.application.attributes.put(MapperKey, jacksonObjectMapper())
         server.start(false)
     }
 }
+
+val NodeKey = AttributeKey<GmNode>("Node")
+
+val MapperKey = AttributeKey<ObjectMapper>("Mapper")
 
 fun Application.module() {
     configureSerialization()
     configureCORS()
     configureRouting()
     configureStatusPage()
-    configureClusterHeader()
     configureValidation()
-    routing {
-        get("/") {
-            call.respondText("Hello, world!")
-        }
-    }
+    scriptRoutes()
+    patchRoutes()
 }
+
+fun Application.node() = attributes[NodeKey]
+
+fun Application.mapper() = attributes[MapperKey]
+
+fun Application.uuid(): String = UUID.randomUUID().toString()

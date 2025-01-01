@@ -81,23 +81,20 @@ subprojects {
     if (Boot.contains(project.name)) {
         tasks.register<Jar>("buildKotlinScript") {
             group = "script"
-            val scriptClass: String? by project
-            val classSimpleName = scriptClass?.split(".")?.last()
-            archiveFileName.set("${rootProject.name}_${project.name}_${classSimpleName}.jar")
+            description = "Build kotlin script jar"
+            val scriptClass: String by project
+            archiveFileName.set("${rootProject.name}_${project.name}_${scriptClass}.jar")
             val script = sourceSets["script"]
             manifest {
-                attributes("Script-Class" to (scriptClass ?: "undefined"))
+                attributes("Script-Class" to "com.mikai233.${project.name}.script.${scriptClass}")
             }
             from(script.output)
             include("com/mikai233/${project.name}/script/*")
 
-            doFirst {
-                val containsTarget = script.output.classesDirs.any {
-                    it.walk().any { file -> file.name == "${classSimpleName}.class" }
-                }
-                check(containsTarget) { "cannot find ${scriptClass}.class in build dir" }
-                check(scriptClass != null) { "missing property scriptClass" }
+            val containsTarget = script.output.classesDirs.any {
+                it.walk().any { file -> file.name == "${scriptClass}.class" }
             }
+            check(containsTarget) { "cannot find ${scriptClass}.class in build dir" }
         }
     }
 }

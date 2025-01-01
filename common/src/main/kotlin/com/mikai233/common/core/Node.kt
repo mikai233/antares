@@ -33,14 +33,14 @@ import java.util.function.Supplier
  * @email dreamfever2017@yahoo.com
  * @date 2023/5/9
  * @param addr 节点地址
- * @param role 节点角色
+ * @param roles 节点角色
  * @param name 节点名称
  * @param config 节点配置
  * @param zookeeperConnectString zookeeper连接字符串
  */
 open class Node(
     private val addr: InetSocketAddress,
-    val role: Role,
+    val roles: List<Role>,
     val name: String,
     val config: Config,
     zookeeperConnectString: String,
@@ -151,7 +151,7 @@ open class Node(
         val seedNodes = seedNodeConfigs.map { (host, config) -> formatSeedNode(name, host, config.port) }
 
         val configs = mutableMapOf(
-            "akka.cluster.roles" to listOf(role.name),
+            "akka.cluster.roles" to roles.map { it.name },
             "akka.remote.artery.canonical.hostname" to addr.hostString,
             "akka.remote.artery.canonical.port" to addr.port,
             "akka.cluster.seed-nodes" to seedNodes,
@@ -164,6 +164,6 @@ open class Node(
     }
 
     private fun spawnScriptActor() {
-        scriptActor = system.actorOf(ScriptActor.props(this), ScriptActor.name())
+        scriptActor = system.actorOf(ScriptActor.props(this), ScriptActor.NAME)
     }
 }

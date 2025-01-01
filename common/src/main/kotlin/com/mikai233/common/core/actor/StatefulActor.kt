@@ -4,9 +4,7 @@ import akka.actor.AbstractActorWithStash
 import akka.actor.ActorRef
 import com.mikai233.common.core.Node
 import com.mikai233.common.extension.*
-import com.mikai233.common.message.ActorNamedRunnable
-import com.mikai233.common.message.ExecuteActorFunction
-import com.mikai233.common.message.ExecuteActorScript
+import com.mikai233.common.message.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import scala.PartialFunction
@@ -38,11 +36,17 @@ abstract class StatefulActor<N>(val node: N) : AbstractActorWithStash() where N 
             }
 
             is ExecuteActorScript -> {
-                node.scriptActor.tell(msg, self)
+                node.scriptActor.forward(CompileActorScript(msg.uid, msg.script, self), context)
             }
 
             is ExecuteActorFunction -> {
-                msg.function.invoke(this)
+                try {
+                    msg.function.invoke(this)
+                    sender.tell(ExecuteScriptResult(msg.uid, true), self)
+                } catch (e: Exception) {
+                    sender.tell(ExecuteScriptResult(msg.uid, false), self)
+                    logger.error(e, "{} failed to execute actor function", self)
+                }
             }
 
             else -> {

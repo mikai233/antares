@@ -7,7 +7,7 @@ import org.springframework.data.annotation.PersistenceCreator
 data class WorldUid(
     @Id
     val worldId: Long,
-    val uidPrefix: Int
+    val uid: Int
 ) : Entity {
     companion object {
         @JvmStatic

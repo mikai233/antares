@@ -1,7 +1,3 @@
-plugins {
-    java
-}
-
 group = Version.PROJECT_GROUP
 version = Version.PROJECT_VERSION
 

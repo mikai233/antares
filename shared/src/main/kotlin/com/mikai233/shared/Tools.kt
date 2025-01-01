@@ -6,7 +6,7 @@ import com.mikai233.shared.message.ClientProtobuf
 import com.mikai233.shared.message.ProtobufEnvelope
 import com.mikai233.shared.message.ServerProtobuf
 
-val ProtobufPrinter = protobufJsonPrinter()
+private val ProtobufPrinter = protobufJsonPrinter()
 
 fun formatMessage(message: Any): String {
     return when (message) {

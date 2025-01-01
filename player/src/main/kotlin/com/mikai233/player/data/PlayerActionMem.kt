@@ -44,12 +44,4 @@ class PlayerActionMem(
     fun getOrCreateAction(type: PlayerActionType): PlayerAction {
         return getOrCreateAction(type.id)
     }
-
-    fun delAction(actionId: Int) {
-        playerAction.remove(actionId)
-    }
-
-    fun delAction(type: PlayerActionType) {
-        delAction(type.id)
-    }
 }

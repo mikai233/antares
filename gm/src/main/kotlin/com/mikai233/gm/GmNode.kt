@@ -1,6 +1,7 @@
 package com.mikai233.gm
 
 import akka.actor.ActorRef
+import akka.routing.FromConfig
 import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
 import com.mikai233.common.conf.GlobalEnv
@@ -22,7 +23,7 @@ class GmNode(
     config: Config,
     zookeeperConnectString: String,
     sameJvm: Boolean = false
-) : Launcher, Node(addr, Role.Gm, name, config, zookeeperConnectString, sameJvm) {
+) : Launcher, Node(addr, listOf(Role.Gm), name, config, zookeeperConnectString, sameJvm) {
 
     lateinit var playerSharding: ActorRef
         private set
@@ -32,11 +33,14 @@ class GmNode(
 
     private lateinit var engine: Engine
 
+    lateinit var scriptRouter: ActorRef
+        private set
 
     override suspend fun launch() = start()
 
     override suspend fun afterStart() {
         startWebEngine()
+        startScriptRouter()
         startPlayerSharding()
         startWorldSharding()
         super.afterStart()
@@ -49,6 +53,10 @@ class GmNode(
 
     private fun startWorldSharding() {
         worldSharding = system.startShardingProxy(ShardEntityType.WorldActor.name, Role.World, WorldMessageExtractor)
+    }
+
+    private fun startScriptRouter() {
+        scriptRouter = system.actorOf(FromConfig.getInstance().props(), "scriptActorRouter")
     }
 
     private fun startWebEngine() {

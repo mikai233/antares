@@ -1,16 +1,19 @@
 package com.mikai233.global
 
 import akka.actor.ActorRef
+import akka.protobufv3.internal.GeneratedMessage
 import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
 import com.mikai233.common.conf.GlobalEnv
-import com.mikai233.common.core.Launcher
-import com.mikai233.common.core.Node
-import com.mikai233.common.core.Role
-import com.mikai233.common.core.ShardEntityType
+import com.mikai233.common.core.*
 import com.mikai233.common.extension.startShardingProxy
+import com.mikai233.common.extension.startSingleton
+import com.mikai233.common.message.Message
+import com.mikai233.common.message.MessageDispatcher
+import com.mikai233.global.actor.UidActor
 import com.mikai233.shared.message.PlayerMessageExtractor
 import com.mikai233.shared.message.WorldMessageExtractor
+import com.mikai233.shared.message.global.uid.HandoffUid
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import java.net.InetSocketAddress
@@ -21,7 +24,7 @@ class GlobalNode(
     config: Config,
     zookeeperConnectString: String,
     sameJvm: Boolean = false
-) : Launcher, Node(addr, Role.Global, name, config, zookeeperConnectString, sameJvm) {
+) : Launcher, Node(addr, listOf(Role.Global), name, config, zookeeperConnectString, sameJvm) {
 
     lateinit var playerSharding: ActorRef
         private set
@@ -29,10 +32,17 @@ class GlobalNode(
     lateinit var worldSharding: ActorRef
         private set
 
+    lateinit var uidActor: ActorRef
+        private set
+
+    val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, "com.mikai233.global.handler")
+
+    val internalDispatcher = MessageDispatcher(Message::class, "com.mikai233.global.handler")
 
     override suspend fun launch() = start()
 
     override suspend fun afterStart() {
+        startUidSingleton()
         startPlayerSharding()
         startWorldSharding()
         super.afterStart()
@@ -45,6 +55,10 @@ class GlobalNode(
 
     private fun startWorldSharding() {
         worldSharding = system.startShardingProxy(ShardEntityType.WorldActor.name, Role.World, WorldMessageExtractor)
+    }
+
+    private fun startUidSingleton() {
+        uidActor = system.startSingleton(UID_NAME, Role.Global, UidActor.props(this), HandoffUid)
     }
 }
 

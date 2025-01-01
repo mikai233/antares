@@ -8,12 +8,13 @@ import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.core.actor.StatefulActor
 import com.mikai233.common.extension.ask
 import com.mikai233.common.extension.tell
-import com.mikai233.common.message.ExecuteActorFunction
-import com.mikai233.common.message.ExecuteActorScript
 import com.mikai233.common.message.Message
 import com.mikai233.protocol.ProtoLogin
 import com.mikai233.shared.message.*
-import com.mikai233.shared.message.player.*
+import com.mikai233.shared.message.player.HandoffPlayer
+import com.mikai233.shared.message.player.PlayerInitialized
+import com.mikai233.shared.message.player.PlayerTick
+import com.mikai233.shared.message.player.PlayerUnloaded
 import kotlin.time.Duration.Companion.seconds
 
 class PlayerActor(node: PlayerNode) : StatefulActor<PlayerNode>(node) {
@@ -134,14 +135,6 @@ class PlayerActor(node: PlayerNode) : StatefulActor<PlayerNode>(node) {
             context.watch(channelActor)
             logger.info("player:{} bind new channel actor:{}", playerId, channelActor)
         }
-    }
-
-    private fun compilePlayerScript(message: PlayerScript) {
-        node.scriptActor.tell(ExecuteActorScript(message.script), self)
-    }
-
-    private fun executeActorFunction(message: ExecuteActorFunction) {
-        message.function.invoke(this)
     }
 
     fun tellPlayer(message: PlayerMessage) {

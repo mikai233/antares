@@ -7,7 +7,7 @@ import io.ktor.server.response.*
 
 fun Application.configureStatusPage() {
     install(StatusPages) {
-        exception<MissingClusterHeaderException> { call, cause ->
+        exception<ValidateException> { call, cause ->
             call.respondText("Error: ${cause.localizedMessage}", status = HttpStatusCode.BadRequest)
         }
         exception<Throwable> { call, cause ->

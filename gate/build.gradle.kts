@@ -1,5 +1,5 @@
 plugins {
-    java
+    groovy
 }
 
 dependencies {

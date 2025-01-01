@@ -5,13 +5,9 @@ import akka.actor.Props
 import akka.cluster.Cluster
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
-import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.Node
 import com.mikai233.common.extension.actorLogger
-import com.mikai233.common.message.ExecuteActorFunction
-import com.mikai233.common.message.ExecuteActorScript
-import com.mikai233.common.message.ExecuteNodeRoleScript
-import com.mikai233.common.message.ExecuteNodeScript
+import com.mikai233.common.message.*
 import groovy.lang.GroovyClassLoader
 import java.io.File
 import java.net.URLClassLoader
@@ -23,8 +19,7 @@ import kotlin.time.toJavaDuration
 class ScriptActor(private val node: Node) : AbstractActor() {
     companion object {
         const val SCRIPT_CLASS_NAME = "Script-Class"
-        fun name() = "scriptActor@${GlobalEnv.machineIp}"
-        fun path() = "/user/${name()}"
+        const val NAME = "scriptActor"
 
         fun props(node: Node): Props {
             return Props.create(ScriptActor::class.java) { ScriptActor(node) }
@@ -39,22 +34,32 @@ class ScriptActor(private val node: Node) : AbstractActor() {
         .build()
 
     override fun preStart() {
-        logger.info("{} started", context.self)
+        logger.info("{} started", self)
     }
 
     override fun createReceive(): Receive {
         return receiveBuilder()
             .match(ExecuteNodeRoleScript::class.java) { handleNodeRoleScript(it) }
             .match(ExecuteNodeScript::class.java) { handleNodeScript(it) }
-            .match(ExecuteActorScript::class.java) { handleExecuteActorScript(it) }
+            .match(CompileActorScript::class.java) { handleCompileActorScript(it) }
             .build()
     }
 
     private fun handleNodeRoleScript(message: ExecuteNodeRoleScript) {
+        if (selfMember.address() !in message.filter) {
+            return
+        }
         val targetRole = message.role.name
         if (selfMember.hasRole(targetRole)) {
-            val script = scriptInstance<NodeRoleScriptFunction<in Node>>(message.script)
-            script.invoke(node)
+            runCatching {
+                val script = scriptInstance<NodeRoleScriptFunction<Node>>(message.script)
+                script.invoke(node)
+            }.onSuccess {
+                sender.tell(ExecuteScriptResult(message.uid, true), self)
+            }.onFailure {
+                sender.tell(ExecuteScriptResult(message.uid, false), self)
+                logger.error(it, "execute role script:{} on node:{} failed", targetRole, node::class.simpleName)
+            }
         } else {
             logger.error(
                 "incorrect role script:{} route to member:{} with role:{}",
@@ -66,13 +71,28 @@ class ScriptActor(private val node: Node) : AbstractActor() {
     }
 
     private fun handleNodeScript(message: ExecuteNodeScript) {
-        val script = scriptInstance<NodeScriptFunction<in Node>>(message.script)
-        script.invoke(node)
+        if (selfMember.address() !in message.filter) {
+            return
+        }
+        runCatching {
+            val script = scriptInstance<NodeScriptFunction<Node>>(message.script)
+            script.invoke(node)
+        }.onSuccess {
+            sender.tell(ExecuteScriptResult(message.uid, true), self)
+        }.onFailure {
+            sender.tell(ExecuteScriptResult(message.uid, false), self)
+            logger.error(it, "execute node script failed on node:{}", node::class.simpleName)
+        }
     }
 
-    private fun handleExecuteActorScript(message: ExecuteActorScript) {
-        val script = scriptInstance<ActorScriptFunction<AbstractActor>>(message.script)
-        sender.tell(ExecuteActorFunction(script), self)
+    private fun handleCompileActorScript(message: CompileActorScript) {
+        runCatching {
+            val script = scriptInstance<ActorScriptFunction<AbstractActor>>(message.script)
+            message.actor.forward(ExecuteActorFunction(message.uid, script), context)
+        }.onFailure {
+            logger.error(it, "compile actor script failed")
+            sender.tell(ExecuteScriptResult(message.uid, false), message.actor)
+        }
     }
 
     private fun loadClassWithCache(script: Script): KClass<*> {
@@ -98,7 +118,9 @@ class ScriptActor(private val node: Node) : AbstractActor() {
                 val file = File.createTempFile(script.name, ".jar")
                 file.writeBytes(script.body)
                 val jarFile = JarFile(file)
-                val scriptName = jarFile.manifest.mainAttributes.getValue(SCRIPT_CLASS_NAME)
+                val scriptName = requireNotNull(jarFile.manifest.mainAttributes.getValue(SCRIPT_CLASS_NAME)) {
+                    "Script-Class not found in manifest"
+                }
                 val loader = URLClassLoader(arrayOf(file.toURI().toURL()))
                 loader.loadClass(scriptName).kotlin
             }

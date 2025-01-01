@@ -30,7 +30,7 @@ class WorldNode(
     config: Config,
     zookeeperConnectString: String,
     sameJvm: Boolean = false
-) : Launcher, Node(addr, Role.World, name, config, zookeeperConnectString, sameJvm) {
+) : Launcher, Node(addr, listOf(Role.World), name, config, zookeeperConnectString, sameJvm) {
 
     init {
         GlobalProto.init(MsgCs.MessageClientToServer.getDescriptor(), MsgSc.MessageServerToClient.getDescriptor())

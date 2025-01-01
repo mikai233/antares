@@ -1,6 +1,7 @@
 package com.mikai233.shared.message
 
 import com.mikai233.common.message.Message
+import com.mikai233.common.message.ShardMessage
 
 data class ExcelUpdate(val hashcode: Int) : Message
 

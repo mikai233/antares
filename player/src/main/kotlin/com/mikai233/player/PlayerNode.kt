@@ -30,7 +30,7 @@ class PlayerNode(
     config: Config,
     zookeeperConnectString: String,
     sameJvm: Boolean = false,
-) : Launcher, Node(addr, Role.Player, name, config, zookeeperConnectString, sameJvm) {
+) : Launcher, Node(addr, listOf(Role.Player), name, config, zookeeperConnectString, sameJvm) {
     init {
         GlobalProto.init(MsgCs.MessageClientToServer.getDescriptor(), MsgSc.MessageServerToClient.getDescriptor())
     }

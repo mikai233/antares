@@ -10,6 +10,5 @@ fun Application.configureCORS() {
         anyMethod()
         allowHeader(HttpHeaders.ContentType)
         allowHeader(HttpHeaders.Authorization)
-        allowHeader(ClusterKey.name)
     }
 }

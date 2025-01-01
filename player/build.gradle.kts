@@ -1,5 +1,4 @@
 plugins {
-    java
     groovy
 //    alias(tool.plugins.ksp)
 }
