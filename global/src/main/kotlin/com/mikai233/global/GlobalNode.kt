@@ -58,7 +58,7 @@ class GlobalNode(
     }
 
     private fun startUidSingleton() {
-        uidActor = system.startSingleton(UID_NAME, Role.Global, UidActor.props(this), HandoffUid)
+        uidActor = system.startSingleton(Singleton.Uid.actorName, Role.Global, UidActor.props(this), HandoffUid)
     }
 }
 

@@ -7,12 +7,10 @@ import com.beust.jcommander.Parameter
 import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.conf.GlobalProto
-import com.mikai233.common.core.Launcher
-import com.mikai233.common.core.Node
-import com.mikai233.common.core.Role
-import com.mikai233.common.core.ShardEntityType
+import com.mikai233.common.core.*
 import com.mikai233.common.extension.startSharding
 import com.mikai233.common.extension.startShardingProxy
+import com.mikai233.common.extension.startSingletonProxy
 import com.mikai233.common.message.Message
 import com.mikai233.common.message.MessageDispatcher
 import com.mikai233.protocol.MsgCs
@@ -42,6 +40,9 @@ class WorldNode(
     lateinit var worldSharding: ActorRef
         private set
 
+    lateinit var uidSingletonProxy: ActorRef
+        private set
+
     val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, "com.mikai233.world.handler")
 
     val internalDispatcher = MessageDispatcher(Message::class, "com.mikai233.world.handler")
@@ -49,6 +50,7 @@ class WorldNode(
     override suspend fun launch() = start()
 
     override suspend fun afterStart() {
+        startUidSingletonProxy()
         startPlayerSharding()
         startWorldSharding()
         super.afterStart()
@@ -68,6 +70,10 @@ class WorldNode(
             WorldMessageExtractor,
             ShardCoordinator.LeastShardAllocationStrategy(1, 3),
         )
+    }
+
+    private fun startUidSingletonProxy() {
+        uidSingletonProxy = system.startSingletonProxy(Singleton.Uid.actorName, Role.Global)
     }
 }
 

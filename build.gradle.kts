@@ -91,10 +91,12 @@ subprojects {
             from(script.output)
             include("com/mikai233/${project.name}/script/*")
 
-            val containsTarget = script.output.classesDirs.any {
-                it.walk().any { file -> file.name == "${scriptClass}.class" }
+            doFirst {
+                val containsTarget = script.output.classesDirs.any {
+                    it.walk().any { file -> file.name == "${scriptClass}.class" }
+                }
+                check(containsTarget) { "cannot find ${scriptClass}.class in build dir" }
             }
-            check(containsTarget) { "cannot find ${scriptClass}.class in build dir" }
         }
     }
 }

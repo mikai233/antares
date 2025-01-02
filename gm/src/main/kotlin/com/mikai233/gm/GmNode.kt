@@ -5,11 +5,9 @@ import akka.routing.FromConfig
 import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
 import com.mikai233.common.conf.GlobalEnv
-import com.mikai233.common.core.Launcher
-import com.mikai233.common.core.Node
-import com.mikai233.common.core.Role
-import com.mikai233.common.core.ShardEntityType
+import com.mikai233.common.core.*
 import com.mikai233.common.extension.startShardingProxy
+import com.mikai233.common.extension.startSingletonProxy
 import com.mikai233.gm.web.Engine
 import com.mikai233.shared.message.PlayerMessageExtractor
 import com.mikai233.shared.message.WorldMessageExtractor
@@ -36,11 +34,15 @@ class GmNode(
     lateinit var scriptRouter: ActorRef
         private set
 
+    lateinit var uidSingletonProxy: ActorRef
+        private set
+
     override suspend fun launch() = start()
 
     override suspend fun afterStart() {
         startWebEngine()
         startScriptRouter()
+        startUidSingletonProxy()
         startPlayerSharding()
         startWorldSharding()
         super.afterStart()
@@ -57,6 +59,10 @@ class GmNode(
 
     private fun startScriptRouter() {
         scriptRouter = system.actorOf(FromConfig.getInstance().props(), "scriptActorRouter")
+    }
+
+    private fun startUidSingletonProxy() {
+        uidSingletonProxy = system.startSingletonProxy(Singleton.Uid.actorName, Role.Global)
     }
 
     private fun startWebEngine() {

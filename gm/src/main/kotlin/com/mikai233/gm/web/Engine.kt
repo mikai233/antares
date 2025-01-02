@@ -49,4 +49,4 @@ fun Application.node() = attributes[NodeKey]
 
 fun Application.mapper() = attributes[MapperKey]
 
-fun Application.uuid(): String = UUID.randomUUID().toString()
+fun uuid(): String = UUID.randomUUID().toString()

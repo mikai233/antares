@@ -40,13 +40,13 @@ class ChannelActor(node: GateNode, private val handlerContext: ChannelHandlerCon
 
     override fun preStart() {
         super.preStart()
-        logger.debug("ChannelActor[{}] started", self)
+        logger.info("ChannelActor[{}] started", remoteActorRefAddress())
         context.setReceiveTimeout(MaxIdleDuration.toJavaDuration())
     }
 
     override fun postStop() {
         super.postStop()
-        logger.debug("ChannelActor[{}] stopped", self)
+        logger.info("ChannelActor[{}] stopped", remoteActorRefAddress())
     }
 
     override fun createReceive(): Receive {
@@ -169,7 +169,7 @@ class ChannelActor(node: GateNode, private val handlerContext: ChannelHandlerCon
                 invokeOnTargetMode(setOf(ServerMode.DevMode)) {
                     logger.info(
                         "{} playerId:{} worldId:{} receive server message:{}",
-                        self,
+                        remoteActorRefAddress(),
                         playerId,
                         worldId,
                         formatMessage(it.message)
@@ -241,5 +241,10 @@ class ChannelActor(node: GateNode, private val handlerContext: ChannelHandlerCon
         } catch (e: Exception) {
             logger.error(e, "channel:{} handle message:{} failed", self, message)
         }
+    }
+
+    private fun remoteActorRefAddress(): String {
+        val path = self.path().toStringWithAddress(node.system.provider().defaultAddress)
+        return "Actor[$path]"
     }
 }
