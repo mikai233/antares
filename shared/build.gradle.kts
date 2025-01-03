@@ -1,5 +1,5 @@
 plugins {
-//    alias(tool.plugins.ksp)
+    alias(tool.plugins.ksp)
 }
 
 dependencies {
@@ -16,7 +16,7 @@ dependencies {
     implementation(tool.lz4)
     implementation(tool.netty)
     implementation(tool.bundles.jackson)
-//    implementation(tool.symbol.processing)
+//    implementation(tool.symbol.processing.api)
     implementation(tool.spring.data.mongodb)
     implementation(tool.easyexcel)
     implementation(tool.kryo)
@@ -24,8 +24,8 @@ dependencies {
     implementation(log.bundles.common)
     implementation(project(":common"))
     implementation(project(":proto"))
-//    implementation(project(":processor"))
-//    ksp(project(":processor"))
+    implementation(project(":processor"))
+    ksp(project(":processor"))
 }
 
 tasks.test {

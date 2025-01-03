@@ -126,14 +126,16 @@ fun Project.configureJvmTarget() {
     }
 }
 
-tasks.register("buildAllNodeJar") {
+tasks.register("release") {
     val releaseDir: String by project
     group = "build"
     dependsOn(getTasksByName("bootJar", true))
     doLast {
         Boot.forEach {
             copy {
-                from("${project(it).layout.buildDirectory}/libs")
+                from("${project(it).layout.buildDirectory.get()}/libs") {
+                    exclude { file -> file.name.endsWith("-plain.jar") }
+                }
                 into("$releaseDir/$it")
             }
         }

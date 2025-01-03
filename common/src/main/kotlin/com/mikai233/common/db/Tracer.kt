@@ -2,10 +2,10 @@ package com.mikai233.common.db
 
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
+import com.google.common.hash.HashCode
 import com.google.common.hash.Hashing
 import com.mikai233.common.core.actor.TrackingCoroutineScope
 import com.mikai233.common.entity.*
-import com.mikai233.common.extension.Json
 import com.mikai233.common.extension.logger
 import com.mikai233.common.extension.unixTimestamp
 import com.mikai233.common.serde.DepsExtra
@@ -94,7 +94,18 @@ class Tracer<K, E>(
         )
     }
 
-    private fun fullHashCode(obj: Any?) = hashFunction.hashBytes(Json.toBytes(obj))
+    private fun fullHashCode(obj: Any?): HashCode {
+        return if (obj == null) {
+            HashCode.fromInt(0)
+        } else {
+            kryoPool.use {
+                Output(ByteArrayOutputStream()).use {
+                    writeObject(it, obj)
+                    hashFunction.hashBytes(it.toBytes())
+                }
+            }
+        }
+    }
 
     fun trace(currentEntities: Map<K, E>) {
         check(!flushing) { "tracer ${entityClass::class.qualifiedName} is flushing" }

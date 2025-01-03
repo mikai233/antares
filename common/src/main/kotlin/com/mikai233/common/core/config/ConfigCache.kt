@@ -11,7 +11,7 @@ import kotlin.reflect.KClass
 class ConfigCache<C>(
     private val zookeeper: AsyncCuratorFramework,
     val path: String,
-    val clazz: KClass<C>,
+    private val clazz: KClass<C>,
     onUpdate: ((C) -> Unit)? = null
 ) : AutoCloseable where C : Any {
     val logger = logger()
