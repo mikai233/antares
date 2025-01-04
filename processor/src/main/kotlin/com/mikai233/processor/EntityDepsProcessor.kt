@@ -28,48 +28,123 @@ class EntityDepsProcessor(private val codeGenerator: CodeGenerator, private val 
     private val ksClassDeclarations = mutableSetOf<KSClassDeclaration>()
 
     override fun process(resolver: Resolver): List<KSAnnotated> {
-        resolver.getAllFiles().filter { it.packageName.asString() == "com.mikai233.shared.entity" }.forEach { ksFile ->
-            sources.add(ksFile)
-            val entityKSClassDeclarations =
-                ksFile.declarations.filterIsInstance<KSClassDeclaration>().filter { ksClassDeclaration ->
-                    ksClassDeclaration.isSubclassOfInterface("com.mikai233.common.db.Entity")
+        resolver.getAllFiles().filter { it.packageName.asString().startsWith("com.mikai233.shared.entity") }
+            .forEach { ksFile ->
+                sources.add(ksFile)
+                val entityKSClassDeclarations =
+                    ksFile.declarations.filterIsInstance<KSClassDeclaration>().filter { ksClassDeclaration ->
+                        ksClassDeclaration.isSubclassOfInterface("com.mikai233.common.db.Entity")
+                    }
+                entityKSClassDeclarations.forEach { ksClassDeclaration ->
+                    collectKSClassDeclaration(ksClassDeclaration, ksClassDeclarations)
                 }
-            entityKSClassDeclarations.forEach { ksClassDeclaration ->
-                collectKSClassDeclaration(ksClassDeclaration, ksClassDeclarations)
             }
-        }
         return emptyList()
     }
 
+    //    override fun finish() {
+//        val entityDepsType =
+//            Array::class.asClassName().parameterizedBy(KClass::class.asClassName().parameterizedBy(STAR))
+//        val entityDepsFile = FileSpec.builder("com.mikai233.shared.entity", "EntityDeps")
+//            .addProperty(
+//                PropertySpec.builder("EntityDeps", entityDepsType)
+//                    .initializer(buildCodeBlock {
+//                        add("arrayOf(\n")
+//                        ksClassDeclarations.forEachIndexed { index, declaration ->
+//                            add("%T::class", declaration.toClassName())
+//                            if (index != ksClassDeclarations.size - 1) {
+//                                add(",\n")
+//                            }
+//                        }
+//                        add("\n)")
+//                    })
+//                    .build()
+//            )
+//            .build()
+//        codeGenerator.createNewFile(
+//            Dependencies(true, *sources.toTypedArray()),
+//            "com.mikai233.shared.entity",
+//            "EntityDeps"
+//        ).use { os ->
+//            os.writer().use {
+//                entityDepsFile.writeTo(it)
+//            }
+//        }
+//    }
     override fun finish() {
+        val maxSizePerFile = 1000 // 每个文件最大类数量
         val entityDepsType =
             Array::class.asClassName().parameterizedBy(KClass::class.asClassName().parameterizedBy(STAR))
-        val entityDepsFile = FileSpec.builder("com.mikai233.shared.entity", "EntityDeps")
+
+        // 拆分为多个分片
+        val partitions = ksClassDeclarations.sortedBy { it.qualifiedName?.asString() ?: "" }.chunked(maxSizePerFile)
+
+        val fileNames = mutableListOf<String>()
+
+        // 生成拆分文件
+        partitions.forEachIndexed { index, chunk ->
+            val fileName = "EntityDeps$index"
+            fileNames.add(fileName)
+
+            val partitionFile = FileSpec.builder("com.mikai233.shared.entity", fileName)
+                .addProperty(
+                    PropertySpec.builder(fileName, entityDepsType)
+                        .initializer(buildCodeBlock {
+                            add("arrayOf(\n")
+                            chunk.forEachIndexed { chunkIndex, declaration ->
+                                add("%T::class", declaration.toClassName())
+                                if (chunkIndex != chunk.size - 1) {
+                                    add(",\n")
+                                }
+                            }
+                            add("\n)")
+                        })
+                        .build()
+                )
+                .build()
+
+            // 写入拆分文件
+            codeGenerator.createNewFile(
+                Dependencies(true, *sources.toTypedArray()),
+                "com.mikai233.shared.entity",
+                fileName
+            ).use { os ->
+                os.writer().use {
+                    partitionFile.writeTo(it)
+                }
+            }
+        }
+
+        // 生成统一的 EntityDeps 文件
+        val combinedFile = FileSpec.builder("com.mikai233.shared.entity", "EntityDeps")
             .addProperty(
                 PropertySpec.builder("EntityDeps", entityDepsType)
                     .initializer(buildCodeBlock {
-                        add("arrayOf(\n")
-                        ksClassDeclarations.forEachIndexed { index, declaration ->
-                            add("%T::class", declaration.toClassName())
-                            if (index != ksClassDeclarations.size - 1) {
+                        add("arrayOf<Array<KClass<*>>>(\n")
+                        fileNames.forEachIndexed { fileIndex, fileName ->
+                            add("%N", fileName)
+                            if (fileIndex != fileNames.size - 1) {
                                 add(",\n")
                             }
                         }
-                        add("\n)")
+                        add("\n).flatten().toTypedArray()") // 合并所有数组为一个数组
                     })
                     .build()
             )
             .build()
+
+        // 写入统一的 EntityDeps 文件
         codeGenerator.createNewFile(
             Dependencies(true, *sources.toTypedArray()),
             "com.mikai233.shared.entity",
             "EntityDeps"
         ).use { os ->
             os.writer().use {
-                entityDepsFile.writeTo(it)
+                combinedFile.writeTo(it)
             }
         }
     }
+
 
     // 递归方法收集字段类型
     private fun collectKSType(kType: KSType, collectedTypes: MutableSet<KSClassDeclaration>) {
@@ -108,7 +183,6 @@ class EntityDepsProcessor(private val codeGenerator: CodeGenerator, private val 
         val isMap = ksClassDeclaration.isSubclassOfInterface("kotlin.collections.Map")
         if (!(isIterable || isMap)) {
             ksClassDeclaration.getDeclaredProperties().forEach { ksProperty ->
-                logger.warn("ppv${ksProperty.qualifiedName?.asString()} for ${ksClassDeclaration.qualifiedName?.asString()}")
                 // 如果字段有 @Transient 注解，跳过该字段
                 if (ksProperty.annotations.any { it.shortName.asString() == "Transient" }) {
                     return@forEach

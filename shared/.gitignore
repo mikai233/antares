@@ -40,3 +40,6 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Project ##
+src/main/kotlin/com/mikai233/shared/entity/test

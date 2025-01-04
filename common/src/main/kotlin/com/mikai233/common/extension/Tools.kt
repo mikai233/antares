@@ -79,6 +79,8 @@ fun String.camelCaseToSnakeCase(): String = CaseFormat.LOWER_CAMEL.to(CaseFormat
 
 fun String.upperCamelToLowerCamel(): String = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, this)
 
+fun String.upperCamelToSnakeCase(): String = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, this)
+
 fun tryCatch(logger: Logger, block: () -> Unit) {
     try {
         block()
