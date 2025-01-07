@@ -93,7 +93,7 @@ object GlobalProto {
         check(incorrectMessage.isEmpty()) { "client to server message:${incorrectMessage} should end with Req" }
         incorrectMessage.clear()
         server2ClientMessage.forEach { (key, _) ->
-            val simpleName = kotlin.requireNotNull(key.simpleName) { "$key simple name not found" }
+            val simpleName = requireNotNull(key.simpleName) { "$key simple name not found" }
             if ((simpleName.endsWith("Resp") || simpleName.endsWith("Notify")).not()) {
                 val qualifiedName = requireNotNull(key.qualifiedName) { "$key qualified name not found" }
                 incorrectMessage.add(qualifiedName)
@@ -102,7 +102,7 @@ object GlobalProto {
         check(incorrectMessage.isEmpty()) { "server to client message should end with Resp or Notify" }
         val clientReq = client2ServerMessage
         val serverResp = server2ClientMessage.filterKeys {
-            val simpleName = kotlin.requireNotNull(it.simpleName) { "$it simple name not found" }
+            val simpleName = requireNotNull(it.simpleName) { "$it simple name not found" }
             simpleName.endsWith("Resp")
         }
         val missingResp = clientReq.values - serverResp.values.toSet()

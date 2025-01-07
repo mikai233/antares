@@ -22,6 +22,9 @@ dependencies {
     testImplementation(platform(test.junit.bom))
     testImplementation(test.junit.jupiter)
     implementation(tool.protobuf.kotlin)
+    implementation(tool.reflections)
+    implementation(kt.reflect)
+    implementation(tool.kotlinpoet)
 }
 
 tasks.test {

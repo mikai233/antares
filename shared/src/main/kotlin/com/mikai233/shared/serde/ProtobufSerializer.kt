@@ -1,8 +1,9 @@
 package com.mikai233.shared.serde
 
 import akka.serialization.JSerializer
-import com.mikai233.common.conf.GlobalProto
 import com.mikai233.common.extension.toInt
+import com.mikai233.protocol.idForClientMessage
+import com.mikai233.protocol.parserForClientMessage
 import com.mikai233.shared.message.ProtobufEnvelope
 import java.nio.ByteBuffer
 
@@ -14,7 +15,7 @@ class ProtobufSerializer : JSerializer() {
         val protoId = buffer.int
         val messageBytes = ByteArray(buffer.remaining())
         buffer.get(messageBytes)
-        val parser = GlobalProto.getClientMessageParser(protoId)
+        val parser = parserForClientMessage(protoId)
         val message = parser.parseFrom(messageBytes)
         return ProtobufEnvelope(id, message)
     }
@@ -27,7 +28,7 @@ class ProtobufSerializer : JSerializer() {
         val envelope = o as ProtobufEnvelope
         val message = envelope.message
         val messageBytes = message.toByteArray()
-        val protoId = GlobalProto.getClientMessageId(message::class)
+        val protoId = idForClientMessage(message::class)
         val buffer = ByteBuffer.allocate(Long.SIZE_BYTES + Int.SIZE_BYTES + messageBytes.size)
         buffer.putLong(envelope.id).putInt(protoId).put(messageBytes)
         return if (buffer.hasArray()) {

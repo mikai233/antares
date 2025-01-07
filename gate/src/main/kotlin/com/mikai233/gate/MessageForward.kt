@@ -1,11 +1,9 @@
 package com.mikai233.gate
 
 import com.google.protobuf.GeneratedMessage
-import com.mikai233.common.conf.GlobalProto
 import com.mikai233.common.message.MessageDispatcher
 import com.mikai233.common.message.MessageHandler
-import com.mikai233.protocol.MsgCs.MessageClientToServer
-import com.mikai233.protocol.MsgSc.MessageServerToClient
+import com.mikai233.protocol.idForClientMessage
 import org.reflections.Reflections
 import kotlin.reflect.full.declaredMemberFunctions
 
@@ -37,7 +35,6 @@ object MessageForward {
     }
 
     init {
-        GlobalProto.init(MessageClientToServer.getDescriptor(), MessageServerToClient.getDescriptor())
         buildForwardMap()
     }
 
@@ -46,7 +43,7 @@ object MessageForward {
             Reflections(pkg).getSubTypesOf(MessageHandler::class.java).forEach { clazz ->
                 clazz.kotlin.declaredMemberFunctions.forEach { kFunction ->
                     MessageDispatcher.processFunction(GeneratedMessage::class, kFunction) {
-                        val id = GlobalProto.getClientMessageId(it)
+                        val id = idForClientMessage(it)
                         if (ForwardMap.containsKey(id)) {
                             error("proto id:$id already has a forward target")
                         }
