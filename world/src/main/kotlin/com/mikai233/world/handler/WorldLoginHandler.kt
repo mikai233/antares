@@ -11,8 +11,6 @@ import com.mikai233.shared.message.player.PlayerLoginResp
 import com.mikai233.shared.message.world.PlayerLogin
 import com.mikai233.world.WorldActor
 import com.mikai233.world.data.PlayerAbstractMem
-import kotlin.random.Random
-import kotlin.random.nextUInt
 
 @AllOpen
 class WorldLoginHandler : MessageHandler {
@@ -23,8 +21,8 @@ class WorldLoginHandler : MessageHandler {
         val abstractMem = world.manager.get<PlayerAbstractMem>()
         val playerAbstract = abstractMem.getByAccount(loginReq.account)
         if (playerAbstract == null) {
-            //new player TODO generate player id
-            val playerId = Random.nextUInt().toLong()
+            //new player
+            val playerId = world.nextId()
             world.sessionManager.createOrUpdateSession(playerId, channelActor)
             world.launch {
                 val createReq = PlayerCreateReq(loginReq.account, playerId, world.worldId, "", channelActor)

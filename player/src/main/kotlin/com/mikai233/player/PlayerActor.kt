@@ -160,4 +160,6 @@ class PlayerActor(node: PlayerNode) : StatefulActor<PlayerNode>(node) {
     suspend fun <R> askWorld(message: WorldMessage): Result<R> where R : Message {
         return node.worldSharding.ask(message)
     }
+
+    fun nextId() = node.snowflakeGenerator.nextId()
 }
