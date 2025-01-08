@@ -34,7 +34,7 @@ class GmNode(
     lateinit var scriptRouter: ActorRef
         private set
 
-    lateinit var uidSingletonProxy: ActorRef
+    lateinit var workerSingletonProxy: ActorRef
         private set
 
     override suspend fun launch() = start()
@@ -42,7 +42,7 @@ class GmNode(
     override suspend fun afterStart() {
         startWebEngine()
         startScriptRouter()
-        startUidSingletonProxy()
+        startWorkerSingletonProxy()
         startPlayerSharding()
         startWorldSharding()
         super.afterStart()
@@ -61,8 +61,8 @@ class GmNode(
         scriptRouter = system.actorOf(FromConfig.getInstance().props(), "scriptActorRouter")
     }
 
-    private fun startUidSingletonProxy() {
-        uidSingletonProxy = system.startSingletonProxy(Singleton.Uid.actorName, Role.Global)
+    private fun startWorkerSingletonProxy() {
+        workerSingletonProxy = system.startSingletonProxy(Singleton.Worker.actorName, Role.Global)
     }
 
     private fun startWebEngine() {

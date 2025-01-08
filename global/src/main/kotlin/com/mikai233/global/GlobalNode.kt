@@ -10,11 +10,11 @@ import com.mikai233.common.extension.startShardingProxy
 import com.mikai233.common.extension.startSingleton
 import com.mikai233.common.message.Message
 import com.mikai233.common.message.MessageDispatcher
-import com.mikai233.global.actor.UidActor
+import com.mikai233.global.actor.WorkerActor
 import com.mikai233.shared.entity.EntityKryoPool
 import com.mikai233.shared.message.PlayerMessageExtractor
 import com.mikai233.shared.message.WorldMessageExtractor
-import com.mikai233.shared.message.global.uid.HandoffUid
+import com.mikai233.shared.message.global.worker.HandoffWorker
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import java.net.InetSocketAddress
@@ -34,7 +34,7 @@ class GlobalNode(
     lateinit var worldSharding: ActorRef
         private set
 
-    lateinit var uidActor: ActorRef
+    lateinit var workerActor: ActorRef
         private set
 
     val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, "com.mikai233.global.handler")
@@ -49,7 +49,7 @@ class GlobalNode(
     }
 
     override suspend fun afterStart() {
-        startUidSingleton()
+        startWorkerSingleton()
         startPlayerSharding()
         startWorldSharding()
         super.afterStart()
@@ -64,8 +64,9 @@ class GlobalNode(
         worldSharding = system.startShardingProxy(ShardEntityType.WorldActor.name, Role.World, WorldMessageExtractor)
     }
 
-    private fun startUidSingleton() {
-        uidActor = system.startSingleton(Singleton.Uid.actorName, Role.Global, UidActor.props(this), HandoffUid)
+    private fun startWorkerSingleton() {
+        workerActor =
+            system.startSingleton(Singleton.Worker.actorName, Role.Global, WorkerActor.props(this), HandoffWorker)
     }
 }
 

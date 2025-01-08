@@ -39,7 +39,7 @@ import java.util.function.Supplier
  * @param zookeeperConnectString zookeeper连接字符串
  */
 open class Node(
-    private val addr: InetSocketAddress,
+    val addr: InetSocketAddress,
     val roles: List<Role>,
     val name: String,
     val config: Config,

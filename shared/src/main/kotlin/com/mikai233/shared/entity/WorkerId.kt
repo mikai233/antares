@@ -3,17 +3,19 @@ package com.mikai233.shared.entity
 import com.mikai233.common.db.Entity
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.PersistenceCreator
+import org.springframework.data.mongodb.core.mapping.Document
 
-data class WorldUid(
+@Document(collection = "worker_id")
+data class WorkerId(
     @Id
-    val worldId: Long,
-    val uid: Int
+    val addr: String,
+    val id: Int
 ) : Entity {
     companion object {
         @JvmStatic
         @PersistenceCreator
-        fun create(): WorldUid {
-            return WorldUid(0, 0)
+        fun create(): WorkerId {
+            return WorkerId("", 0)
         }
     }
 }

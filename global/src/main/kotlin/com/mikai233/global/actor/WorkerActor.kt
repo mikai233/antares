@@ -4,17 +4,17 @@ import akka.actor.Props
 import com.mikai233.common.core.actor.StatefulActor
 import com.mikai233.common.message.Message
 import com.mikai233.global.GlobalNode
-import com.mikai233.global.data.WorldUidMem
-import com.mikai233.shared.message.global.uid.HandoffUid
+import com.mikai233.global.data.WorkerIdMem
+import com.mikai233.shared.message.global.worker.HandoffWorker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class UidActor(node: GlobalNode) : StatefulActor<GlobalNode>(node) {
+class WorkerActor(node: GlobalNode) : StatefulActor<GlobalNode>(node) {
     companion object {
-        fun props(node: GlobalNode): Props = Props.create(UidActor::class.java, node)
+        fun props(node: GlobalNode): Props = Props.create(WorkerActor::class.java, node)
     }
 
-    val uidMem = WorldUidMem { node.mongoDB.mongoTemplate }
+    val uidMem = WorkerIdMem { node.mongoDB.mongoTemplate }
 
     override fun preStart() {
         super.preStart()
@@ -43,14 +43,14 @@ class UidActor(node: GlobalNode) : StatefulActor<GlobalNode>(node) {
 
     override fun createReceive(): Receive {
         return receiveBuilder()
-            .match(HandoffUid::class.java) { context.stop(self) }
+            .match(HandoffWorker::class.java) { context.stop(self) }
             .matchAny { stash() }
             .build()
     }
 
     private fun active(): Receive {
         return receiveBuilder()
-            .match(HandoffUid::class.java) { context.stop(self) }
+            .match(HandoffWorker::class.java) { context.stop(self) }
             .match(Message::class.java) { handleUidMessage(it) }
             .build()
     }
@@ -60,7 +60,7 @@ class UidActor(node: GlobalNode) : StatefulActor<GlobalNode>(node) {
         try {
             node.internalDispatcher.dispatch(message::class, this, message)
         } catch (e: Exception) {
-            logger.error(e, "uidActor handle message:{} failed", message)
+            logger.error(e, "WorkerActor handle message:{} failed", message)
         }
     }
 }

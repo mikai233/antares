@@ -1,7 +1,7 @@
 package com.mikai233.common.core
 
 enum class Singleton(val actorName: String) {
-    Uid("uid"),
+    Worker("worker"),
     Monitor("monitor"),
     ;
 

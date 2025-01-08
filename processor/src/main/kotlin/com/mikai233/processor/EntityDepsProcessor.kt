@@ -3,6 +3,7 @@ package com.mikai233.processor
 import com.google.devtools.ksp.getAllSuperTypes
 import com.google.devtools.ksp.getDeclaredProperties
 import com.google.devtools.ksp.isAbstract
+import com.google.devtools.ksp.isPublic
 import com.google.devtools.ksp.processing.*
 import com.google.devtools.ksp.symbol.*
 import com.squareup.kotlinpoet.*
@@ -26,6 +27,7 @@ class EntityDepsProcessor(private val codeGenerator: CodeGenerator, private val 
     private val sources: MutableList<KSFile> = mutableListOf()
 
     private val ksClassDeclarations = mutableSetOf<KSClassDeclaration>()
+    private val visitedDeclarations = mutableSetOf<KSClassDeclaration>()
 
     override fun process(resolver: Resolver): List<KSAnnotated> {
         resolver.getAllFiles().filter { it.packageName.asString().startsWith("com.mikai233.shared.entity") }
@@ -36,41 +38,12 @@ class EntityDepsProcessor(private val codeGenerator: CodeGenerator, private val 
                         ksClassDeclaration.isSubclassOfInterface("com.mikai233.common.db.Entity")
                     }
                 entityKSClassDeclarations.forEach { ksClassDeclaration ->
-                    collectKSClassDeclaration(ksClassDeclaration, ksClassDeclarations)
+                    collectKSClassDeclaration(ksClassDeclaration)
                 }
             }
         return emptyList()
     }
 
-    //    override fun finish() {
-//        val entityDepsType =
-//            Array::class.asClassName().parameterizedBy(KClass::class.asClassName().parameterizedBy(STAR))
-//        val entityDepsFile = FileSpec.builder("com.mikai233.shared.entity", "EntityDeps")
-//            .addProperty(
-//                PropertySpec.builder("EntityDeps", entityDepsType)
-//                    .initializer(buildCodeBlock {
-//                        add("arrayOf(\n")
-//                        ksClassDeclarations.forEachIndexed { index, declaration ->
-//                            add("%T::class", declaration.toClassName())
-//                            if (index != ksClassDeclarations.size - 1) {
-//                                add(",\n")
-//                            }
-//                        }
-//                        add("\n)")
-//                    })
-//                    .build()
-//            )
-//            .build()
-//        codeGenerator.createNewFile(
-//            Dependencies(true, *sources.toTypedArray()),
-//            "com.mikai233.shared.entity",
-//            "EntityDeps"
-//        ).use { os ->
-//            os.writer().use {
-//                entityDepsFile.writeTo(it)
-//            }
-//        }
-//    }
     override fun finish() {
         val maxSizePerFile = 1000 // 每个文件最大类数量
         val entityDepsType =
@@ -147,7 +120,7 @@ class EntityDepsProcessor(private val codeGenerator: CodeGenerator, private val 
 
 
     // 递归方法收集字段类型
-    private fun collectKSType(kType: KSType, collectedTypes: MutableSet<KSClassDeclaration>) {
+    private fun collectKSType(kType: KSType) {
         // 如果是Kryo支持的类型，直接返回
         if (isKryoSupportType(kType)) {
             return
@@ -158,26 +131,31 @@ class EntityDepsProcessor(private val codeGenerator: CodeGenerator, private val 
             kType.arguments.forEach { argument ->
                 // 递归查找泛型的类型
                 argument.type?.resolve()?.let { type ->
-                    collectKSType(type, collectedTypes)
+                    collectKSType(type)
                 }
             }
         }
 
+        val declaration = kType.declaration
         // 如果是类类型，递归查找类的字段
-        if (kType.declaration is KSClassDeclaration) {
-            collectKSClassDeclaration(kType.declaration as KSClassDeclaration, collectedTypes)
-        } else if (kType.declaration is KSTypeAlias) {
+        if (declaration is KSClassDeclaration && declaration !in visitedDeclarations) {
+            visitedDeclarations.add(declaration)
+//            f.appendText("${declaration.qualifiedName?.asString()}\n")
+            collectKSClassDeclaration(declaration)
+        } else if (declaration is KSTypeAlias) {
             val ksTypeAlias = kType.declaration as KSTypeAlias
-            collectKSType(ksTypeAlias.type.resolve(), collectedTypes)
+            collectKSType(ksTypeAlias.type.resolve())
         }
     }
 
     private fun collectKSClassDeclaration(
         ksClassDeclaration: KSClassDeclaration,
-        collectedTypes: MutableSet<KSClassDeclaration>
     ) {
         if (!ksClassDeclaration.isAbstract()) {
-            collectedTypes.add(ksClassDeclaration) // 将类本身加入
+            if (!ksClassDeclaration.isPublic()) {
+                error("Class declaration ${ksClassDeclaration.qualifiedName?.asString()} is not public, use simple type in your entity instead")
+            }
+            ksClassDeclarations.add(ksClassDeclaration) // 将类本身加入
         }
         val isIterable = ksClassDeclaration.isSubclassOfInterface("kotlin.collections.Iterable")
         val isMap = ksClassDeclaration.isSubclassOfInterface("kotlin.collections.Map")
@@ -188,7 +166,7 @@ class EntityDepsProcessor(private val codeGenerator: CodeGenerator, private val 
                     return@forEach
                 }
                 ksProperty.type.resolve().let { propertyType ->
-                    collectKSType(propertyType, collectedTypes)
+                    collectKSType(propertyType)
                 }
             }
         }

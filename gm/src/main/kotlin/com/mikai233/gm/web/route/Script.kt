@@ -64,8 +64,8 @@ fun Application.scriptRoutes() {
         val uuid = uuid()
         val executeActorScript = ExecuteActorScript(0, uuid, script)
         when (singleton) {
-            Singleton.Uid -> {
-                val result = node.uidSingletonProxy.ask<ExecuteScriptResult>(executeActorScript)
+            Singleton.Worker -> {
+                val result = node.workerSingletonProxy.ask<ExecuteScriptResult>(executeActorScript)
                 call.respond(result)
             }
 
