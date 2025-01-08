@@ -11,12 +11,14 @@ import com.mikai233.common.extension.startSingleton
 import com.mikai233.common.message.Message
 import com.mikai233.common.message.MessageDispatcher
 import com.mikai233.global.actor.UidActor
+import com.mikai233.shared.entity.EntityKryoPool
 import com.mikai233.shared.message.PlayerMessageExtractor
 import com.mikai233.shared.message.WorldMessageExtractor
 import com.mikai233.shared.message.global.uid.HandoffUid
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import java.net.InetSocketAddress
+import kotlin.concurrent.thread
 
 class GlobalNode(
     addr: InetSocketAddress,
@@ -40,6 +42,11 @@ class GlobalNode(
     val internalDispatcher = MessageDispatcher(Message::class, "com.mikai233.global.handler")
 
     override suspend fun launch() = start()
+
+    override suspend fun beforeStart() {
+        super.beforeStart()
+        thread { EntityKryoPool }
+    }
 
     override suspend fun afterStart() {
         startUidSingleton()

@@ -42,8 +42,8 @@ fun main() {
     val serverId = generateMessageMap(allMessages, MessageServerToClient.getDescriptor())
     val clientToServerFile = genMappingFile(clientId, MappingType.ClientToServer)
     val serverToClientFile = genMappingFile(serverId, MappingType.ServerToClient)
-    clientToServerFile.writeTo(Path("proto/src/main/kotlin"))
-    serverToClientFile.writeTo(Path("proto/src/main/kotlin"))
+    clientToServerFile.writeTo(Path("src/main/kotlin"))
+    serverToClientFile.writeTo(Path("src/main/kotlin"))
 }
 
 private fun scanAllMessages(): Map<String, MessageClass> {
@@ -74,6 +74,7 @@ private fun genMappingFile(messageMap: MessageMap, type: MappingType): FileSpec 
         .addProperties(genIdProperties(messageMap, type))
         .addProperties(genParserProperties(messageMap, type))
         .addType(genEnumSpec(messageMap, type))
+        .addFunctions(generateHelperFunctions(type))
         .build()
 }
 
@@ -128,7 +129,7 @@ private fun genParserProperties(messageMap: MessageMap, type: MappingType): List
             .addKdoc("Automatically generated field, do not modify")
             .initializer(buildCodeBlock {
                 add("mapOf(\n")
-                messageMap.entries.forEachIndexed { index, entry ->
+                chunk.forEachIndexed { index, entry ->
                     val (messageClass, id) = entry
                     add("%L to %T.parser()", id, messageClass)
                     if (index != messageMap.size - 1) {
@@ -206,4 +207,39 @@ private fun genEnumSpec(messageMap: MessageMap, type: MappingType): TypeSpec {
 
     enumSpec.addType(companionObjectSpec)
     return enumSpec.build()
+}
+
+private fun generateHelperFunctions(type: MappingType): List<FunSpec> {
+    val (from, to) = when (type) {
+        MappingType.ClientToServer -> "Client" to "Server"
+        MappingType.ServerToClient -> "Server" to "Client"
+    }
+    val messageById = "${from}To${to}MessageById"
+    val parserById = "${from}To${to}ParserById"
+
+    val idFun = FunSpec.builder("idFor${from}Message")
+        .addParameter("messageKClass", MessageType)
+        .returns(Int::class)
+        .addCode(
+            """
+            return requireNotNull($messageById[messageKClass]) {
+                "$from proto id for ${'$'}{messageKClass.qualifiedName} not found"
+            }
+            """.trimIndent()
+        )
+        .build()
+
+    val parserFun = FunSpec.builder("parserFor${from}Message")
+        .addParameter("id", Int::class)
+        .returns(MessageParserType)
+        .addCode(
+            """
+            return requireNotNull($parserById[id]) {
+                "parser for $from proto ${'$'}id not found"
+            }
+            """.trimIndent()
+        )
+        .build()
+
+    return listOf(idFun, parserFun)
 }

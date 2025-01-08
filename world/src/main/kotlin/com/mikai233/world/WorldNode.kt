@@ -6,21 +6,20 @@ import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
 import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.conf.GlobalEnv
-import com.mikai233.common.conf.GlobalProto
 import com.mikai233.common.core.*
 import com.mikai233.common.extension.startSharding
 import com.mikai233.common.extension.startShardingProxy
 import com.mikai233.common.extension.startSingletonProxy
 import com.mikai233.common.message.Message
 import com.mikai233.common.message.MessageDispatcher
-import com.mikai233.protocol.MsgCs
-import com.mikai233.protocol.MsgSc
+import com.mikai233.shared.entity.EntityKryoPool
 import com.mikai233.shared.message.PlayerMessageExtractor
 import com.mikai233.shared.message.WorldMessageExtractor
 import com.mikai233.shared.message.world.HandoffWorld
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import java.net.InetSocketAddress
+import kotlin.concurrent.thread
 
 class WorldNode(
     addr: InetSocketAddress,
@@ -29,11 +28,6 @@ class WorldNode(
     zookeeperConnectString: String,
     sameJvm: Boolean = false
 ) : Launcher, Node(addr, listOf(Role.World), name, config, zookeeperConnectString, sameJvm) {
-
-    init {
-        GlobalProto.init(MsgCs.MessageClientToServer.getDescriptor(), MsgSc.MessageServerToClient.getDescriptor())
-    }
-
     lateinit var playerSharding: ActorRef
         private set
 
@@ -48,6 +42,11 @@ class WorldNode(
     val internalDispatcher = MessageDispatcher(Message::class, "com.mikai233.world.handler")
 
     override suspend fun launch() = start()
+
+    override suspend fun beforeStart() {
+        super.beforeStart()
+        thread { EntityKryoPool }
+    }
 
     override suspend fun afterStart() {
         startUidSingletonProxy()

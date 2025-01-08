@@ -27,6 +27,16 @@ dependencies {
     implementation(tool.kotlinpoet)
 }
 
+tasks.register<JavaExec>("generateProtoMeta") {
+    group = "other"
+    mainClass = "com.mikai233.protocol.MessageMetaGeneratorKt"
+    classpath = sourceSets["main"].runtimeClasspath
+}
+
+tasks.named("generateProto") {
+    finalizedBy("generateProtoMeta")
+}
+
 tasks.test {
     useJUnitPlatform()
 }

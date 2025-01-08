@@ -5,7 +5,6 @@ import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
 import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.conf.GlobalEnv
-import com.mikai233.common.conf.GlobalProto
 import com.mikai233.common.core.Launcher
 import com.mikai233.common.core.Node
 import com.mikai233.common.core.Role
@@ -17,13 +16,12 @@ import com.mikai233.common.extension.startShardingProxy
 import com.mikai233.common.message.Message
 import com.mikai233.common.message.MessageDispatcher
 import com.mikai233.gate.server.NettyServer
-import com.mikai233.protocol.MsgCs
-import com.mikai233.protocol.MsgSc
 import com.mikai233.shared.message.PlayerMessageExtractor
 import com.mikai233.shared.message.WorldMessageExtractor
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import java.net.InetSocketAddress
+import kotlin.concurrent.thread
 
 
 class GateNode(
@@ -33,11 +31,6 @@ class GateNode(
     zookeeperConnectString: String,
     sameJvm: Boolean = false
 ) : Launcher, Node(addr, listOf(Role.Gate), name, config, zookeeperConnectString, sameJvm) {
-
-    init {
-        GlobalProto.init(MsgCs.MessageClientToServer.getDescriptor(), MsgSc.MessageServerToClient.getDescriptor())
-    }
-
     lateinit var playerSharding: ActorRef
         private set
 
@@ -57,6 +50,7 @@ class GateNode(
     override suspend fun launch() = start()
 
     override suspend fun beforeStart() {
+        thread { MessageForward }
         nettyServer.start()
         super.beforeStart()
     }

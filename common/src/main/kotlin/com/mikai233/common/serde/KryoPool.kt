@@ -9,6 +9,7 @@ import kotlin.reflect.KClass
 
 class KryoPool(val classes: Array<KClass<*>>) {
     val logger = logger()
+
     private val pool = object : Pool<Kryo>(true, true) {
         override fun create(): Kryo {
             val kryo = Kryo()
@@ -21,6 +22,17 @@ class KryoPool(val classes: Array<KClass<*>>) {
                 logger.debug("register class: {} -> {}", it, nextId)
             }
             return kryo
+        }
+    }
+
+    init {
+        //预先创建一些Kryo对象以供使用
+        val kryoList = mutableListOf<Kryo>()
+        repeat(100) {
+            kryoList.add(pool.obtain())
+        }
+        kryoList.forEach {
+            pool.free(it)
         }
     }
 
