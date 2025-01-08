@@ -6,6 +6,7 @@ import com.mikai233.common.message.ExecuteActorScript
 import com.mikai233.common.message.ExecuteScriptResult
 import com.mikai233.common.script.Script
 import com.mikai233.common.script.ScriptType
+import com.mikai233.gm.web.models.ScriptPart
 import com.mikai233.gm.web.node
 import com.mikai233.gm.web.plugins.ValidateException
 import com.mikai233.gm.web.plugins.ensure
@@ -31,12 +32,16 @@ import kotlin.time.toJavaDuration
 fun Application.scriptRoutes() {
     suspend fun RoutingContext.executeWorldActorScript() {
         val multipart = call.receiveMultipart()
-        val (worlds, script) = receiveIdAndScript(multipart)
-        ensure(worlds.isNotEmpty()) { "No id found" }
+        val allWorlds = linkedSetOf<Long>()
+        val script = receiveFormAndScript(multipart, "world_id") { worldIdStr ->
+            val worlds = worldIdStr.split(",").map { notNull(it.toLongOrNull()) { "world id:${it} must be a number" } }
+            allWorlds.addAll(worlds)
+        }
+        ensure(allWorlds.isNotEmpty()) { "No world_id found" }
         //TODO: check worldId exists
         val node = node()
         val uuid = uuid()
-        val results = worlds.map { worldId ->
+        val results = allWorlds.map { worldId ->
             val executeActorScript = ExecuteActorScript(worldId, uuid, script)
             async { node.worldSharding.ask<ExecuteScriptResult>(executeActorScript) }
         }.awaitAll()
@@ -45,11 +50,15 @@ fun Application.scriptRoutes() {
 
     suspend fun RoutingContext.executePlayerActorScript() {
         val multipart = call.receiveMultipart()
-        val (players, script) = receiveIdAndScript(multipart)
-        ensure(players.isNotEmpty()) { "No id found" }
+        val allPlayers = linkedSetOf<Long>()
+        val script = receiveFormAndScript(multipart, "player_id") { worldIdStr ->
+            val worlds = worldIdStr.split(",").map { notNull(it.toLongOrNull()) { "player id:${it} must be a number" } }
+            allPlayers.addAll(worlds)
+        }
+        ensure(allPlayers.isNotEmpty()) { "No player_id found" }
         val node = node()
         val uuid = uuid()
-        val results = players.map { playerId ->
+        val results = allPlayers.map { playerId ->
             val executeActorScript = ExecuteActorScript(playerId, uuid, script)
             async { node.playerSharding.ask<ExecuteScriptResult>(executeActorScript) }
         }.awaitAll()
@@ -58,8 +67,10 @@ fun Application.scriptRoutes() {
 
     suspend fun RoutingContext.executeGlobalActorScript() {
         val multipart = call.receiveMultipart()
-        val (actorName, script) = receiveNameAndScript(multipart)
-        val singleton = notNull(Singleton.fromActorName(actorName)) { "No actor found" }
+        var nullableActorName: String? = null
+        val script = receiveFormAndScript(multipart, "actor_name") { nullableActorName = it }
+        val actorName = notNull(nullableActorName) { "No actor_name found" }
+        val singleton = notNull(Singleton.fromActorName(actorName)) { "No singleton actor found" }
         val node = node()
         val uuid = uuid()
         val executeActorScript = ExecuteActorScript(0, uuid, script)
@@ -75,7 +86,9 @@ fun Application.scriptRoutes() {
 
     suspend fun RoutingContext.executeChannelActorScript() {
         val multipart = call.receiveMultipart()
-        val (path, script) = receivePathAndScript(multipart)
+        var nullablePath: String? = null
+        val script = receiveFormAndScript(multipart, "path") { nullablePath = it }
+        val path = notNull(nullablePath) { "No path found" }
         val node = node()
         val channelActorSelection = node.system.actorSelection(path)
         runCatching {
@@ -102,79 +115,38 @@ fun Application.scriptRoutes() {
     }
 }
 
-suspend fun receivePathAndScript(multipart: MultiPartData): Pair<String, Script> {
-    var path: String? = null
-    var script: Script? = null
+suspend fun receiveFormAndScript(
+    multipart: MultiPartData,
+    formName: String,
+    transform: (String) -> Unit
+): Script {
+    var nullableScriptPart: ScriptPart? = null
+    var extra: ByteArray? = null
     multipart.forEachPart { part ->
         when (part) {
             is PartData.FileItem -> {
-                ensure(script == null) { "Only one script file is allowed" }
-                script = receiveScript(part)
+                if (part.name == "script") {
+                    ensure(nullableScriptPart == null) { "Only one script file is allowed" }
+                    nullableScriptPart = receiveScriptPart(part)
+                } else if (part.name == "extra") {
+                    extra = part.provider().readRemaining().readByteArray()
+                }
             }
 
             is PartData.FormItem -> {
-                if (part.name == "path") {
-                    ensure(path == null) { "Only one path is allowed" }
-                    path = part.value
+                if (part.name == formName) {
+                    transform(part.value)
                 }
             }
 
             else -> throw ValidateException("Unsupported part type:${part::class.simpleName}")
         }
     }
-    return Pair(notNull(path) { "No path found" }, notNull(script) { "No script file found" })
+    val scriptPart = notNull(nullableScriptPart) { "No script file found" }
+    return Script(scriptPart.name, scriptPart.type, scriptPart.body, extra)
 }
 
-suspend fun receiveNameAndScript(multipart: MultiPartData): Pair<String, Script> {
-    var name: String? = null
-    var script: Script? = null
-    multipart.forEachPart { part ->
-        when (part) {
-            is PartData.FileItem -> {
-                ensure(script == null) { "Only one script file is allowed" }
-                script = receiveScript(part)
-            }
-
-            is PartData.FormItem -> {
-                if (part.name == "name") {
-                    ensure(name == null) { "Only one name is allowed" }
-                    name = part.value
-                }
-            }
-
-            else -> throw ValidateException("Unsupported part type:${part::class.simpleName}")
-        }
-    }
-    return Pair(notNull(name) { "No name found" }, notNull(script) { "No script file found" })
-}
-
-suspend fun receiveIdAndScript(multipart: MultiPartData): Pair<LinkedHashSet<Long>, Script> {
-    val players: LinkedHashSet<Long> = linkedSetOf()
-    var script: Script? = null
-    multipart.forEachPart { part ->
-        when (part) {
-            is PartData.FileItem -> {
-                ensure(script == null) { "Only one script file is allowed" }
-                script = receiveScript(part)
-            }
-
-            is PartData.FormItem -> {
-                if (part.name == "id") {
-                    part.value.split(",").map {
-                        notNull(it.toLongOrNull()) { "id:${it} must be a number" }
-                    }.let {
-                        players.addAll(it)
-                    }
-                }
-            }
-
-            else -> throw ValidateException("Unsupported part type:${part::class.simpleName}")
-        }
-    }
-    return Pair(players, notNull(script) { "No script file found" })
-}
-
-suspend fun receiveScript(part: PartData.FileItem): Script {
+suspend fun receiveScriptPart(part: PartData.FileItem): ScriptPart {
     val originalFileName = notNull(part.originalFileName) { "No file name" }
     val path = Path(originalFileName)
     val extension = path.extension
@@ -185,5 +157,5 @@ suspend fun receiveScript(part: PartData.FileItem): Script {
         else -> throw IllegalArgumentException("Unsupported script type")
     }
     val fileBytes = part.provider().readRemaining().readByteArray()
-    return Script(path.nameWithoutExtension, scriptType, fileBytes)
+    return ScriptPart(path.nameWithoutExtension, scriptType, fileBytes)
 }

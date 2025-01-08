@@ -6,7 +6,6 @@ import akka.cluster.sharding.ShardRegion
 import com.mikai233.common.core.actor.StatefulActor
 import com.mikai233.common.extension.ask
 import com.mikai233.common.extension.tell
-import com.mikai233.common.message.ExecuteActorFunction
 import com.mikai233.common.message.Message
 import com.mikai233.shared.message.PlayerMessage
 import com.mikai233.shared.message.ProtobufEnvelope
@@ -101,10 +100,6 @@ class WorldActor(node: WorldNode) : StatefulActor<WorldNode>(node) {
 
     fun passivate() {
         context.parent.tell(ShardRegion.Passivate(HandoffWorld), self)
-    }
-
-    private fun executeWorldScript(message: ExecuteActorFunction) {
-        message.function.invoke(this)
     }
 
     fun tellPlayer(message: PlayerMessage, sender: ActorRef = self) {

@@ -52,8 +52,9 @@ class ScriptActor(private val node: Node) : AbstractActor() {
         val targetRole = message.role.name
         if (selfMember.hasRole(targetRole)) {
             runCatching {
-                val script = scriptInstance<NodeRoleScriptFunction<Node>>(message.script)
-                script.invoke(node)
+                val script = message.script
+                val nodeRoleScriptFunction = scriptInstance<NodeRoleScriptFunction<Node>>(script)
+                nodeRoleScriptFunction.invoke(node, script.extra)
             }.onSuccess {
                 sender.tell(ExecuteScriptResult(message.uid, true), self)
             }.onFailure {
@@ -75,8 +76,9 @@ class ScriptActor(private val node: Node) : AbstractActor() {
             return
         }
         runCatching {
-            val script = scriptInstance<NodeScriptFunction<Node>>(message.script)
-            script.invoke(node)
+            val script = message.script
+            val nodeScriptFunction = scriptInstance<NodeScriptFunction<Node>>(script)
+            nodeScriptFunction.invoke(node, script.extra)
         }.onSuccess {
             sender.tell(ExecuteScriptResult(message.uid, true), self)
         }.onFailure {
@@ -87,8 +89,9 @@ class ScriptActor(private val node: Node) : AbstractActor() {
 
     private fun handleCompileActorScript(message: CompileActorScript) {
         runCatching {
-            val script = scriptInstance<ActorScriptFunction<AbstractActor>>(message.script)
-            message.actor.forward(ExecuteActorFunction(message.uid, script), context)
+            val script = message.script
+            val actorScriptFunction = scriptInstance<ActorScriptFunction<AbstractActor>>(script)
+            message.actor.forward(ExecuteActorFunction(message.uid, actorScriptFunction, script.extra), context)
         }.onFailure {
             logger.error(it, "compile actor script failed")
             sender.tell(ExecuteScriptResult(message.uid, false), message.actor)

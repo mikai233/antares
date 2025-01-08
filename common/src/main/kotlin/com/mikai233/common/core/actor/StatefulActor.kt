@@ -41,7 +41,7 @@ abstract class StatefulActor<N>(val node: N) : AbstractActorWithStash() where N 
 
             is ExecuteActorFunction -> {
                 try {
-                    msg.function.invoke(this)
+                    msg.function.invoke(this, msg.extra)
                     sender.tell(ExecuteScriptResult(msg.uid, true), self)
                 } catch (e: Exception) {
                     sender.tell(ExecuteScriptResult(msg.uid, false), self)

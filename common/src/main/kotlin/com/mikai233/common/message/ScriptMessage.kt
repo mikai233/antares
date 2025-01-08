@@ -44,7 +44,32 @@ data class CompileActorScript(val uid: String, val script: Script, val actor: Ac
  * Execute a function on the actor
  * @param uid unique id of the function
  * @param function function to execute
+ * @param extra extra data used in function
  */
-data class ExecuteActorFunction(val uid: String, val function: ActorScriptFunction<in AbstractActor>) : Message
+data class ExecuteActorFunction(
+    val uid: String,
+    val function: ActorScriptFunction<in AbstractActor>,
+    val extra: ByteArray?
+) : Message {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ExecuteActorFunction
+
+        if (uid != other.uid) return false
+        if (function != other.function) return false
+        if (!extra.contentEquals(other.extra)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = uid.hashCode()
+        result = 31 * result + function.hashCode()
+        result = 31 * result + extra.contentHashCode()
+        return result
+    }
+}
 
 data class ExecuteScriptResult(val uid: String, val success: Boolean) : Message

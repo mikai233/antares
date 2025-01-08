@@ -13,7 +13,7 @@ class HomeScriptFunction : NodeRoleScriptFunction<PlayerNode>, LoginService() {
 
     private val logger = logger()
 
-    override fun invoke(playerNode: PlayerNode) {
+    override fun invoke(playerNode: PlayerNode, p2: ByteArray?) {
         loginService = LoginServiceFix()
         logger.info("fix login service done")
     }

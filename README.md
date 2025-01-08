@@ -42,7 +42,7 @@ import "proto_login.proto";
 package com.mikai233.protocol;
 
 message MessageClientToServer{
-   LoginReq login_req = 10001;
+  LoginReq login_req = 10001;
 }
 ```
 
@@ -53,7 +53,7 @@ import "proto_login.proto";
 package com.mikai233.protocol;
 
 message MessageServerToClient{
-   LoginResp login_resp = 10001;
+  LoginResp login_resp = 10001;
 }
 ```
 
@@ -66,21 +66,21 @@ message MessageServerToClient{
 ```kotlin
 @AllOpen
 class WorldLoginHandler : MessageHandler {
-   fun handlePlayerLogin(world: WorldActor, playerLogin: PlayerLogin) {
-      val loginReq = playerLogin.req
-      val channelActor = playerLogin.channelActor
-      //generate playerId
-      val session = world.sessionManager.createOrUpdateSession(Random.nextUInt().toLong(), channelActor)
-      val playerId = Random.nextUInt().toLong()
-      session.writeProtobuf(loginResp {
-         playerData = playerData {
-            this.playerId = playerId
-            nickname = "mikai233"
-         }
-         result = ProtoLogin.LoginResult.Success
-      })
-      world.playerActor.tell(shardingEnvelope("$playerId", WHPlayerLogin("mikai233", playerId, world.worldId)))
-   }
+    fun handlePlayerLogin(world: WorldActor, playerLogin: PlayerLogin) {
+        val loginReq = playerLogin.req
+        val channelActor = playerLogin.channelActor
+        //generate playerId
+        val session = world.sessionManager.createOrUpdateSession(Random.nextUInt().toLong(), channelActor)
+        val playerId = Random.nextUInt().toLong()
+        session.writeProtobuf(loginResp {
+            playerData = playerData {
+                this.playerId = playerId
+                nickname = "mikai233"
+            }
+            result = ProtoLogin.LoginResult.Success
+        })
+        world.playerActor.tell(shardingEnvelope("$playerId", WHPlayerLogin("mikai233", playerId, world.worldId)))
+    }
 }
 ```
 
@@ -98,14 +98,8 @@ Map，例子参见`com.mikai233.player.component.PlayerActorDispatchers`。
 ## TODO
 
 1.
-   - [ ] deploy
+    - [ ] deploy
 2.
-   - [ ] uuid generate
+    - [ ] eventbus
 3.
-   - [ ] eventbus
-4.
-    - [ ] handle actor message time-consuming trace
-5.
-    - [ ] excel data verify
-6.
     - [ ] gm management backend

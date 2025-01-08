@@ -6,7 +6,7 @@ import kotlin.Unit
 
 class TestGroovyActorScript implements ActorScriptFunction<PlayerActor> {
     @Override
-    Unit invoke(PlayerActor playerActor) {
+    Unit invoke(PlayerActor playerActor, byte[] bytes) {
         playerActor.logger.info("hello groovy")
         return null
     }
