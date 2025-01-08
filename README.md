@@ -18,15 +18,10 @@
 
 ## 处理业务逻辑
 
-在antares中，所有的消息都继承自`Message`
-接口，针对每个类型的Actor，创建了一个顶层的消息接口，表示此Actor处理这一类的消息，例如`PlayerActor`
-接受所有继承自`PlayerMessage`接口的消息。
+在antares中，除了Protobuf消息外，所有的消息都继承自`Message` 接口，针对分片类型的Actor，通常会创建一个顶层的消息接口，表示此消息应该路由到哪个Actor，例如
+`PlayerMessage`接口中带有一个 `id`属性，消息继承 此接口时，需要确定此消息应该传递给哪个`PlayerActor`进行处理。
 
-在`PlayerMessage`下面会有一个名叫`SerdePlayerMessage`的子接口，这个接口同时继承了`SerdeMessage`，继承自`SerdeMessage`
-的消息表示可以远程发送，否则不能跨JVM发送，因为远程发送消息需要对象可以序列化和反序列化，这里使用了akka kryo进行统一处理序列化。
-
-业务类型的消息一般都是继承自`SerdePlayerMessage`的，因为业务层面上的大多消息都是需要跨节点和其它Actor进行通信的。
-所以直接继承这个接口就好，即使这个消息不会发到远程，也没关系。
+需要远程发送到消息会由Kryo进行序列化和反序列化处理
 
 ### 处理客户端消息
 
@@ -57,15 +52,17 @@ message MessageServerToClient{
 }
 ```
 
-- 创建Handler处理客户端请求
+- 创建Handler处理客户端请求以及继承自`Message`的消息
 
-创建一个类来处理客户端消息，通常一个功能的消息放在一个类当中，服务器启动的时候会扫描所有继承自`MessageHandler`
-的类，查找其所有的方法，查看方法
-的参数是否带有Protobuf消息，如果有则注册到Map中，当客户端消息到来的时候，根据对应的Protobuf类型派发消息到对应的方法进行处理。
+创建一个类来处理客户端消息，通常一个功能的消息放在一个类当中，服务器启动的时候会扫描所有继承自`MessageHandler` 的类，查找其所有标有
+`@Handle`的方法，注册到Map中，当客户端消息到来的时候，根据对应的Protobuf类型派发消息到对应的方法进行处理。
+
+处理消息的类应该是`@AllOpen`的，因为这样才方便有BUG时直接继承此类覆写部分逻辑修复BUG
 
 ```kotlin
 @AllOpen
 class WorldLoginHandler : MessageHandler {
+    @Handle
     fun handlePlayerLogin(world: WorldActor, playerLogin: PlayerLogin) {
         val loginReq = playerLogin.req
         val channelActor = playerLogin.channelActor
@@ -84,16 +81,12 @@ class WorldLoginHandler : MessageHandler {
 }
 ```
 
-服务器采用Netty监听客户端连接，当客户端和服务器建立连接之后，Netty会生成一个对应客户端连接的ChannelActor，此Actor是Netty和Akka的纽带，
-当ChannelActor收到消息之后，就可以转发给不同的Actor处理了。
-
 ### 处理内部消息
 
-如果内部消息需要跨节点发送，比如两个通信的Actor在不同的机器上，那么要继承`SerdeMessage`，如果不需要跨节点发送，比如只是Actor发了个消息给自己，
-那么不需要继承`SerdeMessage`，不过通常不用区分这么细，直接继承`SerdeMessage`
-就好了，通常会再封装一层，会有一个叫`BusinessMessage`的接口，
-这个接口继承自`SerdeMessage`，业务消息直接继承这个接口就好了，消息的处理方式和Protobuf类似，服务器启动的时候会去扫描方法参数，注册对应的消息
-Map，例子参见`com.mikai233.player.component.PlayerActorDispatchers`。
+处理内部消息同上，只需要把`@Handle`注解的方法的第二位换成内部消息即可。
+
+服务器采用Netty监听客户端连接，当客户端和服务器建立连接之后，Netty会生成一个对应客户端连接的ChannelActor，此Actor是Netty和Akka的纽带，
+当ChannelActor收到消息之后，就可以转发给不同的Actor处理了。
 
 ## TODO
 
