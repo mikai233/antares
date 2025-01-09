@@ -1,8 +1,6 @@
 package com.mikai233.common.message
 
 import com.mikai233.common.extension.logger
-import org.reflections.Reflections
-import org.reflections.util.ConfigurationBuilder
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.full.*
@@ -16,13 +14,12 @@ import kotlin.reflect.full.*
 annotation class Handle(val message: KClass<out Any> = Any::class)
 
 private data class MessageHandle(
-    val clazz: KClass<out MessageHandler>,
-    var handler: MessageHandler,
+    val clazz: K,
     val handle: KFunction<Unit>,
     val size: Int,
 ) : KFunction<Unit> by handle
 
-class MessageDispatcher<M : Any>(private val message: KClass<M>, vararg packages: String) {
+class MessageDispatcher<M : Any>(private val message: KClass<M>, private val handlerReflect: MessageHandlerReflect) {
     companion object {
         fun <M : Any> processFunction(message: KClass<M>, kFunction: KFunction<*>, block: (KClass<out M>) -> Unit) {
             val handle = kFunction.findAnnotation<Handle>()
@@ -53,36 +50,22 @@ class MessageDispatcher<M : Any>(private val message: KClass<M>, vararg packages
     }
 
     private val logger = logger()
-    private val packages = packages.toSet()
 
-    @Volatile
-    private var handlers: Map<KClass<out MessageHandler>, MessageHandler>
-    private val messages: Map<KClass<out M>, MessageHandle>
+    // <MessageKClass, MessageHandle>
+    private val handles: Map<KClass<out M>, MessageHandle>
 
     init {
-        handlers = initHandlers()
-        messages = initMessages()
+        handles = initHandles()
     }
 
-    private fun initHandlers(): Map<KClass<out MessageHandler>, MessageHandler> {
-        val handlers = mutableMapOf<KClass<out MessageHandler>, MessageHandler>()
-        val cfg = ConfigurationBuilder.build(*packages.toTypedArray())
-        Reflections(cfg).getSubTypesOf(MessageHandler::class.java).forEach { clazz ->
-            val handler = clazz.getDeclaredConstructor().newInstance()
-            handlers[clazz.kotlin] = handler
-            logger.debug("add message handler:{}", clazz)
-        }
-        return handlers
-    }
-
-    private fun initMessages(): Map<KClass<out M>, MessageHandle> {
+    private fun initHandles(): Map<KClass<out M>, MessageHandle> {
         val messages = mutableMapOf<KClass<out M>, MessageHandle>()
-        handlers.forEach { (clazz, handler) ->
+        handlerReflect.keys.forEach { clazz ->
             clazz.declaredMemberFunctions.forEach { kFunction ->
                 processFunction(message, kFunction) { message ->
                     check(!messages.containsKey(message)) { "duplicate message handle function for message:${message}" }
                     @Suppress("UNCHECKED_CAST")
-                    val handle = MessageHandle(clazz, handler, kFunction as KFunction<Unit>, kFunction.parameters.size)
+                    val handle = MessageHandle(clazz, kFunction as KFunction<Unit>, kFunction.parameters.size)
                     messages[message] = handle
                     logger.debug("add message handle function:{}", message)
                 }
@@ -92,27 +75,18 @@ class MessageDispatcher<M : Any>(private val message: KClass<M>, vararg packages
     }
 
     fun dispatch(messageClazz: KClass<out M>, receiver: Any, message: Any) {
-        val messageHandle = messages[messageClazz]
+        val messageHandle = handles[messageClazz]
         if (messageHandle != null) {
+            val handler = requireNotNull(handlerReflect[messageHandle.clazz]) {
+                "handler for ${messageHandle.clazz} not found"
+            }
             if (messageHandle.size == 3) {
-                messageHandle.call(messageHandle.handler, receiver, message)
+                messageHandle.call(handler, receiver, message)
             } else {
-                messageHandle.call(messageHandle.handler, receiver)
+                messageHandle.call(handler, receiver)
             }
         } else {
             logger.error("no message handler for:{} was found", messageClazz)
         }
-    }
-
-    fun replaceHandler(clazz: KClass<out MessageHandler>, newHandler: MessageHandler) {
-        check(newHandler::class.isSubclassOf(clazz)) { "update handler:${newHandler::class} is not a subclass of $clazz" }
-        check(handlers.containsKey(clazz)) { "previous handler not exists, cannot update handler:${clazz}" }
-        val copiedHandlers = HashMap(handlers)
-        copiedHandlers[clazz] = newHandler
-        handlers = copiedHandlers
-        messages.values.filter { it.clazz == clazz }.forEach {
-            it.handler = newHandler
-        }
-        logger.info("update handler:{} success", clazz)
     }
 }

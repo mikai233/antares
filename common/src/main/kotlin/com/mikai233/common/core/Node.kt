@@ -4,21 +4,15 @@ import akka.Done
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.CoordinatedShutdown
-import com.mikai233.common.core.config.NodeConfig
-import com.mikai233.common.core.config.SERVER_HOSTS
-import com.mikai233.common.core.config.nodePath
-import com.mikai233.common.core.config.serverHostsPath
+import com.mikai233.common.core.config.*
 import com.mikai233.common.db.MongoDB
 import com.mikai233.common.extension.Json
 import com.mikai233.common.extension.logger
 import com.mikai233.common.script.ScriptActor
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.*
 import kotlinx.coroutines.future.await
-import kotlinx.coroutines.runBlocking
 import org.apache.curator.framework.CuratorFrameworkFactory
 import org.apache.curator.retry.ExponentialBackoffRetry
 import org.apache.curator.x.async.AsyncCuratorFramework
@@ -27,6 +21,8 @@ import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 import java.util.function.Supplier
+import kotlin.random.Random
+import kotlin.random.nextLong
 
 /**
  * @author mikai233
@@ -62,6 +58,12 @@ open class Node(
 
     val mongoDB = MongoDB(zookeeper)
 
+    private val gameWorldMetaCache = ConfigCache(zookeeper, GAME_WORLDS, GameWorldMeta::class)
+
+    val gameWorldMeta get() = gameWorldMetaCache.config
+
+    val gameWorldConfigCache = ConfigChildrenCache(zookeeper, GAME_WORLDS, GameWorldConfig::class)
+
     lateinit var scriptActor: ActorRef
         protected set
 
@@ -90,8 +92,7 @@ open class Node(
         afterStart()
     }
 
-    protected open suspend fun beforeStart() {
-    }
+    protected open suspend fun beforeStart() {}
 
     protected open suspend fun startSystem() {
         val remoteConfig = resolveRemoteConfig()
@@ -108,6 +109,9 @@ open class Node(
 
     private fun addCoordinatedShutdownTasks() {
         with(CoordinatedShutdown.get(system)) {
+            addTask(CoordinatedShutdown.PhaseClusterLeave(), "leave_delay", taskSupplier {
+                delay(Random.nextLong(1000L..5000L))
+            })
             addTask(CoordinatedShutdown.PhaseBeforeServiceUnbind(), "change_state_stopping", taskSupplier {
                 changeState(State.Stopping)
             })

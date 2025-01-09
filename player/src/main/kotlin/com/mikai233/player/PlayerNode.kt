@@ -12,8 +12,10 @@ import com.mikai233.common.extension.ask
 import com.mikai233.common.extension.startSharding
 import com.mikai233.common.extension.startShardingProxy
 import com.mikai233.common.extension.startSingletonProxy
+import com.mikai233.common.message.GmDispatcher
 import com.mikai233.common.message.Message
 import com.mikai233.common.message.MessageDispatcher
+import com.mikai233.common.message.MessageHandlerReflect
 import com.mikai233.shared.entity.EntityKryoPool
 import com.mikai233.shared.message.PlayerMessageExtractor
 import com.mikai233.shared.message.WorldMessageExtractor
@@ -44,9 +46,13 @@ class PlayerNode(
     lateinit var snowflakeGenerator: SnowflakeGenerator
         private set
 
-    val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, "com.mikai233.player.handler")
+    private val handlerReflect = MessageHandlerReflect("com.mikai233.player.handler")
 
-    val internalDispatcher = MessageDispatcher(Message::class, "com.mikai233.player.handler")
+    val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, handlerReflect)
+
+    val internalDispatcher = MessageDispatcher(Message::class, handlerReflect)
+
+    val gmDispatcher = GmDispatcher(handlerReflect)
 
     override suspend fun launch() = start()
 

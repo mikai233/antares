@@ -434,7 +434,7 @@ class Tracer<K, E>(
     fun flush(currentEntities: Map<K, E>): Boolean {
         flushing = true
         trace0(currentEntities)
-        return updateJob?.isActive == false
+        return updateJob == null || updateJob?.isActive == false
     }
 
     private fun idField(): KProperty1<E, K> {

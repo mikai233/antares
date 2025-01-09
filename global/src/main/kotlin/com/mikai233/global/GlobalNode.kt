@@ -10,6 +10,7 @@ import com.mikai233.common.extension.startShardingProxy
 import com.mikai233.common.extension.startSingleton
 import com.mikai233.common.message.Message
 import com.mikai233.common.message.MessageDispatcher
+import com.mikai233.common.message.MessageHandlerReflect
 import com.mikai233.global.actor.WorkerActor
 import com.mikai233.shared.entity.EntityKryoPool
 import com.mikai233.shared.message.PlayerMessageExtractor
@@ -37,9 +38,11 @@ class GlobalNode(
     lateinit var workerActor: ActorRef
         private set
 
-    val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, "com.mikai233.global.handler")
+    private val handlerReflect = MessageHandlerReflect("com.mikai233.global.handler")
 
-    val internalDispatcher = MessageDispatcher(Message::class, "com.mikai233.global.handler")
+    val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, handlerReflect)
+
+    val internalDispatcher = MessageDispatcher(Message::class, handlerReflect)
 
     override suspend fun launch() = start()
 

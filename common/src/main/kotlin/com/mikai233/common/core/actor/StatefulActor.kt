@@ -131,4 +131,8 @@ abstract class StatefulActor<N>(val node: N) : AbstractActorWithStash() where N 
     fun execute(name: String, block: () -> Unit) {
         self tell ActorNamedRunnable(name, block)
     }
+
+    fun fireEvent(event: Event) {
+        self tell event
+    }
 }

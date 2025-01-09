@@ -65,7 +65,7 @@ fun protobufJsonPrinter(): JsonFormat.Printer =
 
 fun unixTimestamp() = System.currentTimeMillis()
 
-fun invokeOnTargetMode(modes: Set<ServerMode>, block: () -> Unit) {
+fun invokeOnTargetMode(vararg modes: ServerMode, block: () -> Unit) {
     if (modes.contains(GlobalEnv.serverMode)) {
         block.invoke()
     }

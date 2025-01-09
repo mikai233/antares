@@ -12,7 +12,7 @@ local ConsoleHandler = {
 
 function ConsoleHandler:init()
     EventDispatcher:add_listener(Rust2LuaEvent.ConsoleCommand(), self.on_gm_command, self)
-    MessageDispatcher:add_listener("GmOrderResp", self.on_gm_order_resp, self)
+    MessageDispatcher:add_listener("GmResp", self.on_gm_resp, self)
     info("ConsoleHandler init done")
 end
 
@@ -25,11 +25,15 @@ function ConsoleHandler:on_gm_command(params)
         local requestData = load("return " .. splitParams[2])()
         send_message(request, requestData)
     else
-        send_message("GmOrderReq", { param = params[1] or {} })
+        params = {}
+        if splitParams[2] then
+            params = Utils.split(splitParams[2], " ")
+        end
+        send_message("GmReq", { cmd = maybeRequest, params = params })
     end
 end
 
-function ConsoleHandler:on_gm_order_resp(resp)
+function ConsoleHandler:on_gm_resp(resp)
 
 end
 

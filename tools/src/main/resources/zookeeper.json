@@ -1,0 +1,153 @@
+{
+  "name": "antares",
+  "children": [
+    {
+      "name": "server_hosts",
+      "children": [
+        {
+          "name": "127.0.0.1",
+          "children": [
+            {
+              "name": "player:2333",
+              "data": {
+                "role": "Player",
+                "port": 2333,
+                "seed": false
+              }
+            },
+            {
+              "name": "player:2334",
+              "data": {
+                "role": "Player",
+                "port": 2334,
+                "seed": false
+              }
+            },
+            {
+              "name": "world:2335",
+              "data": {
+                "role": "World",
+                "port": 2335,
+                "seed": false
+              }
+            },
+            {
+              "name": "world:2335",
+              "data": {
+                "role": "World",
+                "port": 2335,
+                "seed": false
+              }
+            },
+            {
+              "name": "global:2336",
+              "data": {
+                "role": "Global",
+                "port": 2336,
+                "seed": true
+              }
+            },
+            {
+              "name": "gate:2337",
+              "data": {
+                "role": "Gate",
+                "port": 2337,
+                "seed": false
+              }
+            },
+            {
+              "name": "gm:2338",
+              "data": {
+                "role": "Gm",
+                "port": 2338,
+                "seed": true
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "netty",
+      "children": [
+        {
+          "name": "127.0.0.1:2337",
+          "data": {
+            "host": "0.0.0.0",
+            "port": 6666
+          }
+        }
+      ]
+    },
+    {
+      "name": "data_source",
+      "children": [
+        {
+          "name": "game",
+          "data": {
+            "databaseName": "antares",
+            "sources": [
+              {
+                "host": "127.0.0.1",
+                "port": 27017
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "game_worlds",
+      "data": {
+        "worlds": [
+          16801,
+          16802,
+          16803,
+          16804
+        ]
+      },
+      "children": [
+        {
+          "name": 16801,
+          "data": {
+            "id": 16801,
+            "name": "时光回忆16801",
+            "openDateTime": "2025-01-01T10:00:00",
+            "onlineLimit": 5000,
+            "registerLimit": 10000
+          }
+        },
+        {
+          "name": 16802,
+          "data": {
+            "id": 16802,
+            "name": "时光回忆16802",
+            "openDateTime": "2025-01-01T10:00:00",
+            "onlineLimit": 5000,
+            "registerLimit": 10000
+          }
+        },
+        {
+          "name": 16803,
+          "data": {
+            "id": 16803,
+            "name": "时光回忆16803",
+            "openDateTime": "2025-01-01T10:00:00",
+            "onlineLimit": 5000,
+            "registerLimit": 10000
+          }
+        },
+        {
+          "name": 16804,
+          "data": {
+            "id": 16804,
+            "name": "时光回忆16804",
+            "openDateTime": "2025-01-01T10:00:00",
+            "onlineLimit": 5000,
+            "registerLimit": 10000
+          }
+        }
+      ]
+    }
+  ]
+}

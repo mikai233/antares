@@ -29,7 +29,7 @@ class WorkerIdMem(private val mongoTemplate: () -> MongoTemplate) : MemData<Work
         if (workerIdByAddr.size < 2) {
             nextId = (workerIdByAddr.entries.maxOfOrNull { it.value.id } ?: 0) + 1
         } else {
-            workerIdByAddr.entries.sortedBy { it.value.id }.chunked(2).forEach { (a, b) ->
+            workerIdByAddr.entries.sortedBy { it.value.id }.windowed(2).forEach { (a, b) ->
                 if (a.value.id + 1 != b.value.id) {
                     nextId = a.value.id + 1
                 }

@@ -9,5 +9,8 @@ class TestPlayerScript : ActorScriptFunction<PlayerActor> {
 
     override fun invoke(player: PlayerActor, p2: ByteArray?) {
         logger.info("playerId:{} hello world", player.playerId)
+        player.node.gameWorldConfigCache.forEach { (id, config) ->
+            logger.info("id:{} config:{}", id, config)
+        }
     }
 }

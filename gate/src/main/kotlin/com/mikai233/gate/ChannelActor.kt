@@ -166,7 +166,7 @@ class ChannelActor(node: GateNode, private val handlerContext: ChannelHandlerCon
             .match(ClientProtobuf::class.java) { forwardClientMessage(it) }
             .match(ChannelExpired::class.java) { handleChannelExpired(it) }
             .match(ServerProtobuf::class.java) {
-                invokeOnTargetMode(setOf(ServerMode.DevMode)) {
+                invokeOnTargetMode(ServerMode.DevMode) {
                     logger.info(
                         "{} playerId:{} worldId:{} receive server message:{}",
                         remoteActorRefAddress(),

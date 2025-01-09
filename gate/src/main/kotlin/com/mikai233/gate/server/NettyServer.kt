@@ -17,7 +17,6 @@ import io.netty.channel.socket.ServerSocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.handler.logging.LogLevel
 import io.netty.handler.logging.LoggingHandler
-import kotlin.concurrent.thread
 
 class NettyServer(private val node: GateNode) : AutoCloseable {
     private val logger = logger()
@@ -50,28 +49,12 @@ class NettyServer(private val node: GateNode) : AutoCloseable {
         )
     }
 
-    fun start(): Thread {
-        return thread(name = name, isDaemon = true) {
-            try {
-                val futures = startServer()
-                for (future in futures) {
-                    future.channel().closeFuture().sync()
-                    logger.info("channel:{} closed", future.channel())
-                }
-            } catch (e: Exception) {
-                logger.error("", e)
-            } finally {
-                stop()
-            }
-        }
-    }
-
     private fun stop() {
         bossGroup.shutdownGracefully().sync()
         workGroup.shutdownGracefully().sync()
     }
 
-    private fun startServer(): List<ChannelFuture> {
+    fun start(): ChannelFuture {
         val bootstrap = ServerBootstrap()
         bootstrap
             .group(bossGroup, workGroup)
@@ -83,14 +66,10 @@ class NettyServer(private val node: GateNode) : AutoCloseable {
             .childOption(ChannelOption.SO_KEEPALIVE, true)
             .childOption(ChannelOption.TCP_NODELAY, true)
 
-        val ports = listOf(node.nettyConfig.port)
-        val futures = ports.map {
-            bootstrap.bind(it).also { future ->
-                future.sync()
-            }
-        }
-        logger.info("start netty server on port:{}", ports)
-        return futures
+        val nettyConfig = node.nettyConfig
+        val future = bootstrap.bind(nettyConfig.host, nettyConfig.port).sync()
+        logger.info("start netty server on host:{} port:{}", nettyConfig.host, nettyConfig.port)
+        return future
     }
 
     private fun getServerSocketChannel(): Class<out ServerSocketChannel> {

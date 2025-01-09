@@ -3,7 +3,6 @@ package com.mikai233.player.handler
 import com.mikai233.common.annotation.AllOpen
 import com.mikai233.common.extension.tell
 import com.mikai233.common.message.Handle
-import com.mikai233.common.message.Handler
 import com.mikai233.common.message.MessageHandler
 import com.mikai233.player.PlayerActor
 import com.mikai233.player.service.loginService
@@ -20,6 +19,7 @@ import kotlin.random.Random
  * @date 2023/5/17
  */
 @AllOpen
+@Suppress("unused")
 class LoginHandler : MessageHandler {
     @Handle
     fun handlePlayerLoginReq(player: PlayerActor, playerLoginReq: PlayerLoginReq) {
@@ -36,22 +36,12 @@ class LoginHandler : MessageHandler {
     }
 
     @Handle
-    fun handlePlayerCreateReq(player: PlayerActor, playerCreateReq: PlayerCreateReq) {
-        player.bindChannelActor(playerCreateReq.channelActor)
+    fun handlePlayerCreateReq(player: PlayerActor, req: PlayerCreateReq) {
+        player.bindChannelActor(req.channelActor)
         //event
-        loginService.createPlayer(player, playerCreateReq)
+        loginService.createPlayer(player, req)
         player.sender.tell(PlayerCreateResp)
         val resp = loginService.loginSuccessResp(player)
         player.send(resp)
-    }
-}
-
-/**
- * TODO test only
- */
-class WHPlayerLoginHandler : Handler<PlayerActor, PlayerLoginReq> {
-    override fun handle(actor: PlayerActor, msg: PlayerLoginReq) {
-        actor.context.system.scheduler()
-        TODO("Not yet implemented")
     }
 }

@@ -1,6 +1,7 @@
 package com.mikai233.common.extension
 
 import com.fasterxml.jackson.datatype.guava.GuavaModule
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jsonMapper
 import com.fasterxml.jackson.module.kotlin.kotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -16,6 +17,7 @@ object Json {
     val mapper = jsonMapper {
         addModule(kotlinModule())
         addModule(GuavaModule())
+        addModule(JavaTimeModule())
     }
 
     inline fun <reified T> fromStr(content: String): T {

@@ -6,6 +6,8 @@ dependencies {
     implementation(tool.kotlinpoet)
     implementation(log.bundles.common)
     implementation(ktx.datetime)
+    implementation(ktx.core)
+    runtimeOnly(ktx.core.jvm)
     implementation(kt.reflect)
     implementation(tool.bundles.curator)
     implementation(tool.guava)

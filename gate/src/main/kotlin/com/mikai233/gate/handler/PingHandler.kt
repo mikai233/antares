@@ -9,6 +9,7 @@ import com.mikai233.protocol.ProtoSystem.PingReq
 import com.mikai233.protocol.pingResp
 
 @AllOpen
+@Suppress("unused")
 class PingHandler : MessageHandler {
     @Handle(PingReq::class)
     fun handlePingReq(actor: ChannelActor) {
