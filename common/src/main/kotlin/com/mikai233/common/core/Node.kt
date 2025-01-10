@@ -47,6 +47,8 @@ open class Node(
     lateinit var system: ActorSystem
         protected set
 
+    lateinit var coroutineScope: CoroutineScope
+
     val zookeeper: AsyncCuratorFramework by lazy {
         val client = CuratorFrameworkFactory.newClient(
             zookeeperConnectString,
@@ -98,6 +100,7 @@ open class Node(
         val remoteConfig = resolveRemoteConfig()
         val config = remoteConfig.withFallback(config)
         system = ActorSystem.create(name, config)
+        coroutineScope = CoroutineScope(system.dispatcher.asCoroutineDispatcher() + SupervisorJob())
         addCoordinatedShutdownTasks()
         spawnScriptActor()
         changeState(State.Starting)

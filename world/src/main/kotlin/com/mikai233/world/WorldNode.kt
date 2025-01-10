@@ -63,6 +63,7 @@ class WorldNode(
         startSnowflakeGenerator()
         startPlayerSharding()
         startWorldSharding()
+        startWorldWaker()
         super.afterStart()
     }
 
@@ -90,6 +91,10 @@ class WorldNode(
         val resp = workerSingletonProxy.ask<WorkerIdResp>(WorkerIdReq(addr.toString())).getOrThrow()
         snowflakeGenerator = SnowflakeGenerator(resp.id.toLong())
         logger.info("apply worker id: {} for addr: {}", resp.id, addr)
+    }
+
+    private fun startWorldWaker() {
+        system.actorOf(WorldWaker.props(this), "worldWaker")
     }
 }
 

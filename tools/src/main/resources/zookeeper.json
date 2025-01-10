@@ -95,59 +95,6 @@
           }
         }
       ]
-    },
-    {
-      "name": "game_worlds",
-      "data": {
-        "worlds": [
-          16801,
-          16802,
-          16803,
-          16804
-        ]
-      },
-      "children": [
-        {
-          "name": 16801,
-          "data": {
-            "id": 16801,
-            "name": "时光回忆16801",
-            "openDateTime": "2025-01-01T10:00:00",
-            "onlineLimit": 5000,
-            "registerLimit": 10000
-          }
-        },
-        {
-          "name": 16802,
-          "data": {
-            "id": 16802,
-            "name": "时光回忆16802",
-            "openDateTime": "2025-01-01T10:00:00",
-            "onlineLimit": 5000,
-            "registerLimit": 10000
-          }
-        },
-        {
-          "name": 16803,
-          "data": {
-            "id": 16803,
-            "name": "时光回忆16803",
-            "openDateTime": "2025-01-01T10:00:00",
-            "onlineLimit": 5000,
-            "registerLimit": 10000
-          }
-        },
-        {
-          "name": 16804,
-          "data": {
-            "id": 16804,
-            "name": "时光回忆16804",
-            "openDateTime": "2025-01-01T10:00:00",
-            "onlineLimit": 5000,
-            "registerLimit": 10000
-          }
-        }
-      ]
     }
   ]
 }

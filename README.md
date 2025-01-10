@@ -9,12 +9,10 @@
 - Gradle 8
 - Zookeeper
 
-## 最基本的demo
+## 启动
 
-1. 运行  `NodeConfigInit.kt` 和 `GameWorldConfigInit.kt` 初始化zookeeper数据
-2. 运行 `ExcelExporter` 导出配置表到zookeeper， excel路径：`tools/src/main/resources/excel`
-3. 运行 `gradlew bootJar` 打fatjar
-4. 运行 `java -jar stardust-1.0.0.jar` 启动游戏服务器
+1. 运行 `ZookeeperInitializer.kt` 初始化zookeeper数据
+2. 执行 `Stardust.kt` 启动游戏服务器
 
 ## 处理业务逻辑
 

@@ -8,7 +8,9 @@ data object HandoffWorld : Message
 
 data class StopWorld(override val worldId: Long) : WorldMessage
 
-data class WakeupWorld(override val worldId: Long) : WorldMessage
+data class WakeupWorldReq(override val worldId: Long) : WorldMessage
+
+data object WakeupWorldResp : Message
 
 data object WorldTick : Message
 

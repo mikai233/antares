@@ -2,6 +2,8 @@ package com.mikai233.tools.zookeeper
 
 import com.google.common.io.Resources
 import com.mikai233.common.conf.GlobalEnv
+import com.mikai233.common.core.config.GameWorldConfig
+import com.mikai233.common.core.config.GameWorldMeta
 import com.mikai233.common.extension.Json
 import com.mikai233.common.extension.asyncZookeeperClient
 import kotlinx.coroutines.future.await
@@ -22,6 +24,34 @@ suspend fun main() {
     with(client) {
         setData(null, data, logger)
     }
+    val gameWorldConfigs = mutableListOf<GameWorldConfig>()
+    repeat(10) {
+        gameWorldConfigs.add(generateGameWorld(16800L + it))
+    }
+    val nodeData = NodeData(
+        "game_worlds",
+        GameWorldMeta(gameWorldConfigs.map { it.id }.toSet()),
+        gameWorldConfigs.map {
+            NodeData(
+                "${it.id}",
+                it,
+                null
+            )
+        }
+    )
+    with(client) {
+        setData("/${data.name}", nodeData, logger)
+    }
+}
+
+fun generateGameWorld(worldId: Long): GameWorldConfig {
+    return GameWorldConfig(
+        worldId,
+        "时光回忆:$worldId",
+        "2025-01-01T10:00:00",
+        5000,
+        10000,
+    )
 }
 
 suspend fun AsyncCuratorFramework.setData(parent: String?, nodeData: NodeData, logger: Logger) {

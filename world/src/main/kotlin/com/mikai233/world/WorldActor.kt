@@ -42,9 +42,14 @@ class WorldActor(node: WorldNode) : StatefulActor<WorldNode>(node) {
         return receiveBuilder()
             .match(HandoffWorld::class.java) { context.stop(self) }
             .matchAny {
-                context.become(initialize())
-                stash()
-                manager.init()
+                if (canInitialize()) {
+                    context.become(initialize())
+                    stash()
+                    manager.init()
+                } else {
+                    context.stop(self)
+                    logger.error("WorldActor[{}] could not initialize", worldId)
+                }
             }
             .build()
     }
@@ -127,4 +132,8 @@ class WorldActor(node: WorldNode) : StatefulActor<WorldNode>(node) {
     }
 
     fun nextId() = node.snowflakeGenerator.nextId()
+
+    private fun canInitialize(): Boolean {
+        return node.gameWorldMeta.worlds.contains(worldId)
+    }
 }
