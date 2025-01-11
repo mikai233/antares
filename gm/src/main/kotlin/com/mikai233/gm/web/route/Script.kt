@@ -38,8 +38,11 @@ fun Application.scriptRoutes() {
             allWorlds.addAll(worlds)
         }
         ensure(allWorlds.isNotEmpty()) { "No world_id found" }
-        //TODO: check worldId exists
         val node = node()
+        val noneExistsWorlds = allWorlds.filter { it !in node.gameWorldMeta.worlds }
+        ensure(noneExistsWorlds.isEmpty()) {
+            "worlds: ${noneExistsWorlds.joinToString(", ")} not exists"
+        }
         val uuid = uuid()
         val results = allWorlds.map { worldId ->
             val executeActorScript = ExecuteActorScript(worldId, uuid, script)
@@ -58,6 +61,7 @@ fun Application.scriptRoutes() {
         ensure(allPlayers.isNotEmpty()) { "No player_id found" }
         val node = node()
         val uuid = uuid()
+        //TODO 对于在线的Actor直接发送，不在线的Actor使用退避算法间隔发送，防止短时间拉起大量Actor造成OOM
         val results = allPlayers.map { playerId ->
             val executeActorScript = ExecuteActorScript(playerId, uuid, script)
             async { node.playerSharding.ask<ExecuteScriptResult>(executeActorScript) }
