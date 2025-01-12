@@ -3,6 +3,7 @@ package com.mikai233.common.core.actor
 import akka.actor.AbstractActorWithStash
 import akka.actor.ActorRef
 import com.mikai233.common.core.Node
+import com.mikai233.common.event.Event
 import com.mikai233.common.extension.*
 import com.mikai233.common.message.*
 import kotlinx.coroutines.*

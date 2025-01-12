@@ -11,7 +11,7 @@ data class Room(
     val createTime: Long,
     var changeableBoolean: Boolean,
     var changeableString: String,
-    val players: HashMap<Int, Player>,
+    val players: HashMap<Int, TPlayer>,
     val directObj: DirectObj,
     var listObj: MutableList<String>?,
     val trackChild: TrackChild,
@@ -40,9 +40,9 @@ data class Room(
 }
 
 
-interface Player
+interface TPlayer
 
-data class RoomPlayer(val id: Int, var level: Int) : Player
+data class RoomPlayer(val id: Int, var level: Int) : TPlayer
 
 data class DirectObj(val a: String, var b: Int, var c: Long, var d: Boolean)
 

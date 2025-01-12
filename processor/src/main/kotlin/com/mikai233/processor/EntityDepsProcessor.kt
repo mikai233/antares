@@ -30,7 +30,7 @@ class EntityDepsProcessor(private val codeGenerator: CodeGenerator, private val 
     private val visitedDeclarations = mutableSetOf<KSClassDeclaration>()
 
     override fun process(resolver: Resolver): List<KSAnnotated> {
-        resolver.getAllFiles().filter { it.packageName.asString().startsWith("com.mikai233.shared.entity") }
+        resolver.getAllFiles().filter { it.packageName.asString().startsWith("com.mikai233.common.entity") }
             .forEach { ksFile ->
                 sources.add(ksFile)
                 val entityKSClassDeclarations =
@@ -59,7 +59,7 @@ class EntityDepsProcessor(private val codeGenerator: CodeGenerator, private val 
             val fileName = "EntityDeps$index"
             fileNames.add(fileName)
 
-            val partitionFile = FileSpec.builder("com.mikai233.shared.entity", fileName)
+            val partitionFile = FileSpec.builder("com.mikai233.common.entity", fileName)
                 .addProperty(
                     PropertySpec.builder(fileName, entityDepsType)
                         .initializer(buildCodeBlock {
@@ -79,7 +79,7 @@ class EntityDepsProcessor(private val codeGenerator: CodeGenerator, private val 
             // 写入拆分文件
             codeGenerator.createNewFile(
                 Dependencies(true, *sources.toTypedArray()),
-                "com.mikai233.shared.entity",
+                "com.mikai233.common.entity",
                 fileName
             ).use { os ->
                 os.writer().use {
@@ -89,7 +89,7 @@ class EntityDepsProcessor(private val codeGenerator: CodeGenerator, private val 
         }
 
         // 生成统一的 EntityDeps 文件
-        val combinedFile = FileSpec.builder("com.mikai233.shared.entity", "EntityDeps")
+        val combinedFile = FileSpec.builder("com.mikai233.common.entity", "EntityDeps")
             .addProperty(
                 PropertySpec.builder("EntityDeps", entityDepsType)
                     .initializer(buildCodeBlock {
@@ -109,7 +109,7 @@ class EntityDepsProcessor(private val codeGenerator: CodeGenerator, private val 
         // 写入统一的 EntityDeps 文件
         codeGenerator.createNewFile(
             Dependencies(true, *sources.toTypedArray()),
-            "com.mikai233.shared.entity",
+            "com.mikai233.common.entity",
             "EntityDeps"
         ).use { os ->
             os.writer().use {

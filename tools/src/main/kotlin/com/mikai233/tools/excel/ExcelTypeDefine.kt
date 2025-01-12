@@ -6,9 +6,9 @@ import com.squareup.kotlinpoet.typeNameOf
 import java.util.*
 
 
-internal const val INTERFACE_PACKAGE = "com.mikai233.shared.excel"
+internal const val INTERFACE_PACKAGE = "com.mikai233.common.excel"
 
-internal const val GENERATE_PACKAGE = "com.mikai233.shared.config"
+internal const val GENERATE_PACKAGE = "com.mikai233.common.config"
 
 internal val GAME_CONFIG = ClassName(INTERFACE_PACKAGE, "GameConfig")
 

@@ -10,6 +10,7 @@ dependencies {
     runtimeOnly(ktx.core.jvm)
     implementation(tool.bundles.curator)
     implementation(akka.actor)
+    implementation(log.logback)
     implementation(project(":common"))
     implementation(project(":gate"))
     implementation(project(":player"))

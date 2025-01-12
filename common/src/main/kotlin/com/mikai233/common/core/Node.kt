@@ -4,8 +4,12 @@ import akka.Done
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.CoordinatedShutdown
-import com.mikai233.common.core.config.*
+import com.google.common.hash.HashCode
+import com.google.common.hash.Hashing
+import com.mikai233.common.config.*
 import com.mikai233.common.db.MongoDB
+import com.mikai233.common.event.GameConfigUpdateEvent
+import com.mikai233.common.excel.*
 import com.mikai233.common.extension.Json
 import com.mikai233.common.extension.logger
 import com.mikai233.common.script.ScriptActor
@@ -14,6 +18,8 @@ import com.typesafe.config.ConfigFactory
 import kotlinx.coroutines.*
 import kotlinx.coroutines.future.await
 import org.apache.curator.framework.CuratorFrameworkFactory
+import org.apache.curator.framework.recipes.cache.CuratorCache
+import org.apache.curator.framework.recipes.cache.CuratorCacheListener
 import org.apache.curator.retry.ExponentialBackoffRetry
 import org.apache.curator.x.async.AsyncCuratorFramework
 import java.net.InetSocketAddress
@@ -66,6 +72,14 @@ open class Node(
 
     val gameWorldConfigCache = ConfigChildrenCache(zookeeper, GAME_WORLDS, GameWorldConfig::class)
 
+    @Volatile
+    lateinit var gameConfigManager: GameConfigManager
+        private set
+
+    @Volatile
+    lateinit var gameConfigManagerHashcode: HashCode
+        private set
+
     lateinit var scriptActor: ActorRef
         protected set
 
@@ -103,6 +117,7 @@ open class Node(
         coroutineScope = CoroutineScope(system.dispatcher.asCoroutineDispatcher() + SupervisorJob())
         addCoordinatedShutdownTasks()
         spawnScriptActor()
+        resolveGameConfigManager()
         changeState(State.Starting)
     }
 
@@ -172,5 +187,58 @@ open class Node(
 
     private fun spawnScriptActor() {
         scriptActor = system.actorOf(ScriptActor.props(this), ScriptActor.NAME)
+    }
+
+    inline fun <reified T : V> getConfig(): T {
+        return gameConfigManager.get<T>()
+    }
+
+    inline fun <reified T : GameConfigs<K, C>, C : GameConfig<K>, K : Any> getConfigById(id: K): C {
+        return gameConfigManager.getById<T, _, _>(id)
+    }
+
+    private suspend fun resolveGameConfigManager() {
+        //配置表哈希需要稳定的哈希函数
+        fun calculateConfigHash(bytes: ByteArray) {
+            gameConfigManagerHashcode = Hashing.murmur3_128(233).hashBytes(bytes)
+        }
+
+        val cache = CuratorCache.build(zookeeper.unwrap(), GAME_CONFIG, CuratorCache.Options.SINGLE_NODE_CACHE)
+        addStateListener(State.Stopping) { cache.close() }
+        val bytes = zookeeper.data.forPath(GAME_CONFIG).await()
+        gameConfigManager = GameConfigManagerSerde.deserialize(bytes)
+        calculateConfigHash(bytes)
+        cache.listenable().addListener { type, oldData, data ->
+            when (type) {
+                CuratorCacheListener.Type.NODE_CREATED -> {
+                    gameConfigManager = GameConfigManagerSerde.deserialize(data.data)
+                    logger.info(
+                        "{} created, version: {}",
+                        GameConfigManager::class.simpleName,
+                        gameConfigManager.version
+                    )
+                    calculateConfigHash(bytes)
+                    system.eventStream.publish(GameConfigUpdateEvent)
+                }
+
+                CuratorCacheListener.Type.NODE_CHANGED -> {
+                    gameConfigManager = GameConfigManagerSerde.deserialize(data.data)
+                    logger.info(
+                        "{} updated, version: {}",
+                        GameConfigManager::class.simpleName,
+                        gameConfigManager.version
+                    )
+                    calculateConfigHash(bytes)
+                    system.eventStream.publish(GameConfigUpdateEvent)
+                }
+
+                CuratorCacheListener.Type.NODE_DELETED -> {
+                    logger.warn("Node {} deleted:{}", GameConfigManager::class.simpleName, oldData.path)
+                }
+
+                null -> Unit
+            }
+        }
+        cache.start()
     }
 }

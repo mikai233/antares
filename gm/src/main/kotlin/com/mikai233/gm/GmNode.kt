@@ -8,9 +8,9 @@ import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.*
 import com.mikai233.common.extension.startShardingProxy
 import com.mikai233.common.extension.startSingletonProxy
+import com.mikai233.common.message.PlayerMessageExtractor
+import com.mikai233.common.message.WorldMessageExtractor
 import com.mikai233.gm.web.Engine
-import com.mikai233.shared.message.PlayerMessageExtractor
-import com.mikai233.shared.message.WorldMessageExtractor
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import java.net.InetSocketAddress
@@ -45,6 +45,7 @@ class GmNode(
         startWorkerSingletonProxy()
         startPlayerSharding()
         startWorldSharding()
+        startMonitor()
         super.afterStart()
     }
 
@@ -68,6 +69,10 @@ class GmNode(
     private fun startWebEngine() {
         engine = Engine(this)
         engine.start()
+    }
+
+    private fun startMonitor() {
+        system.actorOf(MonitorActor.props(this), "monitorActor")
     }
 }
 

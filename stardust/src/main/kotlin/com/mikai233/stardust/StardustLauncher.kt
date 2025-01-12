@@ -1,11 +1,12 @@
 package com.mikai233.stardust
 
+import ch.qos.logback.classic.LoggerContext
 import com.mikai233.common.conf.GlobalEnv
+import com.mikai233.common.config.NodeConfig
+import com.mikai233.common.config.nodePath
+import com.mikai233.common.config.serverHostsPath
 import com.mikai233.common.core.Launcher
 import com.mikai233.common.core.Role
-import com.mikai233.common.core.config.NodeConfig
-import com.mikai233.common.core.config.nodePath
-import com.mikai233.common.core.config.serverHostsPath
 import com.mikai233.common.extension.Json
 import com.mikai233.common.extension.asyncZookeeperClient
 import com.mikai233.common.extension.logger
@@ -17,6 +18,7 @@ import com.mikai233.world.WorldNode
 import com.typesafe.config.ConfigFactory
 import kotlinx.coroutines.*
 import kotlinx.coroutines.future.await
+import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
 import java.util.*
 import kotlin.reflect.KClass
@@ -53,6 +55,9 @@ object StardustLauncher {
         val systemName = GlobalEnv.SYSTEM_NAME
         val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
             logger.error("launch node error", throwable)
+            // 确保日志打印完成
+            val loggerContext: LoggerContext = LoggerFactory.getILoggerFactory() as LoggerContext
+            loggerContext.stop()
             exitProcess(-1)
         }
         supervisorScope {

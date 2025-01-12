@@ -1,10 +1,10 @@
 package com.mikai233.tools.excel
 
+import com.mikai233.common.excel.GameConfig
+import com.mikai233.common.excel.GameConfigManager
+import com.mikai233.common.excel.GameConfigs
 import com.mikai233.common.extension.classDependenciesOf
 import com.mikai233.common.serde.PrimitiveTypes
-import com.mikai233.shared.excel.GameConfig
-import com.mikai233.shared.excel.GameConfigManager
-import com.mikai233.shared.excel.GameConfigs
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import org.reflections.Reflections
@@ -36,12 +36,12 @@ fun main() {
         )
     )
     val gameConfigImpls =
-        Reflections("com.mikai233.shared.config").getSubTypesOf(GameConfig::class.java).map { it.kotlin }
+        Reflections("com.mikai233.common.config").getSubTypesOf(GameConfig::class.java).map { it.kotlin }
     val gameConfigsImpls =
-        Reflections("com.mikai233.shared.config").getSubTypesOf(GameConfigs::class.java).map { it.kotlin }
+        Reflections("com.mikai233.common.config").getSubTypesOf(GameConfigs::class.java).map { it.kotlin }
     val gameConfigDeps = gameConfigImpls.flatMap { classDependenciesOf(it) }.filter { it.isAbstract.not() }.toSet()
         .filter { it !in PrimitiveTypes }
-    val configImplFile = FileSpec.builder("com.mikai233.shared.excel", "ConfigImpl")
+    val configImplFile = FileSpec.builder("com.mikai233.common.excel", "ConfigImpl")
         .addProperty(
             PropertySpec.builder("ConfigImpl", configImplType)
                 .initializer(buildCodeBlock {
@@ -76,7 +76,7 @@ fun main() {
         )
         .build()
     configImplFile.writeTo(Path("shared/src/main/kotlin"))
-    val configDepsFile = FileSpec.builder("com.mikai233.shared.excel", "ConfigDeps")
+    val configDepsFile = FileSpec.builder("com.mikai233.common.excel", "ConfigDeps")
         .addProperty(
             PropertySpec.builder("ConfigDeps", configDepsType)
                 .initializer(buildCodeBlock {

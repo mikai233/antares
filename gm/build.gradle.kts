@@ -10,7 +10,6 @@ dependencies {
     implementation(ktor.bundles.common)
     implementation(tool.jcommander)
     implementation(project(":common"))
-    implementation(project(":shared"))
 }
 
 tasks.test {

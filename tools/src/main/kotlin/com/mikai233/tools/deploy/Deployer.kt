@@ -1,7 +1,7 @@
 package com.mikai233.tools.deploy
 
 import com.mikai233.common.conf.GlobalEnv
-import com.mikai233.common.core.config.serverHostsPath
+import com.mikai233.common.config.serverHostsPath
 import com.mikai233.common.extension.asyncZookeeperClient
 import java.io.File
 

@@ -88,7 +88,7 @@ class Tracer<K, E>(
         check(period > tick) { "period:${period} should be greater than tick:${tick}" }
         check(normalFields.size + mapFields.size > 0) { "entity class:${entityClass.qualifiedName} has no field" }
         logger.info(
-            "tracer[{}] trace each field duration {}",
+            "tracer[{}] trace each field every {}",
             entityClass,
             period / (normalFields.size + mapFields.size)
         )
@@ -358,7 +358,8 @@ class Tracer<K, E>(
                 if (result.isFailure) {
                     val op = updateOpList[index]
                     logger.error(
-                        "update failed, query:${op.query}, update:${op.update}, record:${op.record}",
+                        "{} update failed, query:${op.query}, update:${op.update}, record:${op.record}",
+                        entityClass.qualifiedName,
                         result.exceptionOrNull()
                     )
                     //写入失败，将记录标记为脏数据，下次继续尝试写入
@@ -378,7 +379,8 @@ class Tracer<K, E>(
                     val updateResult = result.getOrThrow()
                     val op = updateOpList[index]
                     logger.debug(
-                        "update success, query:{}, update:{}, record:{}, result:{}",
+                        "{} update success, query:{}, update:{}, record:{}, result:{}",
+                        entityClass.qualifiedName,
                         op.query,
                         op.update,
                         op.record,

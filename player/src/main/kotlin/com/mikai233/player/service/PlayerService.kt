@@ -1,10 +1,19 @@
 package com.mikai233.player.service
 
-/**
- * @author mikai233
- * @email dreamfever2017@yahoo.com
- * @date 2023/5/17
- */
+import com.mikai233.common.annotation.AllOpen
+import com.mikai233.common.constants.PlayerActionType
+import com.mikai233.common.event.GameConfigUpdatedEvent
+import com.mikai233.player.PlayerActor
+import com.mikai233.player.data.PlayerActionMem
 
-@Volatile
-var loginService = LoginService()
+@AllOpen
+class PlayerService {
+    fun onGameConfigUpdated(player: PlayerActor) {
+        val action = player.manager.get<PlayerActionMem>().getOrCreateAction(PlayerActionType.GameConfigVersion)
+        val longHashcode = player.node.gameConfigManagerHashcode.asLong()
+        if (longHashcode != action.actionParam) {
+            action.actionParam = longHashcode
+            player.fireEvent(GameConfigUpdatedEvent)
+        }
+    }
+}

@@ -2,8 +2,8 @@ package com.mikai233.tools.excel
 
 import com.alibaba.excel.EasyExcel
 import com.mikai233.common.annotation.NoArg
+import com.mikai233.common.excel.GameConfigManager.Companion.HEADER_SIZE
 import com.mikai233.common.extension.snakeCaseToUpperCamelCase
-import com.mikai233.shared.excel.GameConfigManager.Companion.HEADER_SIZE
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import java.io.File

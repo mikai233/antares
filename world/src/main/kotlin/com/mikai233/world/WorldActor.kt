@@ -4,16 +4,14 @@ import akka.actor.ActorRef
 import akka.actor.Props
 import akka.cluster.sharding.ShardRegion
 import com.mikai233.common.core.actor.StatefulActor
+import com.mikai233.common.event.GameConfigUpdateEvent
+import com.mikai233.common.event.WorldActiveEvent
 import com.mikai233.common.extension.ask
 import com.mikai233.common.extension.tell
 import com.mikai233.common.message.Message
-import com.mikai233.shared.message.PlayerMessage
-import com.mikai233.shared.message.ProtobufEnvelope
-import com.mikai233.shared.message.WorldMessage
-import com.mikai233.shared.message.world.HandoffWorld
-import com.mikai233.shared.message.world.WorldInitialized
-import com.mikai233.shared.message.world.WorldTick
-import com.mikai233.shared.message.world.WorldUnloaded
+import com.mikai233.common.message.ProtobufEnvelope
+import com.mikai233.common.message.player.PlayerMessage
+import com.mikai233.common.message.world.*
 import kotlin.time.Duration.Companion.seconds
 
 class WorldActor(node: WorldNode) : StatefulActor<WorldNode>(node) {
@@ -30,12 +28,13 @@ class WorldActor(node: WorldNode) : StatefulActor<WorldNode>(node) {
 
     override fun preStart() {
         super.preStart()
-        logger.info("WorldActor[{}] started", self)
+        node.system.eventStream.subscribe(self, GameConfigUpdateEvent::class.java)
+        logger.info("{} started", self)
     }
 
     override fun postStop() {
-        clearStash()
-        logger.info("WorldActor[{}] stopped", self)
+        super.postStop()
+        logger.info("{} stopped", self)
     }
 
     override fun createReceive(): Receive {
@@ -59,6 +58,7 @@ class WorldActor(node: WorldNode) : StatefulActor<WorldNode>(node) {
             .match(WorldInitialized::class.java) {
                 unstashAll()
                 startTimerWithFixedDelay(WorldTick, WorldTick, WorldTickDuration)
+                fireEvent(WorldActiveEvent)
                 context.become(active())
             }
             .match(HandoffWorld::class.java) { context.stop(self) }

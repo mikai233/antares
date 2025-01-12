@@ -1,9 +1,8 @@
 package com.mikai233.gm.web
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.mikai233.gm.GmNode
 import com.mikai233.gm.web.plugins.*
+import com.mikai233.gm.web.route.actorRoutes
 import com.mikai233.gm.web.route.patchRoutes
 import com.mikai233.gm.web.route.scriptRoutes
 import io.ktor.server.application.*
@@ -26,14 +25,11 @@ class Engine(private val node: GmNode) {
 
     fun start() {
         server.application.attributes.put(NodeKey, node)
-        server.application.attributes.put(MapperKey, jacksonObjectMapper())
         server.start(false)
     }
 }
 
 val NodeKey = AttributeKey<GmNode>("Node")
-
-val MapperKey = AttributeKey<ObjectMapper>("Mapper")
 
 fun Application.module() {
     configureSerialization()
@@ -43,10 +39,9 @@ fun Application.module() {
     configureValidation()
     scriptRoutes()
     patchRoutes()
+    actorRoutes()
 }
 
 fun Application.node() = attributes[NodeKey]
-
-fun Application.mapper() = attributes[MapperKey]
 
 fun uuid(): String = UUID.randomUUID().toString()

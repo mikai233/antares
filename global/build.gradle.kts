@@ -14,7 +14,6 @@ dependencies {
     implementation(tool.mongodb.driver.sync)
     implementation(tool.jcommander)
     implementation(project(":common"))
-    implementation(project(":shared"))
 }
 
 tasks.test {

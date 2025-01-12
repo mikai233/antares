@@ -18,7 +18,6 @@ dependencies {
     implementation(tool.bundles.curator)
     implementation(tool.jcommander)
     implementation(project(":common"))
-    implementation(project(":shared"))
     implementation(project(":proto"))
 }
 

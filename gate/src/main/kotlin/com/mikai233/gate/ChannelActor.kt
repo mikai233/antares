@@ -5,21 +5,20 @@ import akka.actor.Props
 import akka.actor.ReceiveTimeout
 import com.google.protobuf.GeneratedMessage
 import com.google.protobuf.kotlin.toByteString
+import com.mikai233.common.codec.CIPHER_KEY
 import com.mikai233.common.conf.ServerMode
 import com.mikai233.common.core.actor.StatefulActor
 import com.mikai233.common.crypto.AESCipher
 import com.mikai233.common.crypto.ECDH
 import com.mikai233.common.extension.invokeOnTargetMode
 import com.mikai233.common.extension.tell
-import com.mikai233.common.message.Message
+import com.mikai233.common.formatMessage
+import com.mikai233.common.message.*
+import com.mikai233.common.message.world.PlayerLogin
 import com.mikai233.protocol.ProtoLogin
 import com.mikai233.protocol.ProtoLogin.LoginReq
 import com.mikai233.protocol.ProtoLogin.LoginResp
 import com.mikai233.protocol.connectionExpiredNotify
-import com.mikai233.shared.codec.CIPHER_KEY
-import com.mikai233.shared.formatMessage
-import com.mikai233.shared.message.*
-import com.mikai233.shared.message.world.PlayerLogin
 import io.netty.channel.ChannelFutureListener
 import io.netty.channel.ChannelHandlerContext
 import kotlin.time.Duration.Companion.minutes
@@ -40,13 +39,13 @@ class ChannelActor(node: GateNode, private val handlerContext: ChannelHandlerCon
 
     override fun preStart() {
         super.preStart()
-        logger.info("ChannelActor[{}] started", remoteActorRefAddress())
+        logger.info("{} started", remoteActorRefAddress())
         context.setReceiveTimeout(MaxIdleDuration.toJavaDuration())
     }
 
     override fun postStop() {
         super.postStop()
-        logger.info("ChannelActor[{}] stopped", remoteActorRefAddress())
+        logger.info("{} stopped", remoteActorRefAddress())
     }
 
     override fun createReceive(): Receive {
