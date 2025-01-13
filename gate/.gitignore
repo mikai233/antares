@@ -40,3 +40,8 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Project ##
+src/main/resources/ChannelActor.json
+src/main/resources/PlayerActor.json
+src/main/resources/WorldActor.json

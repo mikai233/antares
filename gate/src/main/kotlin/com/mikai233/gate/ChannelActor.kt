@@ -195,12 +195,12 @@ class ChannelActor(node: GateNode, private val handlerContext: ChannelHandlerCon
 
     private fun forwardClientMessage(clientProtobuf: ClientProtobuf) {
         val (id, message) = clientProtobuf
-        val target = MessageForward.whichActor(id)
-        logger.debug("forward message:{} to target:{}", formatMessage(message), target)
-        if (target == null) {
+        val actor = MessageForward.whichActor(id)
+        logger.debug("forward message:{} to target:{}", formatMessage(message), actor)
+        if (actor == null) {
             logger.warning("proto: {} has no target to forward", clientProtobuf.id)
         } else {
-            when (target) {
+            when (actor) {
                 Forward.PlayerActor -> {
                     val playerId = playerId
                     if (playerId != null) {

@@ -8,6 +8,7 @@ import com.mikai233.protocol.ProtoTest.TestReq
 import com.mikai233.protocol.testResp
 
 @AllOpen
+@Suppress("unused")
 class TestHandler : MessageHandler {
     @Handle
     fun handleTestReq(player: PlayerActor, testReq: TestReq) {

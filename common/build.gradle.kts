@@ -20,6 +20,7 @@ dependencies {
     implementation(tool.bcprov)
     implementation(tool.groovy.all)
     implementation(tool.guava)
+    implementation(tool.jcommander)
     implementation(tool.easyexcel)
     implementation(tool.spring.data.mongodb)
     implementation(tool.spring.retry)

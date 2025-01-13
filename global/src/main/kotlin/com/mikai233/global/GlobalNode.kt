@@ -77,7 +77,7 @@ class Cli {
     var port: Int = 2335
 
     @Parameter(names = ["-c", "--conf"], description = "conf")
-    var conf: String = "home.conf"
+    var conf: String = "global.conf"
 
     @Parameter(names = ["-z", "--zookeeper"], description = "zookeeper")
     var zookeeper: String = GlobalEnv.zkConnect

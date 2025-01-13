@@ -27,7 +27,7 @@ class ConfigCache<C>(
         val bytes = zookeeper.data.forPath(path)
         config = Json.fromBytes(bytes, clazz)
         cache = CuratorCache.build(zookeeper, path, CuratorCache.Options.SINGLE_NODE_CACHE)
-        cache.listenable().addListener { type, oldData, data ->
+        cache.listenable().addListener { type, _, data ->
             when (type) {
                 CuratorCacheListener.Type.NODE_CREATED -> {
                     logger.info("Node {} created:{}", clazz, data.path)
@@ -42,7 +42,7 @@ class ConfigCache<C>(
                 }
 
                 CuratorCacheListener.Type.NODE_DELETED -> {
-                    logger.warn("Node {} deleted:{}", clazz, oldData.path)
+                    logger.warn("Node {} deleted:{}", clazz, data.path)
                 }
 
                 null -> Unit
