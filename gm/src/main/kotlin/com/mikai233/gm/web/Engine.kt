@@ -1,5 +1,7 @@
 package com.mikai233.gm.web
 
+import com.mikai233.common.core.Patcher
+import com.mikai233.common.serde.KryoPool
 import com.mikai233.gm.GmNode
 import com.mikai233.gm.web.plugins.*
 import com.mikai233.gm.web.route.actorRoutes
@@ -25,11 +27,14 @@ class Engine(private val node: GmNode) {
 
     fun start() {
         server.application.attributes.put(NodeKey, node)
+        server.application.attributes.put(KryoKey, Patcher.scriptKryo())
         server.start(false)
     }
 }
 
 val NodeKey = AttributeKey<GmNode>("Node")
+
+val KryoKey = AttributeKey<KryoPool>("Kryo")
 
 fun Application.module() {
     configureSerialization()
@@ -43,5 +48,7 @@ fun Application.module() {
 }
 
 fun Application.node() = attributes[NodeKey]
+
+fun Application.kryo() = attributes[KryoKey]
 
 fun uuid(): String = UUID.randomUUID().toString()

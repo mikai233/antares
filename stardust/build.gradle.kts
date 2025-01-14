@@ -1,7 +1,3 @@
-plugins {
-    java
-}
-
 dependencies {
     testImplementation(platform(test.junit.bom))
     testImplementation(test.junit.jupiter)

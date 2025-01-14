@@ -4,10 +4,7 @@ import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
 import com.mikai233.common.serde.DepsExtra
 import com.mikai233.common.serde.KryoPool
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
-import java.io.FileOutputStream
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.zip.GZIPInputStream
@@ -77,20 +74,4 @@ suspend fun createGameConfigManager(excelDir: String, version: String): GameConf
     }
     manager.logger.info("Read excel cost $costMillis ms")
     return manager
-}
-
-suspend fun main() {
-    val manager = createGameConfigManager(
-        "F:\\MiscProjects\\design\\OutPut\\cn\\ExportSheet",
-        "0.1.0",
-    )
-    withContext(Dispatchers.IO) {
-        GameConfigManagerSerde.serialize(
-            manager,
-            FileOutputStream("excel_bin.tar.gz")
-        )
-    }
-    val bytes = GameConfigManagerSerde.serialize(manager)
-    val manager2 = GameConfigManagerSerde.deserialize(bytes)
-    manager2.loadComplete()
 }

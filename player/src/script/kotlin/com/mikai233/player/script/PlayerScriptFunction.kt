@@ -6,14 +6,10 @@ import com.mikai233.player.PlayerNode
 import com.mikai233.player.service.LoginService
 import com.mikai233.player.service.loginService
 
-class HomeScriptFunction : NodeRoleScriptFunction<PlayerNode>, LoginService() {
-    class LoginServiceFix : LoginService() {
-
-    }
-
+class PlayerScriptFunction : NodeRoleScriptFunction<PlayerNode>, LoginService() {
     private val logger = logger()
 
-    override fun invoke(playerNode: PlayerNode, p2: ByteArray?) {
+    override fun invoke(p1: PlayerNode, p2: ByteArray?) {
         loginService = LoginServiceFix()
         logger.info("fix login service done")
     }

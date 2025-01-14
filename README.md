@@ -91,6 +91,4 @@ class WorldLoginHandler : MessageHandler {
 1.
     - [ ] deploy
 2.
-    - [ ] eventbus
-3.
     - [ ] gm management backend

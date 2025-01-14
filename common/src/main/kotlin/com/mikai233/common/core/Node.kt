@@ -6,6 +6,7 @@ import akka.actor.ActorSystem
 import akka.actor.CoordinatedShutdown
 import com.google.common.hash.HashCode
 import com.google.common.hash.Hashing
+import com.google.common.io.Resources
 import com.mikai233.common.config.*
 import com.mikai233.common.db.MongoDB
 import com.mikai233.common.event.GameConfigUpdateEvent
@@ -118,6 +119,7 @@ open class Node(
         addCoordinatedShutdownTasks()
         spawnScriptActor()
         resolveGameConfigManager()
+        Patcher(this).apply()
         changeState(State.Starting)
     }
 
@@ -241,4 +243,6 @@ open class Node(
         }
         cache.start()
     }
+
+    fun version() = Resources.getResource("version").readText()
 }

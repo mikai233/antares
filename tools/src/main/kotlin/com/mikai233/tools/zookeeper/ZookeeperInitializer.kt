@@ -8,6 +8,7 @@ import com.mikai233.common.extension.Json
 import com.mikai233.common.extension.asyncZookeeperClient
 import kotlinx.coroutines.future.await
 import org.apache.curator.x.async.AsyncCuratorFramework
+import org.apache.curator.x.async.api.CreateOption
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -57,22 +58,11 @@ private fun generateGameWorld(worldId: Long): GameWorldConfig {
 private suspend fun AsyncCuratorFramework.setData(parent: String?, nodeData: NodeData, logger: Logger) {
     val path = "${parent ?: ""}/${nodeData.name}"
     val data = nodeData.data
-    if (checkExists().forPath(path).await() == null) {
-        if (data != null) {
-            logger.info("create {} {}", path, data)
-            create().forPath(path, Json.toBytes(data)).await()
-        } else {
-            logger.info("create {}", path)
-            create().forPath(path).await()
-        }
+    if (data == null) {
+        create().withOptions(setOf(CreateOption.setDataIfExists)).forPath(path).await()
     } else {
-        if (data != null) {
-            logger.info("set {} {}", path, data)
-            setData().forPath(path, Json.toBytes(data)).await()
-        } else {
-            logger.info("set {}", path)
-            setData().forPath(path).await()
-        }
+        create().withOptions(setOf(CreateOption.setDataIfExists)).forPath(path, Json.toBytes(data)).await()
+        logger.info("set {} {}", path, data)
     }
     nodeData.children?.forEach { childData ->
         setData(path, childData, logger)

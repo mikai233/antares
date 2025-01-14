@@ -9,6 +9,7 @@ import com.mikai233.common.extension.asyncZookeeperClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.withContext
+import org.apache.curator.x.async.api.CreateOption
 import java.io.FileOutputStream
 
 class Cli {
@@ -42,10 +43,9 @@ suspend fun main(args: Array<String>) {
         }
     } else {
         val bytes = GameConfigManagerSerde.serialize(manager)
-        if (client.checkExists().forPath(com.mikai233.common.config.GAME_CONFIG).await() == null) {
-            client.create().forPath(com.mikai233.common.config.GAME_CONFIG, bytes).await()
-        } else {
-            client.setData().forPath(com.mikai233.common.config.GAME_CONFIG, bytes).await()
-        }
+        client.create()
+            .withOptions(setOf(CreateOption.setDataIfExists, CreateOption.createParentsIfNeeded))
+            .forPath(com.mikai233.common.config.GAME_CONFIG, bytes)
+            .await()
     }
 }

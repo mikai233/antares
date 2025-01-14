@@ -78,24 +78,22 @@ subprojects {
         }
     }
 
-    if (Boot.contains(project.name)) {
-        tasks.register<Jar>("buildKotlinScript") {
-            group = "script"
-            description = "Build kotlin script jar"
-            val scriptClass: String? by project
-            archiveFileName.set("${rootProject.name}_${project.name}_${scriptClass}.jar")
-            val script = sourceSets["script"]
-            manifest {
-                attributes("Script-Class" to "com.mikai233.${project.name}.script.${scriptClass}")
-            }
-            from(script.output)
-            include("com/mikai233/${project.name}/script/*")
-
-            doFirst {
-                val containsTarget = script.output.classesDirs.any {
-                    it.walk().any { file -> file.name == "${scriptClass}.class" }
+    if (Boot.contains(project.name) || project.name == "common") {
+        val scriptSourceSets = sourceSets["script"]
+        scriptSourceSets.output.classesDirs.forEach { file ->
+            val scriptClassesDir = file.resolve("com/mikai233/${project.name}/script")
+            scriptClassesDir.walk().filter { it.isFile && it.extension == "class" }.forEach { classFile ->
+                val className = classFile.nameWithoutExtension
+                tasks.register<Jar>("buildJarFor${className}") {
+                    group = "script"
+                    description = "Build JAR for $className"
+                    archiveFileName.set("${rootProject.name}_${project.name}_${className}.jar")
+                    manifest {
+                        attributes("Script-Class" to "com.mikai233.${project.name}.script.${className}")
+                    }
+                    from(scriptSourceSets.output)
+                    include("com/mikai233/${project.name}/script/*")
                 }
-                check(containsTarget) { "cannot find ${scriptClass}.class in build dir" }
             }
         }
     }
@@ -122,6 +120,27 @@ subprojects {
         tasks.named("compileKotlin") {
             finalizedBy("generateProtoForwardMap")
         }
+    }
+    tasks.register("generateVersionFile") {
+        val resourcesDir = file("${layout.buildDirectory.get()}/generated/resources/")
+        val versionFile = File(resourcesDir, "version")
+
+        inputs.property("version", project.version.toString())
+        outputs.file(versionFile)
+        doLast {
+            if (!resourcesDir.exists()) {
+                resourcesDir.mkdirs()
+            }
+            versionFile.writeText("${project.version}")
+        }
+    }
+    tasks.named<ProcessResources>("processResources") {
+        from("${layout.buildDirectory.get()}/generated/resources") {
+            include("version")
+        }
+    }
+    tasks.named("processResources") {
+        dependsOn("generateVersionFile")
     }
 }
 
