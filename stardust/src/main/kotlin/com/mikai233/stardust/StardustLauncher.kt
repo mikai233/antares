@@ -32,11 +32,29 @@ object StardustLauncher {
     private val nodes: ArrayList<Launcher> = arrayListOf()
 
     init {
-        nodeByRole[Role.Gate] = GateNode::class
-        nodeByRole[Role.Player] = PlayerNode::class
-        nodeByRole[Role.World] = WorldNode::class
-        nodeByRole[Role.Gm] = GmNode::class
-        nodeByRole[Role.Global] = GlobalNode::class
+        Role.entries.forEach {
+            when (it) {
+                Role.Player -> {
+                    nodeByRole[it] = PlayerNode::class
+                }
+
+                Role.Gate -> {
+                    nodeByRole[it] = GateNode::class
+                }
+
+                Role.World -> {
+                    nodeByRole[it] = WorldNode::class
+                }
+
+                Role.Global -> {
+                    nodeByRole[it] = GlobalNode::class
+                }
+
+                Role.Gm -> {
+                    nodeByRole[it] = GmNode::class
+                }
+            }
+        }
     }
 
     suspend fun launch() {

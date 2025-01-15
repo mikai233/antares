@@ -46,7 +46,7 @@ object Json {
         }
     }
 
-    inline fun <reified T> toBytes(value: T, pretty: Boolean = false): ByteArray {
+    fun toBytes(value: Any, pretty: Boolean = false): ByteArray {
         return if (pretty) {
             mapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(value)
         } else {
@@ -54,11 +54,7 @@ object Json {
         }
     }
 
-    fun <T> toBytes(value: Any, clazz: KClass<T>, pretty: Boolean = false): ByteArray where T : Any {
-        return mapper.writeValueAsBytes(value)
-    }
-
-    inline fun <reified T> copy(value: T): T {
+    inline fun <reified T> copy(value: T): T where T : Any {
         return fromBytes(toBytes(value))
     }
 }

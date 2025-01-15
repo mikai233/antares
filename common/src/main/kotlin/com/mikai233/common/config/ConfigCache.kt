@@ -52,7 +52,7 @@ class ConfigCache<C>(
     }
 
     suspend fun update(newConfig: C) {
-        val bytes = Json.toBytes(newConfig, clazz)
+        val bytes = Json.toBytes(newConfig)
         zookeeper.setData().forPath(path, bytes).await()
     }
 

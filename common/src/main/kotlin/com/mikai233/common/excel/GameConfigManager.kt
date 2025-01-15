@@ -48,7 +48,7 @@ class GameConfigManager(val version: String) {
         val loadedGameConfigs = coroutineScope {
             ConfigsImpl.map { configClazz ->
                 val primaryConstructor =
-                    requireNotNull(configClazz.primaryConstructor) { "GameConfigs ${configClazz.simpleName} must have a empty primary constructor" }
+                    requireNotNull(configClazz.primaryConstructor) { "GameConfigs ${configClazz.simpleName} must have an empty primary constructor" }
                 async(Dispatchers.IO) {
                     val gameConfigs = primaryConstructor.call()
                     gameConfigs.manager = this@GameConfigManager

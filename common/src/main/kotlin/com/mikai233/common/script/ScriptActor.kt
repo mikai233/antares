@@ -121,7 +121,7 @@ class ScriptActor<N>(private val node: N) : AbstractActor() where N : Node {
     private fun <T> scriptInstance(script: Script): T {
         val scriptClass = loadClassWithCache(script)
         val constructor = requireNotNull(scriptClass.primaryConstructor) {
-            "$scriptClass must have a empty primary constructor"
+            "$scriptClass must have an empty primary constructor"
         }
         @Suppress("UNCHECKED_CAST")
         return constructor.call() as T

@@ -72,13 +72,12 @@ subprojects {
         }
     }
 
-    sourceSets {
-        create("script") {
-            compileClasspath += main.get().run { compileClasspath + output }
-        }
-    }
-
     if (Boot.contains(project.name) || project.name == "common") {
+        sourceSets {
+            create("script") {
+                compileClasspath += main.get().run { compileClasspath + output }
+            }
+        }
         val scriptSourceSets = sourceSets["script"]
         scriptSourceSets.output.classesDirs.forEach { file ->
             val scriptClassesDir = file.resolve("com/mikai233/${project.name}/script")
