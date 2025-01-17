@@ -63,7 +63,7 @@ subprojects {
         }
     }
 
-    if (project.name == "shared") {
+    if (project.name == "common") {
         sourceSets.main {
             kotlin.srcDir("build/generated/ksp/main/kotlin")
         }

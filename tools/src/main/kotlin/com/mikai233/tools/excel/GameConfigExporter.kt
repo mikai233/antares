@@ -12,7 +12,7 @@ import kotlinx.coroutines.withContext
 import org.apache.curator.x.async.api.CreateOption
 import java.io.FileOutputStream
 
-class Cli {
+private class ExporterCli {
     @Parameter(names = ["-e", "--excel"], description = "excel path", required = true)
     lateinit var excelPath: String
 
@@ -24,17 +24,17 @@ class Cli {
 }
 
 suspend fun main(args: Array<String>) {
-    val cli = Cli()
+    val exporterCli = ExporterCli()
     JCommander.newBuilder()
-        .addObject(cli)
+        .addObject(exporterCli)
         .build()
         .parse(*args)
     val client = asyncZookeeperClient(GlobalEnv.zkConnect)
     val manager = createGameConfigManager(
-        cli.excelPath,
-        cli.version,
+        exporterCli.excelPath,
+        exporterCli.version,
     )
-    if (cli.file) {
+    if (exporterCli.file) {
         withContext(Dispatchers.IO) {
             GameConfigManagerSerde.serialize(
                 manager,

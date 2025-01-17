@@ -140,7 +140,6 @@ class EntityDepsProcessor(private val codeGenerator: CodeGenerator, private val 
         // 如果是类类型，递归查找类的字段
         if (declaration is KSClassDeclaration && declaration !in visitedDeclarations) {
             visitedDeclarations.add(declaration)
-//            f.appendText("${declaration.qualifiedName?.asString()}\n")
             collectKSClassDeclaration(declaration)
         } else if (declaration is KSTypeAlias) {
             val ksTypeAlias = kType.declaration as KSTypeAlias

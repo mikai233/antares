@@ -31,6 +31,7 @@ import java.util.concurrent.Executor
 import kotlin.random.Random
 import kotlin.random.nextInt
 import kotlin.reflect.KClass
+import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.isSubclassOf
@@ -448,7 +449,7 @@ class Tracer<K, E>(
 
     private fun normalFields(): List<KProperty1<E, *>> {
         return entityClass.declaredMemberProperties.filter {
-            !it.returnType.jvmErasure.isSubclassOf(Map::class)
+            !it.returnType.jvmErasure.isSubclassOf(Map::class) && it is KMutableProperty1<E, *>
         }
     }
 
@@ -488,11 +489,13 @@ class Tracer<K, E>(
     }
 
     private fun <T> deepCopy(value: T?): T? where T : Any {
-        @Suppress("UNCHECKED_CAST")
+        if (value == null) {
+            return null
+        }
         return kryoPool.use {
             val outputStream = ByteArrayOutputStream()
-            Output(outputStream).use { writeClassAndObject(it, value) }
-            Input(outputStream.toByteArray()).use { readClassAndObject(it) } as T?
+            Output(outputStream).use { writeObject(it, value) }
+            Input(outputStream.toByteArray()).use { readObject(it, value::class.java) }
         }
     }
 }

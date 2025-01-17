@@ -24,7 +24,7 @@ fun main() {
         FileSpec.builder("com.mikai233.common.entity.test", typeSpec.name!!)
             .addType(typeSpec)
             .build()
-            .writeTo(Path("shared/src/main/kotlin"))
+            .writeTo(Path("common/src/main/kotlin"))
     }
 }
 

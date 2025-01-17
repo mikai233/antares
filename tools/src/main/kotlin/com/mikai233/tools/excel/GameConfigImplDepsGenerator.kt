@@ -36,9 +36,9 @@ fun main() {
         )
     )
     val gameConfigImpls =
-        Reflections("com.mikai233.common.config").getSubTypesOf(GameConfig::class.java).map { it.kotlin }
+        Reflections("com.mikai233.common.excel.config").getSubTypesOf(GameConfig::class.java).map { it.kotlin }
     val gameConfigsImpls =
-        Reflections("com.mikai233.common.config").getSubTypesOf(GameConfigs::class.java).map { it.kotlin }
+        Reflections("com.mikai233.common.excel.config").getSubTypesOf(GameConfigs::class.java).map { it.kotlin }
     val gameConfigDeps = gameConfigImpls.flatMap { classDependenciesOf(it) }.filter { it.isAbstract.not() }.toSet()
         .filter { it !in PrimitiveTypes }
     val configImplFile = FileSpec.builder("com.mikai233.common.excel", "ConfigImpl")
@@ -75,7 +75,7 @@ fun main() {
                 .build()
         )
         .build()
-    configImplFile.writeTo(Path("shared/src/main/kotlin"))
+    configImplFile.writeTo(Path("common/src/main/kotlin"))
     val configDepsFile = FileSpec.builder("com.mikai233.common.excel", "ConfigDeps")
         .addProperty(
             PropertySpec.builder("ConfigDeps", configDepsType)
@@ -95,5 +95,5 @@ fun main() {
                 .build()
         )
         .build()
-    configDepsFile.writeTo(Path("shared/src/main/kotlin"))
+    configDepsFile.writeTo(Path("common/src/main/kotlin"))
 }
