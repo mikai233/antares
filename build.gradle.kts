@@ -148,13 +148,13 @@ tasks.test {
 }
 
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(21)
 }
 
 fun Project.configureJvmTarget() {
     tasks.withType<JavaCompile> {
-        sourceCompatibility = "17"
-        targetCompatibility = "17"
+        sourceCompatibility = "21"
+        targetCompatibility = "21"
         with(options) {
             encoding = "UTF-8"
             isFork = true
@@ -162,7 +162,7 @@ fun Project.configureJvmTarget() {
     }
     tasks.withType<KotlinCompile> {
         compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
+            jvmTarget.set(JvmTarget.JVM_21)
             javaParameters.set(true)
         }
     }
