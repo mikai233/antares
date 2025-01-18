@@ -33,7 +33,6 @@ class ChannelActor(node: GateNode, private val handlerContext: ChannelHandlerCon
     }
 
     private var playerId: Long? = null
-    private var birthWorldId: Long? = null
     private var worldId: Long? = null
     private lateinit var clientPublicKey: ByteArray
 

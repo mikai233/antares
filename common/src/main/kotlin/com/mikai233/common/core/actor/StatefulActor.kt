@@ -5,7 +5,10 @@ import akka.actor.ActorRef
 import com.mikai233.common.core.Node
 import com.mikai233.common.event.Event
 import com.mikai233.common.extension.*
-import com.mikai233.common.message.*
+import com.mikai233.common.message.CompileActorScript
+import com.mikai233.common.message.ExecuteActorFunction
+import com.mikai233.common.message.ExecuteActorScript
+import com.mikai233.common.message.ExecuteScriptResult
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import scala.PartialFunction
@@ -32,8 +35,8 @@ abstract class StatefulActor<N>(val node: N) : AbstractActorWithStash() where N 
                 handleRunnable<ActorCoroutineRunnable> { msg.run() }
             }
 
-            is ActorNamedRunnable -> {
-                handleRunnable<ActorNamedRunnable> { msg.block() }
+            is NamedRunnable -> {
+                handleRunnable<NamedRunnable> { msg.block() }
             }
 
             is ExecuteActorScript -> {
@@ -130,7 +133,7 @@ abstract class StatefulActor<N>(val node: N) : AbstractActorWithStash() where N 
     }
 
     fun execute(name: String, block: () -> Unit) {
-        self tell ActorNamedRunnable(name, block)
+        self tell NamedRunnable(name, block)
     }
 
     fun fireEvent(event: Event) {

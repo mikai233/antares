@@ -3,7 +3,9 @@ package com.mikai233.common.entity
 import com.mikai233.common.db.Entity
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.PersistenceCreator
+import org.springframework.data.mongodb.core.mapping.Document
 
+@Document(collection = "room")
 data class Room(
     @Id
     val id: Int,
@@ -33,7 +35,7 @@ data class Room(
                 null,
                 TrackChild("", "cc"),
                 mutableListOf(),
-                Cat("", 0)
+                Cat("", 0),
             )
         }
     }

@@ -21,6 +21,7 @@ import com.mikai233.world.service.worldService
 @Suppress("unused")
 class WorldHandler : MessageHandler {
     val logger = logger()
+
     @Handle(WakeupWorldReq::class)
     fun handleWakeupWorld(world: WorldActor) {
         world.sender tell WakeupWorldResp

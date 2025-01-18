@@ -42,9 +42,7 @@ class PlayerHandler : MessageHandler {
     }
 
     @Handle(GameConfigUpdatedEvent::class)
-    fun handleGameConfigUpdatedEvent(player: PlayerActor) {
-
-    }
+    fun handleGameConfigUpdatedEvent(player: PlayerActor) = Unit
 
     @Gm("testGm")
     fun handleTestGm(player: PlayerActor, params: List<String>) {

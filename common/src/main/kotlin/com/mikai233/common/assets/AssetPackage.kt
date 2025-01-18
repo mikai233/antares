@@ -54,7 +54,7 @@ class AssetPackage(val assets: List<Asset>, val merged: Boolean) {
         return toBuilder().times(scale, strategy, mergeBeforeTimes).build()
     }
 
-    inline fun <reified T : Asset> aggregate(id: Int): T? {
+    inline fun <reified T : Asset> reduce(id: Int): T? {
         return assets.filter { it is T && it.id == id }.reduceOrNull { acc, asset -> acc + asset } as T?
     }
 

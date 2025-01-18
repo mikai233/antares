@@ -42,6 +42,7 @@ import kotlin.io.path.nameWithoutExtension
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
+@Suppress("CyclomaticComplexMethod")
 fun Application.scriptRoutes() {
     suspend fun RoutingContext.executePlayerActorScript() {
         val multipart = call.receiveMultipart()
@@ -52,29 +53,19 @@ fun Application.scriptRoutes() {
         multipart.forEachPart { part ->
             when (part) {
                 is PartData.FileItem -> {
-                    when (part.name) {
-                        "script" -> {
-                            nullableScriptPart = receiveScriptPart(part)
-                        }
-
-                        "extra" -> {
-                            nullableExtraBytes = part.provider().readRemaining().readByteArray()
-                        }
-
-                        else -> Unit
+                    if (part.name == "script") {
+                        nullableScriptPart = receiveScriptPart(part)
+                    } else if (part.name == "extra") {
+                        nullableExtraBytes = part.provider().readRemaining().readByteArray()
                     }
                 }
 
                 is PartData.FormItem -> {
-                    when (part.name) {
-                        "player_id" -> {
-                            part.value
-                                .split(",")
-                                .map { notNull(it.toLongOrNull()) { "player_id:${it} must be a number" } }
-                                .let { players.addAll(it) }
-                        }
-
-                        else -> Unit
+                    if (part.name == "player_id") {
+                        part.value
+                            .split(",")
+                            .map { notNull(it.toLongOrNull()) { "player_id:${it} must be a number" } }
+                            .let { players.addAll(it) }
                     }
                 }
 
@@ -103,29 +94,19 @@ fun Application.scriptRoutes() {
         multipart.forEachPart { part ->
             when (part) {
                 is PartData.FileItem -> {
-                    when (part.name) {
-                        "script" -> {
-                            nullableScriptPart = receiveScriptPart(part)
-                        }
-
-                        "extra" -> {
-                            nullableExtraBytes = part.provider().readRemaining().readByteArray()
-                        }
-
-                        else -> Unit
+                    if (part.name == "script") {
+                        nullableScriptPart = receiveScriptPart(part)
+                    } else if (part.name == "extra") {
+                        nullableExtraBytes = part.provider().readRemaining().readByteArray()
                     }
                 }
 
                 is PartData.FormItem -> {
-                    when (part.name) {
-                        "player_id" -> {
-                            part.value
-                                .split(",")
-                                .map { notNull(it.toLongOrNull()) { "world_id:${it} must be a number" } }
-                                .let { worlds.addAll(it) }
-                        }
-
-                        else -> Unit
+                    if (part.name == "player_id") {
+                        part.value
+                            .split(",")
+                            .map { notNull(it.toLongOrNull()) { "world_id:${it} must be a number" } }
+                            .let { worlds.addAll(it) }
                     }
                 }
 
@@ -157,26 +138,16 @@ fun Application.scriptRoutes() {
         multipart.forEachPart { part ->
             when (part) {
                 is PartData.FileItem -> {
-                    when (part.name) {
-                        "script" -> {
-                            nullableScriptPart = receiveScriptPart(part)
-                        }
-
-                        "extra" -> {
-                            nullableExtraBytes = part.provider().readRemaining().readByteArray()
-                        }
-
-                        else -> Unit
+                    if (part.name == "script") {
+                        nullableScriptPart = receiveScriptPart(part)
+                    } else if (part.name == "extra") {
+                        nullableExtraBytes = part.provider().readRemaining().readByteArray()
                     }
                 }
 
                 is PartData.FormItem -> {
-                    when (part.name) {
-                        "actor_name" -> {
-                            nullableActorName = part.value
-                        }
-
-                        else -> Unit
+                    if (part.name == "actor_name") {
+                        nullableActorName = part.value
                     }
                 }
 
@@ -209,26 +180,16 @@ fun Application.scriptRoutes() {
         multipart.forEachPart { part ->
             when (part) {
                 is PartData.FileItem -> {
-                    when (part.name) {
-                        "script" -> {
-                            nullableScriptPart = receiveScriptPart(part)
-                        }
-
-                        "extra" -> {
-                            nullableExtraBytes = part.provider().readRemaining().readByteArray()
-                        }
-
-                        else -> Unit
+                    if (part.name == "script") {
+                        nullableScriptPart = receiveScriptPart(part)
+                    } else if (part.name == "extra") {
+                        nullableExtraBytes = part.provider().readRemaining().readByteArray()
                     }
                 }
 
                 is PartData.FormItem -> {
-                    when (part.name) {
-                        "actor_path" -> {
-                            nullableActorPath = part.value
-                        }
-
-                        else -> Unit
+                    if (part.name == "actor_path") {
+                        nullableActorPath = part.value
                     }
                 }
 
@@ -264,16 +225,10 @@ fun Application.scriptRoutes() {
         multipart.forEachPart { part ->
             when (part) {
                 is PartData.FileItem -> {
-                    when (part.name) {
-                        "script" -> {
-                            nullableScriptPart = receiveScriptPart(part)
-                        }
-
-                        "extra" -> {
-                            nullableExtraBytes = part.provider().readRemaining().readByteArray()
-                        }
-
-                        else -> Unit
+                    if (part.name == "script") {
+                        nullableScriptPart = receiveScriptPart(part)
+                    } else if (part.name == "extra") {
+                        nullableExtraBytes = part.provider().readRemaining().readByteArray()
                     }
                 }
 
@@ -333,26 +288,16 @@ fun Application.scriptRoutes() {
         multipart.forEachPart { part ->
             when (part) {
                 is PartData.FileItem -> {
-                    when (part.name) {
-                        "script" -> {
-                            nullableScriptPart = receiveScriptPart(part)
-                        }
-
-                        "extra" -> {
-                            nullableExtraBytes = part.provider().readRemaining().readByteArray()
-                        }
-
-                        else -> Unit
+                    if (part.name == "script") {
+                        nullableScriptPart = receiveScriptPart(part)
+                    } else if (part.name == "extra") {
+                        nullableExtraBytes = part.provider().readRemaining().readByteArray()
                     }
                 }
 
                 is PartData.FormItem -> {
-                    when (part.name) {
-                        "address" -> {
-                            addresses.add(Json.fromStr(part.value))
-                        }
-
-                        else -> Unit
+                    if (part.name == "address") {
+                        addresses.add(Json.fromStr(part.value))
                     }
                 }
 

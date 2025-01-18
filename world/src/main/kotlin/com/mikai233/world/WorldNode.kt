@@ -94,7 +94,7 @@ class WorldNode(
     }
 }
 
-class Cli {
+private class Cli {
     @Parameter(names = ["-h", "--host"], description = "host")
     var host: String = GlobalEnv.machineIp
 
@@ -113,6 +113,7 @@ class Cli {
 
 suspend fun main(args: Array<String>) {
     val cli = Cli()
+    @Suppress("SpreadOperator")
     JCommander.newBuilder()
         .addObject(cli)
         .build()

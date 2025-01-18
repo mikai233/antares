@@ -26,7 +26,9 @@ fun buildGameConfig(configName: String, id: ExcelField, fields: List<ExcelField>
         .returns(id.type)
         .addStatement("return %L", id.name)
         .build()
-    val fieldsDocs = fields.map { (name, _, _, comment) ->
+    val fieldsDocs = fields.map {
+        val name = it.name
+        val comment = it.comment
         CodeBlock.of("@param %L %L", name, comment.replace("%", "%%"))
     }
     return TypeSpec.classBuilder("${configName}Config")
@@ -76,6 +78,7 @@ fun buildGameConfigsFunctions(excelName: String, configClass: ClassName, fields:
 
 fun buildParseRowFunction(configClass: ClassName, fields: List<ExcelField>): FunSpec {
     val argsPlaceholder = fields.joinToString(", ") { "%N" }
+    @Suppress("SpreadOperator")
     return FunSpec.builder("parseRow")
         .addModifiers(KModifier.OVERRIDE)
         .addParameter("row", ClassName(INTERFACE_PACKAGE, "Row"))
@@ -110,6 +113,7 @@ private class GeneratorCli {
  */
 fun main(args: Array<String>) {
     val generatorCli = GeneratorCli()
+    @Suppress("SpreadOperator")
     JCommander.newBuilder()
         .addObject(generatorCli)
         .build()

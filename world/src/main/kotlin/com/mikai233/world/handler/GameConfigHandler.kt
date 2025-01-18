@@ -21,7 +21,5 @@ class GameConfigHandler : MessageHandler {
     }
 
     @Handle(GameConfigUpdatedEvent::class)
-    fun handleGameConfigUpdatedEvent(world: WorldActor) {
-
-    }
+    fun handleGameConfigUpdatedEvent(world: WorldActor) = Unit
 }

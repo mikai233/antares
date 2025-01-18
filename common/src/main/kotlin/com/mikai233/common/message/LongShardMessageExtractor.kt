@@ -1,6 +1,8 @@
 package com.mikai233.common.message
 
 import akka.cluster.sharding.ShardRegion
+import com.mikai233.common.PLAYER_SHARD_NUM
+import com.mikai233.common.WORLD_SHARD_NUM
 import kotlin.math.abs
 
 class LongShardMessageExtractor(private val numberOfShards: Int) : ShardRegion.MessageExtractor {
@@ -23,6 +25,6 @@ class LongShardMessageExtractor(private val numberOfShards: Int) : ShardRegion.M
     }
 }
 
-val PlayerMessageExtractor = LongShardMessageExtractor(3000)
+val PlayerMessageExtractor = LongShardMessageExtractor(PLAYER_SHARD_NUM)
 
-val WorldMessageExtractor = LongShardMessageExtractor(3000)
+val WorldMessageExtractor = LongShardMessageExtractor(WORLD_SHARD_NUM)

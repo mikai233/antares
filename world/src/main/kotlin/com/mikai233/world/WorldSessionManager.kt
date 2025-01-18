@@ -10,6 +10,7 @@ import com.mikai233.common.formatMessage
 import com.mikai233.common.message.ChannelMessage
 import com.mikai233.common.message.ServerProtobuf
 
+//TODO broadcast
 class WorldSessionManager(val world: WorldActor) {
     private val sessions: MutableMap<Long, WorldSession> = mutableMapOf()
 
@@ -33,13 +34,5 @@ class WorldSessionManager(val world: WorldActor) {
         val session = WorldSession(playerId, channelActor)
         sessions[playerId] = session
         return session
-    }
-
-    fun broadcastWorldClient(message: GeneratedMessage) {
-        //TODO
-    }
-
-    fun broadcastAllWorldClient(message: GeneratedMessage) {
-        //TODO
     }
 }

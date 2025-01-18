@@ -26,6 +26,8 @@ allprojects {
     group = Version.PROJECT_GROUP
     version = Version.PROJECT_VERSION
 
+    apply(plugin = "io.gitlab.arturbosch.detekt")
+
     afterEvaluate {
         configureJvmTarget()
     }
@@ -35,7 +37,6 @@ subprojects {
     apply(plugin = "kotlin")
     apply(plugin = "kotlin-allopen")
     apply(plugin = "kotlin-noarg")
-    apply(plugin = "io.gitlab.arturbosch.detekt")
     apply(plugin = "org.jetbrains.dokka")
     if (Boot.contains(project.name)) {
         apply(plugin = "org.springframework.boot")
@@ -113,7 +114,7 @@ subprojects {
                     "-o",
                     gateResourcesPath,
                     "-f",
-                    actor
+                    actor,
                 )
         }
         tasks.named("compileKotlin") {

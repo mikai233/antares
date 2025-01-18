@@ -1,7 +1,6 @@
 package com.mikai233.common.test.db
 
 import com.mikai233.common.db.Entity
-import org.junit.jupiter.api.Test
 import org.springframework.data.annotation.Id
 
 class TraceDBTest {
@@ -25,12 +24,4 @@ class TraceDBTest {
         var field4: MutableSet<Int>?,
         var field5: ChildData?,
     )
-
-    @Test
-    fun traceRootEntity() {
-    }
-
-    @Test
-    fun traceFieldEntity() {
-    }
 }

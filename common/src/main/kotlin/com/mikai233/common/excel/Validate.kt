@@ -1,7 +1,5 @@
 package com.mikai233.common.excel
 
-import com.mikai233.common.assets.AssetPackage
-
 object ValidateThreadLocal {
     private val threadLocal = ThreadLocal<Pair<String, GameConfigManager>>()
 
@@ -28,7 +26,9 @@ data class ValidateError(
     val message: String,
 ) {
     override fun toString(): String {
-        return "[$excelName]${if (id != null) "id:[$id]" else ""}${if (rowIndex != null) "行:[${rowIndex + 1}]" else ""} error: $message"
+        return "[$excelName]${if (id != null) "id:[$id]" else ""}" +
+            "${if (rowIndex != null) "行:[${rowIndex + 1}]" else ""} " +
+            "error: $message"
     }
 }
 
@@ -73,10 +73,6 @@ class ValidateScope<C, K>(val config: C) where C : GameConfig<K>, K : Any {
                 addError("${fieldName}小于等于0")
             }
         }
-    }
-
-    fun isValidateAssets(assets: AssetPackage) {
-        //TODO
     }
 
     /**

@@ -1,3 +1,5 @@
+@file:Suppress("MatchingDeclarationName")
+
 package com.mikai233.common.message
 
 import com.beust.jcommander.JCommander
@@ -11,6 +13,7 @@ import kotlin.reflect.full.declaredMemberFunctions
 
 class Cli {
     @Parameter(names = ["-p", "--package"], description = "handler package", required = true)
+    @Suppress("VariableNaming")
     lateinit var `package`: String
 
     @Parameter(names = ["-o", "--output"], description = "output path", required = true)
@@ -22,6 +25,7 @@ class Cli {
 
 fun main(args: Array<String>) {
     val cli = Cli()
+    @Suppress("SpreadOperator")
     JCommander.newBuilder()
         .addObject(cli)
         .build()

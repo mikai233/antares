@@ -127,7 +127,7 @@ dependencyResolutionManagement {
             library("lz4", "org.lz4:lz4-java:1.8.0")
             library("bcprov", "org.bouncycastle:bcprov-jdk15on:1.70")
             library("akka.kryo", "io.altoo:akka-kryo-serialization_$scalaVersion:2.5.0")
-            plugin("detekt", "io.gitlab.arturbosch.detekt").version("1.23.0-RC3")
+            plugin("detekt", "io.gitlab.arturbosch.detekt").version("1.23.7")
             library("caffeine", "com.github.ben-manes.caffeine:caffeine:3.1.6")
             library("groovy", "org.apache.groovy:groovy:4.0.12")
             library("groovy.all", "org.apache.groovy:groovy-all:4.0.12")

@@ -39,7 +39,8 @@ class MessageHandlerReflect(vararg packages: String) : Map<K, MessageHandler> {
             "${newHandler::class.qualifiedName} must extends ${k.qualifiedName}"
         }
         check(handlers.containsKey(k)) {
-            "previous handler not exists, cannot replace handler:${k.qualifiedName} to ${newHandler::class.qualifiedName}"
+            "previous handler not exists, " +
+                "cannot replace handler:${k.qualifiedName} to ${newHandler::class.qualifiedName}"
         }
         val copiedHandlers = HashMap(handlers)
         copiedHandlers[k] = newHandler

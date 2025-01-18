@@ -4,7 +4,10 @@ import com.google.devtools.ksp.getAllSuperTypes
 import com.google.devtools.ksp.getDeclaredProperties
 import com.google.devtools.ksp.isAbstract
 import com.google.devtools.ksp.isPublic
-import com.google.devtools.ksp.processing.*
+import com.google.devtools.ksp.processing.CodeGenerator
+import com.google.devtools.ksp.processing.Dependencies
+import com.google.devtools.ksp.processing.Resolver
+import com.google.devtools.ksp.processing.SymbolProcessor
 import com.google.devtools.ksp.symbol.*
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
@@ -17,7 +20,7 @@ import kotlin.reflect.KClass
  * @date 2025/1/3
  * 生成Entity的类型依赖关系，用于Kryo序列化反序列化时的类型注册
  */
-class EntityDepsProcessor(private val codeGenerator: CodeGenerator, private val logger: KSPLogger) : SymbolProcessor {
+class EntityDepsProcessor(private val codeGenerator: CodeGenerator) : SymbolProcessor {
     private val kryoSupportTypes = setOf(
         "kotlin.Int", "kotlin.Long", "kotlin.Float", "kotlin.Double",
         "kotlin.Boolean", "kotlin.Char", "kotlin.String", "kotlin.Byte",
@@ -77,6 +80,7 @@ class EntityDepsProcessor(private val codeGenerator: CodeGenerator, private val 
                 .build()
 
             // 写入拆分文件
+            @Suppress("SpreadOperator")
             codeGenerator.createNewFile(
                 Dependencies(true, *sources.toTypedArray()),
                 "com.mikai233.common.entity",
@@ -107,6 +111,7 @@ class EntityDepsProcessor(private val codeGenerator: CodeGenerator, private val 
             .build()
 
         // 写入统一的 EntityDeps 文件
+        @Suppress("SpreadOperator")
         codeGenerator.createNewFile(
             Dependencies(true, *sources.toTypedArray()),
             "com.mikai233.common.entity",
@@ -152,7 +157,10 @@ class EntityDepsProcessor(private val codeGenerator: CodeGenerator, private val 
     ) {
         if (!ksClassDeclaration.isAbstract()) {
             if (!ksClassDeclaration.isPublic()) {
-                error("Class declaration ${ksClassDeclaration.qualifiedName?.asString()} is not public, use simple type in your entity instead")
+                error(
+                    "Class declaration ${ksClassDeclaration.qualifiedName?.asString()} " +
+                        "is not public, use simple type in your entity instead",
+                )
             }
             ksClassDeclarations.add(ksClassDeclaration) // 将类本身加入
         }

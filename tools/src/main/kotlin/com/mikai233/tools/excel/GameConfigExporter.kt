@@ -25,6 +25,7 @@ private class ExporterCli {
 
 suspend fun main(args: Array<String>) {
     val exporterCli = ExporterCli()
+    @Suppress("SpreadOperator")
     JCommander.newBuilder()
         .addObject(exporterCli)
         .build()
