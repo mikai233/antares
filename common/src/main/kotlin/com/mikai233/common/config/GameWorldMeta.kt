@@ -6,5 +6,5 @@ package com.mikai233.common.config
  * @date 2025/1/9
  */
 data class GameWorldMeta(
-    val worlds: Set<Long>
+    val worlds: Set<Long>,
 )

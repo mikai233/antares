@@ -26,10 +26,12 @@ class PlayerDataManager(private val player: PlayerActor) : DataManager<PlayerAct
             managers[it] = mem
         }
         logger.info("{} start loading data", player.playerId)
-        player.launch(CoroutineExceptionHandler { _, throwable ->
-            logger.error("{} loading data failed, player will stop", player.playerId, throwable)
-            player.passivate()
-        }) {
+        player.launch(
+            CoroutineExceptionHandler { _, throwable ->
+                logger.error("{} loading data failed, player will stop", player.playerId, throwable)
+                player.passivate()
+            },
+        ) {
             managers.map { (manager, mem) ->
                 async(Dispatchers.IO) {
                     mem.init()

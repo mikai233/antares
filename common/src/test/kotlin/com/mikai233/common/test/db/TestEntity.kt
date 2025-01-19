@@ -6,5 +6,5 @@ import org.springframework.data.annotation.Id
 data class TestEntity(
     @Id val id: Int,
     var name: String,
-    var age: Int
+    var age: Int,
 ) : Entity

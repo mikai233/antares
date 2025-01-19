@@ -33,7 +33,7 @@ abstract class GameConfigs<K : Any, C : GameConfig<K>> : AnalysisEventListener<M
 
     override fun invoke(
         data: Map<Int, String?>,
-        context: AnalysisContext
+        context: AnalysisContext,
     ) {
         val rowIndex = context.readRowHolder().rowIndex
         val row = Row(rowIndex, nameIndex, data)
@@ -49,7 +49,7 @@ abstract class GameConfigs<K : Any, C : GameConfig<K>> : AnalysisEventListener<M
                     excelName(),
                     null,
                     rowIndex,
-                    "解析`${row.currentName}`:`$type`失败:[${e::class.simpleName}]${e.message}"
+                    "解析`${row.currentName}`:`$type`失败:[${e::class.simpleName}]${e.message}",
                 )
             manager.errors.getOrPut(excelName()) { arrayListOf() }.add(validateError)
         }
@@ -57,7 +57,7 @@ abstract class GameConfigs<K : Any, C : GameConfig<K>> : AnalysisEventListener<M
 
     override fun invokeHeadMap(
         headMap: Map<Int, String?>,
-        context: AnalysisContext
+        context: AnalysisContext,
     ) {
         val rowIndex = context.readRowHolder().rowIndex
         //解析名字

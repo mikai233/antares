@@ -39,7 +39,7 @@ suspend fun main(args: Array<String>) {
         withContext(Dispatchers.IO) {
             GameConfigManagerSerde.serialize(
                 manager,
-                FileOutputStream("game_configs_bin.tar.gz")
+                FileOutputStream("game_configs_bin.tar.gz"),
             )
         }
     } else {

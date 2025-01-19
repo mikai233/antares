@@ -14,7 +14,8 @@ class PlayerAbstractMem(
     private val mongoTemplate: () -> MongoTemplate,
     coroutineScope: TrackingCoroutineScope,
 ) :
-    TraceableMemData<Long, PlayerAbstract>(PlayerAbstract::class, EntityKryoPool, coroutineScope, mongoTemplate) {
+    TraceableMemData<Long, PlayerAbstract>(PlayerAbstract::class, EntityKryoPool, coroutineScope, mongoTemplate),
+    Map<Long, PlayerAbstract> {
     private val playerAbstracts: MutableMap<Long, PlayerAbstract> = mutableMapOf()
     private val accountToAbstracts: MutableMap<String, PlayerAbstract> = mutableMapOf()
 
@@ -43,7 +44,30 @@ class PlayerAbstractMem(
         playerAbstracts.remove(playerAbstract.playerId)
     }
 
-    operator fun get(playerId: Long) = playerAbstracts[playerId]
-
     fun getByAccount(account: String) = accountToAbstracts[account]
+
+    override val size: Int
+        get() = playerAbstracts.size
+    override val entries: Set<Map.Entry<Long, PlayerAbstract>>
+        get() = playerAbstracts.entries
+    override val keys: Set<Long>
+        get() = playerAbstracts.keys
+    override val values: Collection<PlayerAbstract>
+        get() = playerAbstracts.values
+
+    override fun containsKey(key: Long): Boolean {
+        return playerAbstracts.containsKey(key)
+    }
+
+    override fun containsValue(value: PlayerAbstract): Boolean {
+        return playerAbstracts.containsValue(value)
+    }
+
+    override fun get(key: Long): PlayerAbstract? {
+        return playerAbstracts[key]
+    }
+
+    override fun isEmpty(): Boolean {
+        return playerAbstracts.isEmpty()
+    }
 }

@@ -23,7 +23,7 @@ class LoginService {
             account = playerCreateReq.account,
             worldId = playerCreateReq.worldId,
             nickname = playerCreateReq.nickname,
-            level = 1
+            level = 1,
         )
         player.manager.get<PlayerMem>().initPlayer(entity)
     }

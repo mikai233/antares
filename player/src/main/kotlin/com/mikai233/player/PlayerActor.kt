@@ -12,7 +12,7 @@ import com.mikai233.common.extension.ask
 import com.mikai233.common.extension.tell
 import com.mikai233.common.message.ChannelExpired
 import com.mikai233.common.message.Message
-import com.mikai233.common.message.ProtobufEnvelope
+import com.mikai233.common.message.PlayerProtobufEnvelope
 import com.mikai233.common.message.ServerProtobuf
 import com.mikai233.common.message.player.*
 import com.mikai233.common.message.world.WorldMessage
@@ -75,7 +75,7 @@ class PlayerActor(node: PlayerNode) : StatefulActor<PlayerNode>(node) {
                 context.become(stopping())
             }
             .match(PlayerTick::class.java) { manager.tick() }
-            .match(ProtobufEnvelope::class.java) { handleProtobufEnvelope(it) }
+            .match(PlayerProtobufEnvelope::class.java) { handleProtobufEnvelope(it) }
             .match(Terminated::class.java) { handleTerminated(it) }
             .match(ReceiveTimeout::class.java) { if (!isOnline()) passivate() }
             .match(Message::class.java) { handlePlayerMessage(it) }
@@ -101,10 +101,10 @@ class PlayerActor(node: PlayerNode) : StatefulActor<PlayerNode>(node) {
             .build()
     }
 
-    private fun handleProtobufEnvelope(envelope: ProtobufEnvelope) {
+    private fun handleProtobufEnvelope(envelope: PlayerProtobufEnvelope) {
         val message = envelope.message
         try {
-            node.protobufDispatcher.dispatch(message::class, this, message)
+            node.protobufDispatcher.dispatch(message::class, message, this)
         } catch (e: Exception) {
             logger.error(e, "player:{} handle protobuf message:{} failed", playerId, message)
         }
@@ -112,7 +112,7 @@ class PlayerActor(node: PlayerNode) : StatefulActor<PlayerNode>(node) {
 
     private fun handlePlayerMessage(message: Message) {
         try {
-            node.internalDispatcher.dispatch(message::class, this, message)
+            node.internalDispatcher.dispatch(message::class, message, this)
         } catch (e: Exception) {
             logger.error(e, "player:{} handle message:{} failed", playerId, message)
         }

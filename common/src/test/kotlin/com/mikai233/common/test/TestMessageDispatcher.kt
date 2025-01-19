@@ -24,24 +24,24 @@ class TestMessageDispatcher {
 
     @Test
     fun testDispatchMessage() {
-        val dispatcher = MessageDispatcher(Message::class, handlerReflect)
+        val dispatcher = MessageDispatcher(Message::class, handlerReflect, 1)
         with(dispatcher) {
-            dispatch(TestMessageA::class, HandlerCtx, TestMessageA("hello"))
-            dispatch(TestMessageB::class, HandlerCtx, TestMessageB("world", 18))
+            dispatch(TestMessageA::class, TestMessageA("hello"), HandlerCtx)
+            dispatch(TestMessageB::class, TestMessageB("world", 18), HandlerCtx)
             assertThrows<IllegalArgumentException> {
-                dispatch(TestMessageB::class, HandlerCtx, TestMessageA("hello"))
+                dispatch(TestMessageB::class, TestMessageA("hello"), HandlerCtx)
             }
         }
     }
 
     @Test
     fun testReplaceHandler() {
-        val dispatcher = MessageDispatcher(Message::class, handlerReflect)
+        val dispatcher = MessageDispatcher(Message::class, handlerReflect, 1)
         with(dispatcher) {
-            dispatch(TestMessageA::class, HandlerCtx, TestMessageA("hello"))
+            dispatch(TestMessageA::class, TestMessageA("hello"), HandlerCtx)
             handlerReflect.replace<MessageHandlerA>(MessageHandlerAFix())
             assertThrows<Exception> {
-                dispatch(TestMessageA::class, HandlerCtx, TestMessageA("hello"))
+                dispatch(TestMessageA::class, TestMessageA("hello"), HandlerCtx)
             }
         }
     }

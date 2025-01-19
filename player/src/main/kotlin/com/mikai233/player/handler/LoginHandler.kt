@@ -1,9 +1,9 @@
 package com.mikai233.player.handler
 
 import com.mikai233.common.annotation.AllOpen
+import com.mikai233.common.annotation.Handle
 import com.mikai233.common.event.PlayerLoginEvent
 import com.mikai233.common.extension.tell
-import com.mikai233.common.message.Handle
 import com.mikai233.common.message.MessageHandler
 import com.mikai233.common.message.player.PlayerCreateReq
 import com.mikai233.common.message.player.PlayerCreateResp
@@ -30,9 +30,11 @@ class LoginHandler : MessageHandler {
         player.sender.tell(PlayerLoginResp)
         player.fireEvent(PlayerLoginEvent)
         repeat(100) {
-            player.send(testNotify {
-                data = Random.nextDouble().toString()
-            })
+            player.send(
+                testNotify {
+                    data = Random.nextDouble().toString()
+                },
+            )
         }
     }
 

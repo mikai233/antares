@@ -132,7 +132,7 @@ fun main(args: Array<String>) {
                 } else {
                     println("Skip $excelName because of no id")
                 }
-            }
+            },
         ).headRowNumber(HEADER_SIZE).sheet().doRead()
     }
 }

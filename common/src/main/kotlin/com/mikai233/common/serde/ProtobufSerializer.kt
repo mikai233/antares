@@ -1,46 +1,39 @@
 package com.mikai233.common.serde
 
-import akka.serialization.JSerializer
-import com.mikai233.common.extension.toInt
-import com.mikai233.common.message.ProtobufEnvelope
-import com.mikai233.protocol.idForClientMessage
-import com.mikai233.protocol.parserForClientMessage
-import java.nio.ByteBuffer
+import com.esotericsoftware.kryo.Kryo
+import com.esotericsoftware.kryo.Serializer
+import com.esotericsoftware.kryo.io.Input
+import com.esotericsoftware.kryo.io.Output
+import com.google.protobuf.GeneratedMessage
+import com.google.protobuf.Parser
+import com.mikai233.protocol.ClientToServerMessageById
+import com.mikai233.protocol.ClientToServerParserById
+import com.mikai233.protocol.ServerToClientMessageById
+import com.mikai233.protocol.ServerToClientParserById
 
-class ProtobufSerializer : JSerializer() {
-    override fun fromBinaryJava(bytes: ByteArray, manifest: Class<*>?): Any {
-        val buffer = ByteBuffer.wrap(bytes)
-        bytes.toInt()
-        val id = buffer.long
-        val protoId = buffer.int
-        val messageBytes = ByteArray(buffer.remaining())
-        buffer.get(messageBytes)
-        val parser = parserForClientMessage(protoId)
-        val message = parser.parseFrom(messageBytes)
-        return ProtobufEnvelope(id, message)
-    }
+class ProtobufSerializer : Serializer<GeneratedMessage>() {
+    private val parserByType: Map<Class<out GeneratedMessage>, Parser<out GeneratedMessage>>
 
-    override fun identifier(): Int {
-        return 247510507
-    }
-
-    override fun toBinary(o: Any): ByteArray {
-        val envelope = o as ProtobufEnvelope
-        val message = envelope.message
-        val messageBytes = message.toByteArray()
-        val protoId = idForClientMessage(message::class)
-        val buffer = ByteBuffer.allocate(Long.SIZE_BYTES + Int.SIZE_BYTES + messageBytes.size)
-        buffer.putLong(envelope.id).putInt(protoId).put(messageBytes)
-        return if (buffer.hasArray()) {
-            buffer.array()
-        } else {
-            val bytes = ByteArray(buffer.remaining())
-            buffer.get(bytes)
-            bytes
+    init {
+        val parserByType: MutableMap<Class<out GeneratedMessage>, Parser<out GeneratedMessage>> = mutableMapOf()
+        ClientToServerMessageById.forEach { (type, id) ->
+            val parser = requireNotNull(ClientToServerParserById[id]) { "Parser for id $id not found" }
+            parserByType[type.java] = parser
         }
+        ServerToClientMessageById.forEach { (type, id) ->
+            val parser = requireNotNull(ServerToClientParserById[id]) { "Parser for type $type not found" }
+            parserByType[type.java] = parser
+        }
+        this.parserByType = parserByType
     }
 
-    override fun includeManifest(): Boolean {
-        return false
+    override fun write(kryo: Kryo, output: Output, `object`: GeneratedMessage) {
+        kryo.writeObject(output, `object`.toByteArray())
+    }
+
+    override fun read(kryo: Kryo, input: Input, type: Class<out GeneratedMessage>): GeneratedMessage {
+        val bytes = kryo.readObject(input, ByteArray::class.java)
+        val parser = requireNotNull(parserByType[type]) { "Parser for type $type not found" }
+        return parser.parseFrom(bytes)
     }
 }

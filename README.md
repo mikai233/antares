@@ -309,3 +309,7 @@ class TestGroovyActorScript implements ActorScriptFunction<PlayerActor> {
 
 例如我想要在某些 `PlayerActor` 中执行脚本，那么我需要调用例如 `http://127.0.0.1:8080/script/player_actor_script` 的地址，然后使用
 form-data 的形式传入 `player_id` 以及 `script` 文件。
+
+# 部署
+
+执行 Gradle 任务 `gradle release`，即可根据每个节点打 Jar 包，打出的 Jar 包会统一拷贝到 `release` 目录下。

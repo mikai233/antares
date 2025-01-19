@@ -23,7 +23,7 @@ class GateNode(
     name: String,
     config: Config,
     zookeeperConnectString: String,
-    sameJvm: Boolean = false
+    sameJvm: Boolean = false,
 ) : Launcher, Node(addr, listOf(Role.Gate), name, config, zookeeperConnectString, sameJvm) {
     lateinit var playerSharding: ActorRef
         private set
@@ -33,9 +33,9 @@ class GateNode(
 
     private val handlerReflect = MessageHandlerReflect("com.mikai233.gate.handler")
 
-    val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, handlerReflect)
+    val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, handlerReflect, 1)
 
-    val internalDispatcher = MessageDispatcher(Message::class, handlerReflect)
+    val internalDispatcher = MessageDispatcher(Message::class, handlerReflect, 1)
 
     private val nettyServer = NettyServer(this)
 

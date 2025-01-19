@@ -45,7 +45,7 @@ class NettyServer(private val node: GateNode) : AutoCloseable {
             "{} using bossGroup:{}, workGroup:{}",
             name,
             bossGroup.javaClass.simpleName,
-            workGroup.javaClass.simpleName
+            workGroup.javaClass.simpleName,
         )
     }
 

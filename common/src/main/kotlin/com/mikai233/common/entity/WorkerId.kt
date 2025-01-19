@@ -9,7 +9,7 @@ import org.springframework.data.mongodb.core.mapping.Document
 data class WorkerId(
     @Id
     val addr: String,
-    val id: Int
+    val id: Int,
 ) : Entity {
     companion object {
         @JvmStatic

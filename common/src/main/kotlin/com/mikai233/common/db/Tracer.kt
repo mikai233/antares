@@ -31,7 +31,6 @@ import java.util.concurrent.Executor
 import kotlin.random.Random
 import kotlin.random.nextInt
 import kotlin.reflect.KClass
-import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.isSubclassOf
@@ -459,9 +458,7 @@ class Tracer<K, E>(
     }
 
     private fun normalFields(): List<KProperty1<E, *>> {
-        return entityClass.declaredMemberProperties.filter {
-            !it.returnType.jvmErasure.isSubclassOf(Map::class) && it is KMutableProperty1<E, *>
-        }
+        return entityClass.declaredMemberProperties.filter { !it.returnType.jvmErasure.isSubclassOf(Map::class) }
     }
 
     private fun mapFields(): List<KProperty1<E, Map<*, *>>> {

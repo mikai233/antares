@@ -4,9 +4,12 @@ import akka.Done
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.CoordinatedShutdown
+import akka.routing.FromConfig
 import com.google.common.hash.HashCode
 import com.google.common.hash.Hashing
 import com.google.common.io.Resources
+import com.mikai233.common.broadcast.PlayerBroadcastActor
+import com.mikai233.common.broadcast.PlayerBroadcastEventBus
 import com.mikai233.common.config.*
 import com.mikai233.common.db.MongoDB
 import com.mikai233.common.event.GameConfigUpdateEvent
@@ -59,7 +62,7 @@ open class Node(
     val zookeeper: AsyncCuratorFramework by lazy {
         val client = CuratorFrameworkFactory.newClient(
             zookeeperConnectString,
-            ExponentialBackoffRetry(2000, 10, 60000)
+            ExponentialBackoffRetry(2000, 10, 60000),
         )
         client.start()
         AsyncCuratorFramework.wrap(client)
@@ -83,6 +86,11 @@ open class Node(
 
     lateinit var scriptActor: ActorRef
         protected set
+
+    lateinit var broadcastRouter: ActorRef
+        protected set
+
+    val playerBroadcastEventBus = PlayerBroadcastEventBus()
 
     @Volatile
     var state: State = State.Unstarted
@@ -118,6 +126,8 @@ open class Node(
         coroutineScope = CoroutineScope(system.dispatcher.asCoroutineDispatcher() + SupervisorJob())
         addCoordinatedShutdownTasks()
         spawnScriptActor()
+        spawnBroadcastActor()
+        spawnBroadcastRouter()
         resolveGameConfigManager()
         Patcher(this).apply()
         changeState(State.Starting)
@@ -129,15 +139,24 @@ open class Node(
 
     private fun addCoordinatedShutdownTasks() {
         with(CoordinatedShutdown.get(system)) {
-            addTask(CoordinatedShutdown.PhaseClusterLeave(), "leave_delay", taskSupplier {
-                delay(Random.nextLong(1000L..5000L))
-            })
-            addTask(CoordinatedShutdown.PhaseBeforeServiceUnbind(), "change_state_stopping", taskSupplier {
-                changeState(State.Stopping)
-            })
-            addTask(CoordinatedShutdown.PhaseActorSystemTerminate(), "change_state_stopped", taskSupplier {
-                changeState(State.Stopped)
-            })
+            addTask(
+                CoordinatedShutdown.PhaseClusterLeave(), "leave_delay",
+                taskSupplier {
+                    delay(Random.nextLong(1000L..5000L))
+                },
+            )
+            addTask(
+                CoordinatedShutdown.PhaseBeforeServiceUnbind(), "change_state_stopping",
+                taskSupplier {
+                    changeState(State.Stopping)
+                },
+            )
+            addTask(
+                CoordinatedShutdown.PhaseActorSystemTerminate(), "change_state_stopped",
+                taskSupplier {
+                    changeState(State.Stopped)
+                },
+            )
         }
     }
 
@@ -191,6 +210,14 @@ open class Node(
         scriptActor = system.actorOf(ScriptActor.props(this), ScriptActor.NAME)
     }
 
+    private fun spawnBroadcastActor() {
+        system.actorOf(PlayerBroadcastActor.props(this), PlayerBroadcastActor.NAME)
+    }
+
+    private fun spawnBroadcastRouter() {
+        broadcastRouter = system.actorOf(FromConfig.getInstance().props(), "broadcastRouter")
+    }
+
     inline fun <reified T : V> getConfig(): T {
         return gameConfigManager.get<T>()
     }
@@ -217,7 +244,7 @@ open class Node(
                     logger.info(
                         "{} created, version: {}",
                         GameConfigManager::class.simpleName,
-                        gameConfigManager.version
+                        gameConfigManager.version,
                     )
                     calculateConfigHash(bytes)
                     system.eventStream.publish(GameConfigUpdateEvent)
@@ -228,7 +255,7 @@ open class Node(
                     logger.info(
                         "{} updated, version: {}",
                         GameConfigManager::class.simpleName,
-                        gameConfigManager.version
+                        gameConfigManager.version,
                     )
                     calculateConfigHash(bytes)
                     system.eventStream.publish(GameConfigUpdateEvent)

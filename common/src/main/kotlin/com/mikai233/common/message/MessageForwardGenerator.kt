@@ -5,13 +5,15 @@ package com.mikai233.common.message
 import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
 import com.google.protobuf.GeneratedMessage
+import com.mikai233.common.annotation.Gm
 import com.mikai233.common.extension.Json
 import com.mikai233.protocol.idForClientMessage
 import org.reflections.Reflections
 import java.io.File
 import kotlin.reflect.full.declaredMemberFunctions
+import kotlin.reflect.full.findAnnotation
 
-class Cli {
+private class Cli {
     @Parameter(names = ["-p", "--package"], description = "handler package", required = true)
     @Suppress("VariableNaming")
     lateinit var `package`: String
@@ -23,6 +25,11 @@ class Cli {
     lateinit var forward: Forward
 }
 
+data class ForwardMap(
+    val protos: List<Int>,
+    val commands: List<String>,
+)
+
 fun main(args: Array<String>) {
     val cli = Cli()
     @Suppress("SpreadOperator")
@@ -31,16 +38,21 @@ fun main(args: Array<String>) {
         .build()
         .parse(*args)
     val protoIds = mutableSetOf<Int>()
+    val commands = mutableSetOf<String>()
+    val receiverCount = if (cli.forward == Forward.WorldActor) 2 else 1
     Reflections(cli.`package`).getSubTypesOf(MessageHandler::class.java).forEach { clazz ->
         clazz.kotlin.declaredMemberFunctions.forEach { kFunction ->
-            MessageDispatcher.processFunction(GeneratedMessage::class, kFunction) {
+            MessageDispatcher.processFunction(GeneratedMessage::class, kFunction, receiverCount) {
                 val id = idForClientMessage(it)
                 check(!protoIds.contains(id)) { "proto id:$id already has a forward target" }
                 protoIds.add(id)
             }
+            val gmAnnotation = kFunction.findAnnotation<Gm>()
+            if (gmAnnotation != null) {
+                commands.add(gmAnnotation.command)
+            }
         }
     }
-    File("${cli.output}/${cli.forward.name}.json").writeBytes(
-        Json.toBytes(protoIds, true)
-    )
+    val forwardMap = ForwardMap(protoIds.toList(), commands.toList())
+    File("${cli.output}/${cli.forward.name}.json").writeBytes(Json.toBytes(forwardMap, true))
 }

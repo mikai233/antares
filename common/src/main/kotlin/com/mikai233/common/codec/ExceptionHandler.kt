@@ -17,23 +17,31 @@ class ExceptionHandler : ChannelDuplexHandler() {
         ctx: ChannelHandlerContext,
         remoteAddress: SocketAddress?,
         localAddress: SocketAddress?,
-        promise: ChannelPromise
+        promise: ChannelPromise,
     ) {
         ctx.connect(
-            remoteAddress, promise.addListener(ChannelFutureListener {
-                if (!it.isSuccess) {
-                    logger.error("", it.cause())
-                }
-            })
+            remoteAddress,
+            promise.addListener(
+                ChannelFutureListener {
+                    if (!it.isSuccess) {
+                        logger.error("", it.cause())
+                    }
+                },
+            ),
         )
     }
 
     override fun write(ctx: ChannelHandlerContext, msg: Any, promise: ChannelPromise) {
-        ctx.write(msg, promise.addListener(ChannelFutureListener {
-            if (!it.isSuccess) {
-                logger.error("", it.cause())
-            }
-        }))
+        ctx.write(
+            msg,
+            promise.addListener(
+                ChannelFutureListener {
+                    if (!it.isSuccess) {
+                        logger.error("", it.cause())
+                    }
+                },
+            ),
+        )
     }
 
     @Deprecated("Deprecated in Java")

@@ -28,7 +28,7 @@ class Patcher(private val node: Node) {
                 Script::class,
                 Role::class,
                 Address::class,
-                ScriptType::class
+                ScriptType::class,
             )
             return KryoPool(scriptDeps + DepsExtra)
         }

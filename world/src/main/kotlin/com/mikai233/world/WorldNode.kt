@@ -27,7 +27,7 @@ class WorldNode(
     name: String,
     config: Config,
     zookeeperConnectString: String,
-    sameJvm: Boolean = false
+    sameJvm: Boolean = false,
 ) : Launcher, Node(addr, listOf(Role.World), name, config, zookeeperConnectString, sameJvm) {
     lateinit var playerSharding: ActorRef
         private set
@@ -43,9 +43,11 @@ class WorldNode(
 
     private val handlerReflect = MessageHandlerReflect("com.mikai233.world.handler")
 
-    val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, handlerReflect)
+    val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, handlerReflect, 2)
 
-    val internalDispatcher = MessageDispatcher(Message::class, handlerReflect)
+    val internalDispatcher = MessageDispatcher(Message::class, handlerReflect, 1)
+
+    val gmDispatcher = GmDispatcher(handlerReflect)
 
     override suspend fun launch() = start()
 

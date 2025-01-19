@@ -64,8 +64,8 @@ class SnowflakeGenerator(
 
     private fun buildId(timestamp: Long, sequence: Long): Long {
         return ((timestamp - epoch) shl timestampShift) or
-            (workerId shl workerIdShift) or
-            sequence
+                (workerId shl workerIdShift) or
+                sequence
     }
 
     private fun waitNextMillis(currentTimestamp: Long): Long {

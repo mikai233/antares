@@ -1,9 +1,9 @@
 package com.mikai233.world.handler
 
 import com.mikai233.common.annotation.AllOpen
+import com.mikai233.common.annotation.Handle
 import com.mikai233.common.entity.PlayerAbstract
 import com.mikai233.common.extension.unixTimestamp
-import com.mikai233.common.message.Handle
 import com.mikai233.common.message.MessageHandler
 import com.mikai233.common.message.player.PlayerCreateReq
 import com.mikai233.common.message.player.PlayerCreateResp
@@ -40,7 +40,7 @@ class WorldLoginHandler : MessageHandler {
                         playerAbstract.playerId,
                         playerAbstract.worldId,
                         channelActor,
-                    )
+                    ),
                 )
             }
         }

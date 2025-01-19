@@ -1,8 +1,8 @@
 package com.mikai233.player.handler
 
 import com.mikai233.common.annotation.AllOpen
+import com.mikai233.common.annotation.Handle
 import com.mikai233.common.event.GameConfigUpdateEvent
-import com.mikai233.common.message.Handle
 import com.mikai233.common.message.MessageHandler
 import com.mikai233.player.PlayerActor
 import com.mikai233.player.service.playerService

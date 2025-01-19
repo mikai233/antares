@@ -227,9 +227,9 @@ private fun buildType(className: ClassName, isEntity: Boolean, depth: Int) {
                 .addParameters(
                     properties.map { propertySpec ->
                         ParameterSpec.builder(propertySpec.name, propertySpec.type).build()
-                    }
+                    },
                 )
-                .build()
+                .build(),
         )
     AllTypes.add(typeSpecBuilder.build())
 }

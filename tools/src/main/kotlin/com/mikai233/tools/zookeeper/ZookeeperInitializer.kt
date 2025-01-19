@@ -36,9 +36,9 @@ suspend fun main() {
             NodeData(
                 "${it.id}",
                 it,
-                null
+                null,
             )
-        }
+        },
     )
     with(client) {
         setData("/${data.name}", nodeData, logger)

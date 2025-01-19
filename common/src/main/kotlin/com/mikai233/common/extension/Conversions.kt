@@ -53,41 +53,41 @@ fun ByteArray.toShortLE(offset: Int = 0): Short = (get(offset).toInt() or get(of
 
 fun ByteArray.toInt(offset: Int = 0): Int {
     return (get(offset).toUByte().toInt().shl(24) or
-        get(offset + 1).toUByte().toInt().shl(16) or
-        get(offset + 2).toUByte().toInt().shl(8) or
-        get(offset + 3).toUByte().toInt())
+            get(offset + 1).toUByte().toInt().shl(16) or
+            get(offset + 2).toUByte().toInt().shl(8) or
+            get(offset + 3).toUByte().toInt())
 }
 
 
 fun ByteArray.toIntLE(offset: Int = 0): Int {
     return (get(offset).toUByte().toInt() or
-        get(offset + 1).toUByte().toInt().shl(8) or
-        get(offset + 2).toUByte().toInt().shl(16) or
-        get(offset + 3).toUByte().toInt().shl(24))
+            get(offset + 1).toUByte().toInt().shl(8) or
+            get(offset + 2).toUByte().toInt().shl(16) or
+            get(offset + 3).toUByte().toInt().shl(24))
 }
 
 
 fun ByteArray.toLong(offset: Int = 0): Long {
     return (get(offset).toUByte().toLong().shl(56) or
-        get(offset + 1).toUByte().toLong().shl(48) or
-        get(offset + 2).toUByte().toLong().shl(40) or
-        get(offset + 3).toUByte().toLong().shl(32) or
-        get(offset + 4).toUByte().toLong().shl(24) or
-        get(offset + 5).toUByte().toLong().shl(16) or
-        get(offset + 6).toUByte().toLong().shl(8) or
-        get(offset + 7).toUByte().toLong())
+            get(offset + 1).toUByte().toLong().shl(48) or
+            get(offset + 2).toUByte().toLong().shl(40) or
+            get(offset + 3).toUByte().toLong().shl(32) or
+            get(offset + 4).toUByte().toLong().shl(24) or
+            get(offset + 5).toUByte().toLong().shl(16) or
+            get(offset + 6).toUByte().toLong().shl(8) or
+            get(offset + 7).toUByte().toLong())
 }
 
 
 fun ByteArray.toLongLE(offset: Int = 0): Long {
     return (get(offset).toUByte().toLong() or
-        get(offset + 1).toUByte().toLong().shl(8) or
-        get(offset + 2).toUByte().toLong().shl(16) or
-        get(offset + 3).toUByte().toLong().shl(24) or
-        get(offset + 4).toUByte().toLong().shl(32) or
-        get(offset + 5).toUByte().toLong().shl(48) or
-        get(offset + 6).toUByte().toLong().shl(56) or
-        get(offset + 7).toUByte().toLong())
+            get(offset + 1).toUByte().toLong().shl(8) or
+            get(offset + 2).toUByte().toLong().shl(16) or
+            get(offset + 3).toUByte().toLong().shl(24) or
+            get(offset + 4).toUByte().toLong().shl(32) or
+            get(offset + 5).toUByte().toLong().shl(48) or
+            get(offset + 6).toUByte().toLong().shl(56) or
+            get(offset + 7).toUByte().toLong())
 }
 
 

@@ -1,6 +1,8 @@
 package com.mikai233.player.handler
 
 import com.mikai233.common.annotation.AllOpen
+import com.mikai233.common.annotation.Gm
+import com.mikai233.common.annotation.Handle
 import com.mikai233.common.conf.ServerMode
 import com.mikai233.common.event.GameConfigUpdatedEvent
 import com.mikai233.common.event.PlayerCreateEvent
@@ -8,8 +10,6 @@ import com.mikai233.common.event.PlayerLoginEvent
 import com.mikai233.common.extension.invokeOnTargetMode
 import com.mikai233.common.extension.logger
 import com.mikai233.common.extension.tryCatch
-import com.mikai233.common.message.Gm
-import com.mikai233.common.message.Handle
 import com.mikai233.common.message.MessageHandler
 import com.mikai233.player.PlayerActor
 import com.mikai233.player.service.playerService
@@ -28,7 +28,7 @@ class PlayerHandler : MessageHandler {
 
     @Handle
     fun handleGmReq(player: PlayerActor, req: GmReq) {
-        invokeOnTargetMode(ServerMode.DevMode) { player.node.gmDispatcher.dispatch(req.cmd, player, req.paramsList) }
+        invokeOnTargetMode(ServerMode.DevMode) { player.node.gmDispatcher.dispatch(req.cmd, req.paramsList, player) }
     }
 
     @Handle(PlayerLoginEvent::class)

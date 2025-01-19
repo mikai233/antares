@@ -43,7 +43,7 @@ class WorldWaker(private val node: WorldNode) : AbstractActor() {
             self,
             initialStateAsEvents(),
             MemberEvent::class.java,
-            UnreachableMember::class.java
+            UnreachableMember::class.java,
         )
     }
 
@@ -176,7 +176,7 @@ class WorldWaker(private val node: WorldNode) : AbstractActor() {
                 successWorlds.size,
                 failedWorlds.size,
                 pendingWorlds.size,
-                concurrency
+                concurrency,
             )
 
             // 固定延迟

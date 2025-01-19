@@ -27,8 +27,8 @@ data class ValidateError(
 ) {
     override fun toString(): String {
         return "[$excelName]${if (id != null) "id:[$id]" else ""}" +
-            "${if (rowIndex != null) "行:[${rowIndex + 1}]" else ""} " +
-            "error: $message"
+                "${if (rowIndex != null) "行:[${rowIndex + 1}]" else ""} " +
+                "error: $message"
     }
 }
 

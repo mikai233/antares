@@ -43,9 +43,9 @@ class PlayerNode(
 
     private val handlerReflect = MessageHandlerReflect("com.mikai233.player.handler")
 
-    val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, handlerReflect)
+    val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, handlerReflect, 1)
 
-    val internalDispatcher = MessageDispatcher(Message::class, handlerReflect)
+    val internalDispatcher = MessageDispatcher(Message::class, handlerReflect, 1)
 
     val gmDispatcher = GmDispatcher(handlerReflect)
 

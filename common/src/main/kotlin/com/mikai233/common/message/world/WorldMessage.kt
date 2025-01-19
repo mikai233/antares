@@ -25,3 +25,7 @@ data object WorldInitialized : Message
 data object WorldUnloaded : Message
 
 data class PlayerLogin(override val worldId: Long, val req: ProtoLogin.LoginReq) : WorldMessage
+
+data class SubscribeTopicCrossWorld(override val worldId: Long, val playerId: Long, val topic: String) : WorldMessage
+
+data class UnsubscribeTopicCrossWorld(override val worldId: Long, val playerId: Long, val topic: String) : WorldMessage

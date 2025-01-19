@@ -113,7 +113,7 @@ abstract class StatefulActor<N>(val node: N) : AbstractActorWithStash() where N 
         context: CoroutineContext = EmptyCoroutineContext,
         start: CoroutineStart = CoroutineStart.DEFAULT,
         timeout: Duration? = 3.minutes,
-        block: suspend CoroutineScope.() -> Unit
+        block: suspend CoroutineScope.() -> Unit,
     ): Job {
         return if (timeout == null) {
             coroutineScope.launch(context, start, block)
@@ -127,7 +127,7 @@ abstract class StatefulActor<N>(val node: N) : AbstractActorWithStash() where N 
     fun <T> async(
         context: CoroutineContext = EmptyCoroutineContext,
         start: CoroutineStart = CoroutineStart.DEFAULT,
-        block: suspend CoroutineScope.() -> T
+        block: suspend CoroutineScope.() -> T,
     ): Deferred<T> {
         return coroutineScope.async(context, start, block)
     }

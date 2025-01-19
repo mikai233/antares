@@ -26,10 +26,12 @@ class WorldDataManager(private val world: WorldActor) : DataManager<WorldActor>(
             managers[it] = mem
         }
         logger.info("{} start loading data", world.worldId)
-        world.launch(CoroutineExceptionHandler { _, throwable ->
-            logger.error("{} loading data failed, world will stop", world.worldId, throwable)
-            world.passivate()
-        }) {
+        world.launch(
+            CoroutineExceptionHandler { _, throwable ->
+                logger.error("{} loading data failed, world will stop", world.worldId, throwable)
+                world.passivate()
+            },
+        ) {
             managers.map { (manager, mem) ->
                 async(Dispatchers.IO) {
                     mem.init()

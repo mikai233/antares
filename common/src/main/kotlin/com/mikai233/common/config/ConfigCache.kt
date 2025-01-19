@@ -12,7 +12,7 @@ class ConfigCache<C>(
     private val zookeeper: AsyncCuratorFramework,
     val path: String,
     private val clazz: KClass<C>,
-    onUpdated: ((C) -> Unit)? = null
+    onUpdated: ((C) -> Unit)? = null,
 ) : AutoCloseable where C : Any {
     val logger = logger()
 
@@ -65,7 +65,7 @@ class ConfigChildrenCache<C>(
     zookeeper: AsyncCuratorFramework,
     val path: String,
     private val clazz: KClass<C>,
-    onChanged: ((Map<String, C>) -> Unit)? = null
+    onChanged: ((Map<String, C>) -> Unit)? = null,
 ) : AutoCloseable, Map<String, C> where C : Any {
     private val configsByName: MutableMap<String, C> = mutableMapOf()
 
@@ -86,7 +86,8 @@ class ConfigChildrenCache<C>(
                 val childPath = matchResult.groupValues[1]
                 when (type) {
                     CuratorCacheListener.Type.NODE_CREATED,
-                    CuratorCacheListener.Type.NODE_CHANGED -> {
+                    CuratorCacheListener.Type.NODE_CHANGED,
+                        -> {
                         val child = Json.fromBytes(data.data, clazz)
                         configsByName[childPath] = child
                         onChanged?.invoke(configsByName)

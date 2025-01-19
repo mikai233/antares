@@ -1,8 +1,8 @@
 package com.mikai233.global.handler
 
 import com.mikai233.common.annotation.AllOpen
+import com.mikai233.common.annotation.Handle
 import com.mikai233.common.extension.tell
-import com.mikai233.common.message.Handle
 import com.mikai233.common.message.MessageHandler
 import com.mikai233.common.message.global.worker.WorkerIdReq
 import com.mikai233.common.message.global.worker.WorkerIdResp

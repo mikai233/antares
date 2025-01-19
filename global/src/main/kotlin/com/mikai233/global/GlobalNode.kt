@@ -22,7 +22,7 @@ class GlobalNode(
     name: String,
     config: Config,
     zookeeperConnectString: String,
-    sameJvm: Boolean = false
+    sameJvm: Boolean = false,
 ) : Launcher, Node(addr, listOf(Role.Global), name, config, zookeeperConnectString, sameJvm) {
 
     lateinit var playerSharding: ActorRef
@@ -36,9 +36,9 @@ class GlobalNode(
 
     private val handlerReflect = MessageHandlerReflect("com.mikai233.global.handler")
 
-    val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, handlerReflect)
+    val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, handlerReflect, 1)
 
-    val internalDispatcher = MessageDispatcher(Message::class, handlerReflect)
+    val internalDispatcher = MessageDispatcher(Message::class, handlerReflect, 1)
 
     override suspend fun launch() = start()
 

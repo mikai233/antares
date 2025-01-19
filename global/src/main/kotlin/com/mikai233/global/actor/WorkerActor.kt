@@ -58,7 +58,7 @@ class WorkerActor(node: GlobalNode) : StatefulActor<GlobalNode>(node) {
 
     private fun handleUidMessage(message: Message) {
         try {
-            node.internalDispatcher.dispatch(message::class, this, message)
+            node.internalDispatcher.dispatch(message::class, message, this)
         } catch (e: Exception) {
             logger.error(e, "WorkerActor handle message:{} failed", message)
         }

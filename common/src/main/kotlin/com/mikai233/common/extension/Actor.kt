@@ -32,7 +32,7 @@ infix fun ActorRef.tell(message: Any) {
 @Suppress("UNCHECKED_CAST")
 suspend fun <R> ActorRef.ask(
     message: Any,
-    timeout: Duration = 3.minutes
+    timeout: Duration = 3.minutes,
 ): Result<R> where  R : Message {
     return runCatching { Patterns.ask(this, message, timeout.toJavaDuration()).await() as R }
 }
@@ -40,7 +40,7 @@ suspend fun <R> ActorRef.ask(
 @Suppress("UNCHECKED_CAST")
 fun <R> ActorRef.blockingAsk(
     message: Any,
-    timeout: Duration = 3.minutes
+    timeout: Duration = 3.minutes,
 ): Result<R> where  R : Message {
     return runCatching {
         Patterns.ask(this, message, timeout.toJavaDuration()).toCompletableFuture()
