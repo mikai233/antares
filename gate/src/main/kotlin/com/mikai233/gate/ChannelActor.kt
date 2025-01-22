@@ -257,12 +257,12 @@ class ChannelActor(node: GateNode, private val handlerContext: ChannelHandlerCon
         return "Actor[$path]"
     }
 
-    private fun subscribe(topic: String) {
+    fun subscribe(topic: String) {
         subscribedTopics.add(topic)
         node.playerBroadcastEventBus.subscribe(self, topic)
     }
 
-    private fun unsubscribe(topic: String) {
+    fun unsubscribe(topic: String) {
         subscribedTopics.remove(topic)
         node.playerBroadcastEventBus.unsubscribe(self, topic)
     }

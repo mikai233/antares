@@ -4,6 +4,8 @@ import com.mikai233.common.annotation.AllOpen
 import com.mikai233.common.annotation.Handle
 import com.mikai233.common.broadcast.PlayerBroadcastEnvelope
 import com.mikai233.common.message.MessageHandler
+import com.mikai233.common.message.channel.SubscribeTopic
+import com.mikai233.common.message.channel.UnsubscribeTopic
 import com.mikai233.gate.ChannelActor
 
 @AllOpen
@@ -18,5 +20,15 @@ class BroadcastHandler : MessageHandler {
             return
         }
         actor.write(msg.message)
+    }
+
+    @Handle
+    fun handleSubscribeTopic(actor: ChannelActor, msg: SubscribeTopic) {
+        actor.subscribe(msg.topic)
+    }
+
+    @Handle
+    fun handleUnsubscribeTopic(actor: ChannelActor, msg: UnsubscribeTopic) {
+        actor.unsubscribe(msg.topic)
     }
 }
