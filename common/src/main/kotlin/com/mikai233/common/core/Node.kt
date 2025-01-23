@@ -15,10 +15,11 @@ import com.mikai233.common.db.MongoDB
 import com.mikai233.common.event.GameConfigUpdateEvent
 import com.mikai233.common.excel.*
 import com.mikai233.common.extension.Json
-import com.mikai233.common.extension.logger
 import com.mikai233.common.script.ScriptActor
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import io.prometheus.client.exporter.HTTPServer
+import io.prometheus.client.hotspot.DefaultExports
 import kotlinx.coroutines.*
 import kotlinx.coroutines.future.await
 import org.apache.curator.framework.CuratorFrameworkFactory
@@ -26,6 +27,8 @@ import org.apache.curator.framework.recipes.cache.CuratorCache
 import org.apache.curator.framework.recipes.cache.CuratorCacheListener
 import org.apache.curator.retry.ExponentialBackoffRetry
 import org.apache.curator.x.async.AsyncCuratorFramework
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
 import java.util.*
 import java.util.concurrent.CompletableFuture
@@ -52,7 +55,7 @@ open class Node(
     zookeeperConnectString: String,
     private val sameJvm: Boolean = false,
 ) {
-    val logger = logger()
+    val logger: Logger = LoggerFactory.getLogger(javaClass)
 
     lateinit var system: ActorSystem
         protected set
@@ -90,6 +93,9 @@ open class Node(
     lateinit var broadcastRouter: ActorRef
         protected set
 
+    lateinit var prometheusServer: HTTPServer
+        protected set
+
     val playerBroadcastEventBus = PlayerBroadcastEventBus()
 
     @Volatile
@@ -117,7 +123,13 @@ open class Node(
         afterStart()
     }
 
-    protected open suspend fun beforeStart() {}
+    protected open suspend fun beforeStart() {
+        DefaultExports.initialize()
+        val port = addr.port + 1000
+        prometheusServer = HTTPServer(port)
+        logger.info("Prometheus metrics available at http://localhost:{}/metrics", port)
+        addStateListener(State.Stopping) { prometheusServer.close() }
+    }
 
     protected open suspend fun startSystem() {
         val remoteConfig = resolveRemoteConfig()

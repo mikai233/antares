@@ -30,6 +30,7 @@ dependencies {
     implementation(tool.caffeine)
     implementation(tool.kryo)
     implementation(tool.lz4)
+    implementation(tool.bundles.prometheus)
     implementation(project(":proto"))
     implementation(project(":processor"))
     ksp(project(":processor"))
