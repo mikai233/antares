@@ -8,10 +8,10 @@ use tracing_subscriber::fmt::time::ChronoLocal;
 pub struct LuaLogger;
 
 impl LuaUserData for LuaLogger {
-    fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
+    fn add_methods<M: UserDataMethods<Self>>(methods: &mut M) {
         methods.add_function("trace", |_, (template, args): (String, Vec<String>)| {
             let format_str = dynfmt::SimpleCurlyFormat
-                .format(&*template, args)
+                .format(&template, args)
                 .map_err(|e| LuaError::external(e.to_string()))?;
             let format_str = String::from(format_str);
             trace!("{}", format_str);
@@ -20,7 +20,7 @@ impl LuaUserData for LuaLogger {
 
         methods.add_function("debug", |_, (template, args): (String, Vec<String>)| {
             let format_str = dynfmt::SimpleCurlyFormat
-                .format(&*template, args)
+                .format(&template, args)
                 .map_err(|e| LuaError::external(e.to_string()))?;
             let format_str = String::from(format_str);
             debug!("{}", format_str);
@@ -29,7 +29,7 @@ impl LuaUserData for LuaLogger {
 
         methods.add_function("info", |_, (template, args): (String, Vec<String>)| {
             let format_str = dynfmt::SimpleCurlyFormat
-                .format(&*template, args)
+                .format(&template, args)
                 .map_err(|e| LuaError::external(e.to_string()))?;
             let format_str = String::from(format_str);
             info!("{}", format_str);
@@ -38,7 +38,7 @@ impl LuaUserData for LuaLogger {
 
         methods.add_function("warn", |_, (template, args): (String, Vec<String>)| {
             let format_str = dynfmt::SimpleCurlyFormat
-                .format(&*template, args)
+                .format(&template, args)
                 .map_err(|e| LuaError::external(e.to_string()))?;
             let format_str = String::from(format_str);
             warn!("{}", format_str);
@@ -47,7 +47,7 @@ impl LuaUserData for LuaLogger {
 
         methods.add_function("error", |_, (template, args): (String, Vec<String>)| {
             let format_str = dynfmt::SimpleCurlyFormat
-                .format(&*template, args)
+                .format(&template, args)
                 .map_err(|e| LuaError::external(e.to_string()))?;
             let format_str = String::from(format_str);
             error!("{}", format_str);

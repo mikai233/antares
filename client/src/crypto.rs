@@ -29,13 +29,13 @@ pub fn encrypt(mut encryptor: Box<dyn Encryptor>, data: &[u8]) -> anyhow::Result
     loop {
         let result = encryptor
             .encrypt(&mut read_buffer, &mut write_buffer, true)
-            .map_err(|e| <SymmetricCipherError as Into<CryptoError>>::into(e))?;
+            .map_err(<SymmetricCipherError as Into<CryptoError>>::into)?;
         final_result.extend(
             write_buffer
                 .take_read_buffer()
                 .take_remaining()
                 .iter()
-                .map(|&i| i),
+                .copied(),
         );
         match result {
             BufferResult::BufferUnderflow => break,
@@ -56,13 +56,13 @@ pub fn decrypt(
     loop {
         let result = decryptor
             .decrypt(&mut read_buffer, &mut write_buffer, true)
-            .map_err(|e| <SymmetricCipherError as Into<CryptoError>>::into(e))?;
+            .map_err(<SymmetricCipherError as Into<CryptoError>>::into)?;
         final_result.extend(
             write_buffer
                 .take_read_buffer()
                 .take_remaining()
                 .iter()
-                .map(|&i| i),
+                .copied(),
         );
         match result {
             BufferResult::BufferUnderflow => break,
