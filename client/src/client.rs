@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 use std::ops::Not;
 
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use futures::{SinkExt, StreamExt};
-use mlua::prelude::LuaFunction;
 use mlua::Lua;
+use mlua::prelude::LuaFunction;
 use rustyline::hint::HistoryHinter;
 use tokio::net::TcpStream;
 use tokio::select;
-use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel};
 use tokio::task::JoinHandle;
 use tokio_util::codec::{Framed, FramedRead, LinesCodec};
 use tracing::{error, info, warn};
@@ -17,7 +17,7 @@ use crate::codec::{ProtoCodec, ProtoCodecError, ProtobufPacket};
 use crate::config::Config;
 use crate::ecdh::Ecdh;
 use crate::event::{Lua2RustEvent, Rust2LuaEvent};
-use crate::helper::{init_global_helper, unix_timestamp, ProtobufHelper};
+use crate::helper::{ProtobufHelper, init_global_helper, unix_timestamp};
 use crate::key_pair::KeyPair;
 use crate::logger::init_lua_global_logger;
 use crate::schedule::{OnceInfo, RateInfo, Schedule};
@@ -239,7 +239,9 @@ impl Client {
                         }
                     }
                 } else {
-                    error!("set shared key failed, self private key not exists, make sure each key pair only used once");
+                    error!(
+                        "set shared key failed, self private key not exists, make sure each key pair only used once"
+                    );
                     return false;
                 }
             }
