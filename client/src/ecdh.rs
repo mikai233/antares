@@ -3,9 +3,9 @@ use ring::agreement::{agree_ephemeral, EphemeralPrivateKey, UnparsedPublicKey, X
 use ring::error::Unspecified;
 use ring::rand::SystemRandom;
 
-pub struct ECDH;
+pub struct Ecdh;
 
-impl ECDH {
+impl Ecdh {
     pub fn calculate_shared_key(
         self_private_key: EphemeralPrivateKey,
         remote_public_key: &[u8],

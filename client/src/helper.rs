@@ -46,7 +46,7 @@ pub fn init_global_helper(client: &mut Client) -> anyhow::Result<()> {
 struct CryptoHelper;
 
 impl LuaUserData for CryptoHelper {
-    fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
+    fn add_methods<M: UserDataMethods<Self>>(methods: &mut M) {
         methods.add_function("base64_encode", |_, bytes: Vec<u8>| {
             Ok(base64::engine::general_purpose::STANDARD.encode(bytes))
         });
@@ -74,8 +74,8 @@ impl LuaUserData for CryptoHelper {
 
 pub fn unix_timestamp() -> Duration {
     let now = SystemTime::now();
-    let since_the_epoch = now.duration_since(UNIX_EPOCH).expect("Time went backwards");
-    since_the_epoch
+
+    now.duration_since(UNIX_EPOCH).expect("Time went backwards")
 }
 
 #[derive(Debug, Clone)]
@@ -85,10 +85,12 @@ struct MessageHelper {
 }
 
 impl LuaUserData for MessageHelper {
-    fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
+    fn add_methods<M: UserDataMethods<Self>>(methods: &mut M) {
         methods.add_method("send_message", |_, this, (id, bytes): (i32, Vec<u8>)| {
             let packet = ProtobufPacket::new(id, bytes);
-            this.proto_sender.send(packet).map_err(|e| e.into_lua_err())?;
+            this.proto_sender
+                .send(packet)
+                .map_err(|e| e.into_lua_err())?;
             Ok(())
         });
         methods.add_method("publish_event", |_, this, event: Lua2RustEvent| {
@@ -113,7 +115,7 @@ impl MessageHelper {
 struct IOHelper;
 
 impl LuaUserData for IOHelper {
-    fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
+    fn add_methods<M: UserDataMethods<Self>>(methods: &mut M) {
         methods.add_function("list_files", |_, path: String| {
             let mut files = vec![];
             for file in WalkDir::new(path).into_iter().filter_map(|file| file.ok()) {
@@ -124,7 +126,7 @@ impl LuaUserData for IOHelper {
             Ok(files)
         });
         methods.add_function("read_to_string", |_, path: String| {
-            Ok(std::fs::read_to_string(path).map_err(|e| e.into_lua_err())?)
+            std::fs::read_to_string(path).map_err(|e| e.into_lua_err())
         });
     }
 }
@@ -133,17 +135,15 @@ impl LuaUserData for IOHelper {
 struct Utils;
 
 impl LuaUserData for Utils {
-    fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
-        methods.add_function("unix_timestamp", |_, ()| {
-            Ok(unix_timestamp().as_millis())
-        });
+    fn add_methods<M: UserDataMethods<Self>>(methods: &mut M) {
+        methods.add_function("unix_timestamp", |_, ()| Ok(unix_timestamp().as_millis()));
         methods.add_function("lexical_sort", |_, string_vec: Vec<String>| {
             let mut string_vec = string_vec;
-            string_vec.sort_by(|a, b| lexical_sort::lexical_cmp(&*a.to_string(), &*b.to_string()));
+            string_vec.sort_by(|a, b| lexical_sort::lexical_cmp(&a.to_string(), &b.to_string()));
             Ok(string_vec)
         });
         methods.add_function("lexical_cmp", |_, (a, b): (String, String)| {
-            let result = match lexical_sort::lexical_cmp(&*a, &*b) {
+            let result = match lexical_sort::lexical_cmp(&a, &b) {
                 Ordering::Less => -1,
                 Ordering::Equal => 0,
                 Ordering::Greater => 1,
@@ -174,9 +174,9 @@ impl Completer for ProtobufHelper {
 
     fn complete(
         &self,
-        line: &str,
-        pos: usize,
-        ctx: &Context<'_>,
+        _line: &str,
+        _pos: usize,
+        _ctx: &Context<'_>,
     ) -> rustyline::Result<(usize, Vec<Self::Candidate>)> {
         todo!()
     }

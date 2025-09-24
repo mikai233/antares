@@ -1,5 +1,5 @@
 use std::fmt::{Display, Formatter};
-use std::{i32, io};
+use std::io;
 
 use crate::crypto::{decrypt, decryptor, encrypt, encryptor, CryptoError};
 use anyhow::anyhow;

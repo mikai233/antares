@@ -21,7 +21,7 @@ sha2 = "0.10.0"
 rand = "0.8.5"
 tokio = { version = "1.23.0", features = ["full"] }
 tokio-util = { version = "0.7.4", features = ["codec"] }
-mlua = { version = "0.9.9", features = ["luajit", "vendored"] }
+mlua = { version = "0.11.3", features = ["luajit", "vendored"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["ansi", "chrono"] }
 dynfmt = { version = "0.1.5", features = ["curly"] }
@@ -32,7 +32,7 @@ strum = { version = "0.26.2", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9"
 trust-dns-resolver = "0.23.2"
-lua-protobuf-rs = { version = "0.1.2", features = ["luajit"], default-features = false }
+lua-protobuf-rs = { version = "0.3.0", features = ["luajit"], default-features = false }
 uuid = { version = "1.5.0", features = ["v4"] }
 clap = { version = "4.5.4", features = ["derive"] }
 rustyline = "14.0.0"

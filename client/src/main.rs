@@ -55,10 +55,9 @@ async fn main() -> anyhow::Result<()> {
 }
 
 fn dns_resolver() -> AsyncResolver<GenericConnector<TokioRuntimeProvider>> {
-    let resolver = AsyncResolver::new(
+    AsyncResolver::new(
         ResolverConfig::default(),
         ResolverOpts::default(),
         GenericConnector::new(TokioRuntimeProvider::new()),
-    );
-    resolver
+    )
 }

@@ -17,7 +17,7 @@ pub struct Config {
 }
 
 impl LuaUserData for Config {
-    fn add_fields<'lua, F: UserDataFields<'lua, Self>>(fields: &mut F) {
+    fn add_fields<F: UserDataFields<Self>>(fields: &mut F) {
         fields.add_field_method_get("lua_init", |_, config| Ok(config.lua_init.clone()));
         fields.add_field_method_get("remote_addr", |_, config| {
             Ok(config.remote_addr.to_string())
@@ -26,8 +26,8 @@ impl LuaUserData for Config {
             Ok(config.socket_addr.unwrap().to_string())
         });
         fields.add_field_method_get("client_ip", |_, config| Ok(config.client_ip.clone()));
-        fields.add_field_method_get("world_id", |_, config| Ok(config.world_id.clone()));
+        fields.add_field_method_get("world_id", |_, config| Ok(config.world_id));
         fields.add_field_method_get("account", |_, config| Ok(config.account.clone()));
-        fields.add_field_method_get("sex", |_, config| Ok(config.sex.clone()));
+        fields.add_field_method_get("sex", |_, config| Ok(config.sex));
     }
 }
