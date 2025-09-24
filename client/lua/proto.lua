@@ -39,8 +39,8 @@ MSG_SC = {
 
 local cs_descriptor = protoc:message_descriptor_by_name(message_of("MessageClientToServer"))
 for _, field in ipairs(cs_descriptor:fields()) do
-    local singular = field:runtime_field_type().singular
-    local name = singular.message:name()
+    local singular = field:runtime_field_type():get_singular()
+    local name = singular:get_message():name()
     local number = field:number()
     local id_name = MSG_CS.id_name
     local name_id = MSG_CS.name_id
@@ -50,8 +50,8 @@ end
 
 local sc_descriptor = protoc:message_descriptor_by_name(message_of("MessageServerToClient"))
 for _, field in ipairs(sc_descriptor:fields()) do
-    local singular = field:runtime_field_type().singular
-    local name = singular.message:name()
+    local singular = field:runtime_field_type():get_singular()
+    local name = singular:get_message():name()
     local number = field:number()
     local id_name = MSG_SC.id_name
     local name_id = MSG_SC.name_id
