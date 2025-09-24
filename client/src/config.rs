@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 
-use mlua::prelude::LuaUserData;
 use mlua::UserDataFields;
+use mlua::prelude::LuaUserData;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

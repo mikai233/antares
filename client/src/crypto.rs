@@ -1,8 +1,8 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 
-use crypto::aes::ecb_decryptor;
 use crypto::aes::KeySize::KeySize256;
+use crypto::aes::ecb_decryptor;
 use crypto::buffer::{self, BufferResult, ReadBuffer, WriteBuffer};
 use crypto::symmetriccipher::{Decryptor, SymmetricCipherError};
 use crypto::{aes::ecb_encryptor, blockmodes::PkcsPadding, symmetriccipher::Encryptor};
