@@ -27,7 +27,7 @@ tracing-subscriber = { version = "0.3", features = ["ansi", "chrono"] }
 dynfmt = { version = "0.1.5", features = ["curly"] }
 walkdir = "2.3.2"
 lexical-sort = "0.3.1"
-md5 = "0.7.0"
+md5 = "0.8.0"
 strum = { version = "0.27.2", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9"
