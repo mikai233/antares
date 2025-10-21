@@ -3,17 +3,17 @@ package com.mikai233.world
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.cluster.sharding.ShardRegion
+import com.google.protobuf.GeneratedMessage
+import com.mikai233.common.broadcast.PlayerBroadcastEnvelope
 import com.mikai233.common.core.actor.StatefulActor
+import com.mikai233.common.event.GameConfigUpdateEvent
+import com.mikai233.common.event.WorldActiveEvent
 import com.mikai233.common.extension.ask
 import com.mikai233.common.extension.tell
 import com.mikai233.common.message.Message
-import com.mikai233.shared.message.PlayerMessage
-import com.mikai233.shared.message.ProtobufEnvelope
-import com.mikai233.shared.message.WorldMessage
-import com.mikai233.shared.message.world.HandoffWorld
-import com.mikai233.shared.message.world.WorldInitialized
-import com.mikai233.shared.message.world.WorldTick
-import com.mikai233.shared.message.world.WorldUnloaded
+import com.mikai233.common.message.WorldProtobufEnvelope
+import com.mikai233.common.message.player.PlayerMessage
+import com.mikai233.common.message.world.*
 import kotlin.time.Duration.Companion.seconds
 
 class WorldActor(node: WorldNode) : StatefulActor<WorldNode>(node) {
@@ -30,12 +30,13 @@ class WorldActor(node: WorldNode) : StatefulActor<WorldNode>(node) {
 
     override fun preStart() {
         super.preStart()
-        logger.info("WorldActor[{}] started", self)
+        node.system.eventStream.subscribe(self, GameConfigUpdateEvent::class.java)
+        logger.info("{} started", self)
     }
 
     override fun postStop() {
-        clearStash()
-        logger.info("WorldActor[{}] stopped", self)
+        super.postStop()
+        logger.info("{} stopped", self)
     }
 
     override fun createReceive(): Receive {
@@ -59,6 +60,7 @@ class WorldActor(node: WorldNode) : StatefulActor<WorldNode>(node) {
             .match(WorldInitialized::class.java) {
                 unstashAll()
                 startTimerWithFixedDelay(WorldTick, WorldTick, WorldTickDuration)
+                fireEvent(WorldActiveEvent)
                 context.become(active())
             }
             .match(HandoffWorld::class.java) { context.stop(self) }
@@ -70,7 +72,7 @@ class WorldActor(node: WorldNode) : StatefulActor<WorldNode>(node) {
         return receiveBuilder()
             .match(HandoffWorld::class.java) { context.become(stopping()) }
             .match(WorldTick::class.java) { manager.tick() }
-            .match(ProtobufEnvelope::class.java) { handleProtobufEnvelope(it) }
+            .match(WorldProtobufEnvelope::class.java) { handleProtobufEnvelope(it) }
             .match(Message::class.java) { handleWorldMessage(it) }
             .build()
     }
@@ -88,16 +90,21 @@ class WorldActor(node: WorldNode) : StatefulActor<WorldNode>(node) {
 
     private fun handleWorldMessage(message: Message) {
         try {
-            node.internalDispatcher.dispatch(message::class, this, message)
+            node.internalDispatcher.dispatch(message::class, message, this)
         } catch (e: Exception) {
             logger.error(e, "world:{} handle message:{} failed", worldId, message)
         }
     }
 
-    private fun handleProtobufEnvelope(envelope: ProtobufEnvelope) {
+    private fun handleProtobufEnvelope(envelope: WorldProtobufEnvelope) {
         val message = envelope.message
+        val session = sessionManager[envelope.playerId]
+        if (session == null) {
+            logger.warning("Session[{}] not found", envelope.playerId)
+            return
+        }
         try {
-            node.protobufDispatcher.dispatch(message::class, this, message)
+            node.protobufDispatcher.dispatch(message::class, message, this, session)
         } catch (e: Exception) {
             logger.error(e, "world:{} handle protobuf message:{} failed", worldId, message)
         }
@@ -135,5 +142,9 @@ class WorldActor(node: WorldNode) : StatefulActor<WorldNode>(node) {
 
     private fun canInitialize(): Boolean {
         return node.gameWorldMeta.worlds.contains(worldId)
+    }
+
+    fun broadcast(message: GeneratedMessage, topic: String, include: Set<Long>, exclude: Set<Long>) {
+        node.broadcastRouter.tell(PlayerBroadcastEnvelope(topic, include, exclude, message))
     }
 }

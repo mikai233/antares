@@ -1,14 +1,14 @@
 package com.mikai233.player.service
 
 import com.mikai233.common.annotation.AllOpen
+import com.mikai233.common.entity.Player
+import com.mikai233.common.message.player.PlayerCreateReq
 import com.mikai233.player.PlayerActor
 import com.mikai233.player.data.PlayerMem
 import com.mikai233.protocol.ProtoLogin
 import com.mikai233.protocol.ProtoLogin.LoginResp
 import com.mikai233.protocol.loginResp
 import com.mikai233.protocol.playerData
-import com.mikai233.shared.entity.Player
-import com.mikai233.shared.message.player.PlayerCreateReq
 
 /**
  * @author mikai233
@@ -23,7 +23,7 @@ class LoginService {
             account = playerCreateReq.account,
             worldId = playerCreateReq.worldId,
             nickname = playerCreateReq.nickname,
-            level = 1
+            level = 1,
         )
         player.manager.get<PlayerMem>().initPlayer(entity)
     }

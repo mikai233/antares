@@ -1,23 +1,23 @@
 use std::collections::HashMap;
 use std::ops::Not;
 
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use futures::{SinkExt, StreamExt};
-use mlua::prelude::LuaFunction;
 use mlua::Lua;
+use mlua::prelude::LuaFunction;
 use rustyline::hint::HistoryHinter;
 use tokio::net::TcpStream;
 use tokio::select;
-use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel};
 use tokio::task::JoinHandle;
 use tokio_util::codec::{Framed, FramedRead, LinesCodec};
 use tracing::{error, info, warn};
 
 use crate::codec::{ProtoCodec, ProtoCodecError, ProtobufPacket};
 use crate::config::Config;
-use crate::ecdh::ECDH;
+use crate::ecdh::Ecdh;
 use crate::event::{Lua2RustEvent, Rust2LuaEvent};
-use crate::helper::{init_global_helper, unix_timestamp, ProtobufHelper};
+use crate::helper::{ProtobufHelper, init_global_helper, unix_timestamp};
 use crate::key_pair::KeyPair;
 use crate::logger::init_lua_global_logger;
 use crate::schedule::{OnceInfo, RateInfo, Schedule};
@@ -93,7 +93,7 @@ impl Client {
     pub fn new(config: Config) -> anyhow::Result<Self> {
         let lua = unsafe { Lua::unsafe_new() };
         let key_pair =
-            ECDH::generate_key_pair().map_err(|_| anyhow!("generate key pair failed"))?;
+            Ecdh::generate_key_pair().map_err(|_| anyhow!("generate key pair failed"))?;
         let proto_channel = ProtoChannel::new();
         let event_channel = EventChannel::new();
         let schedule_channel = ScheduleChannel::new();
@@ -165,7 +165,7 @@ impl Client {
                     }
                 }
                 Some(event) = self.event_channel.receiver.recv() => {
-                    if !self.handle_event(&mut framed, event) {
+                    if !self.handle_event(&mut framed, event).await {
                         break;
                     }
                 }
@@ -198,7 +198,7 @@ impl Client {
     fn exec_proto(&self, msg: Result<ProtobufPacket, ProtoCodecError>) -> anyhow::Result<()> {
         let msg = msg?;
         let func: LuaFunction = self.lua.globals().get("handle_proto_message")?;
-        func.call((msg.id, msg.body))?;
+        func.call::<()>((msg.id, msg.body))?;
         Ok(())
     }
 
@@ -215,7 +215,7 @@ impl Client {
         };
     }
 
-    fn handle_event(
+    async fn handle_event(
         &mut self,
         framed: &mut Framed<TcpStream, ProtoCodec>,
         event: Lua2RustEvent,
@@ -224,7 +224,7 @@ impl Client {
             Lua2RustEvent::SetSharedKey(remote_public_key) => {
                 if let Some(self_private_key) = self.key_pair.private_key.take() {
                     let shared_key =
-                        ECDH::calculate_shared_key(self_private_key, remote_public_key.as_slice());
+                        Ecdh::calculate_shared_key(self_private_key, remote_public_key.as_slice());
                     match shared_key {
                         Ok(shared_key) => {
                             self.status = ClientStatus::Authorised;
@@ -239,7 +239,9 @@ impl Client {
                         }
                     }
                 } else {
-                    error!("set shared key failed, self private key not exists, make sure each key pair only used once");
+                    error!(
+                        "set shared key failed, self private key not exists, make sure each key pair only used once"
+                    );
                     return false;
                 }
             }
@@ -258,7 +260,7 @@ impl Client {
             }
             Lua2RustEvent::Shutdown => {
                 info!("shutdown event received");
-                let _ = framed.close();
+                let _ = framed.close().await;
                 self.event_channel.receiver.close();
                 self.proto_channel.receiver.close();
                 self.schedule_channel.receiver.close();
@@ -277,7 +279,7 @@ impl Client {
     fn exec_schedule(&mut self, key: String) -> anyhow::Result<()> {
         let func: LuaFunction = self.lua.globals().get("handle_schedule")?;
         let now = unix_timestamp().as_millis();
-        func.call::<_, ()>((key, now))?;
+        func.call::<()>((key, now))?;
         Ok(())
     }
 
@@ -293,7 +295,7 @@ impl Client {
         parameters: Option<Vec<String>>,
     ) -> anyhow::Result<()> {
         let func: LuaFunction = self.lua.globals().get("handle_event")?;
-        func.call((event.to_string(), parameters))?;
+        func.call::<()>((event.to_string(), parameters))?;
         Ok(())
     }
 
@@ -348,7 +350,7 @@ impl Client {
     }
 
     fn cancel_schedule(&mut self, key: String) -> bool {
-        self.schedules.remove(&key).map_or(false, |handle| {
+        self.schedules.remove(&key).is_some_and(|handle| {
             handle.abort();
             true
         })

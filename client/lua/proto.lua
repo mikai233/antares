@@ -7,8 +7,7 @@
 --- @type LuaProtoc
 LuaProtoc = LuaProtoc
 
-local proto_path = "F:/IdeaProjects/antares/proto/src/main/proto"
-local proto_path="/Users/mikai/IdeaProjects/akka-game-server/proto/src/main/proto"
+local proto_path = "../proto/src/main/proto"
 
 local protos = LuaProtoc.list_protos({ proto_path })
 local protoc = LuaProtoc.parse_files(protos, { proto_path })
@@ -40,8 +39,8 @@ MSG_SC = {
 
 local cs_descriptor = protoc:message_descriptor_by_name(message_of("MessageClientToServer"))
 for _, field in ipairs(cs_descriptor:fields()) do
-    local singular = field:runtime_field_type().singular
-    local name = singular.message:name()
+    local singular = field:runtime_field_type():get_singular()
+    local name = singular:get_message():name()
     local number = field:number()
     local id_name = MSG_CS.id_name
     local name_id = MSG_CS.name_id
@@ -51,8 +50,8 @@ end
 
 local sc_descriptor = protoc:message_descriptor_by_name(message_of("MessageServerToClient"))
 for _, field in ipairs(sc_descriptor:fields()) do
-    local singular = field:runtime_field_type().singular
-    local name = singular.message:name()
+    local singular = field:runtime_field_type():get_singular()
+    local name = singular:get_message():name()
     local number = field:number()
     local id_name = MSG_SC.id_name
     local name_id = MSG_SC.name_id

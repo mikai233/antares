@@ -1,8 +1,13 @@
 package com.mikai233.common.core.actor
 
-import akka.actor.NotInfluenceReceiveTimeout
+import com.mikai233.common.annotation.Local
+import com.mikai233.common.message.Message
 
-data class NamedRunnable(val name: String, private val block: () -> Unit) : Runnable, NotInfluenceReceiveTimeout {
+@Local
+data class NamedRunnable(
+    val name: String,
+    val block: () -> Unit,
+) : Runnable, Message {
     override fun run() {
         block()
     }

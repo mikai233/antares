@@ -12,8 +12,16 @@ dependencies {
     implementation(tool.lz4)
     implementation(tool.reflections)
     implementation(tool.easyexcel)
+    implementation(tool.jcommander)
     implementation(project(":common"))
-    implementation(project(":shared"))
+}
+
+tasks.register<JavaExec>("exportGameConfig") {
+    val excelPath: String by project
+    group = "other"
+    args = listOf("-e", excelPath, "-v", Version.PROJECT_VERSION)
+    mainClass = "com.mikai233.tools.excel.GameConfigExporterKt"
+    classpath = sourceSets["main"].runtimeClasspath
 }
 
 tasks.test {

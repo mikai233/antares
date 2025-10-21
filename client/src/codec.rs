@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter};
-use std::{i32, io};
+use std::io;
 
-use crate::crypto::{decrypt, decryptor, encrypt, encryptor, CryptoError};
+use crate::crypto::{CryptoError, decrypt, decryptor, encrypt, encryptor};
 use anyhow::anyhow;
 use bytes::{BufMut, BytesMut};
 use tokio_util::codec::{Decoder, Encoder};

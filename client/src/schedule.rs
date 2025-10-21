@@ -52,7 +52,7 @@ impl Scheduler {
 }
 
 impl LuaUserData for Scheduler {
-    fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
+    fn add_methods<M: UserDataMethods<Self>>(methods: &mut M) {
         methods.add_method(
             "schedule_at_fixed_rate",
             |_, this, (key, initial_delay, interval): (String, u64, u64)| {

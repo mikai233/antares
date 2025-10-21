@@ -3,8 +3,12 @@ package com.mikai233.common.core.actor
 import akka.actor.AbstractActorWithStash
 import akka.actor.ActorRef
 import com.mikai233.common.core.Node
+import com.mikai233.common.event.Event
 import com.mikai233.common.extension.*
-import com.mikai233.common.message.*
+import com.mikai233.common.message.CompileActorScript
+import com.mikai233.common.message.ExecuteActorFunction
+import com.mikai233.common.message.ExecuteActorScript
+import com.mikai233.common.message.ExecuteScriptResult
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import scala.PartialFunction
@@ -31,8 +35,8 @@ abstract class StatefulActor<N>(val node: N) : AbstractActorWithStash() where N 
                 handleRunnable<ActorCoroutineRunnable> { msg.run() }
             }
 
-            is ActorNamedRunnable -> {
-                handleRunnable<ActorNamedRunnable> { msg.block() }
+            is NamedRunnable -> {
+                handleRunnable<NamedRunnable> { msg.block() }
             }
 
             is ExecuteActorScript -> {
@@ -109,7 +113,7 @@ abstract class StatefulActor<N>(val node: N) : AbstractActorWithStash() where N 
         context: CoroutineContext = EmptyCoroutineContext,
         start: CoroutineStart = CoroutineStart.DEFAULT,
         timeout: Duration? = 3.minutes,
-        block: suspend CoroutineScope.() -> Unit
+        block: suspend CoroutineScope.() -> Unit,
     ): Job {
         return if (timeout == null) {
             coroutineScope.launch(context, start, block)
@@ -123,13 +127,13 @@ abstract class StatefulActor<N>(val node: N) : AbstractActorWithStash() where N 
     fun <T> async(
         context: CoroutineContext = EmptyCoroutineContext,
         start: CoroutineStart = CoroutineStart.DEFAULT,
-        block: suspend CoroutineScope.() -> T
+        block: suspend CoroutineScope.() -> T,
     ): Deferred<T> {
         return coroutineScope.async(context, start, block)
     }
 
     fun execute(name: String, block: () -> Unit) {
-        self tell ActorNamedRunnable(name, block)
+        self tell NamedRunnable(name, block)
     }
 
     fun fireEvent(event: Event) {

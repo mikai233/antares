@@ -8,12 +8,14 @@ import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.*
 import akka.cluster.Member
 import akka.cluster.MemberStatus
+import com.mikai233.common.conf.GlobalEnv
+import com.mikai233.common.conf.ServerMode
 import com.mikai233.common.core.Role
 import com.mikai233.common.extension.actorLogger
 import com.mikai233.common.extension.ask
 import com.mikai233.common.extension.tell
-import com.mikai233.shared.message.world.WakeupWorldReq
-import com.mikai233.shared.message.world.WakeupWorldResp
+import com.mikai233.common.message.world.WakeupWorldReq
+import com.mikai233.common.message.world.WakeupWorldResp
 import kotlinx.coroutines.*
 import kotlin.math.sqrt
 import kotlin.time.Duration.Companion.minutes
@@ -41,7 +43,7 @@ class WorldWaker(private val node: WorldNode) : AbstractActor() {
             self,
             initialStateAsEvents(),
             MemberEvent::class.java,
-            UnreachableMember::class.java
+            UnreachableMember::class.java,
         )
     }
 
@@ -116,7 +118,10 @@ class WorldWaker(private val node: WorldNode) : AbstractActor() {
         val cooldownPeriod = 2       // 调整并发后的冷却时间，单位：批次
 
         val timeout = 3.minutes
-        val delayStep = 5.seconds
+        val delayStep = when (GlobalEnv.serverMode) {
+            ServerMode.DevMode -> 0.seconds
+            ServerMode.ReleaseMode -> 5.seconds
+        }
         val pendingWorlds = node.gameWorldMeta.worlds.toMutableList()
 
         var cooldownCounter = 0
@@ -171,7 +176,7 @@ class WorldWaker(private val node: WorldNode) : AbstractActor() {
                 successWorlds.size,
                 failedWorlds.size,
                 pendingWorlds.size,
-                concurrency
+                concurrency,
             )
 
             // 固定延迟

@@ -7,7 +7,7 @@ package com.mikai233.common.extension
  */
 fun Short.toByteArray(): ByteArray = with(toInt()) {
     byteArrayOf(
-        (shr(8) and 0xFF).toByte(), (shr(0) and 0xFF).toByte()
+        (shr(8) and 0xFF).toByte(), (shr(0) and 0xFF).toByte(),
     )
 }
 
@@ -20,7 +20,7 @@ fun Short.toByteArrayLE(): ByteArray = toByteArray().reversedArray()
  * 255 -> 00 00 00 FF
  */
 fun Int.toByteArray(): ByteArray = byteArrayOf(
-    ushr(24).toByte(), ushr(16).toByte(), ushr(8).toByte(), ushr(0).toByte()
+    ushr(24).toByte(), ushr(16).toByte(), ushr(8).toByte(), ushr(0).toByte(),
 )
 
 /**
@@ -39,7 +39,7 @@ fun Long.toByteArray(): ByteArray = byteArrayOf(
     (ushr(24) and 0xFF).toByte(),
     (ushr(16) and 0xFF).toByte(),
     (ushr(8) and 0xFF).toByte(),
-    (ushr(0) and 0xFF).toByte()
+    (ushr(0) and 0xFF).toByte(),
 )
 
 /**
@@ -100,7 +100,7 @@ fun ByteArray.checkOffsetAndLength(offset: Int, length: Int) {
 fun ByteArray.toUHexString(
     separator: String = " ",
     offset: Int = 0,
-    length: Int = this.size - offset
+    length: Int = this.size - offset,
 ): String {
     checkOffsetAndLength(offset, length)
     if (length == 0) {
@@ -108,9 +108,9 @@ fun ByteArray.toUHexString(
     }
     val lastIndex = offset + length
     return buildString(length * 2) {
-        this@toUHexString.forEachIndexed { index, it ->
-            if (index in offset until lastIndex) {
-                var ret = it.toUByte().toString(16).uppercase()
+        this@toUHexString.forEachIndexed { index, byte ->
+            if (index in offset..<lastIndex) {
+                var ret = byte.toUByte().toString(16).uppercase()
                 if (ret.length == 1) ret = "0$ret"
                 append(ret)
                 if (index < lastIndex - 1) append(separator)

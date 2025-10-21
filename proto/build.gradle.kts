@@ -1,4 +1,5 @@
 import com.google.protobuf.gradle.id
+import io.gitlab.arturbosch.detekt.Detekt
 
 plugins {
     alias(tool.plugins.protobuf)
@@ -16,6 +17,13 @@ protobuf {
             }
         }
     }
+}
+
+tasks.withType<Detekt>().configureEach {
+    exclude(
+        "com/mikai233/protocol/ClientToServer.kt",
+        "com/mikai233/protocol/ServerToClient.kt",
+    )
 }
 
 dependencies {

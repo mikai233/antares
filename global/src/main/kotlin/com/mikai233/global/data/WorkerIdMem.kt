@@ -1,7 +1,7 @@
 package com.mikai233.global.data
 
 import com.mikai233.common.db.MemData
-import com.mikai233.shared.entity.WorkerId
+import com.mikai233.common.entity.WorkerId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.springframework.data.mongodb.core.MongoTemplate

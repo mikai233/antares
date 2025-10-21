@@ -18,6 +18,7 @@ val atomicfuVersion = "0.26.1"
 val datetimeVersion = "0.6.1"
 val kotlinpoetVersion = "2.0.0"
 val kspVersion = "1.0.29"
+val prometheusVersion = "0.16.0"
 
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
@@ -56,8 +57,8 @@ dependencyResolutionManagement {
                     "serialization.jackson",
                     "server.status.pages",
                     "server.request.validation",
-                    "server.cors"
-                )
+                    "server.cors",
+                ),
             )
         }
         create("ktx") {
@@ -79,11 +80,11 @@ dependencyResolutionManagement {
             library("discovery", "com.typesafe.akka:akka-discovery_$scalaVersion:$akkaVersion")
             library(
                 "management",
-                "com.lightbend.akka.management:akka-management_$scalaVersion:$akkaManagementVersion"
+                "com.lightbend.akka.management:akka-management_$scalaVersion:$akkaManagementVersion",
             )
             library(
                 "management.cluster.http",
-                "com.lightbend.akka.management:akka-management-cluster-http_$scalaVersion:$akkaManagementVersion"
+                "com.lightbend.akka.management:akka-management-cluster-http_$scalaVersion:$akkaManagementVersion",
             )
         }
         create("log") {
@@ -107,7 +108,17 @@ dependencyResolutionManagement {
             library("jackson.cbor", "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:$jacksonVersion")
             library("jackson.yaml", "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
             library("jackson.datatype.jsr310", "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")
-            bundle("jackson", listOf("jackson.databind", "jackson.kotlin", "jackson.guava", "jackson.datatype.jsr310"))
+            library("jackson.datatype.jdk8", "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion")
+            bundle(
+                "jackson",
+                listOf(
+                    "jackson.databind",
+                    "jackson.kotlin",
+                    "jackson.guava",
+                    "jackson.datatype.jsr310",
+                    "jackson.datatype.jdk8",
+                ),
+            )
             library("reflections", "org.reflections:reflections:0.10.2")
             library("protoc", "com.google.protobuf:protoc:$protobufVersion")
             plugin("protobuf", "com.google.protobuf").version("0.9.3")
@@ -117,7 +128,7 @@ dependencyResolutionManagement {
             library("lz4", "org.lz4:lz4-java:1.8.0")
             library("bcprov", "org.bouncycastle:bcprov-jdk15on:1.70")
             library("akka.kryo", "io.altoo:akka-kryo-serialization_$scalaVersion:2.5.0")
-            plugin("detekt", "io.gitlab.arturbosch.detekt").version("1.23.0-RC3")
+            plugin("detekt", "io.gitlab.arturbosch.detekt").version("1.23.7")
             library("caffeine", "com.github.ben-manes.caffeine:caffeine:3.1.6")
             library("groovy", "org.apache.groovy:groovy:4.0.12")
             library("groovy.all", "org.apache.groovy:groovy-all:4.0.12")
@@ -136,6 +147,10 @@ dependencyResolutionManagement {
             library("agrona", "org.agrona:agrona:1.18.1")
             library("kryo", "com.esotericsoftware:kryo:5.6.2")
             library("jcommander", "org.jcommander:jcommander:2.0")
+            library("simpleclient", "io.prometheus:simpleclient:$prometheusVersion")
+            library("simpleclient_hotspot", "io.prometheus:simpleclient_hotspot:$prometheusVersion")
+            library("simpleclient_httpserver", "io.prometheus:simpleclient_httpserver:$prometheusVersion")
+            bundle("prometheus", listOf("simpleclient", "simpleclient_hotspot", "simpleclient_httpserver"))
         }
         create("test") {
             library("junit.bom", "org.junit:junit-bom:$junitVersion")
@@ -151,7 +166,6 @@ include("player")
 include("proto")
 include("global")
 include("world")
-include("shared")
 include("stardust")
 include("gm")
 include("processor")

@@ -1,8 +1,8 @@
 package com.mikai233.common.db
 
-import com.mikai233.common.core.config.ConfigCache
-import com.mikai233.common.core.config.DATA_SOURCE_GAME
-import com.mikai233.common.core.config.DataSourceConfig
+import com.mikai233.common.config.ConfigCache
+import com.mikai233.common.config.DATA_SOURCE_GAME
+import com.mikai233.common.config.DataSourceConfig
 import com.mongodb.MongoClientSettings
 import com.mongodb.WriteConcern
 import com.mongodb.client.MongoClient
@@ -14,6 +14,7 @@ import org.springframework.data.mongodb.core.convert.DefaultDbRefResolver
 import org.springframework.data.mongodb.core.convert.MappingMongoConverter
 import org.springframework.data.mongodb.core.mapping.MongoMappingContext
 
+//TODO test db on start
 class MongoDB(zookeeper: AsyncCuratorFramework) {
 
     private val gameDataSourceCache = ConfigCache(zookeeper, DATA_SOURCE_GAME, DataSourceConfig::class) {

@@ -21,10 +21,10 @@ private var FieldClassCount = 0
 fun main() {
     repeat(100) { randomClass(it, 0) }
     AllTypes.forEach { typeSpec ->
-        FileSpec.builder("com.mikai233.shared.entity.test", typeSpec.name!!)
+        FileSpec.builder("com.mikai233.common.entity.test", typeSpec.name!!)
             .addType(typeSpec)
             .build()
-            .writeTo(Path("shared/src/main/kotlin"))
+            .writeTo(Path("common/src/main/kotlin"))
     }
 }
 
@@ -154,9 +154,9 @@ private fun randomMapKeyType(): ClassName {
 
 private fun randomClass(index: Int?, depth: Int): ClassName {
     val className = if (index == null) {
-        ClassName("com.mikai233.shared.entity.test", "FieldClass${FieldClassCount++}")
+        ClassName("com.mikai233.common.entity.test", "FieldClass${FieldClassCount++}")
     } else {
-        ClassName("com.mikai233.shared.entity.test", "TestEntity$index")
+        ClassName("com.mikai233.common.entity.test", "TestEntity$index")
     }
     buildType(className, index != null, depth)
     return className
@@ -169,7 +169,7 @@ private fun randomEnumClass(): ClassName {
         typeSpecBuilder.addEnumConstant("Field$it")
     }
     AllTypes.add(typeSpecBuilder.build())
-    return ClassName("com.mikai233.shared.entity.test", enumName)
+    return ClassName("com.mikai233.common.entity.test", enumName)
 }
 
 private fun buildType(className: ClassName, isEntity: Boolean, depth: Int) {
@@ -227,9 +227,9 @@ private fun buildType(className: ClassName, isEntity: Boolean, depth: Int) {
                 .addParameters(
                     properties.map { propertySpec ->
                         ParameterSpec.builder(propertySpec.name, propertySpec.type).build()
-                    }
+                    },
                 )
-                .build()
+                .build(),
         )
     AllTypes.add(typeSpecBuilder.build())
 }

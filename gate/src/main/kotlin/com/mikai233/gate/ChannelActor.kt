@@ -3,23 +3,28 @@ package com.mikai233.gate
 
 import akka.actor.Props
 import akka.actor.ReceiveTimeout
+import akka.cluster.pubsub.DistributedPubSub
+import akka.cluster.pubsub.DistributedPubSubMediator.Subscribe
+import akka.cluster.pubsub.DistributedPubSubMediator.Unsubscribe
 import com.google.protobuf.GeneratedMessage
 import com.google.protobuf.kotlin.toByteString
+import com.mikai233.common.broadcast.Topic
+import com.mikai233.common.codec.CIPHER_KEY
 import com.mikai233.common.conf.ServerMode
 import com.mikai233.common.core.actor.StatefulActor
 import com.mikai233.common.crypto.AESCipher
 import com.mikai233.common.crypto.ECDH
 import com.mikai233.common.extension.invokeOnTargetMode
 import com.mikai233.common.extension.tell
-import com.mikai233.common.message.Message
+import com.mikai233.common.formatMessage
+import com.mikai233.common.message.*
+import com.mikai233.common.message.world.PlayerLogin
+import com.mikai233.protocol.CSEnum
 import com.mikai233.protocol.ProtoLogin
 import com.mikai233.protocol.ProtoLogin.LoginReq
 import com.mikai233.protocol.ProtoLogin.LoginResp
+import com.mikai233.protocol.ProtoSystem.GmReq
 import com.mikai233.protocol.connectionExpiredNotify
-import com.mikai233.shared.codec.CIPHER_KEY
-import com.mikai233.shared.formatMessage
-import com.mikai233.shared.message.*
-import com.mikai233.shared.message.world.PlayerLogin
 import io.netty.channel.ChannelFutureListener
 import io.netty.channel.ChannelHandlerContext
 import kotlin.time.Duration.Companion.minutes
@@ -33,20 +38,25 @@ class ChannelActor(node: GateNode, private val handlerContext: ChannelHandlerCon
             Props.create(ChannelActor::class.java, node, handlerContext)
     }
 
-    private var playerId: Long? = null
-    private var birthWorldId: Long? = null
+    var playerId: Long? = null
     private var worldId: Long? = null
     private lateinit var clientPublicKey: ByteArray
+    private val mediator = DistributedPubSub.get(context.system).mediator()
+    private val subscribedTopics = mutableSetOf<String>()
 
     override fun preStart() {
         super.preStart()
-        logger.info("ChannelActor[{}] started", remoteActorRefAddress())
+        logger.info("{} started", remoteActorRefAddress())
         context.setReceiveTimeout(MaxIdleDuration.toJavaDuration())
+        subscribe(Topic.All_WORLDS_TOPIC)
+        mediator.tell(Subscribe(Topic.WORLD_ACTIVE, self))
     }
 
     override fun postStop() {
         super.postStop()
-        logger.info("ChannelActor[{}] stopped", remoteActorRefAddress())
+        unsubscribeAll()
+        mediator.tell(Unsubscribe(Topic.WORLD_ACTIVE, self))
+        logger.info("{} stopped", remoteActorRefAddress())
     }
 
     override fun createReceive(): Receive {
@@ -97,7 +107,8 @@ class ChannelActor(node: GateNode, private val handlerContext: ChannelHandlerCon
                 ProtoLogin.LoginResult.RegisterLimit,
                 ProtoLogin.LoginResult.WorldNotExists,
                 ProtoLogin.LoginResult.WorldClosed,
-                ProtoLogin.LoginResult.AccountBan -> {
+                ProtoLogin.LoginResult.AccountBan,
+                    -> {
                     handleLoginFailed(message)
                 }
 
@@ -141,7 +152,7 @@ class ChannelActor(node: GateNode, private val handlerContext: ChannelHandlerCon
                 logger.warning(
                     "{} unexpected client message:{} while authenticating, stop the channel",
                     self,
-                    formatMessage(message)
+                    formatMessage(message),
                 )
                 stopChannel()
             }
@@ -149,6 +160,7 @@ class ChannelActor(node: GateNode, private val handlerContext: ChannelHandlerCon
             .match(ServerProtobuf::class.java) { tryJudgeAuthResult(it.message) }
             .match(StopChannel::class.java) { stopChannel() }
             .match(ChannelAuthorized::class.java) {
+                subscribe(Topic.ofWorld(requireNotNull(worldId) { "worldId is null" }))
                 unstashAll()
                 context.become(authorized())
             }
@@ -172,7 +184,7 @@ class ChannelActor(node: GateNode, private val handlerContext: ChannelHandlerCon
                         remoteActorRefAddress(),
                         playerId,
                         worldId,
-                        formatMessage(it.message)
+                        formatMessage(it.message),
                     )
                 }
                 write(it.message)
@@ -196,28 +208,25 @@ class ChannelActor(node: GateNode, private val handlerContext: ChannelHandlerCon
 
     private fun forwardClientMessage(clientProtobuf: ClientProtobuf) {
         val (id, message) = clientProtobuf
-        val target = MessageForward.whichActor(id)
-        logger.debug("forward message:{} to target:{}", formatMessage(message), target)
-        if (target == null) {
+        val actor = if (id == CSEnum.GmReq.id) {
+            val req = message as GmReq
+            MessageForward.whichCommand(req.cmd)
+        } else {
+            MessageForward.whichActor(id)
+        }
+        logger.debug("forward message:{} to target:{}", formatMessage(message), actor)
+        if (actor == null) {
             logger.warning("proto: {} has no target to forward", clientProtobuf.id)
         } else {
-            when (target) {
+            val playerId = requireNotNull(playerId) { "playerId is null" }
+            val worldId = requireNotNull(worldId) { "worldId is null" }
+            when (actor) {
                 Forward.PlayerActor -> {
-                    val playerId = playerId
-                    if (playerId != null) {
-                        node.playerSharding.tell(ProtobufEnvelope(playerId, message), self)
-                    } else {
-                        logger.warning("try to send message to uninitialized playerId, this message will be dropped")
-                    }
+                    node.playerSharding.tell(PlayerProtobufEnvelope(playerId, message), self)
                 }
 
                 Forward.WorldActor -> {
-                    val worldId = worldId
-                    if (worldId != null) {
-                        node.worldSharding.tell(ProtobufEnvelope(worldId, message), self)
-                    } else {
-                        logger.warning("try to send message to uninitialized worldId, this message will be dropped")
-                    }
+                    node.worldSharding.tell(WorldProtobufEnvelope(playerId, worldId, message), self)
                 }
 
                 Forward.ChannelActor -> {
@@ -229,7 +238,7 @@ class ChannelActor(node: GateNode, private val handlerContext: ChannelHandlerCon
 
     private fun handleProtobuf(message: GeneratedMessage) {
         try {
-            node.protobufDispatcher.dispatch(message::class, this, message)
+            node.protobufDispatcher.dispatch(message::class, message, this)
         } catch (e: Exception) {
             logger.error(e, "channel:{} handle protobuf message:{} failed", self, message)
         }
@@ -237,7 +246,7 @@ class ChannelActor(node: GateNode, private val handlerContext: ChannelHandlerCon
 
     private fun handleChannelMessage(message: Message) {
         try {
-            node.internalDispatcher.dispatch(message::class, this, message)
+            node.internalDispatcher.dispatch(message::class, message, this)
         } catch (e: Exception) {
             logger.error(e, "channel:{} handle message:{} failed", self, message)
         }
@@ -246,5 +255,22 @@ class ChannelActor(node: GateNode, private val handlerContext: ChannelHandlerCon
     private fun remoteActorRefAddress(): String {
         val path = self.path().toStringWithAddress(node.system.provider().defaultAddress)
         return "Actor[$path]"
+    }
+
+    fun subscribe(topic: String) {
+        subscribedTopics.add(topic)
+        node.playerBroadcastEventBus.subscribe(self, topic)
+    }
+
+    fun unsubscribe(topic: String) {
+        subscribedTopics.remove(topic)
+        node.playerBroadcastEventBus.unsubscribe(self, topic)
+    }
+
+    private fun unsubscribeAll() {
+        subscribedTopics.forEach { topic ->
+            node.playerBroadcastEventBus.unsubscribe(self, topic)
+        }
+        subscribedTopics.clear()
     }
 }

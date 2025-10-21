@@ -1,10 +1,10 @@
 package com.mikai233.world.data
 
+import com.mikai233.common.constants.WorldActionType
 import com.mikai233.common.core.actor.TrackingCoroutineScope
 import com.mikai233.common.db.TraceableMemData
-import com.mikai233.shared.constants.WorldActionType
-import com.mikai233.shared.entity.EntityKryoPool
-import com.mikai233.shared.entity.WorldAction
+import com.mikai233.common.entity.EntityKryoPool
+import com.mikai233.common.entity.WorldAction
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Query
@@ -14,9 +14,10 @@ class WorldActionMem(
     private val worldId: Long,
     private val mongoTemplate: () -> MongoTemplate,
     coroutineScope: TrackingCoroutineScope,
-) : TraceableMemData<Int, WorldAction>(WorldAction::class, EntityKryoPool, coroutineScope, mongoTemplate) {
+) : TraceableMemData<String, WorldAction>(WorldAction::class, EntityKryoPool, coroutineScope, mongoTemplate) {
     private var maxActionId: Long = 0
-    private val worldAction: MutableMap<Int, WorldAction> = mutableMapOf()
+    private val worldAction: MutableMap<String, WorldAction> = mutableMapOf()
+    private val worldActionById: MutableMap<Int, WorldAction> = mutableMapOf()
 
     override fun init() {
         val template = mongoTemplate()
@@ -26,18 +27,21 @@ class WorldActionMem(
             if (id > maxActionId) {
                 maxActionId = id
             }
-            worldAction[it.actionId] = it
+            worldAction[it.id] = it
+            worldActionById[it.actionId] = it
         }
     }
 
-    override fun entities(): Map<Int, WorldAction> {
+    override fun entities(): Map<String, WorldAction> {
         return worldAction
     }
 
     fun getOrCreateAction(actionId: Int): WorldAction {
-        return worldAction.getOrPut(actionId) {
+        return worldActionById.getOrPut(actionId) {
             val id = "${worldId}_${++maxActionId}"
-            WorldAction(id, worldId, actionId, 0L, 0L)
+            val newAction = WorldAction(id, worldId, actionId, 0L, 0L)
+            worldAction[id] = newAction
+            newAction
         }
     }
 
@@ -46,7 +50,9 @@ class WorldActionMem(
     }
 
     fun delAction(actionId: Int) {
-        worldAction.remove(actionId)
+        worldActionById.remove(actionId)?.also {
+            worldAction.remove(it.id)
+        }
     }
 
     fun delAction(type: WorldActionType) {

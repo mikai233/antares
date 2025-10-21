@@ -9,8 +9,9 @@ dependencies {
     runtimeOnly(ktx.core.jvm)
     implementation(ktor.bundles.common)
     implementation(tool.jcommander)
+    implementation(tool.kryo)
+    implementation(tool.bundles.curator)
     implementation(project(":common"))
-    implementation(project(":shared"))
 }
 
 tasks.test {

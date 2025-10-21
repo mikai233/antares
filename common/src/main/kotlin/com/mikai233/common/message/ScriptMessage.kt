@@ -27,6 +27,7 @@ data class ExecuteNodeScript(val uid: String, val script: Script, val filter: Se
 
 /**
  * Execute a script on the actor
+ * @param id if actor is a shard actor, id is the shard entity id else id is not used
  * @param uid unique id of the script
  * @param script script to execute
  */
@@ -49,7 +50,7 @@ data class CompileActorScript(val uid: String, val script: Script, val actor: Ac
 data class ExecuteActorFunction(
     val uid: String,
     val function: ActorScriptFunction<in AbstractActor>,
-    val extra: ByteArray?
+    val extra: ByteArray?,
 ) : Message {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

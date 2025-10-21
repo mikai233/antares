@@ -88,9 +88,9 @@ class Tracer<K, E>(
         check(period > tick) { "period:${period} should be greater than tick:${tick}" }
         check(normalFields.size + mapFields.size > 0) { "entity class:${entityClass.qualifiedName} has no field" }
         logger.info(
-            "tracer[{}] trace each field duration {}",
+            "tracer[{}] trace each field every {}",
             entityClass,
-            period / (normalFields.size + mapFields.size)
+            period / (normalFields.size + mapFields.size),
         )
     }
 
@@ -158,7 +158,7 @@ class Tracer<K, E>(
     private fun traceNormalField(
         property: KProperty1<E, *>,
         entity: E,
-        valueByFieldName: MutableMap<String, Record>
+        valueByFieldName: MutableMap<String, Record>,
     ) {
         val name = property.name
         val currentValue = property.get(entity)
@@ -188,7 +188,7 @@ class Tracer<K, E>(
     private fun traceMapField(
         property: KProperty1<E, Map<*, *>>,
         entity: E,
-        valueByFieldName: MutableMap<String, MutableMap<Any?, Record>>
+        valueByFieldName: MutableMap<String, MutableMap<Any?, Record>>,
     ) {
         val name = property.name
         val currentMap = property.get(entity)
@@ -291,54 +291,10 @@ class Tracer<K, E>(
         }
         val template = mongoTemplate()
         val updateOpList = mutableListOf<UpdateOp>()
-        var anyValueDirty = false
-        normalValues.forEach { (id, valueByFieldName) ->
-            valueByFieldName.forEach { (fieldName, record) ->
-                if (record.status.isDirty()) {
-                    anyValueDirty = true
-                    val value = record.value
-                    val criteria = Criteria.where(idField.name).`is`(id)
-                    val update = Update.update(fieldName, deepCopy(value))
-                    updateOpList.add(UpdateOp(Query.query(criteria), update, record))
-                    cleanup(fieldName, value, record)
-                }
-            }
-        }
-        //map中已删除的字段在执行unset失败时，进行回滚的function
-        val rollbackFunction: MutableMap<Int, () -> Unit> = mutableMapOf()
-        mapValues.forEach { (id, valueByFieldName) ->
-            valueByFieldName.forEach { (fieldName, valueByMapKey) ->
-                val iter = valueByMapKey.iterator()
-                while (iter.hasNext()) {
-                    val (k, record) = iter.next()
-                    when (record.status) {
-                        Status.Clean -> Unit
-                        Status.Set -> {
-                            anyValueDirty = true
-                            val value = record.value
-                            val criteria = Criteria.where(idField.name).`is`(id)
-                            val update = Update.update("$fieldName.$k", deepCopy(value))
-                            updateOpList.add(UpdateOp(Query.query(criteria), update, record))
-                            //TODO: 移除k中的特殊值
-                            cleanup("$fieldName.$k", value, record)
-                        }
-
-                        Status.Unset -> {
-                            anyValueDirty = true
-                            val criteria = Criteria.where(idField.name).`is`(id)
-                            val update = Update().unset("$fieldName.$k")
-                            updateOpList.add(UpdateOp(Query.query(criteria), update, record))
-                            iter.remove()
-                            rollbackFunction[updateOpList.lastIndex] = {
-                                //如果回滚的时候已经有值了，说明是删除后又新增了，保持原来的值不变，不是这种情况才进行回滚
-                                valueByMapKey.putIfAbsent(k, record)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        if (!anyValueDirty) {
+        updateOpList.addAll(normalValueOps())
+        val (mapOps, rollbackFunction) = mapValueOps()
+        updateOpList.addAll(mapOps)
+        if (updateOpList.isEmpty()) {
             return
         }
         updateJob = coroutine.launch {
@@ -358,8 +314,9 @@ class Tracer<K, E>(
                 if (result.isFailure) {
                     val op = updateOpList[index]
                     logger.error(
-                        "update failed, query:${op.query}, update:${op.update}, record:${op.record}",
-                        result.exceptionOrNull()
+                        "{} update failed, query:${op.query}, update:${op.update}, record:${op.record}",
+                        entityClass.qualifiedName,
+                        result.exceptionOrNull(),
                     )
                     //写入失败，将记录标记为脏数据，下次继续尝试写入
                     when (op.record.status) {
@@ -378,15 +335,69 @@ class Tracer<K, E>(
                     val updateResult = result.getOrThrow()
                     val op = updateOpList[index]
                     logger.debug(
-                        "update success, query:{}, update:{}, record:{}, result:{}",
+                        "{} update success, query:{}, update:{}, record:{}, result:{}",
+                        entityClass.qualifiedName,
                         op.query,
                         op.update,
                         op.record,
-                        updateResult
+                        updateResult,
                     )
                 }
             }
         }
+    }
+
+    private fun mapValueOps(): Pair<List<UpdateOp>, Map<Int, () -> Unit>> {
+        val updateOpList = mutableListOf<UpdateOp>()
+        //map中已删除的字段在执行unset失败时，进行回滚的function
+        val rollbackFunction: MutableMap<Int, () -> Unit> = mutableMapOf()
+        mapValues.forEach { (id, valueByFieldName) ->
+            valueByFieldName.forEach { (fieldName, valueByMapKey) ->
+                val iter = valueByMapKey.iterator()
+                while (iter.hasNext()) {
+                    val (k, record) = iter.next()
+                    when (record.status) {
+                        Status.Clean -> Unit
+                        Status.Set -> {
+                            val value = record.value
+                            val criteria = Criteria.where(idField.name).`is`(id)
+                            val update = Update.update("$fieldName.$k", deepCopy(value))
+                            updateOpList.add(UpdateOp(Query.query(criteria), update, record))
+                            //TODO: 移除k中的特殊值
+                            cleanup("$fieldName.$k", value, record)
+                        }
+
+                        Status.Unset -> {
+                            val criteria = Criteria.where(idField.name).`is`(id)
+                            val update = Update().unset("$fieldName.$k")
+                            updateOpList.add(UpdateOp(Query.query(criteria), update, record))
+                            iter.remove()
+                            rollbackFunction[updateOpList.lastIndex] = {
+                                //如果回滚的时候已经有值了，说明是删除后又新增了，保持原来的值不变，不是这种情况才进行回滚
+                                valueByMapKey.putIfAbsent(k, record)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return updateOpList to rollbackFunction
+    }
+
+    private fun normalValueOps(): List<UpdateOp> {
+        val updateOpList = mutableListOf<UpdateOp>()
+        normalValues.forEach { (id, valueByFieldName) ->
+            valueByFieldName.forEach { (fieldName, record) ->
+                if (record.status.isDirty()) {
+                    val value = record.value
+                    val criteria = Criteria.where(idField.name).`is`(id)
+                    val update = Update.update(fieldName, deepCopy(value))
+                    updateOpList.add(UpdateOp(Query.query(criteria), update, record))
+                    cleanup(fieldName, value, record)
+                }
+            }
+        }
+        return updateOpList
     }
 
     private fun deleteEntities(currentEntities: Map<K, E>) {
@@ -441,13 +452,13 @@ class Tracer<K, E>(
         val idProperty =
             entityClass.declaredMemberProperties.find { it.javaField?.isAnnotationPresent(Id::class.java) == true }
         @Suppress("UNCHECKED_CAST")
-        return requireNotNull(idProperty) { "entity class:${entityClass.qualifiedName} has no id property" } as KProperty1<E, K>
+        return requireNotNull(idProperty) {
+            "entity class:${entityClass.qualifiedName} has no id property"
+        } as KProperty1<E, K>
     }
 
     private fun normalFields(): List<KProperty1<E, *>> {
-        return entityClass.declaredMemberProperties.filter {
-            !it.returnType.jvmErasure.isSubclassOf(Map::class)
-        }
+        return entityClass.declaredMemberProperties.filter { !it.returnType.jvmErasure.isSubclassOf(Map::class) }
     }
 
     private fun mapFields(): List<KProperty1<E, Map<*, *>>> {
@@ -486,11 +497,13 @@ class Tracer<K, E>(
     }
 
     private fun <T> deepCopy(value: T?): T? where T : Any {
-        @Suppress("UNCHECKED_CAST")
+        if (value == null) {
+            return null
+        }
         return kryoPool.use {
             val outputStream = ByteArrayOutputStream()
-            Output(outputStream).use { writeClassAndObject(it, value) }
-            Input(outputStream.toByteArray()).use { readClassAndObject(it) } as T?
+            Output(outputStream).use { writeObject(it, value) }
+            Input(outputStream.toByteArray()).use { readObject(it, value::class.java) }
         }
     }
 }
@@ -498,7 +511,7 @@ class Tracer<K, E>(
 fun main() {
     val client = MongoClients.create("mongodb://localhost:27117")
     val template = MongoTemplate(SimpleMongoClientDatabaseFactory(client, "test"))
-    val r = template.findById(1, Room::class.java)
+//    val r = template.findById(1, Room::class.java)
     val pendingRunnable = LinkedList<Runnable>()
     val executor = Executor { pendingRunnable.add(it) }
     val pool = KryoPool(
@@ -508,8 +521,8 @@ fun main() {
             DirectObj::class,
             TrackChild::class,
             Cat::class,
-            Bird::class
-        )
+            Bird::class,
+        ),
     )
     val actorCoroutine = TrackingCoroutineScope(executor.asCoroutineDispatcher())
     val tracer = Tracer<Int, Room>(Room::class, pool, actorCoroutine, 2.minutes, 1.seconds) { template }
@@ -526,7 +539,7 @@ fun main() {
             mutableListOf(),
             TrackChild("hello", "world"),
             mutableListOf(Cat("a", 1), Bird("bb")),
-            Cat("asdlfkjalsdk", 1)
+            Cat("asdlfkjalsdk", 1),
         )
         rooms[room.id] = room
     }
@@ -541,6 +554,7 @@ fun main() {
     }
 }
 
+@Suppress("CyclomaticComplexMethod")
 fun randomOp(room: Room) {
     room.changeableBoolean = Random.nextBoolean()
     if (Random.nextBoolean()) {

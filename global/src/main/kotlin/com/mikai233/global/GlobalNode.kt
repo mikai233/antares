@@ -6,16 +6,12 @@ import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.*
+import com.mikai233.common.entity.EntityKryoPool
 import com.mikai233.common.extension.startShardingProxy
 import com.mikai233.common.extension.startSingleton
-import com.mikai233.common.message.Message
-import com.mikai233.common.message.MessageDispatcher
-import com.mikai233.common.message.MessageHandlerReflect
+import com.mikai233.common.message.*
+import com.mikai233.common.message.global.worker.HandoffWorker
 import com.mikai233.global.actor.WorkerActor
-import com.mikai233.shared.entity.EntityKryoPool
-import com.mikai233.shared.message.PlayerMessageExtractor
-import com.mikai233.shared.message.WorldMessageExtractor
-import com.mikai233.shared.message.global.worker.HandoffWorker
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import java.net.InetSocketAddress
@@ -26,7 +22,7 @@ class GlobalNode(
     name: String,
     config: Config,
     zookeeperConnectString: String,
-    sameJvm: Boolean = false
+    sameJvm: Boolean = false,
 ) : Launcher, Node(addr, listOf(Role.Global), name, config, zookeeperConnectString, sameJvm) {
 
     lateinit var playerSharding: ActorRef
@@ -40,9 +36,9 @@ class GlobalNode(
 
     private val handlerReflect = MessageHandlerReflect("com.mikai233.global.handler")
 
-    val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, handlerReflect)
+    val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, handlerReflect, 1)
 
-    val internalDispatcher = MessageDispatcher(Message::class, handlerReflect)
+    val internalDispatcher = MessageDispatcher(Message::class, handlerReflect, 1)
 
     override suspend fun launch() = start()
 
@@ -73,7 +69,7 @@ class GlobalNode(
     }
 }
 
-class Cli {
+private class Cli {
     @Parameter(names = ["-h", "--host"], description = "host")
     var host: String = GlobalEnv.machineIp
 
@@ -81,7 +77,7 @@ class Cli {
     var port: Int = 2335
 
     @Parameter(names = ["-c", "--conf"], description = "conf")
-    var conf: String = "home.conf"
+    var conf: String = "global.conf"
 
     @Parameter(names = ["-z", "--zookeeper"], description = "zookeeper")
     var zookeeper: String = GlobalEnv.zkConnect
@@ -92,6 +88,7 @@ class Cli {
 
 suspend fun main(args: Array<String>) {
     val cli = Cli()
+    @Suppress("SpreadOperator")
     JCommander.newBuilder()
         .addObject(cli)
         .build()

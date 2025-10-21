@@ -4,11 +4,11 @@ import akka.actor.ActorRef
 import com.mikai233.common.core.State
 import com.mikai233.common.extension.logger
 import com.mikai233.common.extension.tell
+import com.mikai233.common.message.ChannelMessage
+import com.mikai233.common.message.ClientProtobuf
+import com.mikai233.common.message.StopChannel
 import com.mikai233.gate.ChannelActor
 import com.mikai233.gate.GateNode
-import com.mikai233.shared.message.ChannelMessage
-import com.mikai233.shared.message.ClientProtobuf
-import com.mikai233.shared.message.StopChannel
 import io.netty.channel.ChannelHandler
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter

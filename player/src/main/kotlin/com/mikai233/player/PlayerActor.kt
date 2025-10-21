@@ -2,20 +2,24 @@ package com.mikai233.player
 
 import akka.actor.ActorRef
 import akka.actor.Props
+import akka.actor.ReceiveTimeout
 import akka.actor.Terminated
 import akka.cluster.sharding.ShardRegion
 import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.core.actor.StatefulActor
+import com.mikai233.common.event.GameConfigUpdateEvent
 import com.mikai233.common.extension.ask
 import com.mikai233.common.extension.tell
+import com.mikai233.common.message.ChannelExpired
 import com.mikai233.common.message.Message
+import com.mikai233.common.message.PlayerProtobufEnvelope
+import com.mikai233.common.message.ServerProtobuf
+import com.mikai233.common.message.player.*
+import com.mikai233.common.message.world.WorldMessage
 import com.mikai233.protocol.ProtoLogin
-import com.mikai233.shared.message.*
-import com.mikai233.shared.message.player.HandoffPlayer
-import com.mikai233.shared.message.player.PlayerInitialized
-import com.mikai233.shared.message.player.PlayerTick
-import com.mikai233.shared.message.player.PlayerUnloaded
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.toJavaDuration
 
 class PlayerActor(node: PlayerNode) : StatefulActor<PlayerNode>(node) {
     companion object {
@@ -31,12 +35,13 @@ class PlayerActor(node: PlayerNode) : StatefulActor<PlayerNode>(node) {
 
     override fun preStart() {
         super.preStart()
-        logger.info("PlayerActor[{}] started", self)
+        node.system.eventStream.subscribe(self, GameConfigUpdateEvent::class.java)
+        logger.info("{} started", self)
     }
 
     override fun postStop() {
         super.postStop()
-        logger.info("PlayerActor[{}] stopped", self)
+        logger.info("{} stopped", self)
     }
 
     override fun createReceive(): Receive {
@@ -55,6 +60,7 @@ class PlayerActor(node: PlayerNode) : StatefulActor<PlayerNode>(node) {
             .match(PlayerInitialized::class.java) {
                 unstashAll()
                 startTimerWithFixedDelay(PlayerTick, PlayerTick, PlayerTickDuration)
+                context.setReceiveTimeout(1.minutes.toJavaDuration())
                 context.become(active())
             }
             .match(HandoffPlayer::class.java) { context.stop(self) }
@@ -64,10 +70,14 @@ class PlayerActor(node: PlayerNode) : StatefulActor<PlayerNode>(node) {
 
     private fun active(): Receive {
         return receiveBuilder()
-            .match(HandoffPlayer::class.java) { context.become(stopping()) }
+            .match(HandoffPlayer::class.java) {
+                context.cancelReceiveTimeout()
+                context.become(stopping())
+            }
             .match(PlayerTick::class.java) { manager.tick() }
-            .match(ProtobufEnvelope::class.java) { handleProtobufEnvelope(it) }
+            .match(PlayerProtobufEnvelope::class.java) { handleProtobufEnvelope(it) }
             .match(Terminated::class.java) { handleTerminated(it) }
+            .match(ReceiveTimeout::class.java) { if (!isOnline()) passivate() }
             .match(Message::class.java) { handlePlayerMessage(it) }
             .build()
     }
@@ -91,10 +101,10 @@ class PlayerActor(node: PlayerNode) : StatefulActor<PlayerNode>(node) {
             .build()
     }
 
-    private fun handleProtobufEnvelope(envelope: ProtobufEnvelope) {
+    private fun handleProtobufEnvelope(envelope: PlayerProtobufEnvelope) {
         val message = envelope.message
         try {
-            node.protobufDispatcher.dispatch(message::class, this, message)
+            node.protobufDispatcher.dispatch(message::class, message, this)
         } catch (e: Exception) {
             logger.error(e, "player:{} handle protobuf message:{} failed", playerId, message)
         }
@@ -102,7 +112,7 @@ class PlayerActor(node: PlayerNode) : StatefulActor<PlayerNode>(node) {
 
     private fun handlePlayerMessage(message: Message) {
         try {
-            node.internalDispatcher.dispatch(message::class, this, message)
+            node.internalDispatcher.dispatch(message::class, message, this)
         } catch (e: Exception) {
             logger.error(e, "player:{} handle message:{} failed", playerId, message)
         }

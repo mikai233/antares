@@ -5,7 +5,7 @@ import com.mikai233.common.db.TraceableMemData
 import com.mikai233.common.extension.logger
 import com.mikai233.common.extension.tell
 import com.mikai233.common.extension.tryCatch
-import com.mikai233.shared.message.player.PlayerInitialized
+import com.mikai233.common.message.player.PlayerInitialized
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -26,10 +26,12 @@ class PlayerDataManager(private val player: PlayerActor) : DataManager<PlayerAct
             managers[it] = mem
         }
         logger.info("{} start loading data", player.playerId)
-        player.launch(CoroutineExceptionHandler { _, throwable ->
-            logger.error("{} loading data failed, player will stop", player.playerId, throwable)
-            player.passivate()
-        }) {
+        player.launch(
+            CoroutineExceptionHandler { _, throwable ->
+                logger.error("{} loading data failed, player will stop", player.playerId, throwable)
+                player.passivate()
+            },
+        ) {
             managers.map { (manager, mem) ->
                 async(Dispatchers.IO) {
                     mem.init()

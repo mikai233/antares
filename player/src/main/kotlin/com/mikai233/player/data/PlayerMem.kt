@@ -2,8 +2,8 @@ package com.mikai233.player.data
 
 import com.mikai233.common.core.actor.TrackingCoroutineScope
 import com.mikai233.common.db.TraceableMemData
-import com.mikai233.shared.entity.EntityKryoPool
-import com.mikai233.shared.entity.Player
+import com.mikai233.common.entity.EntityKryoPool
+import com.mikai233.common.entity.Player
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.findById
 

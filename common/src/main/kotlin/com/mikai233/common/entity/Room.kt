@@ -3,7 +3,9 @@ package com.mikai233.common.entity
 import com.mikai233.common.db.Entity
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.PersistenceCreator
+import org.springframework.data.mongodb.core.mapping.Document
 
+@Document(collection = "room")
 data class Room(
     @Id
     val id: Int,
@@ -11,7 +13,7 @@ data class Room(
     val createTime: Long,
     var changeableBoolean: Boolean,
     var changeableString: String,
-    val players: HashMap<Int, Player>,
+    val players: HashMap<Int, TPlayer>,
     val directObj: DirectObj,
     var listObj: MutableList<String>?,
     val trackChild: TrackChild,
@@ -33,16 +35,16 @@ data class Room(
                 null,
                 TrackChild("", "cc"),
                 mutableListOf(),
-                Cat("", 0)
+                Cat("", 0),
             )
         }
     }
 }
 
 
-interface Player
+interface TPlayer
 
-data class RoomPlayer(val id: Int, var level: Int) : Player
+data class RoomPlayer(val id: Int, var level: Int) : TPlayer
 
 data class DirectObj(val a: String, var b: Int, var c: Long, var d: Boolean)
 

@@ -1,6 +1,5 @@
 plugins {
     groovy
-//    alias(tool.plugins.ksp)
 }
 
 dependencies {
@@ -17,11 +16,9 @@ dependencies {
     implementation(tool.mongodb.driver.sync)
     implementation(tool.reflections)
     implementation(tool.jcommander)
+    implementation(tool.guava)
     implementation(project(":common"))
-    implementation(project(":shared"))
     implementation(project(":proto"))
-//    implementation(project(":processor"))
-//    ksp(project(":processor"))
 }
 
 tasks.test {

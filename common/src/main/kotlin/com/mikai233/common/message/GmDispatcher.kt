@@ -1,5 +1,6 @@
 package com.mikai233.common.message
 
+import com.mikai233.common.annotation.Gm
 import com.mikai233.common.extension.logger
 import kotlin.reflect.KFunction
 import kotlin.reflect.full.declaredMemberFunctions
@@ -10,10 +11,6 @@ import kotlin.reflect.full.findAnnotation
  * @email dreamfever2017@yahoo.com
  * @date 2025/1/9
  */
-
-@Retention(AnnotationRetention.RUNTIME)
-@Target(AnnotationTarget.FUNCTION)
-annotation class Gm(val command: String)
 
 private data class GmHandle(
     val clazz: K,
@@ -47,16 +44,16 @@ class GmDispatcher(private val handlerReflect: MessageHandlerReflect) {
         return handles
     }
 
-    fun dispatch(command: String, receiver: Any, params: List<String>) {
+    fun dispatch(command: String, params: List<String>, vararg receiver: Any) {
         val commandHandle = handles[command]
         if (commandHandle != null) {
             val handler = requireNotNull(handlerReflect[commandHandle.clazz]) {
                 "handler for ${commandHandle.clazz} not found"
             }
-            if (commandHandle.handle.parameters.size == 3) {
-                commandHandle.call(handler, receiver, params)
+            if (commandHandle.handle.parameters.size == receiver.size + 2) {
+                commandHandle.call(handler, *receiver, params)
             } else {
-                commandHandle.call(handler, receiver)
+                commandHandle.call(handler, *receiver)
             }
         } else {
             logger.error("no gm handler for command: {} was found", command)

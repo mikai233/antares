@@ -1,6 +1,7 @@
 package com.mikai233.common.extension
 
 import com.fasterxml.jackson.datatype.guava.GuavaModule
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jsonMapper
 import com.fasterxml.jackson.module.kotlin.kotlinModule
@@ -18,6 +19,7 @@ object Json {
         addModule(kotlinModule())
         addModule(GuavaModule())
         addModule(JavaTimeModule())
+        addModule(Jdk8Module())
     }
 
     inline fun <reified T> fromStr(content: String): T {
@@ -44,7 +46,7 @@ object Json {
         }
     }
 
-    inline fun <reified T> toBytes(value: T, pretty: Boolean = false): ByteArray {
+    fun toBytes(value: Any, pretty: Boolean = false): ByteArray {
         return if (pretty) {
             mapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(value)
         } else {
@@ -52,11 +54,7 @@ object Json {
         }
     }
 
-    fun <T> toBytes(value: Any, clazz: KClass<T>, pretty: Boolean = false): ByteArray where T : Any {
-        return mapper.writeValueAsBytes(value)
-    }
-
-    inline fun <reified T> copy(value: T): T {
+    inline fun <reified T> copy(value: T): T where T : Any {
         return fromBytes(toBytes(value))
     }
 }

@@ -14,6 +14,7 @@ val DepsExtra = arrayOf<KClass<*>>(
     arrayOf(0)::class,
     Arrays.asList(0)::class,
     ArrayList::class,
+    ByteArray::class,
     HashMap::class,
     HashSet::class,
     LinkedHashMap::class,

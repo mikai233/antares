@@ -1,10 +1,10 @@
 package com.mikai233.gm.web
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.mikai233.common.core.Patcher
+import com.mikai233.common.serde.KryoPool
 import com.mikai233.gm.GmNode
 import com.mikai233.gm.web.plugins.*
-import com.mikai233.gm.web.route.patchRoutes
+import com.mikai233.gm.web.route.actorRoutes
 import com.mikai233.gm.web.route.scriptRoutes
 import io.ktor.server.application.*
 import io.ktor.server.config.*
@@ -17,23 +17,26 @@ class Engine(private val node: GmNode) {
     private val environment = applicationEnvironment {
         config = HoconApplicationConfig(node.config)
     }
-    private val server = embeddedServer(Netty, environment = environment, configure = {
-        connector {
-            host = environment.config.host
-            port = environment.config.port
-        }
-    })
+    private val server = embeddedServer(
+        Netty, environment = environment,
+        configure = {
+            connector {
+                host = environment.config.host
+                port = environment.config.port
+            }
+        },
+    )
 
     fun start() {
         server.application.attributes.put(NodeKey, node)
-        server.application.attributes.put(MapperKey, jacksonObjectMapper())
+        server.application.attributes.put(KryoKey, Patcher.scriptKryo())
         server.start(false)
     }
 }
 
 val NodeKey = AttributeKey<GmNode>("Node")
 
-val MapperKey = AttributeKey<ObjectMapper>("Mapper")
+val KryoKey = AttributeKey<KryoPool>("Kryo")
 
 fun Application.module() {
     configureSerialization()
@@ -42,11 +45,11 @@ fun Application.module() {
     configureStatusPage()
     configureValidation()
     scriptRoutes()
-    patchRoutes()
+    actorRoutes()
 }
 
 fun Application.node() = attributes[NodeKey]
 
-fun Application.mapper() = attributes[MapperKey]
+fun Application.kryo() = attributes[KryoKey]
 
 fun uuid(): String = UUID.randomUUID().toString()

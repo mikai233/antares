@@ -11,7 +11,7 @@ pub enum Lua2RustEvent {
 }
 
 impl LuaUserData for Lua2RustEvent {
-    fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
+    fn add_methods<M: UserDataMethods<Self>>(methods: &mut M) {
         methods.add_function("SetSharedKey", |_, remote_public_key: Vec<u8>| {
             Ok(Lua2RustEvent::SetSharedKey(remote_public_key))
         });
@@ -27,7 +27,7 @@ pub enum Rust2LuaEvent {
 }
 
 impl LuaUserData for Rust2LuaEvent {
-    fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
+    fn add_methods<M: UserDataMethods<Self>>(methods: &mut M) {
         methods.add_method("ToString", |_, this, ()| Ok(this.to_string()));
         methods.add_meta_method(MetaMethod::Eq, |_, this, other: Rust2LuaEvent| {
             Ok(*this == other)

@@ -22,7 +22,7 @@ class ExcelHeaderListener(val completeCallback: (ExcelField?, List<ExcelField>) 
 
     override fun invokeHeadMap(
         headMap: Map<Int, String?>,
-        context: AnalysisContext
+        context: AnalysisContext,
     ) {
         when (context.readRowHolder().rowIndex) {
             0 -> {
@@ -64,7 +64,7 @@ class ExcelHeaderListener(val completeCallback: (ExcelField?, List<ExcelField>) 
                     name.snakeCaseToCamelCase(),
                     name,
                     type,
-                    commentIndex[index] ?: ""
+                    commentIndex[index] ?: "",
                 )
                 if (scope == ScopeType.AllKey && idField == null) {
                     idField = field

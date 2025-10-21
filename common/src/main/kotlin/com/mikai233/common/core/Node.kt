@@ -4,18 +4,31 @@ import akka.Done
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.CoordinatedShutdown
-import com.mikai233.common.core.config.*
+import akka.routing.FromConfig
+import com.google.common.hash.HashCode
+import com.google.common.hash.Hashing
+import com.google.common.io.Resources
+import com.mikai233.common.broadcast.PlayerBroadcastActor
+import com.mikai233.common.broadcast.PlayerBroadcastEventBus
+import com.mikai233.common.config.*
 import com.mikai233.common.db.MongoDB
+import com.mikai233.common.event.GameConfigUpdateEvent
+import com.mikai233.common.excel.*
 import com.mikai233.common.extension.Json
-import com.mikai233.common.extension.logger
 import com.mikai233.common.script.ScriptActor
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import io.prometheus.client.exporter.HTTPServer
+import io.prometheus.client.hotspot.DefaultExports
 import kotlinx.coroutines.*
 import kotlinx.coroutines.future.await
 import org.apache.curator.framework.CuratorFrameworkFactory
+import org.apache.curator.framework.recipes.cache.CuratorCache
+import org.apache.curator.framework.recipes.cache.CuratorCacheListener
 import org.apache.curator.retry.ExponentialBackoffRetry
 import org.apache.curator.x.async.AsyncCuratorFramework
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
 import java.util.*
 import java.util.concurrent.CompletableFuture
@@ -42,7 +55,7 @@ open class Node(
     zookeeperConnectString: String,
     private val sameJvm: Boolean = false,
 ) {
-    val logger = logger()
+    val logger: Logger = LoggerFactory.getLogger(javaClass)
 
     lateinit var system: ActorSystem
         protected set
@@ -52,7 +65,7 @@ open class Node(
     val zookeeper: AsyncCuratorFramework by lazy {
         val client = CuratorFrameworkFactory.newClient(
             zookeeperConnectString,
-            ExponentialBackoffRetry(2000, 10, 60000)
+            ExponentialBackoffRetry(2000, 10, 60000),
         )
         client.start()
         AsyncCuratorFramework.wrap(client)
@@ -66,8 +79,24 @@ open class Node(
 
     val gameWorldConfigCache = ConfigChildrenCache(zookeeper, GAME_WORLDS, GameWorldConfig::class)
 
+    @Volatile
+    lateinit var gameConfigManager: GameConfigManager
+        private set
+
+    @Volatile
+    lateinit var gameConfigManagerHashcode: HashCode
+        private set
+
     lateinit var scriptActor: ActorRef
         protected set
+
+    lateinit var broadcastRouter: ActorRef
+        protected set
+
+    lateinit var prometheusServer: HTTPServer
+        protected set
+
+    val playerBroadcastEventBus = PlayerBroadcastEventBus()
 
     @Volatile
     var state: State = State.Unstarted
@@ -94,7 +123,13 @@ open class Node(
         afterStart()
     }
 
-    protected open suspend fun beforeStart() {}
+    protected open suspend fun beforeStart() {
+        DefaultExports.initialize()
+        val port = addr.port + 1000
+        prometheusServer = HTTPServer(port)
+        logger.info("Prometheus metrics available at http://localhost:{}/metrics", port)
+        addStateListener(State.Stopping) { prometheusServer.close() }
+    }
 
     protected open suspend fun startSystem() {
         val remoteConfig = resolveRemoteConfig()
@@ -103,6 +138,10 @@ open class Node(
         coroutineScope = CoroutineScope(system.dispatcher.asCoroutineDispatcher() + SupervisorJob())
         addCoordinatedShutdownTasks()
         spawnScriptActor()
+        spawnBroadcastActor()
+        spawnBroadcastRouter()
+        resolveGameConfigManager()
+        Patcher(this).apply()
         changeState(State.Starting)
     }
 
@@ -112,15 +151,24 @@ open class Node(
 
     private fun addCoordinatedShutdownTasks() {
         with(CoordinatedShutdown.get(system)) {
-            addTask(CoordinatedShutdown.PhaseClusterLeave(), "leave_delay", taskSupplier {
-                delay(Random.nextLong(1000L..5000L))
-            })
-            addTask(CoordinatedShutdown.PhaseBeforeServiceUnbind(), "change_state_stopping", taskSupplier {
-                changeState(State.Stopping)
-            })
-            addTask(CoordinatedShutdown.PhaseActorSystemTerminate(), "change_state_stopped", taskSupplier {
-                changeState(State.Stopped)
-            })
+            addTask(
+                CoordinatedShutdown.PhaseClusterLeave(), "leave_delay",
+                taskSupplier {
+                    delay(Random.nextLong(1000L..5000L))
+                },
+            )
+            addTask(
+                CoordinatedShutdown.PhaseBeforeServiceUnbind(), "change_state_stopping",
+                taskSupplier {
+                    changeState(State.Stopping)
+                },
+            )
+            addTask(
+                CoordinatedShutdown.PhaseActorSystemTerminate(), "change_state_stopped",
+                taskSupplier {
+                    changeState(State.Stopped)
+                },
+            )
         }
     }
 
@@ -173,4 +221,67 @@ open class Node(
     private fun spawnScriptActor() {
         scriptActor = system.actorOf(ScriptActor.props(this), ScriptActor.NAME)
     }
+
+    private fun spawnBroadcastActor() {
+        system.actorOf(PlayerBroadcastActor.props(this), PlayerBroadcastActor.NAME)
+    }
+
+    private fun spawnBroadcastRouter() {
+        broadcastRouter = system.actorOf(FromConfig.getInstance().props(), "broadcastRouter")
+    }
+
+    inline fun <reified T : V> getConfig(): T {
+        return gameConfigManager.get<T>()
+    }
+
+    inline fun <reified T : GameConfigs<K, C>, C : GameConfig<K>, K : Any> getConfigById(id: K): C {
+        return gameConfigManager.getById<T, _, _>(id)
+    }
+
+    private suspend fun resolveGameConfigManager() {
+        //配置表哈希需要稳定的哈希函数
+        fun calculateConfigHash(bytes: ByteArray) {
+            gameConfigManagerHashcode = Hashing.murmur3_128(233).hashBytes(bytes)
+        }
+
+        val cache = CuratorCache.build(zookeeper.unwrap(), GAME_CONFIG, CuratorCache.Options.SINGLE_NODE_CACHE)
+        addStateListener(State.Stopping) { cache.close() }
+        val bytes = zookeeper.data.forPath(GAME_CONFIG).await()
+        gameConfigManager = GameConfigManagerSerde.deserialize(bytes)
+        calculateConfigHash(bytes)
+        cache.listenable().addListener { type, oldData, data ->
+            when (type) {
+                CuratorCacheListener.Type.NODE_CREATED -> {
+                    gameConfigManager = GameConfigManagerSerde.deserialize(data.data)
+                    logger.info(
+                        "{} created, version: {}",
+                        GameConfigManager::class.simpleName,
+                        gameConfigManager.version,
+                    )
+                    calculateConfigHash(bytes)
+                    system.eventStream.publish(GameConfigUpdateEvent)
+                }
+
+                CuratorCacheListener.Type.NODE_CHANGED -> {
+                    gameConfigManager = GameConfigManagerSerde.deserialize(data.data)
+                    logger.info(
+                        "{} updated, version: {}",
+                        GameConfigManager::class.simpleName,
+                        gameConfigManager.version,
+                    )
+                    calculateConfigHash(bytes)
+                    system.eventStream.publish(GameConfigUpdateEvent)
+                }
+
+                CuratorCacheListener.Type.NODE_DELETED -> {
+                    logger.warn("Node {} deleted:{}", GameConfigManager::class.simpleName, oldData.path)
+                }
+
+                null -> Unit
+            }
+        }
+        cache.start()
+    }
+
+    fun version() = Resources.getResource("version").readText()
 }

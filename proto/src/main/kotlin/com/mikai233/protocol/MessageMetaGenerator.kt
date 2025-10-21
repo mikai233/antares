@@ -54,7 +54,7 @@ private fun scanAllMessages(): Map<String, MessageClass> {
 
 private fun generateMessageMap(
     messages: Map<String, MessageClass>,
-    descriptor: Descriptors.Descriptor
+    descriptor: Descriptors.Descriptor,
 ): MessageMap {
     val idByMessageClass = mutableMapOf<MessageClass, Int>()
     descriptor.fields.forEach {
@@ -87,31 +87,35 @@ private fun genIdProperties(messageMap: MessageMap, type: MappingType): List<Pro
         chunkNames.add(chunkName)
         val propertySpec = PropertySpec.builder(chunkName, MessageMapType, KModifier.PRIVATE)
             .addKdoc("Automatically generated field, do not modify")
-            .initializer(buildCodeBlock {
-                add("mapOf(\n")
-                chunk.forEachIndexed { index, entry ->
-                    val (messageClass, id) = entry
-                    add("%T::class to %L", messageClass, id)
-                    if (index != messageMap.size - 1) {
-                        add(",\n")
+            .initializer(
+                buildCodeBlock {
+                    add("mapOf(\n")
+                    chunk.forEachIndexed { index, entry ->
+                        val (messageClass, id) = entry
+                        add("%T::class to %L", messageClass, id)
+                        if (index != messageMap.size - 1) {
+                            add(",\n")
+                        }
                     }
-                }
-                add("\n)")
-            })
+                    add("\n)")
+                },
+            )
             .build()
         properties.add(propertySpec)
     }
     val combinedProperty = PropertySpec
         .builder("${type.name}MessageById", MessageMapType)
         .addKdoc("Automatically generated field, do not modify")
-        .initializer(buildCodeBlock {
-            add("listOf(\n")
-            chunkNames.forEach {
-                add("%L,", it)
-            }
-            add("\n)")
-            add(".flatMap { it.entries.map { entry -> entry.key to entry.value } }.toMap()")
-        })
+        .initializer(
+            buildCodeBlock {
+                add("listOf(\n")
+                chunkNames.forEach {
+                    add("%L,", it)
+                }
+                add("\n)")
+                add(".flatMap { it.entries.map { entry -> entry.key to entry.value } }.toMap()")
+            },
+        )
         .build()
     properties.add(combinedProperty)
     return properties
@@ -127,31 +131,35 @@ private fun genParserProperties(messageMap: MessageMap, type: MappingType): List
         val propertySpec = PropertySpec
             .builder(chunkName, ParserMapType, KModifier.PRIVATE)
             .addKdoc("Automatically generated field, do not modify")
-            .initializer(buildCodeBlock {
-                add("mapOf(\n")
-                chunk.forEachIndexed { index, entry ->
-                    val (messageClass, id) = entry
-                    add("%L to %T.parser()", id, messageClass)
-                    if (index != messageMap.size - 1) {
-                        add(",\n")
+            .initializer(
+                buildCodeBlock {
+                    add("mapOf(\n")
+                    chunk.forEachIndexed { index, entry ->
+                        val (messageClass, id) = entry
+                        add("%L to %T.parser()", id, messageClass)
+                        if (index != messageMap.size - 1) {
+                            add(",\n")
+                        }
                     }
-                }
-                add("\n)")
-            })
+                    add("\n)")
+                },
+            )
             .build()
         properties.add(propertySpec)
     }
     val combinedProperty = PropertySpec
         .builder("${type.name}ParserById", ParserMapType)
         .addKdoc("Automatically generated field, do not modify")
-        .initializer(buildCodeBlock {
-            add("listOf(\n")
-            chunkNames.forEach {
-                add("%L,", it)
-            }
-            add("\n)")
-            add(".flatMap { it.entries.map { entry -> entry.key to entry.value } }.toMap()")
-        })
+        .initializer(
+            buildCodeBlock {
+                add("listOf(\n")
+                chunkNames.forEach {
+                    add("%L,", it)
+                }
+                add("\n)")
+                add(".flatMap { it.entries.map { entry -> entry.key to entry.value } }.toMap()")
+            },
+        )
         .build()
     properties.add(combinedProperty)
     return properties
@@ -168,18 +176,18 @@ private fun genEnumSpec(messageMap: MessageMap, type: MappingType): TypeSpec {
         .primaryConstructor(
             FunSpec.constructorBuilder()
                 .addParameter("id", Int::class)
-                .build()
+                .build(),
         )
         .addProperty(
             PropertySpec.builder("id", Int::class)
                 .initializer("id")
-                .build()
+                .build(),
         )
         .apply {
             messageMap.entries.sortedBy { it.value }.forEach { (messageClass, id) ->
                 addEnumConstant(
                     requireNotNull(messageClass.simpleName) { "message $messageClass no simple name found" },
-                    TypeSpec.anonymousClassBuilder().addSuperclassConstructorParameter("$id").build()
+                    TypeSpec.anonymousClassBuilder().addSuperclassConstructorParameter("$id").build(),
                 )
             }
         }
@@ -189,11 +197,11 @@ private fun genEnumSpec(messageMap: MessageMap, type: MappingType): TypeSpec {
         .addProperty(
             PropertySpec.builder(
                 "entriesById",
-                MAP.parameterizedBy(Int::class.asTypeName(), ClassName("com.mikai233.protocol", enumName))
+                MAP.parameterizedBy(Int::class.asTypeName(), ClassName("com.mikai233.protocol", enumName)),
             )
                 .initializer("entries.associateBy { it.id }")
                 .addModifiers(KModifier.PRIVATE)
-                .build()
+                .build(),
         )
         .addFunction(
             FunSpec.builder("get")
@@ -201,7 +209,7 @@ private fun genEnumSpec(messageMap: MessageMap, type: MappingType): TypeSpec {
                 .returns(ClassName("", enumName))
                 .addStatement("return requireNotNull(entriesById[id]) { \"%L not found\" }", "\$id")
                 .addModifiers(KModifier.OPERATOR)
-                .build()
+                .build(),
         )
         .build()
 
@@ -225,7 +233,7 @@ private fun generateHelperFunctions(type: MappingType): List<FunSpec> {
             return requireNotNull($messageById[messageKClass]) {
                 "$from proto id for ${'$'}{messageKClass.qualifiedName} not found"
             }
-            """.trimIndent()
+            """.trimIndent(),
         )
         .build()
 
@@ -237,7 +245,7 @@ private fun generateHelperFunctions(type: MappingType): List<FunSpec> {
             return requireNotNull($parserById[id]) {
                 "parser for $from proto ${'$'}id not found"
             }
-            """.trimIndent()
+            """.trimIndent(),
         )
         .build()
 

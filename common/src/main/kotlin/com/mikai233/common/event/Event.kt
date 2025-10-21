@@ -1,3 +1,5 @@
 package com.mikai233.common.event
 
-interface Event
+import com.mikai233.common.message.Message
+
+interface Event : Message

@@ -11,7 +11,7 @@ abstract class TraceableMemData<K, E>(
     entityClass: KClass<E>,
     kryoPool: KryoPool,
     coroutine: TrackingCoroutineScope,
-    mongoTemplate: () -> MongoTemplate
+    mongoTemplate: () -> MongoTemplate,
 ) : MemData<E> where K : Any, E : Entity {
     private val tracer = Tracer<K, E>(entityClass, kryoPool, coroutine, 2.minutes, 1.seconds, mongoTemplate)
 

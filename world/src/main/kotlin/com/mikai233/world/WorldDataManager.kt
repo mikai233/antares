@@ -5,7 +5,7 @@ import com.mikai233.common.db.TraceableMemData
 import com.mikai233.common.extension.logger
 import com.mikai233.common.extension.tell
 import com.mikai233.common.extension.tryCatch
-import com.mikai233.shared.message.world.WorldInitialized
+import com.mikai233.common.message.world.WorldInitialized
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -26,10 +26,12 @@ class WorldDataManager(private val world: WorldActor) : DataManager<WorldActor>(
             managers[it] = mem
         }
         logger.info("{} start loading data", world.worldId)
-        world.launch(CoroutineExceptionHandler { _, throwable ->
-            logger.error("{} loading data failed, world will stop", world.worldId, throwable)
-            world.passivate()
-        }) {
+        world.launch(
+            CoroutineExceptionHandler { _, throwable ->
+                logger.error("{} loading data failed, world will stop", world.worldId, throwable)
+                world.passivate()
+            },
+        ) {
             managers.map { (manager, mem) ->
                 async(Dispatchers.IO) {
                     mem.init()

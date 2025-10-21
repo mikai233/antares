@@ -1,10 +1,10 @@
 package com.mikai233.player.data
 
+import com.mikai233.common.constants.PlayerActionType
 import com.mikai233.common.core.actor.TrackingCoroutineScope
 import com.mikai233.common.db.TraceableMemData
-import com.mikai233.shared.constants.PlayerActionType
-import com.mikai233.shared.entity.PlayerAction
-import com.mikai233.shared.excel.GameConfigKryoPool
+import com.mikai233.common.entity.PlayerAction
+import com.mikai233.common.excel.GameConfigKryoPool
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Query
@@ -14,9 +14,10 @@ class PlayerActionMem(
     private val playerId: Long,
     private val mongoTemplate: () -> MongoTemplate,
     coroutineScope: TrackingCoroutineScope,
-) : TraceableMemData<Int, PlayerAction>(PlayerAction::class, GameConfigKryoPool, coroutineScope, mongoTemplate) {
+) : TraceableMemData<String, PlayerAction>(PlayerAction::class, GameConfigKryoPool, coroutineScope, mongoTemplate) {
     private var maxActionId: Int = 0
-    private val playerAction: MutableMap<Int, PlayerAction> = mutableMapOf()
+    private val playerAction: MutableMap<String, PlayerAction> = mutableMapOf()
+    private val playerActionById: MutableMap<Int, PlayerAction> = mutableMapOf()
 
     override fun init() {
         val template = mongoTemplate()
@@ -26,18 +27,21 @@ class PlayerActionMem(
             if (id > maxActionId) {
                 maxActionId = id
             }
-            playerAction[it.actionId] = it
+            playerAction[it.id] = it
+            playerActionById[it.actionId] = it
         }
     }
 
-    override fun entities(): Map<Int, PlayerAction> {
+    override fun entities(): Map<String, PlayerAction> {
         return playerAction
     }
 
     fun getOrCreateAction(actionId: Int): PlayerAction {
-        return playerAction.getOrPut(actionId) {
+        return playerActionById.getOrPut(actionId) {
             val id = "${playerId}_${++maxActionId}"
-            PlayerAction(id, playerId, actionId, 0L, 0L)
+            val newAction = PlayerAction(id, playerId, actionId, 0L, 0L)
+            playerAction[id] = newAction
+            newAction
         }
     }
 

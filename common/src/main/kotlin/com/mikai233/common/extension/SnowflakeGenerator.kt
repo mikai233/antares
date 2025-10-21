@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicLong
  */
 class SnowflakeGenerator(
     private val workerId: Long,
-    private val epoch: Long = 1735660800000L // 自定义起始时间戳 (默认是 2025-01-01 00:00:00)
+    private val epoch: Long = 1735660800000L, // 自定义起始时间戳 (默认是 2025-01-01 00:00:00)
 ) {
     private val sequenceBits = 12
     private val workerIdBits = 10 // 支持 1024 台机器
@@ -32,7 +32,7 @@ class SnowflakeGenerator(
             val lastTs = lastTimestamp.get()
 
             if (currentTimestamp < lastTs) {
-                throw IllegalStateException("Clock moved backwards. Refusing to generate ID")
+                error("Clock moved backwards. Refusing to generate ID")
             }
 
             if (currentTimestamp == lastTs) {

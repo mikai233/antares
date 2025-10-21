@@ -11,9 +11,6 @@ import com.google.devtools.ksp.processing.SymbolProcessorProvider
  */
 class EntityDepsProcessorProvider : SymbolProcessorProvider {
     override fun create(environment: SymbolProcessorEnvironment): SymbolProcessor {
-        return EntityDepsProcessor(
-            environment.codeGenerator,
-            environment.logger,
-        )
+        return EntityDepsProcessor(environment.codeGenerator)
     }
 }

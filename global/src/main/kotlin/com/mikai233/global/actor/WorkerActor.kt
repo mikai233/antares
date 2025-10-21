@@ -3,9 +3,9 @@ package com.mikai233.global.actor
 import akka.actor.Props
 import com.mikai233.common.core.actor.StatefulActor
 import com.mikai233.common.message.Message
+import com.mikai233.common.message.global.worker.HandoffWorker
 import com.mikai233.global.GlobalNode
 import com.mikai233.global.data.WorkerIdMem
-import com.mikai233.shared.message.global.worker.HandoffWorker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -18,7 +18,7 @@ class WorkerActor(node: GlobalNode) : StatefulActor<GlobalNode>(node) {
 
     override fun preStart() {
         super.preStart()
-        logger.info("UidActor[{}] started", self)
+        logger.info("{} started", self)
         launch {
             runCatching {
                 withContext(Dispatchers.IO) {
@@ -38,7 +38,7 @@ class WorkerActor(node: GlobalNode) : StatefulActor<GlobalNode>(node) {
 
     override fun postStop() {
         super.postStop()
-        logger.info("UidActor[{}] stopped", self)
+        logger.info("{} stopped", self)
     }
 
     override fun createReceive(): Receive {
@@ -58,7 +58,7 @@ class WorkerActor(node: GlobalNode) : StatefulActor<GlobalNode>(node) {
 
     private fun handleUidMessage(message: Message) {
         try {
-            node.internalDispatcher.dispatch(message::class, this, message)
+            node.internalDispatcher.dispatch(message::class, message, this)
         } catch (e: Exception) {
             logger.error(e, "WorkerActor handle message:{} failed", message)
         }

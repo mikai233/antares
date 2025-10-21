@@ -2,12 +2,12 @@ use std::fs::read;
 use std::net::SocketAddr;
 use std::process::exit;
 
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use clap::Parser;
 use tracing::info;
+use trust_dns_resolver::AsyncResolver;
 use trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
 use trust_dns_resolver::name_server::{GenericConnector, TokioRuntimeProvider};
-use trust_dns_resolver::AsyncResolver;
 
 use crate::client::Client;
 use crate::config::Config;
@@ -55,10 +55,9 @@ async fn main() -> anyhow::Result<()> {
 }
 
 fn dns_resolver() -> AsyncResolver<GenericConnector<TokioRuntimeProvider>> {
-    let resolver = AsyncResolver::new(
+    AsyncResolver::new(
         ResolverConfig::default(),
         ResolverOpts::default(),
         GenericConnector::new(TokioRuntimeProvider::new()),
-    );
-    resolver
+    )
 }

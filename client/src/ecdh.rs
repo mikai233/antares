@@ -1,11 +1,11 @@
 use crate::key_pair::KeyPair;
-use ring::agreement::{agree_ephemeral, EphemeralPrivateKey, UnparsedPublicKey, X25519};
+use ring::agreement::{EphemeralPrivateKey, UnparsedPublicKey, X25519, agree_ephemeral};
 use ring::error::Unspecified;
 use ring::rand::SystemRandom;
 
-pub struct ECDH;
+pub struct Ecdh;
 
-impl ECDH {
+impl Ecdh {
     pub fn calculate_shared_key(
         self_private_key: EphemeralPrivateKey,
         remote_public_key: &[u8],

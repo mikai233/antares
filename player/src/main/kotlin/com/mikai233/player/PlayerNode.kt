@@ -8,20 +8,15 @@ import com.beust.jcommander.Parameter
 import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.*
+import com.mikai233.common.entity.EntityKryoPool
 import com.mikai233.common.extension.ask
 import com.mikai233.common.extension.startSharding
 import com.mikai233.common.extension.startShardingProxy
 import com.mikai233.common.extension.startSingletonProxy
-import com.mikai233.common.message.GmDispatcher
-import com.mikai233.common.message.Message
-import com.mikai233.common.message.MessageDispatcher
-import com.mikai233.common.message.MessageHandlerReflect
-import com.mikai233.shared.entity.EntityKryoPool
-import com.mikai233.shared.message.PlayerMessageExtractor
-import com.mikai233.shared.message.WorldMessageExtractor
-import com.mikai233.shared.message.global.worker.WorkerIdReq
-import com.mikai233.shared.message.global.worker.WorkerIdResp
-import com.mikai233.shared.message.player.HandoffPlayer
+import com.mikai233.common.message.*
+import com.mikai233.common.message.global.worker.WorkerIdReq
+import com.mikai233.common.message.global.worker.WorkerIdResp
+import com.mikai233.common.message.player.HandoffPlayer
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import java.net.InetSocketAddress
@@ -48,9 +43,9 @@ class PlayerNode(
 
     private val handlerReflect = MessageHandlerReflect("com.mikai233.player.handler")
 
-    val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, handlerReflect)
+    val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, handlerReflect, 1)
 
-    val internalDispatcher = MessageDispatcher(Message::class, handlerReflect)
+    val internalDispatcher = MessageDispatcher(Message::class, handlerReflect, 1)
 
     val gmDispatcher = GmDispatcher(handlerReflect)
 
@@ -95,7 +90,7 @@ class PlayerNode(
     }
 }
 
-class Cli {
+private class Cli {
     @Parameter(names = ["-h", "--host"], description = "host")
     var host: String = GlobalEnv.machineIp
 
@@ -114,6 +109,7 @@ class Cli {
 
 suspend fun main(args: Array<String>) {
     val cli = Cli()
+    @Suppress("SpreadOperator")
     JCommander.newBuilder()
         .addObject(cli)
         .build()

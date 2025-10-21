@@ -26,6 +26,8 @@ allprojects {
     group = Version.PROJECT_GROUP
     version = Version.PROJECT_VERSION
 
+    apply(plugin = "io.gitlab.arturbosch.detekt")
+
     afterEvaluate {
         configureJvmTarget()
     }
@@ -35,7 +37,6 @@ subprojects {
     apply(plugin = "kotlin")
     apply(plugin = "kotlin-allopen")
     apply(plugin = "kotlin-noarg")
-    apply(plugin = "io.gitlab.arturbosch.detekt")
     apply(plugin = "org.jetbrains.dokka")
     if (Boot.contains(project.name)) {
         apply(plugin = "org.springframework.boot")
@@ -63,7 +64,7 @@ subprojects {
         }
     }
 
-    if (project.name == "shared") {
+    if (project.name == "common") {
         sourceSets.main {
             kotlin.srcDir("build/generated/ksp/main/kotlin")
         }
@@ -72,32 +73,74 @@ subprojects {
         }
     }
 
-    sourceSets {
-        create("script") {
-            compileClasspath += main.get().run { compileClasspath + output }
+    if (Boot.contains(project.name) || project.name == "common") {
+        sourceSets {
+            create("script") {
+                compileClasspath += main.get().run { compileClasspath + output }
+            }
+        }
+        val scriptSourceSets = sourceSets["script"]
+        scriptSourceSets.output.classesDirs.forEach { file ->
+            val scriptClassesDir = file.resolve("com/mikai233/${project.name}/script")
+            scriptClassesDir.walk().filter { it.isFile && it.extension == "class" }.forEach { classFile ->
+                val className = classFile.nameWithoutExtension
+                tasks.register<Jar>("buildJarFor${className}") {
+                    group = "script"
+                    description = "Build JAR for $className"
+                    archiveFileName.set("${rootProject.name}_${project.name}_${className}.jar")
+                    manifest {
+                        attributes("Script-Class" to "com.mikai233.${project.name}.script.${className}")
+                    }
+                    from(scriptSourceSets.output)
+                    include("com/mikai233/${project.name}/script/*")
+                }
+            }
         }
     }
-
-    if (Boot.contains(project.name)) {
-        tasks.register<Jar>("buildKotlinScript") {
-            group = "script"
-            description = "Build kotlin script jar"
-            val scriptClass: String by project
-            archiveFileName.set("${rootProject.name}_${project.name}_${scriptClass}.jar")
-            val script = sourceSets["script"]
-            manifest {
-                attributes("Script-Class" to "com.mikai233.${project.name}.script.${scriptClass}")
-            }
-            from(script.output)
-            include("com/mikai233/${project.name}/script/*")
-
-            doFirst {
-                val containsTarget = script.output.classesDirs.any {
-                    it.walk().any { file -> file.name == "${scriptClass}.class" }
-                }
-                check(containsTarget) { "cannot find ${scriptClass}.class in build dir" }
-            }
+    val actor = Forward[project.name]
+    if (actor != null) {
+        tasks.register<JavaExec>("generateProtoForwardMap") {
+            group = "other"
+            description = "Generates protobuf forward map for gate"
+            mainClass = "com.mikai233.common.message.MessageForwardGeneratorKt"
+            val sourceSetsMain = sourceSets.main.get()
+            classpath = sourceSetsMain.runtimeClasspath
+            val gateResourcesPath =
+                project(":gate").extensions.getByType<SourceSetContainer>().main.get().resources.srcDirs.first().path
+            args =
+                listOf(
+                    "-p",
+                    "com.mikai233.${project.name}.handler",
+                    "-o",
+                    gateResourcesPath,
+                    "-f",
+                    actor,
+                )
         }
+        tasks.named("compileKotlin") {
+            finalizedBy("generateProtoForwardMap")
+        }
+    }
+    tasks.register("generateVersionFile") {
+        val resourcesDir = file("${layout.buildDirectory.get()}/generated/resources/")
+        val versionFile = File(resourcesDir, "version")
+
+        inputs.property("version", project.version.toString())
+        outputs.file(versionFile)
+        doLast {
+            if (!resourcesDir.exists()) {
+                resourcesDir.mkdirs()
+            }
+            versionFile.writeText("${project.version}")
+        }
+    }
+    tasks.named<ProcessResources>("processResources") {
+        from("${layout.buildDirectory.get()}/generated/resources") {
+            include("version")
+        }
+    }
+    tasks.named("processResources") {
+        dependsOn("generateVersionFile")
     }
 }
 
@@ -106,13 +149,13 @@ tasks.test {
 }
 
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(21)
 }
 
 fun Project.configureJvmTarget() {
     tasks.withType<JavaCompile> {
-        sourceCompatibility = "17"
-        targetCompatibility = "17"
+        sourceCompatibility = "21"
+        targetCompatibility = "21"
         with(options) {
             encoding = "UTF-8"
             isFork = true
@@ -120,7 +163,7 @@ fun Project.configureJvmTarget() {
     }
     tasks.withType<KotlinCompile> {
         compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
+            jvmTarget.set(JvmTarget.JVM_21)
             javaParameters.set(true)
         }
     }
