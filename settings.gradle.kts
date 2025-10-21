@@ -22,7 +22,7 @@ val kspVersion = "1.0.29"
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        maven("https://repo.akka.io/maven/")
+        maven("https://repo.akka.io/${System.getenv("AKKA_SECURE_TOKEN")}/secure")
         mavenCentral()
     }
     versionCatalogs {
