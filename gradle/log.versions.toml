@@ -1,0 +1,12 @@
+[versions]
+logback = "1.5.15"
+log4j2 = "2.20.0"
+janino = "3.1.12"
+
+[libraries]
+logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+log4j_to_slf4j = { module = "org.apache.logging.log4j:log4j-to-slf4j", version.ref = "log4j2" }
+janino = { module = "org.codehaus.janino:janino", version.ref = "janino" }
+
+[bundles]
+common = ["logback", "log4j_to_slf4j", "janino"]

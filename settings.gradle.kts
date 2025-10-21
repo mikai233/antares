@@ -88,11 +88,7 @@ dependencyResolutionManagement {
             )
         }
         create("log") {
-//            library("api", "org.slf4j:slf4j-api:2.0.7")
-            library("logback", "ch.qos.logback:logback-classic:1.5.15")
-            library("log4j.to.slf4j", "org.apache.logging.log4j:log4j-to-slf4j:2.20.0")
-            library("janino", "org.codehaus.janino:janino:3.1.12")
-            bundle("common", listOf("logback", "log4j.to.slf4j", "janino"))
+            from(files("gradle/log.versions.toml"))
         }
         create("tool") {
             version("protobuf", protobufVersion)
