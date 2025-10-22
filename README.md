@@ -6,13 +6,14 @@
 
 - JDK21(azul-21)
 - MongoDB
-- Gradle 8
+- Gradle 9
 - Zookeeper
 
 ## 启动
 
-1. 运行 `ZookeeperInitializer.kt` 初始化zookeeper数据
-2. 执行 `Stardust.kt` 启动游戏服务器
+1. 运行 `ZookeeperInitializer.kt` 初始化 Zookeeper 数据
+2. 运行 `GameConfigExporter.kt` 上传配置表数据到 Zookeeper，测试配置表路径 `tools/src/main/resources/excel`
+3. 执行 `Stardust.kt` 启动游戏服务器
 
 ## 快速上手
 
