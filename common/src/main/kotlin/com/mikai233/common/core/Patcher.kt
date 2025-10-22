@@ -39,22 +39,24 @@ class Patcher(private val node: Node) {
 
     suspend fun apply() {
         val patchByVersion = patchByVersion(node.version())
-        val patches = coroutineScope {
-            node.zookeeper.children.forPath(patchByVersion).await().map { name ->
-                val path = "$patchByVersion/$name"
-                async {
-                    val mtime = node.zookeeper.checkExists().forPath(path).await().mtime
-                    path to mtime
+        if (node.zookeeper.checkExists().forPath(patchByVersion).await() != null) {
+            val patches = coroutineScope {
+                node.zookeeper.children.forPath(patchByVersion).await().map { name ->
+                    val path = "$patchByVersion/$name"
+                    async {
+                        val mtime = node.zookeeper.checkExists().forPath(path).await().mtime
+                        path to mtime
+                    }
                 }
+            }.awaitAll().sortedBy { it.second }
+            patches.forEach { (path, _) ->
+                val jarBytes = node.zookeeper.data.forPath(path).await()
+                val message = Input(GZIPInputStream(jarBytes.inputStream())).use {
+                    kryo.use { readClassAndObject(it) }
+                }
+                node.scriptActor.tell(message)
+                logger.info("apply patch $path -> $message")
             }
-        }.awaitAll().sortedBy { it.second }
-        patches.forEach { (path, _) ->
-            val jarBytes = node.zookeeper.data.forPath(path).await()
-            val message = Input(GZIPInputStream(jarBytes.inputStream())).use {
-                kryo.use { readClassAndObject(it) }
-            }
-            node.scriptActor.tell(message)
-            logger.info("apply patch $path -> $message")
         }
     }
 }
