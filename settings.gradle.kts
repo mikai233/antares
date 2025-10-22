@@ -121,7 +121,7 @@ dependencyResolutionManagement {
             )
             library("reflections", "org.reflections:reflections:0.10.2")
             library("protoc", "com.google.protobuf:protoc:$protobufVersion")
-            plugin("protobuf", "com.google.protobuf").version("0.9.3")
+            plugin("protobuf", "com.google.protobuf").version("0.9.5")
             library("protobuf.java.util", "com.google.protobuf:protobuf-java-util:$protobufVersion")
             library("protobuf.kotlin", "com.google.protobuf:protobuf-kotlin:$protobufVersion")
             library("netty", "io.netty:netty-all:4.1.92.Final")
