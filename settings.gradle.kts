@@ -91,62 +91,7 @@ dependencyResolutionManagement {
             from(files("gradle/log.versions.toml"))
         }
         create("tool") {
-            version("protobuf", protobufVersion)
-
-            library("curator.framework", "org.apache.curator:curator-framework:$curatorVersion")
-            library("curator.recipes", "org.apache.curator:curator-recipes:$curatorVersion")
-            library("curator.async", "org.apache.curator:curator-x-async:$curatorVersion")
-            bundle("curator", listOf("curator.framework", "curator.recipes", "curator.async"))
-            library("jackson.databind", "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
-            library("jackson.kotlin", "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
-            library("jackson.protobuf", "com.fasterxml.jackson.dataformat:jackson-dataformat-protobuf:$jacksonVersion")
-            library("jackson.guava", "com.fasterxml.jackson.datatype:jackson-datatype-guava:$jacksonVersion")
-            library("jackson.cbor", "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:$jacksonVersion")
-            library("jackson.yaml", "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
-            library("jackson.datatype.jsr310", "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")
-            library("jackson.datatype.jdk8", "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion")
-            bundle(
-                "jackson",
-                listOf(
-                    "jackson.databind",
-                    "jackson.kotlin",
-                    "jackson.guava",
-                    "jackson.datatype.jsr310",
-                    "jackson.datatype.jdk8",
-                ),
-            )
-            library("reflections", "org.reflections:reflections:0.10.2")
-            library("protoc", "com.google.protobuf:protoc:$protobufVersion")
-            plugin("protobuf", "com.google.protobuf").version("0.9.5")
-            library("protobuf.java.util", "com.google.protobuf:protobuf-java-util:$protobufVersion")
-            library("protobuf.kotlin", "com.google.protobuf:protobuf-kotlin:$protobufVersion")
-            library("netty", "io.netty:netty-all:4.1.92.Final")
-            library("lz4", "org.lz4:lz4-java:1.8.0")
-            library("bcprov", "org.bouncycastle:bcprov-jdk15on:1.70")
-            library("akka.kryo", "io.altoo:akka-kryo-serialization_$scalaVersion:2.5.0")
-            plugin("detekt", "io.gitlab.arturbosch.detekt").version("1.23.7")
-            library("caffeine", "com.github.ben-manes.caffeine:caffeine:3.1.6")
-            library("groovy", "org.apache.groovy:groovy:4.0.12")
-            library("groovy.all", "org.apache.groovy:groovy-all:4.0.12")
-            plugin("dokka", "org.jetbrains.dokka").version("1.8.10")
-            library("kotlinpoet", "com.squareup:kotlinpoet:$kotlinpoetVersion")
-            library("kotlinpoet.ksp", "com.squareup:kotlinpoet-ksp:$kotlinpoetVersion")
-            library("easyexcel", "com.alibaba:easyexcel:4.0.3")
-            plugin("boot", "org.springframework.boot").version("3.4.1")
-            library("guava", "com.google.guava:guava:33.4.0-jre")
-            library("symbol.processing.api", "com.google.devtools.ksp:symbol-processing-api:$kotlinVersion-$kspVersion")
-//            library("symbol.processing", "com.google.devtools.ksp:symbol-processing:$kotlinVersion-$kspVersion")
-            plugin("ksp", "com.google.devtools.ksp").version("${kotlinVersion}-${kspVersion}")
-            library("spring.data.mongodb", "org.springframework.data:spring-data-mongodb:4.1.0")
-            library("spring.retry", "org.springframework.retry:spring-retry:2.0.11")
-            library("mongodb.driver.sync", "org.mongodb:mongodb-driver-sync:4.9.1")
-            library("agrona", "org.agrona:agrona:1.18.1")
-            library("kryo", "com.esotericsoftware:kryo:5.6.2")
-            library("jcommander", "org.jcommander:jcommander:2.0")
-            library("simpleclient", "io.prometheus:simpleclient:$prometheusVersion")
-            library("simpleclient_hotspot", "io.prometheus:simpleclient_hotspot:$prometheusVersion")
-            library("simpleclient_httpserver", "io.prometheus:simpleclient_httpserver:$prometheusVersion")
-            bundle("prometheus", listOf("simpleclient", "simpleclient_hotspot", "simpleclient_httpserver"))
+            from(files("gradle/tool.versions.toml"))
         }
         create("test") {
             library("junit.bom", "org.junit:junit-bom:$junitVersion")
