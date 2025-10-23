@@ -28,7 +28,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Update version catalog
-        run: ./gradlew versionCatalogUpdate --stacktrace
+        run: ./gradlew versionCatalogUpdates --stacktrace
 
       - name: Verify catalog updates
         run: git diff --exit-code || echo "Updates detected"
