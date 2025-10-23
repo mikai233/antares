@@ -2,12 +2,12 @@ import com.google.protobuf.gradle.id
 import io.gitlab.arturbosch.detekt.Detekt
 
 plugins {
-    alias(tool.plugins.protobuf)
+    alias(libTool.plugins.protobuf)
 }
 
 protobuf {
     protoc {
-        val version = tool.versions.protobuf.get()
+        val version = libTool.versions.protobuf.get()
         artifact = "com.google.protobuf:protoc:$version"
     }
     generateProtoTasks {
@@ -27,12 +27,12 @@ tasks.withType<Detekt>().configureEach {
 }
 
 dependencies {
-    testImplementation(platform(test.junit.bom))
-    testImplementation(test.junit.jupiter)
-    implementation(tool.protobuf.kotlin)
-    implementation(tool.reflections)
-    implementation(kt.reflect)
-    implementation(tool.kotlinpoet)
+    testImplementation(platform(libTest.junit.bom))
+    testImplementation(libTest.junit.jupiter)
+    implementation(libTool.protobuf.kotlin)
+    implementation(libTool.reflections)
+    implementation(libKotlin.reflect)
+    implementation(libTool.kotlinpoet)
 }
 
 tasks.register<JavaExec>("generateProtoMeta") {

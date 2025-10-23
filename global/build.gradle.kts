@@ -3,16 +3,16 @@ plugins {
 }
 
 dependencies {
-    testImplementation(platform(test.junit.bom))
-    testImplementation(test.junit.jupiter)
-    implementation(akka.bundles.common)
-    implementation(ktx.core)
-    implementation(ktx.datetime.jvm)
-    runtimeOnly(ktx.core.jvm)
-    implementation(tool.groovy.all)
-    implementation(tool.spring.data.mongodb)
-    implementation(tool.mongodb.driver.sync)
-    implementation(tool.jcommander)
+    testImplementation(platform(libTest.junit.bom))
+    testImplementation(libTest.junit.jupiter)
+    implementation(libAkka.bundles.common)
+    implementation(libKotlinx.core)
+    implementation(libKotlinx.datetime.jvm)
+    runtimeOnly(libKotlinx.core.jvm)
+    implementation(libTool.groovy.all)
+    implementation(libTool.spring.data.mongodb)
+    implementation(libTool.mongodb.driver.sync)
+    implementation(libTool.jcommander)
     implementation(project(":common"))
 }
 

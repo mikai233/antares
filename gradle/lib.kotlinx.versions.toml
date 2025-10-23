@@ -1,0 +1,25 @@
+###############################
+# 🧩 KotlinX Version Catalog
+###############################
+
+[versions]
+coroutines = "1.10.0"
+atomicfu = "0.26.1"
+datetime = "0.6.1"
+
+###############################
+# 📦 Libraries
+###############################
+
+[libraries]
+# --- Coroutines ---
+core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+core-jvm = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm", version.ref = "coroutines" }
+
+# --- AtomicFu ---
+atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "atomicfu" }
+atomicfu-jvm = { module = "org.jetbrains.kotlinx:atomicfu-jvm", version.ref = "atomicfu" }
+
+# --- DateTime ---
+datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }
+datetime-jvm = { module = "org.jetbrains.kotlinx:kotlinx-datetime-jvm", version.ref = "datetime" }

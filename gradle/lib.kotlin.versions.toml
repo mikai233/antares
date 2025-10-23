@@ -1,0 +1,35 @@
+###############################
+# 🧩 Kotlin Version Catalog
+###############################
+
+[versions]
+kotlin = "2.1.0"
+
+###############################
+# 🔌 Plugins
+###############################
+
+[plugins]
+jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+allopen = { id = "org.jetbrains.kotlin.plugin.allopen", version.ref = "kotlin" }
+noarg = { id = "org.jetbrains.kotlin.plugin.noarg", version.ref = "kotlin" }
+
+###############################
+# 📦 Libraries
+###############################
+
+[libraries]
+stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
+jdk8 = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin" }
+reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
+
+###############################
+# 🧺 Bundles
+###############################
+
+[bundles]
+common = [
+    "stdlib",
+    "jdk8",
+    "reflect",
+]
