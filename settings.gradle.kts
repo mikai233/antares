@@ -45,9 +45,8 @@ dependencyResolutionManagement {
         create("tool") {
             from(files("gradle/tool.versions.toml"))
         }
-        create("test") {
-            library("junit.bom", "org.junit:junit-bom:$junitVersion")
-            library("junit.jupiter", "org.junit.jupiter:junit-jupiter:$junitVersion")
+        create("libTest") {
+            from(files("gradle/lib.test.versions.toml"))
         }
     }
 }

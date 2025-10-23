@@ -1,6 +1,6 @@
 dependencies {
-    testImplementation(platform(test.junit.bom))
-    testImplementation(test.junit.jupiter)
+    testImplementation(platform(libTest.junit.bom))
+    testImplementation(libTest.junit.jupiter)
     implementation(libKotlin.reflect)
     implementation(libKotlinx.core)
     runtimeOnly(libKotlinx.core.jvm)

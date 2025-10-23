@@ -27,8 +27,8 @@ tasks.withType<Detekt>().configureEach {
 }
 
 dependencies {
-    testImplementation(platform(test.junit.bom))
-    testImplementation(test.junit.jupiter)
+    testImplementation(platform(libTest.junit.bom))
+    testImplementation(libTest.junit.jupiter)
     implementation(tool.protobuf.kotlin)
     implementation(tool.reflections)
     implementation(libKotlin.reflect)

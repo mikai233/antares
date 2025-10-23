@@ -1,6 +1,6 @@
 dependencies {
-    testImplementation(platform(test.junit.bom))
-    testImplementation(test.junit.jupiter)
+    testImplementation(platform(libTest.junit.bom))
+    testImplementation(libTest.junit.jupiter)
     implementation(libAkka.bundles.common)
 //    implementation(libAkka.discovery)
     implementation(libAkka.management)
