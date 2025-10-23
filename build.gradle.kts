@@ -6,9 +6,9 @@ plugins {
     alias(libKotlin.plugins.jvm)
     alias(libKotlin.plugins.allopen)
     alias(libKotlin.plugins.noarg)
-    alias(tool.plugins.detekt)
-    alias(tool.plugins.dokka)
-    alias(tool.plugins.boot) apply false
+    alias(libTool.plugins.detekt)
+    alias(libTool.plugins.dokka)
+    alias(libTool.plugins.boot) apply false
 }
 
 idea {

@@ -9,10 +9,10 @@ dependencies {
     implementation(libKotlinx.core)
     implementation(libKotlinx.datetime.jvm)
     runtimeOnly(libKotlinx.core.jvm)
-    implementation(tool.groovy.all)
-    implementation(tool.spring.data.mongodb)
-    implementation(tool.mongodb.driver.sync)
-    implementation(tool.jcommander)
+    implementation(libTool.groovy.all)
+    implementation(libTool.spring.data.mongodb)
+    implementation(libTool.mongodb.driver.sync)
+    implementation(libTool.jcommander)
     implementation(project(":common"))
 }
 

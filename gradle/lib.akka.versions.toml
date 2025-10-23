@@ -5,7 +5,6 @@
 [versions]
 akka = "2.10.0"
 akkaManagement = "1.6.0"
-scala = "2.13"
 
 ###############################
 # 📦 Libraries
