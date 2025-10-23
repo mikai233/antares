@@ -1,0 +1,38 @@
+###############################
+# 🎭 Akka Version Catalog
+###############################
+
+[versions]
+akka = "2.10.0"
+akkaManagement = "1.6.0"
+scala = "2.13"
+
+###############################
+# 📦 Libraries
+###############################
+
+[libraries]
+# --- Akka Core Components ---
+actor = { module = "com.typesafe.akka:akka-actor_2.13", version.ref = "akka" }
+cluster = { module = "com.typesafe.akka:akka-cluster_2.13", version.ref = "akka" }
+testkit = { module = "com.typesafe.akka:akka-actor-testkit_2.13", version.ref = "akka" }
+sharding = { module = "com.typesafe.akka:akka-cluster-sharding_2.13", version.ref = "akka" }
+slf4j = { module = "com.typesafe.akka:akka-slf4j_2.13", version.ref = "akka" }
+stream = { module = "com.typesafe.akka:akka-stream_2.13", version.ref = "akka" }
+
+# --- Akka Management Components ---
+discovery = { module = "com.typesafe.akka:akka-discovery_2.13", version.ref = "akka" }
+management = { module = "com.lightbend.akka.management:akka-management_2.13", version.ref = "akkaManagement" }
+management-cluster-http = { module = "com.lightbend.akka.management:akka-management-cluster-http_2.13", version.ref = "akkaManagement" }
+
+###############################
+# 🧺 Bundles
+###############################
+
+[bundles]
+common = [
+    "actor",
+    "cluster",
+    "sharding",
+    "slf4j",
+]

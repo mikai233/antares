@@ -36,23 +36,8 @@ dependencyResolutionManagement {
         create("libKotlinx") {
             from(files("gradle/lib.kotlinx.versions.toml"))
         }
-        create("akka") {
-            library("actor", "com.typesafe.akka:akka-actor_$scalaVersion:$akkaVersion")
-            library("cluster", "com.typesafe.akka:akka-cluster_$scalaVersion:$akkaVersion")
-            library("testkit", "com.typesafe.akka:akka-actor-testkit_$scalaVersion:$akkaVersion")
-            library("sharding", "com.typesafe.akka:akka-cluster-sharding_$scalaVersion:$akkaVersion")
-            library("slf4j", "com.typesafe.akka:akka-slf4j_$scalaVersion:$akkaVersion")
-            library("stream", "com.typesafe.akka:akka-stream_$scalaVersion:$akkaVersion")
-            bundle("common", listOf("actor", "cluster", "sharding", "slf4j"))
-            library("discovery", "com.typesafe.akka:akka-discovery_$scalaVersion:$akkaVersion")
-            library(
-                "management",
-                "com.lightbend.akka.management:akka-management_$scalaVersion:$akkaManagementVersion",
-            )
-            library(
-                "management.cluster.http",
-                "com.lightbend.akka.management:akka-management-cluster-http_$scalaVersion:$akkaManagementVersion",
-            )
+        create("libAkka") {
+            from(files("gradle/lib.akka.versions.toml"))
         }
         create("log") {
             from(files("gradle/log.versions.toml"))

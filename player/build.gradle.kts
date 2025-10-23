@@ -5,7 +5,7 @@ plugins {
 dependencies {
     testImplementation(platform(test.junit.bom))
     testImplementation(test.junit.jupiter)
-    implementation(akka.bundles.common)
+    implementation(libAkka.bundles.common)
     implementation(libKotlin.reflect)
     implementation(libKotlinx.core)
     implementation(libKotlinx.datetime.jvm)

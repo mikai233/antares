@@ -5,7 +5,7 @@ dependencies {
     implementation(libKotlinx.core)
     runtimeOnly(libKotlinx.core.jvm)
     implementation(tool.bundles.curator)
-    implementation(akka.actor)
+    implementation(libAkka.actor)
     implementation(log.logback)
     implementation(project(":common"))
     implementation(project(":gate"))
