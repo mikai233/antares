@@ -3,9 +3,9 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     idea
-    alias(kt.plugins.jvm)
-    alias(kt.plugins.allopen)
-    alias(kt.plugins.noarg)
+    alias(libKotlin.plugins.jvm)
+    alias(libKotlin.plugins.allopen)
+    alias(libKotlin.plugins.noarg)
     alias(tool.plugins.detekt)
     alias(tool.plugins.dokka)
     alias(tool.plugins.boot) apply false

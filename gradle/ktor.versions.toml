@@ -1,6 +1,5 @@
 ###############################
 # 🌐 Ktor Version Catalog
-# File: gradle/ktor.versions.toml
 ###############################
 
 [versions]

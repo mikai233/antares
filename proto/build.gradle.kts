@@ -31,7 +31,7 @@ dependencies {
     testImplementation(test.junit.jupiter)
     implementation(tool.protobuf.kotlin)
     implementation(tool.reflections)
-    implementation(kt.reflect)
+    implementation(libKotlin.reflect)
     implementation(tool.kotlinpoet)
 }
 

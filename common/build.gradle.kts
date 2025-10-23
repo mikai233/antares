@@ -6,7 +6,7 @@ dependencies {
     testImplementation(platform(test.junit.bom))
     testImplementation(test.junit.jupiter)
     implementation(akka.bundles.common)
-    implementation(kt.bundles.common)
+    implementation(libKotlin.bundles.common)
     implementation(ktx.core)
     runtimeOnly(ktx.core.jvm)
     implementation(ktx.datetime)

@@ -1,7 +1,7 @@
 dependencies {
     testImplementation(platform(test.junit.bom))
     testImplementation(test.junit.jupiter)
-    implementation(kt.reflect)
+    implementation(libKotlin.reflect)
     implementation(ktx.core)
     runtimeOnly(ktx.core.jvm)
     implementation(tool.bundles.curator)

@@ -6,7 +6,7 @@ dependencies {
     implementation(ktx.datetime)
     implementation(ktx.core)
     runtimeOnly(ktx.core.jvm)
-    implementation(kt.reflect)
+    implementation(libKotlin.reflect)
     implementation(tool.bundles.curator)
     implementation(tool.guava)
     implementation(tool.lz4)
