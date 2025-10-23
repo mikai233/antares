@@ -33,13 +33,8 @@ dependencyResolutionManagement {
         create("ktor") {
             from(files("gradle/ktor.versions.toml"))
         }
-        create("ktx") {
-            library("core", "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.0")
-            library("core.jvm", "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.10.0")
-            library("atomicfu", "org.jetbrains.kotlinx:atomicfu:$atomicfuVersion")
-            library("atomicfu.jvm", "org.jetbrains.kotlinx:atomicfu-jvm:$atomicfuVersion")
-            library("datetime", "org.jetbrains.kotlinx:kotlinx-datetime:$datetimeVersion")
-            library("datetime.jvm", "org.jetbrains.kotlinx:kotlinx-datetime-jvm:$datetimeVersion")
+        create("libKotlinx") {
+            from(files("gradle/lib.kotlinx.versions.toml"))
         }
         create("akka") {
             library("actor", "com.typesafe.akka:akka-actor_$scalaVersion:$akkaVersion")
