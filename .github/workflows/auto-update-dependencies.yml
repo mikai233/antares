@@ -1,0 +1,48 @@
+name: Auto Update Gradle Dependencies
+
+on:
+  schedule:
+    - cron: "0 3 * * *" # every day at 03:00 UTC
+  workflow_dispatch: # allow manual run
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-dependencies:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      - name: Update version catalog
+        run: ./gradlew versionCatalogUpdate --stacktrace
+
+      - name: Verify catalog updates
+        run: git diff --exit-code || echo "Updates detected"
+
+      - name: Commit and push changes
+        if: success() || failure()
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "chore(deps): update version catalog"
+          title: "chore(deps): update Gradle version catalog"
+          body: |
+            This PR was automatically created by the **auto-update workflow**.
+            It updates dependency versions in `gradle/libs.versions.toml`.
+          branch: chore/auto-update-deps
+          delete-branch: true
+          base: main
+          labels: dependencies, automated-pr

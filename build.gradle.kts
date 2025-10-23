@@ -9,6 +9,7 @@ plugins {
     alias(libTool.plugins.detekt)
     alias(libTool.plugins.dokka)
     alias(libTool.plugins.boot) apply false
+    alias(libTool.plugins.version.catalog.update)
 }
 
 idea {
@@ -188,4 +189,8 @@ tasks.register("release") {
 tasks.getByName<Delete>("clean") {
     val releaseDir: String by project
     delete.add(releaseDir)
+}
+
+versionCatalogUpdate {
+    catalogFile = file("gradle/lib.kotlin.versions.toml")
 }
