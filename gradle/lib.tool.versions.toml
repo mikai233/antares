@@ -1,100 +1,96 @@
 ###############################
 # 🧩 Version Catalog (Gradle)
 ###############################
-
 [versions]
-jackson = "2.18.2"
-curator = "5.7.1"
-protobuf = "4.29.2"
-kotlinpoet = "2.0.0"
-ksp = "2.1.0-1.0.29"
+curator = "5.9.0"
+jackson = "2.20.0"
+kotlinpoet = "2.2.0"
+ksp = "2.3.0"
+org-apache-groovy = "5.0.2"
 prometheus = "0.16.0"
+protobuf = "4.33.0"
 
 ###############################
 # 📦 Libraries
 ###############################
-
 [libraries]
+# Utilities
+agrona = "org.agrona:agrona:2.3.0"
+# Akka & serialization
+akka-kryo = "io.altoo:akka-kryo-serialization_2.13:2.5.2"
+bcprov = "org.bouncycastle:bcprov-jdk15on:1.70"
+# Other utilities
+caffeine = "com.github.ben-manes.caffeine:caffeine:3.2.2"
+curator-async = { module = "org.apache.curator:curator-x-async", version.ref = "curator" }
 # Curator
 curator-framework = { module = "org.apache.curator:curator-framework", version.ref = "curator" }
 curator-recipes = { module = "org.apache.curator:curator-recipes", version.ref = "curator" }
-curator-async = { module = "org.apache.curator:curator-x-async", version.ref = "curator" }
-
+easyexcel = "com.alibaba:easyexcel:4.0.3"
+groovy = { module = "org.apache.groovy:groovy", version.ref = "org-apache-groovy" }
+groovy-all = { module = "org.apache.groovy:groovy-all", version.ref = "org-apache-groovy" }
+guava = "com.google.guava:guava:33.5.0-jre"
+jackson-cbor = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor", version.ref = "jackson" }
 # Jackson
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
+jackson-guava = { module = "com.fasterxml.jackson.datatype:jackson-datatype-guava", version.ref = "jackson" }
+jackson-jdk8 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jdk8", version.ref = "jackson" }
+jackson-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310", version.ref = "jackson" }
 jackson-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
 jackson-protobuf = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-protobuf", version.ref = "jackson" }
-jackson-guava = { module = "com.fasterxml.jackson.datatype:jackson-datatype-guava", version.ref = "jackson" }
-jackson-cbor = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor", version.ref = "jackson" }
 jackson-yaml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml", version.ref = "jackson" }
-jackson-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310", version.ref = "jackson" }
-jackson-jdk8 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jdk8", version.ref = "jackson" }
-
-# Misc core libs
-reflections = { module = "org.reflections:reflections", version = "0.10.2" }
-protoc = { module = "com.google.protobuf:protoc", version.ref = "protobuf" }
-protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf" }
-protobuf-kotlin = { module = "com.google.protobuf:protobuf-kotlin", version.ref = "protobuf" }
-
-# Networking & compression
-netty = { module = "io.netty:netty-all", version = "4.1.92.Final" }
-lz4 = { module = "org.lz4:lz4-java", version = "1.8.0" }
-bcprov = { module = "org.bouncycastle:bcprov-jdk15on", version = "1.70" }
-
-# Akka & serialization
-akka-kryo = { module = "io.altoo:akka-kryo-serialization_2.13", version = "2.5.0" }
-
+jcommander = "org.jcommander:jcommander:3.0"
 # KotlinPoet & KSP
 kotlinpoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet" }
 kotlinpoet-ksp = { module = "com.squareup:kotlinpoet-ksp", version.ref = "kotlinpoet" }
-symbol-processing-api = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "ksp" }
-
-# Spring & Mongo
-spring-data-mongodb = { module = "org.springframework.data:spring-data-mongodb", version = "4.1.0" }
-spring-retry = { module = "org.springframework.retry:spring-retry", version = "2.0.11" }
-mongodb-driver-sync = { module = "org.mongodb:mongodb-driver-sync", version = "4.9.1" }
-
-# Utilities
-agrona = { module = "org.agrona:agrona", version = "1.18.1" }
-kryo = { module = "com.esotericsoftware:kryo", version = "5.6.2" }
-jcommander = { module = "org.jcommander:jcommander", version = "2.0" }
-
+kryo = "com.esotericsoftware:kryo:5.6.2"
+lz4 = "org.lz4:lz4-java:1.8.0"
+mongodb-driver-sync = "org.mongodb:mongodb-driver-sync:5.6.1"
+# Networking & compression
+netty = "io.netty:netty-all:4.2.7.Final"
+protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf" }
+protobuf-kotlin = { module = "com.google.protobuf:protobuf-kotlin", version.ref = "protobuf" }
+protoc = { module = "com.google.protobuf:protoc", version.ref = "protobuf" }
+# Misc core libs
+reflections = "org.reflections:reflections:0.10.2"
 # Monitoring
 simpleclient = { module = "io.prometheus:simpleclient", version.ref = "prometheus" }
 simpleclient-hotspot = { module = "io.prometheus:simpleclient_hotspot", version.ref = "prometheus" }
 simpleclient-httpserver = { module = "io.prometheus:simpleclient_httpserver", version.ref = "prometheus" }
-
-# Other utilities
-caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version = "3.1.6" }
-groovy = { module = "org.apache.groovy:groovy", version = "4.0.12" }
-groovy-all = { module = "org.apache.groovy:groovy-all", version = "4.0.12" }
-easyexcel = { module = "com.alibaba:easyexcel", version = "4.0.3" }
-guava = { module = "com.google.guava:guava", version = "33.4.0-jre" }
+# Spring & Mongo
+spring-data-mongodb = "org.springframework.data:spring-data-mongodb:4.5.5"
+spring-retry = "org.springframework.retry:spring-retry:2.0.12"
+symbol-processing-api = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "ksp" }
 
 ###############################
 # 🧺 Bundles
 ###############################
-
 [bundles]
-curator = ["curator-framework", "curator-recipes", "curator-async"]
+curator = [
+    "curator-async",
+    "curator-framework",
+    "curator-recipes",
+]
 jackson = [
     "jackson-databind",
-    "jackson-kotlin",
     "jackson-guava",
-    "jackson-jsr310",
     "jackson-jdk8",
+    "jackson-jsr310",
+    "jackson-kotlin",
 ]
-prometheus = ["simpleclient", "simpleclient-hotspot", "simpleclient-httpserver"]
+prometheus = [
+    "simpleclient",
+    "simpleclient-hotspot",
+    "simpleclient-httpserver",
+]
 
 ###############################
 # 🔌 Plugins
 ###############################
-
 [plugins]
-protobuf = { id = "com.google.protobuf", version = "0.9.5" }
-detekt = { id = "io.gitlab.arturbosch.detekt", version = "1.23.7" }
-dokka = { id = "org.jetbrains.dokka", version = "1.8.10" }
-boot = { id = "org.springframework.boot", version = "3.4.1" }
+boot = "org.springframework.boot:3.5.7"
+detekt = "io.gitlab.arturbosch.detekt:1.23.8"
+dokka = "org.jetbrains.dokka:2.1.0"
+foojay-resolver-convention = "org.gradle.toolchains.foojay-resolver-convention:1.0.0"
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-version-catalog-update = { id = "nl.littlerobots.version-catalog-update", version = "1.0.1" }
-foojay-resolver-convention = { id = "org.gradle.toolchains.foojay-resolver-convention", version = "0.8.0" }
+protobuf = "com.google.protobuf:0.9.5"
+version-catalog-update = "nl.littlerobots.version-catalog-update:1.0.1"
