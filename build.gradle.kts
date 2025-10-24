@@ -1,5 +1,6 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import java.util.*
 
 plugins {
     idea
@@ -9,6 +10,7 @@ plugins {
     alias(libTool.plugins.detekt)
     alias(libTool.plugins.dokka)
     alias(libTool.plugins.boot) apply false
+    alias(libTool.plugins.version.catalog.update)
 }
 
 idea {
@@ -188,4 +190,31 @@ tasks.register("release") {
 tasks.getByName<Delete>("clean") {
     val releaseDir: String by project
     delete.add(releaseDir)
+}
+
+val versionFileName = listOf("akka", "kotlinx", "ktor", "log", "test", "tool")
+
+versionCatalogUpdate {
+    catalogFile = file("gradle/lib.kotlin.versions.toml")
+    versionCatalogs {
+        versionFileName.onEach { name ->
+            create(name) {
+                catalogFile = file("gradle/lib.$name.versions.toml")
+            }
+        }
+    }
+}
+
+tasks.register("versionCatalogUpdates") {
+    group = "version catalog update"
+    val updateTasks = listOf("", *versionFileName.toTypedArray()).map { name ->
+        "versionCatalogUpdate${
+            name.replaceFirstChar {
+                if (it.isLowerCase()) it.titlecase(
+                    Locale.getDefault(),
+                ) else it.toString()
+            }
+        }"
+    }
+    dependsOn(*updateTasks.toTypedArray())
 }
