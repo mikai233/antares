@@ -25,7 +25,6 @@ dependencies {
     implementation(libTool.spring.data.mongodb)
     implementation(libTool.spring.retry)
     implementation(libTool.mongodb.driver.sync)
-    implementation(libTool.agrona)
     implementation(libTool.akka.kryo)
     implementation(libTool.caffeine)
     implementation(libTool.kryo)
