@@ -3,7 +3,7 @@
 ###############################
 [versions]
 curator = "5.9.0"
-jackson = "2.20.0"
+jackson = "2.20.1"
 kotlinpoet = "2.2.0"
 ksp = "2.3.0"
 org-apache-groovy = "5.0.2"
@@ -20,7 +20,7 @@ agrona = "org.agrona:agrona:2.3.0"
 akka-kryo = "io.altoo:akka-kryo-serialization_2.13:2.5.2"
 bcprov = "org.bouncycastle:bcprov-jdk15on:1.70"
 # Other utilities
-caffeine = "com.github.ben-manes.caffeine:caffeine:3.2.2"
+caffeine = "com.github.ben-manes.caffeine:caffeine:3.2.3"
 curator-async = { module = "org.apache.curator:curator-x-async", version.ref = "curator" }
 # Curator
 curator-framework = { module = "org.apache.curator:curator-framework", version.ref = "curator" }
