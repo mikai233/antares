@@ -12,6 +12,8 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      AKKA_SECURE_TOKEN: ${{ secrets.AKKA_SECURE_TOKEN }}
     defaults:
       run:
         working-directory: client
