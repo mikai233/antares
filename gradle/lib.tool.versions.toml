@@ -3,24 +3,24 @@
 ###############################
 [versions]
 curator = "5.9.0"
-jackson = "2.20.0"
+jackson = "2.20.1"
 kotlinpoet = "2.2.0"
-ksp = "2.3.0"
+ksp = "2.3.3"
 org-apache-groovy = "5.0.2"
 prometheus = "0.16.0"
-protobuf = "4.33.0"
+protobuf = "4.33.1"
 
 ###############################
 # 📦 Libraries
 ###############################
 [libraries]
 # Utilities
-agrona = "org.agrona:agrona:2.3.0"
+agrona = "org.agrona:agrona:2.3.2"
 # Akka & serialization
 akka-kryo = "io.altoo:akka-kryo-serialization_2.13:2.5.2"
 bcprov = "org.bouncycastle:bcprov-jdk15on:1.70"
 # Other utilities
-caffeine = "com.github.ben-manes.caffeine:caffeine:3.2.2"
+caffeine = "com.github.ben-manes.caffeine:caffeine:3.2.3"
 curator-async = { module = "org.apache.curator:curator-x-async", version.ref = "curator" }
 # Curator
 curator-framework = { module = "org.apache.curator:curator-framework", version.ref = "curator" }
@@ -57,7 +57,7 @@ simpleclient = { module = "io.prometheus:simpleclient", version.ref = "prometheu
 simpleclient-hotspot = { module = "io.prometheus:simpleclient_hotspot", version.ref = "prometheus" }
 simpleclient-httpserver = { module = "io.prometheus:simpleclient_httpserver", version.ref = "prometheus" }
 # Spring & Mongo
-spring-data-mongodb = "org.springframework.data:spring-data-mongodb:4.5.5"
+spring-data-mongodb = "org.springframework.data:spring-data-mongodb:5.0.0"
 spring-retry = "org.springframework.retry:spring-retry:2.0.12"
 symbol-processing-api = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "ksp" }
 
@@ -87,7 +87,7 @@ prometheus = [
 # 🔌 Plugins
 ###############################
 [plugins]
-boot = "org.springframework.boot:3.5.7"
+boot = "org.springframework.boot:4.0.0"
 detekt = "io.gitlab.arturbosch.detekt:1.23.8"
 dokka = "org.jetbrains.dokka:2.1.0"
 foojay-resolver-convention = "org.gradle.toolchains.foojay-resolver-convention:1.0.0"
