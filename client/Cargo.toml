@@ -34,5 +34,5 @@ serde_yaml = "0.9"
 trust-dns-resolver = "0.23.2"
 lua-protobuf-rs = { version = "0.3.0", features = ["luajit"], default-features = false }
 uuid = { version = "1.16.0", features = ["v4"] }
-clap = { version = "4.5.53", features = ["derive"] }
+clap = { version = "4.5.54", features = ["derive"] }
 rustyline = "17.0.2"
