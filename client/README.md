@@ -1,26 +1,25 @@
-# 调试客户端
+# Debug Client
 
-# 使用方式
+# Usage
 
-1. 在[proto.lua](lua/proto.lua)中将`proto_path`设置为你的proto文件路径 默认会在当前目录下生成一个`proto`
-   文件夹，里面会生成对应proto的lua提示文件，不需要可以关闭
-2. 在[config.yaml](config.yaml)中配置你的服务端以及账号信息
-3. 启动客户端 可指定`-c`参数指定配置文件路径 默认为`config.yaml`
+1. In [proto.lua](lua/proto.lua), set `proto_path` to your proto file directory. By default, a `proto` folder will be created in the current directory containing Lua hint files for the protocols; this can be disabled if not needed.
+2. Configure your server and account information in [config.yaml](config.yaml).
+3. Start the client. You can specify the configuration file path with the `-c` parameter (defaults to `config.yaml`).
 
-## 发送GM指令
+## Send GM Commands
 
-直接在控制台中输入指令即可
+Type commands directly into the console.
 
-例如 `gmPlayerLevel 30`
+Example: `gmPlayerLevel 30`
 
-## 发送协议
+## Send Protocols
 
-协议需要以$开头，也是在控制台中发送
+Protocols must start with a `$`, also sent via the console.
 
-例如 `$ReceiveRewardReq { id = 1}`
+Example: `$ReceiveRewardReq { id = 1}`
 
-协议名和协议数据之间必须要有空格
+There must be a space between the protocol name and the data.
 
-## Lua脚本
+## Lua Scripts
 
-可以用Lua脚本来批量发送协议以及根据返回结果做一些操作，具体可以参考现有的脚本
+You can use Lua scripts to batch send protocols and perform operations based on the results. Refer to existing scripts for examples.
