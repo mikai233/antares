@@ -3,24 +3,24 @@
 ###############################
 [versions]
 curator = "5.9.0"
-jackson = "2.20.0"
+jackson = "2.21.0"
 kotlinpoet = "2.2.0"
-ksp = "2.3.0"
-org-apache-groovy = "5.0.2"
+ksp = "2.3.4"
+org-apache-groovy = "5.0.4"
 prometheus = "0.16.0"
-protobuf = "4.33.0"
+protobuf = "4.33.4"
 
 ###############################
 # 📦 Libraries
 ###############################
 [libraries]
 # Utilities
-agrona = "org.agrona:agrona:2.3.0"
+agrona = "org.agrona:agrona:2.4.0"
 # Akka & serialization
 akka-kryo = "io.altoo:akka-kryo-serialization_2.13:2.5.2"
 bcprov = "org.bouncycastle:bcprov-jdk15on:1.70"
 # Other utilities
-caffeine = "com.github.ben-manes.caffeine:caffeine:3.2.2"
+caffeine = "com.github.ben-manes.caffeine:caffeine:3.2.3"
 curator-async = { module = "org.apache.curator:curator-x-async", version.ref = "curator" }
 # Curator
 curator-framework = { module = "org.apache.curator:curator-framework", version.ref = "curator" }
@@ -43,10 +43,10 @@ jcommander = "org.jcommander:jcommander:3.0"
 kotlinpoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet" }
 kotlinpoet-ksp = { module = "com.squareup:kotlinpoet-ksp", version.ref = "kotlinpoet" }
 kryo = "com.esotericsoftware:kryo:5.6.2"
-lz4 = "org.lz4:lz4-java:1.8.0"
-mongodb-driver-sync = "org.mongodb:mongodb-driver-sync:5.6.1"
+lz4 = "org.lz4:lz4-java:1.8.1"
+mongodb-driver-sync = "org.mongodb:mongodb-driver-sync:5.6.2"
 # Networking & compression
-netty = "io.netty:netty-all:4.2.7.Final"
+netty = "io.netty:netty-all:4.2.9.Final"
 protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf" }
 protobuf-kotlin = { module = "com.google.protobuf:protobuf-kotlin", version.ref = "protobuf" }
 protoc = { module = "com.google.protobuf:protoc", version.ref = "protobuf" }
@@ -57,7 +57,7 @@ simpleclient = { module = "io.prometheus:simpleclient", version.ref = "prometheu
 simpleclient-hotspot = { module = "io.prometheus:simpleclient_hotspot", version.ref = "prometheus" }
 simpleclient-httpserver = { module = "io.prometheus:simpleclient_httpserver", version.ref = "prometheus" }
 # Spring & Mongo
-spring-data-mongodb = "org.springframework.data:spring-data-mongodb:4.5.5"
+spring-data-mongodb = "org.springframework.data:spring-data-mongodb:5.0.2"
 spring-retry = "org.springframework.retry:spring-retry:2.0.12"
 symbol-processing-api = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "ksp" }
 
@@ -87,10 +87,10 @@ prometheus = [
 # 🔌 Plugins
 ###############################
 [plugins]
-boot = "org.springframework.boot:3.5.7"
+boot = "org.springframework.boot:4.0.2"
 detekt = "io.gitlab.arturbosch.detekt:1.23.8"
 dokka = "org.jetbrains.dokka:2.1.0"
 foojay-resolver-convention = "org.gradle.toolchains.foojay-resolver-convention:1.0.0"
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-protobuf = "com.google.protobuf:0.9.5"
+protobuf = "com.google.protobuf:0.9.6"
 version-catalog-update = "nl.littlerobots.version-catalog-update:1.0.1"

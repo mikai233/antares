@@ -1,14 +1,12 @@
 ###############################
 # 🧪 Test Libraries Catalog
 ###############################
-
 [versions]
-junit = "5.9.3"
+junit = "6.0.2"
 
 ###############################
 # 📦 Libraries
 ###############################
-
 [libraries]
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
