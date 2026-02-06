@@ -10,7 +10,7 @@ lto = true
 codegen-units = 1
 
 [dependencies]
-anyhow = "1.0.75"
+anyhow = "1.0.101"
 base64 = "0.22.1"
 bytes = "1.11.0"
 futures = "0.3.31"
