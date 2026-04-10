@@ -13,8 +13,6 @@ import com.mikai233.common.serde.KryoPool
 import com.mongodb.*
 import com.mongodb.client.MongoClients
 import kotlinx.coroutines.*
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import org.springframework.dao.DataAccessException
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -36,9 +34,11 @@ import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.isSubclassOf
 import kotlin.reflect.jvm.javaField
 import kotlin.reflect.jvm.jvmErasure
+import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 
 
 const val FULL_HASH_THRESHOLD = 100
