@@ -236,7 +236,9 @@ mod tests {
         client_codec.decode(&mut inbound_frames).unwrap().unwrap();
 
         let mut outbound_frame = BytesMut::new();
-        client_codec.encode(outbound_packet, &mut outbound_frame).unwrap();
+        client_codec
+            .encode(outbound_packet, &mut outbound_frame)
+            .unwrap();
 
         assert_eq!(peek_i32(&outbound_frame, 4).unwrap(), 0);
     }
