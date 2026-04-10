@@ -10,9 +10,9 @@ import com.mikai233.protocol.parserForServerMessage
 
 internal fun protoMsgToPacket(message: GeneratedMessage, isClient: Boolean): ByteArray {
     val protoId = if (isClient) {
-        idForClientMessage(message::class)
+        idForClientMessage(message.javaClass)
     } else {
-        idForServerMessage(message::class)
+        idForServerMessage(message.javaClass)
     }
     val bodyBytes = message.toByteArray()
     return protoId.toByteArray() + bodyBytes
@@ -27,4 +27,3 @@ internal fun packetToProtoMsg(bytes: ByteArray, isClient: Boolean): GeneratedMes
     }
     return parser.parseFrom(bytes, Int.SIZE_BYTES, bytes.size - Int.SIZE_BYTES)
 }
-

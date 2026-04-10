@@ -224,16 +224,22 @@ private fun generateHelperFunctions(type: MappingType, parserByTypeChunkNames: L
     val messageIdByClass = "${type.name}MessageIdByClass"
     val parserById = "${type.name}ParserById"
 
-    val idFun = FunSpec.builder("idFor${from}Message")
-        .addParameter("messageKClass", MessageType)
+    val idByClassFun = FunSpec.builder("idFor${from}Message")
+        .addParameter("messageClass", JavaMessageType)
         .returns(Int::class)
         .addCode(
             """
-            return requireNotNull($messageIdByClass[messageKClass.java]) {
-                "$from proto id for ${'$'}{messageKClass.qualifiedName} not found"
+            return requireNotNull($messageIdByClass[messageClass]) {
+                "$from proto id for ${'$'}{messageClass.name} not found"
             }
             """.trimIndent(),
         )
+        .build()
+
+    val idByKClassFun = FunSpec.builder("idFor${from}Message")
+        .addParameter("messageKClass", MessageType)
+        .returns(Int::class)
+        .addStatement("return idFor%LMessage(messageKClass.java)", from)
         .build()
 
     val parserFun = FunSpec.builder("parserFor${from}Message")
@@ -259,7 +265,7 @@ private fun generateHelperFunctions(type: MappingType, parserByTypeChunkNames: L
         )
         .build()
 
-    return listOf(idFun, parserFun, registerFun)
+    return listOf(idByClassFun, idByKClassFun, parserFun, registerFun)
 }
 
 private fun genEnumSpec(messageMap: MessageMap, type: MappingType): TypeSpec {

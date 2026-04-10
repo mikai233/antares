@@ -13,7 +13,7 @@ import io.netty.handler.codec.MessageToMessageCodec
 @Sharable
 class ProtobufCodec : MessageToMessageCodec<Packet, GeneratedMessage>() {
     override fun encode(ctx: ChannelHandlerContext, msg: GeneratedMessage, out: MutableList<Any>) {
-        val protoId = idForServerMessage(msg::class)
+        val protoId = idForServerMessage(msg.javaClass)
         val serializedSize = msg.serializedSize
         val body = ctx.alloc().buffer(serializedSize)
         ByteBufOutputStream(body).use(msg::writeTo)

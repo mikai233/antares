@@ -66,10 +66,12 @@ private val ClientToServerParserById: Map<Int, Parser<out GeneratedMessage>> =
         registerClientToServerParsersByIdChunk0(this)
     }
 
-public fun idForClientMessage(messageKClass: KClass<out GeneratedMessage>): Int =
-    requireNotNull(ClientToServerMessageIdByClass[messageKClass.java]) {
-    "Client proto id for ${messageKClass.qualifiedName} not found"
+public fun idForClientMessage(messageClass: Class<out GeneratedMessage>): Int =
+    requireNotNull(ClientToServerMessageIdByClass[messageClass]) {
+        "Client proto id for ${messageClass.name} not found"
 }
+
+public fun idForClientMessage(messageKClass: KClass<out GeneratedMessage>): Int = idForClientMessage(messageKClass.java)
 
 public fun parserForClientMessage(id: Int): Parser<out GeneratedMessage> = requireNotNull(ClientToServerParserById[id]) {
     "parser for Client proto $id not found"
