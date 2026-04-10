@@ -1,5 +1,7 @@
 package com.mikai233.common.codec
 
+import io.netty.buffer.ByteBufUtil
+import io.netty.buffer.Unpooled
 import io.netty.channel.ChannelHandler
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.MessageToMessageCodec
@@ -9,24 +11,17 @@ import net.jpountz.lz4.LZ4FastDecompressor
 
 @ChannelHandler.Sharable
 class LZ4Codec : MessageToMessageCodec<Packet, Packet>() {
+    private val compressor: LZ4Compressor = LZ4Factory.fastestInstance().fastCompressor()
+    private val decompressor: LZ4FastDecompressor = LZ4Factory.fastestInstance().fastDecompressor()
+
     override fun encode(ctx: ChannelHandlerContext, msg: Packet, out: MutableList<Any>) {
-        val body = compressor().compress(msg.body)
-        msg.body = body
-        out.add(msg)
+        val compressed = compressor.compress(ByteBufUtil.getBytes(msg.body))
+        out.add(Packet(msg.protoId, msg.body.readableBytes(), Unpooled.wrappedBuffer(compressed)))
     }
 
     override fun decode(ctx: ChannelHandlerContext, msg: Packet, out: MutableList<Any>) {
         val body = ByteArray(msg.originLen)
-        decompressor().decompress(msg.body, body)
-        msg.body = body
-        out.add(msg)
-    }
-
-    private fun compressor(): LZ4Compressor {
-        return LZ4Factory.fastestInstance().fastCompressor()
-    }
-
-    private fun decompressor(): LZ4FastDecompressor {
-        return LZ4Factory.fastestInstance().fastDecompressor()
+        decompressor.decompress(ByteBufUtil.getBytes(msg.body), body)
+        out.add(Packet(msg.protoId, msg.originLen, Unpooled.wrappedBuffer(body)))
     }
 }

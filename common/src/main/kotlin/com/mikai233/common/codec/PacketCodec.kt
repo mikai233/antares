@@ -1,36 +1,38 @@
 package com.mikai233.common.codec
 
 import com.mikai233.common.extension.logger
-import com.mikai233.common.extension.toByteArray
-import com.mikai233.common.extension.toInt
+import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.MessageToMessageCodec
 
-class PacketCodec : MessageToMessageCodec<ByteArray, Packet>() {
+class PacketCodec : MessageToMessageCodec<ByteBuf, Packet>() {
     private val logger = logger()
 
     // 0-65535
-    private var packetIndex = 0
+    private var sendPacketIndex = 0
+    private var recvPacketIndex = 0
 
     override fun encode(ctx: ChannelHandlerContext, msg: Packet, out: MutableList<Any>) {
-        val bytes = ByteArray(3 * Int.SIZE_BYTES + msg.body.size)
-        packetIndex.toByteArray().copyInto(bytes)
-        msg.protoId.toByteArray().copyInto(bytes, Int.SIZE_BYTES)
-        msg.originLen.toByteArray().copyInto(bytes, 2 * Int.SIZE_BYTES)
-        msg.body.copyInto(bytes, 3 * Int.SIZE_BYTES)
-        out.add(bytes)
+        val body = msg.body
+        val byteBuf = ctx.alloc().buffer(3 * Int.SIZE_BYTES + body.readableBytes())
+        byteBuf.writeInt(sendPacketIndex)
+        byteBuf.writeInt(msg.protoId)
+        byteBuf.writeInt(msg.originLen)
+        byteBuf.writeBytes(body, body.readerIndex(), body.readableBytes())
+        out.add(byteBuf)
+        sendPacketIndex = ++sendPacketIndex % 65536
     }
 
-    override fun decode(ctx: ChannelHandlerContext, msg: ByteArray, out: MutableList<Any>) {
-        val clientPacketIndex = msg.toInt()
-        if (packetIndex != clientPacketIndex) {
-            logger.error("client packet index:{}!= server packet index:{}", clientPacketIndex, packetIndex)
+    override fun decode(ctx: ChannelHandlerContext, msg: ByteBuf, out: MutableList<Any>) {
+        val clientPacketIndex = msg.readInt()
+        if (recvPacketIndex != clientPacketIndex) {
+            logger.error("client packet index:{}!= expected recv packet index:{}", clientPacketIndex, recvPacketIndex)
             ctx.close()
+            return
         }
-        val protoId = msg.toInt(Int.SIZE_BYTES)
-        val originLen = msg.toInt(2 * Int.SIZE_BYTES)
-        val body = msg.sliceArray(3 * Int.SIZE_BYTES..<msg.size)
-        out.add(Packet(protoId, originLen, body))
-        packetIndex = ++packetIndex % 65536
+        val protoId = msg.readInt()
+        val originLen = msg.readInt()
+        out.add(Packet(protoId, originLen, msg.readRetainedSlice(msg.readableBytes())))
+        recvPacketIndex = ++recvPacketIndex % 65536
     }
 }
