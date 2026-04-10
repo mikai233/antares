@@ -3,9 +3,9 @@
 ###############################
 
 [versions]
-coroutines = "1.10.0"
-atomicfu = "0.26.1"
-datetime = "0.6.1"
+coroutines = "1.10.2"
+atomicfu = "0.32.1"
+datetime = "0.7.1"
 
 ###############################
 # 📦 Libraries
