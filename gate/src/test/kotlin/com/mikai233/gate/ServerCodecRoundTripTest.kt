@@ -30,7 +30,8 @@ class ServerCodecRoundTripTest {
         val channel = EmbeddedChannel(PacketCodec())
         try {
             repeat(2) { index ->
-                assertTrue(channel.writeOutbound(Packet(100 + index, 4, Unpooled.wrappedBuffer(byteArrayOf(1, 2, 3, 4)))))
+                val packet = Packet(100 + index, 4, Unpooled.wrappedBuffer(byteArrayOf(1, 2, 3, 4)))
+                assertTrue(channel.writeOutbound(packet))
                 channel.readOutbound<ByteBuf>().release()
             }
 
