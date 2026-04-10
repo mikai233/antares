@@ -4,40 +4,6 @@ import com.google.protobuf.GeneratedMessage
 import com.google.protobuf.Parser
 import kotlin.reflect.KClass
 
-/**
- * Automatically generated field, do not modify
- */
-private val ClientToServerMessageById0: Map<KClass<out GeneratedMessage>, Int> = mapOf(
-    ProtoSystem.PingReq::class to 1,
-    ProtoSystem.GmReq::class to 2,
-    ProtoTest.TestReq::class to 3,
-    ProtoLogin.LoginReq::class to 10_001
-    )
-
-/**
- * Automatically generated field, do not modify
- */
-public val ClientToServerMessageById: Map<KClass<out GeneratedMessage>, Int> = listOf(
-    ClientToServerMessageById0,
-    ).flatMap { it.entries.map { entry -> entry.key to entry.value } }.toMap()
-
-/**
- * Automatically generated field, do not modify
- */
-private val ClientToServerParserById0: Map<Int, Parser<out GeneratedMessage>> = mapOf(
-    1 to ProtoSystem.PingReq.parser(),
-    2 to ProtoSystem.GmReq.parser(),
-    3 to ProtoTest.TestReq.parser(),
-    10_001 to ProtoLogin.LoginReq.parser()
-    )
-
-/**
- * Automatically generated field, do not modify
- */
-public val ClientToServerParserById: Map<Int, Parser<out GeneratedMessage>> = listOf(
-    ClientToServerParserById0,
-    ).flatMap { it.entries.map { entry -> entry.key to entry.value } }.toMap()
-
 public enum class CSEnum(
   public val id: Int,
 ) {
@@ -54,10 +20,61 @@ public enum class CSEnum(
   }
 }
 
-public fun idForClientMessage(messageKClass: KClass<out GeneratedMessage>): Int = requireNotNull(ClientToServerMessageById[messageKClass]) {
+/**
+ * Automatically generated field, do not modify
+ */
+private fun registerClientToServerMessageIdsChunk0(target: MutableMap<Class<out GeneratedMessage>, Int>) {
+    target[ProtoSystem.PingReq::class.java] = 1
+    target[ProtoSystem.GmReq::class.java] = 2
+    target[ProtoTest.TestReq::class.java] = 3
+    target[ProtoLogin.LoginReq::class.java] = 10_001
+}
+
+/**
+ * Automatically generated field, do not modify
+ */
+private fun registerClientToServerParsersByIdChunk0(target: MutableMap<Int, Parser<out GeneratedMessage>>) {
+    target[1] = ProtoSystem.PingReq.parser()
+    target[2] = ProtoSystem.GmReq.parser()
+    target[3] = ProtoTest.TestReq.parser()
+    target[10_001] = ProtoLogin.LoginReq.parser()
+}
+
+/**
+ * Automatically generated field, do not modify
+ */
+private fun registerClientToServerParsersByTypeChunk0(target: MutableMap<Class<out GeneratedMessage>, Parser<out GeneratedMessage>>) {
+    target[ProtoSystem.PingReq::class.java] = ProtoSystem.PingReq.parser()
+    target[ProtoSystem.GmReq::class.java] = ProtoSystem.GmReq.parser()
+    target[ProtoTest.TestReq::class.java] = ProtoTest.TestReq.parser()
+    target[ProtoLogin.LoginReq::class.java] = ProtoLogin.LoginReq.parser()
+}
+
+/**
+ * Automatically generated field, do not modify
+ */
+private val ClientToServerMessageIdByClass: Map<Class<out GeneratedMessage>, Int> =
+    HashMap<Class<out GeneratedMessage>, Int>(4).apply {
+        registerClientToServerMessageIdsChunk0(this)
+    }
+
+/**
+ * Automatically generated field, do not modify
+ */
+private val ClientToServerParserById: Map<Int, Parser<out GeneratedMessage>> =
+    HashMap<Int, Parser<out GeneratedMessage>>(4).apply {
+        registerClientToServerParsersByIdChunk0(this)
+    }
+
+public fun idForClientMessage(messageKClass: KClass<out GeneratedMessage>): Int =
+    requireNotNull(ClientToServerMessageIdByClass[messageKClass.java]) {
     "Client proto id for ${messageKClass.qualifiedName} not found"
 }
 
 public fun parserForClientMessage(id: Int): Parser<out GeneratedMessage> = requireNotNull(ClientToServerParserById[id]) {
     "parser for Client proto $id not found"
+}
+
+public fun registerClientParsersByType(target: MutableMap<Class<out GeneratedMessage>, Parser<out GeneratedMessage>>) {
+    registerClientToServerParsersByTypeChunk0(target)
 }

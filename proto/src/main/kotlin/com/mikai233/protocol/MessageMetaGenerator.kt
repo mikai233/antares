@@ -20,6 +20,8 @@ import kotlin.reflect.KClass
 internal typealias MessageClass = KClass<out GeneratedMessage>
 internal typealias MessageMap = MutableMap<MessageClass, Int>
 
+private data class GeneratedChunkFunctions(val functions: List<FunSpec>, val chunkNames: List<String>)
+
 private const val MAX_ELEMENTS_PER_MAP = 1000
 
 // KClass<out GeneratedMessage>
@@ -30,11 +32,14 @@ internal val MessageType =
 internal val MessageParserType =
     Parser::class.asTypeName().parameterizedBy(WildcardTypeName.producerOf(GeneratedMessage::class))
 
-// Map<KClass<out GeneratedMessage>, Int>
-internal val MessageMapType = MAP.parameterizedBy(MessageType, Int::class.asTypeName())
-
-// Map<Int, Parser<out GeneratedMessage>
-internal val ParserMapType = MAP.parameterizedBy(Int::class.asTypeName(), MessageParserType)
+internal val JavaMessageType =
+    Class::class.asClassName().parameterizedBy(WildcardTypeName.producerOf(GeneratedMessage::class.asTypeName()))
+internal val MessageIdByClassMapType = MAP.parameterizedBy(JavaMessageType, Int::class.asTypeName())
+internal val MutableMessageIdByClassMapType = MUTABLE_MAP.parameterizedBy(JavaMessageType, Int::class.asTypeName())
+internal val ParserByIdMapType = MAP.parameterizedBy(Int::class.asTypeName(), MessageParserType)
+internal val MutableParserByIdMapType = MUTABLE_MAP.parameterizedBy(Int::class.asTypeName(), MessageParserType)
+internal val MutableParserByTypeMapType = MUTABLE_MAP.parameterizedBy(JavaMessageType, MessageParserType)
+private val HashMapClass = ClassName("kotlin.collections", "HashMap")
 
 fun main() {
     val allMessages = scanAllMessages()
@@ -47,9 +52,18 @@ fun main() {
 }
 
 private fun scanAllMessages(): Map<String, MessageClass> {
-    return Reflections("com.mikai233.protocol")
+    val messagesByFullName = mutableMapOf<String, MessageClass>()
+    Reflections("com.mikai233.protocol")
         .getSubTypesOf(GeneratedMessage::class.java)
-        .associate { it.simpleName to it.kotlin }
+        .forEach { messageClass ->
+            val descriptor = messageClass.getMethod("getDescriptor").invoke(null) as Descriptors.Descriptor
+            val fullName = descriptor.fullName
+            check(fullName !in messagesByFullName) {
+                "duplicate generated message class for proto full name:$fullName"
+            }
+            messagesByFullName[fullName] = messageClass.kotlin
+        }
+    return messagesByFullName
 }
 
 private fun generateMessageMap(
@@ -58,10 +72,9 @@ private fun generateMessageMap(
 ): MessageMap {
     val idByMessageClass = mutableMapOf<MessageClass, Int>()
     descriptor.fields.forEach {
-        val simpleName = it.messageType.name
         val fullName = it.messageType.fullName
         val number = it.number
-        val messageClass = requireNotNull(messages[simpleName]) { "$fullName parser not found" }
+        val messageClass = requireNotNull(messages[fullName]) { "$fullName parser not found" }
         check(messageClass !in idByMessageClass) { "duplicate message:$fullName with number:$number" }
         idByMessageClass[messageClass] = number
     }
@@ -69,100 +82,184 @@ private fun generateMessageMap(
 }
 
 private fun genMappingFile(messageMap: MessageMap, type: MappingType): FileSpec {
+    val idChunkFunctions = genMessageIdRegisterChunkFunctions(messageMap, type)
+    val parserByIdChunkFunctions = genParserByIdRegisterChunkFunctions(messageMap, type)
+    val parserByTypeChunkFunctions = genParserByTypeRegisterChunkFunctions(messageMap, type)
     return FileSpec
         .builder("com.mikai233.protocol", type.name)
-        .addProperties(genIdProperties(messageMap, type))
-        .addProperties(genParserProperties(messageMap, type))
         .addType(genEnumSpec(messageMap, type))
-        .addFunctions(generateHelperFunctions(type))
+        .addFunctions(idChunkFunctions.functions)
+        .addFunctions(parserByIdChunkFunctions.functions)
+        .addFunctions(parserByTypeChunkFunctions.functions)
+        .addProperties(
+            genRuntimeMapProperties(
+                type,
+                messageMap.size,
+                idChunkFunctions.chunkNames,
+                parserByIdChunkFunctions.chunkNames,
+            ),
+        )
+        .addFunctions(
+            generateHelperFunctions(
+                type,
+                parserByTypeChunkFunctions.chunkNames,
+            ),
+        )
         .build()
 }
 
-private fun genIdProperties(messageMap: MessageMap, type: MappingType): List<PropertySpec> {
+private fun genMessageIdRegisterChunkFunctions(messageMap: MessageMap, type: MappingType): GeneratedChunkFunctions {
     val chunks = messageMap.entries.chunked(MAX_ELEMENTS_PER_MAP)
-    val properties = mutableListOf<PropertySpec>()
+    val functions = mutableListOf<FunSpec>()
     val chunkNames = mutableListOf<String>()
     chunks.forEachIndexed { index, chunk ->
-        val chunkName = "${type.name}MessageById$index"
+        val chunkName = "register${type.name}MessageIdsChunk$index"
         chunkNames.add(chunkName)
-        val propertySpec = PropertySpec.builder(chunkName, MessageMapType, KModifier.PRIVATE)
+        val functionSpec = FunSpec.builder(chunkName)
+            .addModifiers(KModifier.PRIVATE)
             .addKdoc("Automatically generated field, do not modify")
-            .initializer(
+            .addParameter("target", MutableMessageIdByClassMapType)
+            .addCode(
                 buildCodeBlock {
-                    add("mapOf(\n")
-                    chunk.forEachIndexed { index, entry ->
+                    chunk.forEach { entry ->
                         val (messageClass, id) = entry
-                        add("%T::class to %L", messageClass, id)
-                        if (index != messageMap.size - 1) {
-                            add(",\n")
-                        }
+                        addStatement("target[%T::class.java] = %L", messageClass, id)
                     }
-                    add("\n)")
                 },
             )
             .build()
-        properties.add(propertySpec)
+        functions.add(functionSpec)
     }
-    val combinedProperty = PropertySpec
-        .builder("${type.name}MessageById", MessageMapType)
-        .addKdoc("Automatically generated field, do not modify")
-        .initializer(
-            buildCodeBlock {
-                add("listOf(\n")
-                chunkNames.forEach {
-                    add("%L,", it)
-                }
-                add("\n)")
-                add(".flatMap { it.entries.map { entry -> entry.key to entry.value } }.toMap()")
-            },
-        )
-        .build()
-    properties.add(combinedProperty)
-    return properties
+    return GeneratedChunkFunctions(functions, chunkNames)
 }
 
-private fun genParserProperties(messageMap: MessageMap, type: MappingType): List<PropertySpec> {
+private fun genParserByIdRegisterChunkFunctions(messageMap: MessageMap, type: MappingType): GeneratedChunkFunctions {
     val chunks = messageMap.entries.chunked(MAX_ELEMENTS_PER_MAP)
-    val properties = mutableListOf<PropertySpec>()
+    val functions = mutableListOf<FunSpec>()
     val chunkNames = mutableListOf<String>()
     chunks.forEachIndexed { index, chunk ->
-        val chunkName = "${type.name}ParserById$index"
+        val chunkName = "register${type.name}ParsersByIdChunk$index"
         chunkNames.add(chunkName)
-        val propertySpec = PropertySpec
-            .builder(chunkName, ParserMapType, KModifier.PRIVATE)
+        val functionSpec = FunSpec.builder(chunkName)
+            .addModifiers(KModifier.PRIVATE)
             .addKdoc("Automatically generated field, do not modify")
-            .initializer(
+            .addParameter("target", MutableParserByIdMapType)
+            .addCode(
                 buildCodeBlock {
-                    add("mapOf(\n")
-                    chunk.forEachIndexed { index, entry ->
+                    chunk.forEach { entry ->
                         val (messageClass, id) = entry
-                        add("%L to %T.parser()", id, messageClass)
-                        if (index != messageMap.size - 1) {
-                            add(",\n")
-                        }
+                        addStatement("target[%L] = %T.parser()", id, messageClass)
                     }
-                    add("\n)")
                 },
             )
             .build()
-        properties.add(propertySpec)
+        functions.add(functionSpec)
     }
-    val combinedProperty = PropertySpec
-        .builder("${type.name}ParserById", ParserMapType)
+    return GeneratedChunkFunctions(functions, chunkNames)
+}
+
+private fun genParserByTypeRegisterChunkFunctions(messageMap: MessageMap, type: MappingType): GeneratedChunkFunctions {
+    val chunks = messageMap.entries.chunked(MAX_ELEMENTS_PER_MAP)
+    val functions = mutableListOf<FunSpec>()
+    val chunkNames = mutableListOf<String>()
+    chunks.forEachIndexed { index, chunk ->
+        val chunkName = "register${type.name}ParsersByTypeChunk$index"
+        chunkNames.add(chunkName)
+        val functionSpec = FunSpec.builder(chunkName)
+            .addModifiers(KModifier.PRIVATE)
+            .addKdoc("Automatically generated field, do not modify")
+            .addParameter("target", MutableParserByTypeMapType)
+            .addCode(
+                buildCodeBlock {
+                    chunk.forEach { entry ->
+                        val (messageClass, _) = entry
+                        addStatement("target[%T::class.java] = %T.parser()", messageClass, messageClass)
+                    }
+                },
+            )
+            .build()
+        functions.add(functionSpec)
+    }
+    return GeneratedChunkFunctions(functions, chunkNames)
+}
+
+private fun genRuntimeMapProperties(
+    type: MappingType,
+    size: Int,
+    idChunkNames: List<String>,
+    parserByIdChunkNames: List<String>,
+): List<PropertySpec> {
+    val messageIdPropertyName = "${type.name}MessageIdByClass"
+    val parserByIdPropertyName = "${type.name}ParserById"
+    val messageIdHashMapType = HashMapClass.parameterizedBy(JavaMessageType, Int::class.asTypeName())
+    val parserByIdHashMapType = HashMapClass.parameterizedBy(Int::class.asTypeName(), MessageParserType)
+    val messageIdProperty = PropertySpec.builder(messageIdPropertyName, MessageIdByClassMapType, KModifier.PRIVATE)
         .addKdoc("Automatically generated field, do not modify")
         .initializer(
             buildCodeBlock {
-                add("listOf(\n")
-                chunkNames.forEach {
-                    add("%L,", it)
-                }
-                add("\n)")
-                add(".flatMap { it.entries.map { entry -> entry.key to entry.value } }.toMap()")
+                beginControlFlow("%T(%L).apply", messageIdHashMapType, size)
+                idChunkNames.forEach { addStatement("%L(this)", it) }
+                endControlFlow()
             },
         )
         .build()
-    properties.add(combinedProperty)
-    return properties
+    val parserByIdProperty = PropertySpec.builder(parserByIdPropertyName, ParserByIdMapType, KModifier.PRIVATE)
+        .addKdoc("Automatically generated field, do not modify")
+        .initializer(
+            buildCodeBlock {
+                beginControlFlow("%T(%L).apply", parserByIdHashMapType, size)
+                parserByIdChunkNames.forEach { addStatement("%L(this)", it) }
+                endControlFlow()
+            },
+        )
+        .build()
+    return listOf(messageIdProperty, parserByIdProperty)
+}
+
+private fun generateHelperFunctions(type: MappingType, parserByTypeChunkNames: List<String>): List<FunSpec> {
+    val (from, to) = when (type) {
+        MappingType.ClientToServer -> "Client" to "Server"
+        MappingType.ServerToClient -> "Server" to "Client"
+    }
+    val messageIdByClass = "${type.name}MessageIdByClass"
+    val parserById = "${type.name}ParserById"
+
+    val idFun = FunSpec.builder("idFor${from}Message")
+        .addParameter("messageKClass", MessageType)
+        .returns(Int::class)
+        .addCode(
+            """
+            return requireNotNull($messageIdByClass[messageKClass.java]) {
+                "$from proto id for ${'$'}{messageKClass.qualifiedName} not found"
+            }
+            """.trimIndent(),
+        )
+        .build()
+
+    val parserFun = FunSpec.builder("parserFor${from}Message")
+        .addParameter("id", Int::class)
+        .returns(MessageParserType)
+        .addCode(
+            """
+            return requireNotNull($parserById[id]) {
+                "parser for $from proto ${'$'}id not found"
+            }
+            """.trimIndent(),
+        )
+        .build()
+
+    val registerFun = FunSpec.builder("register${from}ParsersByType")
+        .addParameter("target", MutableParserByTypeMapType)
+        .addCode(
+            buildCodeBlock {
+                parserByTypeChunkNames.forEach { chunkName ->
+                    addStatement("%L(target)", chunkName)
+                }
+            },
+        )
+        .build()
+
+    return listOf(idFun, parserFun, registerFun)
 }
 
 private fun genEnumSpec(messageMap: MessageMap, type: MappingType): TypeSpec {
@@ -215,39 +312,4 @@ private fun genEnumSpec(messageMap: MessageMap, type: MappingType): TypeSpec {
 
     enumSpec.addType(companionObjectSpec)
     return enumSpec.build()
-}
-
-private fun generateHelperFunctions(type: MappingType): List<FunSpec> {
-    val (from, to) = when (type) {
-        MappingType.ClientToServer -> "Client" to "Server"
-        MappingType.ServerToClient -> "Server" to "Client"
-    }
-    val messageById = "${from}To${to}MessageById"
-    val parserById = "${from}To${to}ParserById"
-
-    val idFun = FunSpec.builder("idFor${from}Message")
-        .addParameter("messageKClass", MessageType)
-        .returns(Int::class)
-        .addCode(
-            """
-            return requireNotNull($messageById[messageKClass]) {
-                "$from proto id for ${'$'}{messageKClass.qualifiedName} not found"
-            }
-            """.trimIndent(),
-        )
-        .build()
-
-    val parserFun = FunSpec.builder("parserFor${from}Message")
-        .addParameter("id", Int::class)
-        .returns(MessageParserType)
-        .addCode(
-            """
-            return requireNotNull($parserById[id]) {
-                "parser for $from proto ${'$'}id not found"
-            }
-            """.trimIndent(),
-        )
-        .build()
-
-    return listOf(idFun, parserFun)
 }

@@ -6,24 +6,16 @@ import com.esotericsoftware.kryo.kryo5.io.Input
 import com.esotericsoftware.kryo.kryo5.io.Output
 import com.google.protobuf.GeneratedMessage
 import com.google.protobuf.Parser
-import com.mikai233.protocol.ClientToServerMessageById
-import com.mikai233.protocol.ClientToServerParserById
-import com.mikai233.protocol.ServerToClientMessageById
-import com.mikai233.protocol.ServerToClientParserById
+import com.mikai233.protocol.registerClientParsersByType
+import com.mikai233.protocol.registerServerParsersByType
 
 class ProtobufSerializer : Serializer<GeneratedMessage>() {
     private val parserByType: Map<Class<out GeneratedMessage>, Parser<out GeneratedMessage>>
 
     init {
         val parserByType: MutableMap<Class<out GeneratedMessage>, Parser<out GeneratedMessage>> = mutableMapOf()
-        ClientToServerMessageById.forEach { (type, id) ->
-            val parser = requireNotNull(ClientToServerParserById[id]) { "Parser for id $id not found" }
-            parserByType[type.java] = parser
-        }
-        ServerToClientMessageById.forEach { (type, id) ->
-            val parser = requireNotNull(ServerToClientParserById[id]) { "Parser for type $type not found" }
-            parserByType[type.java] = parser
-        }
+        registerClientParsersByType(parserByType)
+        registerServerParsersByType(parserByType)
         this.parserByType = parserByType
     }
 
