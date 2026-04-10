@@ -1,7 +1,5 @@
 package com.mikai233.gm
 
-import akka.actor.ActorRef
-import akka.routing.FromConfig
 import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
 import com.mikai233.common.conf.GlobalEnv
@@ -13,6 +11,8 @@ import com.mikai233.common.message.WorldMessageExtractor
 import com.mikai233.gm.web.Engine
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import org.apache.pekko.actor.ActorRef
+import org.apache.pekko.routing.FromConfig
 import java.net.InetSocketAddress
 
 class GmNode(

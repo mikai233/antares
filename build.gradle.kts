@@ -192,7 +192,7 @@ tasks.getByName<Delete>("clean") {
     delete.add(releaseDir)
 }
 
-val versionFileName = listOf("akka", "kotlinx", "ktor", "log", "test", "tool")
+val versionFileName = listOf("pekko", "kotlinx", "ktor", "log", "test", "tool")
 
 versionCatalogUpdate {
     catalogFile = file("gradle/lib.kotlin.versions.toml")

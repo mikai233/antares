@@ -1,8 +1,8 @@
 package com.mikai233.common.broadcast
 
-import akka.actor.ActorRef
-import akka.event.japi.LookupEventBus
 import com.mikai233.common.extension.tell
+import org.apache.pekko.actor.ActorRef
+import org.apache.pekko.event.japi.LookupEventBus
 
 class PlayerBroadcastEventBus : LookupEventBus<PlayerBroadcastEnvelope, ActorRef, String>() {
     override fun mapSize(): Int {

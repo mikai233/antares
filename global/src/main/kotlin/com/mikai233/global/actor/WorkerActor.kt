@@ -1,6 +1,5 @@
 package com.mikai233.global.actor
 
-import akka.actor.Props
 import com.mikai233.common.core.actor.StatefulActor
 import com.mikai233.common.message.Message
 import com.mikai233.common.message.global.worker.HandoffWorker
@@ -8,6 +7,7 @@ import com.mikai233.global.GlobalNode
 import com.mikai233.global.data.WorkerIdMem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.apache.pekko.actor.Props
 
 class WorkerActor(node: GlobalNode) : StatefulActor<GlobalNode>(node) {
     companion object {

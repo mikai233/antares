@@ -1,10 +1,10 @@
 package com.mikai233.common.core.actor
 
-import akka.actor.ActorRef
 import com.mikai233.common.annotation.Local
 import com.mikai233.common.extension.tell
 import com.mikai233.common.message.Message
 import kotlinx.coroutines.*
+import org.apache.pekko.actor.ActorRef
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executor
 import kotlin.coroutines.CoroutineContext

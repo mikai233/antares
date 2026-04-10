@@ -1,6 +1,6 @@
 # antares
 
-# Akka-based Distributed Game Server
+# Pekko-based Distributed Game Server
 
 ## Development Environment
 

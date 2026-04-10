@@ -1,9 +1,9 @@
 package com.mikai233.common.message.player
 
-import akka.actor.ActorRef
-import akka.actor.NotInfluenceReceiveTimeout
 import com.mikai233.common.message.Message
 import com.mikai233.common.message.ShardMessage
+import org.apache.pekko.actor.ActorRef
+import org.apache.pekko.actor.NotInfluenceReceiveTimeout
 
 interface PlayerMessage : Message, ShardMessage<Long> {
     val playerId: Long
