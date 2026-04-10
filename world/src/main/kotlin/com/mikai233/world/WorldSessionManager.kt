@@ -1,6 +1,5 @@
 package com.mikai233.world
 
-import akka.actor.ActorRef
 import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.conf.ServerMode
 import com.mikai233.common.extension.invokeOnTargetMode
@@ -9,6 +8,7 @@ import com.mikai233.common.extension.tell
 import com.mikai233.common.formatMessage
 import com.mikai233.common.message.Message
 import com.mikai233.common.message.ServerProtobuf
+import org.apache.pekko.actor.ActorRef
 
 typealias PlayerSession = WorldSessionManager.WorldSession
 

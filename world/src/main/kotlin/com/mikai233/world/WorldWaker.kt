@@ -1,13 +1,5 @@
 package com.mikai233.world
 
-import akka.actor.AbstractActor
-import akka.actor.ActorRef
-import akka.actor.PoisonPill
-import akka.actor.Props
-import akka.cluster.Cluster
-import akka.cluster.ClusterEvent.*
-import akka.cluster.Member
-import akka.cluster.MemberStatus
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.conf.ServerMode
 import com.mikai233.common.core.Role
@@ -17,6 +9,14 @@ import com.mikai233.common.extension.tell
 import com.mikai233.common.message.world.WakeupWorldReq
 import com.mikai233.common.message.world.WakeupWorldResp
 import kotlinx.coroutines.*
+import org.apache.pekko.actor.AbstractActor
+import org.apache.pekko.actor.ActorRef
+import org.apache.pekko.actor.PoisonPill
+import org.apache.pekko.actor.Props
+import org.apache.pekko.cluster.Cluster
+import org.apache.pekko.cluster.ClusterEvent.*
+import org.apache.pekko.cluster.Member
+import org.apache.pekko.cluster.MemberStatus
 import kotlin.math.sqrt
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds

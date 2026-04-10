@@ -1,8 +1,5 @@
 package com.mikai233.world
 
-import akka.actor.ActorRef
-import akka.actor.Props
-import akka.cluster.sharding.ShardRegion
 import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.broadcast.PlayerBroadcastEnvelope
 import com.mikai233.common.core.actor.StatefulActor
@@ -14,6 +11,9 @@ import com.mikai233.common.message.Message
 import com.mikai233.common.message.WorldProtobufEnvelope
 import com.mikai233.common.message.player.PlayerMessage
 import com.mikai233.common.message.world.*
+import org.apache.pekko.actor.ActorRef
+import org.apache.pekko.actor.Props
+import org.apache.pekko.cluster.sharding.ShardRegion
 import kotlin.time.Duration.Companion.seconds
 
 class WorldActor(node: WorldNode) : StatefulActor<WorldNode>(node) {

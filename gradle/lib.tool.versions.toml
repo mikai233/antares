@@ -16,8 +16,8 @@ protobuf = "4.33.0"
 [libraries]
 # Utilities
 agrona = "org.agrona:agrona:2.3.0"
-# Akka & serialization
-akka-kryo = "io.altoo:akka-kryo-serialization_2.13:2.5.2"
+# Pekko & serialization
+pekko-kryo = "io.altoo:pekko-kryo-serialization_2.13:1.3.0"
 bcprov = "org.bouncycastle:bcprov-jdk15on:1.70"
 # Other utilities
 caffeine = "com.github.ben-manes.caffeine:caffeine:3.2.2"

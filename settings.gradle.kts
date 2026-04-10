@@ -3,7 +3,6 @@ rootProject.name = "antares"
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        maven("https://repo.akka.io/${System.getenv("AKKA_SECURE_TOKEN")}/secure")
         mavenCentral()
     }
     versionCatalogs {
@@ -16,8 +15,8 @@ dependencyResolutionManagement {
         create("libKotlinx") {
             from(files("gradle/lib.kotlinx.versions.toml"))
         }
-        create("libAkka") {
-            from(files("gradle/lib.akka.versions.toml"))
+        create("libPekko") {
+            from(files("gradle/lib.pekko.versions.toml"))
         }
         create("libLog") {
             from(files("gradle/lib.log.versions.toml"))

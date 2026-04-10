@@ -1,14 +1,14 @@
 package com.mikai233.common.script
 
-import akka.actor.AbstractActor
-import akka.actor.Props
-import akka.cluster.Cluster
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.mikai233.common.core.Node
 import com.mikai233.common.extension.actorLogger
 import com.mikai233.common.message.*
 import groovy.lang.GroovyClassLoader
+import org.apache.pekko.actor.AbstractActor
+import org.apache.pekko.actor.Props
+import org.apache.pekko.cluster.Cluster
 import java.io.File
 import java.net.URLClassLoader
 import java.util.jar.JarFile

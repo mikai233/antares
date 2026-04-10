@@ -1,10 +1,5 @@
 package com.mikai233.common.core
 
-import akka.Done
-import akka.actor.ActorRef
-import akka.actor.ActorSystem
-import akka.actor.CoordinatedShutdown
-import akka.routing.FromConfig
 import com.google.common.hash.HashCode
 import com.google.common.hash.Hashing
 import com.google.common.io.Resources
@@ -27,6 +22,11 @@ import org.apache.curator.framework.recipes.cache.CuratorCache
 import org.apache.curator.framework.recipes.cache.CuratorCacheListener
 import org.apache.curator.retry.ExponentialBackoffRetry
 import org.apache.curator.x.async.AsyncCuratorFramework
+import org.apache.pekko.Done
+import org.apache.pekko.actor.ActorRef
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.actor.CoordinatedShutdown
+import org.apache.pekko.routing.FromConfig
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
@@ -181,7 +181,7 @@ open class Node(
         }
     }
 
-    private fun formatSeedNode(systemName: String, host: String, port: Int) = "akka://$systemName@$host:$port"
+    private fun formatSeedNode(systemName: String, host: String, port: Int) = "pekko://$systemName@$host:$port"
 
     /**
      * 获取zookeeper中整个集群的种子节点配置
@@ -206,14 +206,14 @@ open class Node(
         val seedNodes = seedNodeConfigs.map { (host, config) -> formatSeedNode(name, host, config.port) }
 
         val configs = mutableMapOf(
-            "akka.cluster.roles" to roles.map { it.name },
-            "akka.remote.artery.canonical.hostname" to addr.hostString,
-            "akka.remote.artery.canonical.port" to addr.port,
-            "akka.cluster.seed-nodes" to seedNodes,
-            "akka.cluster.auto-down-unreachable-after" to "off",
+            "pekko.cluster.roles" to roles.map { it.name },
+            "pekko.remote.artery.canonical.hostname" to addr.hostString,
+            "pekko.remote.artery.canonical.port" to addr.port,
+            "pekko.cluster.seed-nodes" to seedNodes,
+            "pekko.cluster.auto-down-unreachable-after" to "off",
         )
         if (sameJvm) {
-            configs["akka.cluster.jmx.multi-mbeans-in-same-jvm"] = "on"
+            configs["pekko.cluster.jmx.multi-mbeans-in-same-jvm"] = "on"
         }
         return ConfigFactory.parseMap(configs)
     }

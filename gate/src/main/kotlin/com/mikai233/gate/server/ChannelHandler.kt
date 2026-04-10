@@ -1,6 +1,5 @@
 package com.mikai233.gate.server
 
-import akka.actor.ActorRef
 import com.mikai233.common.core.State
 import com.mikai233.common.extension.logger
 import com.mikai233.common.extension.tell
@@ -13,6 +12,7 @@ import io.netty.channel.ChannelHandler
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
 import io.netty.util.AttributeKey
+import org.apache.pekko.actor.ActorRef
 
 const val CHANNEL_ACTOR_KEY = "CHANNEL_ACTOR_KEY"
 

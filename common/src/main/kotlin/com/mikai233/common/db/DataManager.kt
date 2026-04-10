@@ -1,6 +1,6 @@
 package com.mikai233.common.db
 
-import akka.actor.AbstractActor
+import org.apache.pekko.actor.AbstractActor
 import kotlin.reflect.KClass
 
 abstract class DataManager<A> where A : AbstractActor {

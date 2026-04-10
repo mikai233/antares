@@ -1,8 +1,6 @@
 package com.mikai233.world
 
 import SnowflakeGenerator
-import akka.actor.ActorRef
-import akka.cluster.sharding.ShardCoordinator
 import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
 import com.google.protobuf.GeneratedMessage
@@ -19,6 +17,8 @@ import com.mikai233.common.message.global.worker.WorkerIdResp
 import com.mikai233.common.message.world.HandoffWorld
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import org.apache.pekko.actor.ActorRef
+import org.apache.pekko.cluster.sharding.ShardCoordinator
 import java.net.InetSocketAddress
 import kotlin.concurrent.thread
 

@@ -1,7 +1,7 @@
 package com.mikai233.gm
 
-import akka.actor.Props
 import com.mikai233.common.core.actor.StatefulActor
+import org.apache.pekko.actor.Props
 
 class MonitorActor(node: GmNode) : StatefulActor<GmNode>(node) {
     companion object {

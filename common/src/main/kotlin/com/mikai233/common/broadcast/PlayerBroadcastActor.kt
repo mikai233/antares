@@ -1,9 +1,9 @@
 package com.mikai233.common.broadcast
 
-import akka.actor.AbstractActor
-import akka.actor.Props
 import com.mikai233.common.core.Node
 import com.mikai233.common.extension.actorLogger
+import org.apache.pekko.actor.AbstractActor
+import org.apache.pekko.actor.Props
 
 class PlayerBroadcastActor(val node: Node) : AbstractActor() {
     companion object {

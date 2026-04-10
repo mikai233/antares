@@ -1,7 +1,5 @@
 package com.mikai233.common.core.actor
 
-import akka.actor.AbstractActorWithStash
-import akka.actor.ActorRef
 import com.mikai233.common.core.Node
 import com.mikai233.common.event.Event
 import com.mikai233.common.extension.*
@@ -11,6 +9,8 @@ import com.mikai233.common.message.ExecuteActorScript
 import com.mikai233.common.message.ExecuteScriptResult
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
+import org.apache.pekko.actor.AbstractActorWithStash
+import org.apache.pekko.actor.ActorRef
 import scala.PartialFunction
 import scala.runtime.BoxedUnit
 import kotlin.coroutines.CoroutineContext

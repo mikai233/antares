@@ -1,11 +1,6 @@
 package com.mikai233.gate
 
 
-import akka.actor.Props
-import akka.actor.ReceiveTimeout
-import akka.cluster.pubsub.DistributedPubSub
-import akka.cluster.pubsub.DistributedPubSubMediator.Subscribe
-import akka.cluster.pubsub.DistributedPubSubMediator.Unsubscribe
 import com.google.protobuf.GeneratedMessage
 import com.google.protobuf.kotlin.toByteString
 import com.mikai233.common.broadcast.Topic
@@ -27,6 +22,11 @@ import com.mikai233.protocol.ProtoSystem.GmReq
 import com.mikai233.protocol.connectionExpiredNotify
 import io.netty.channel.ChannelFutureListener
 import io.netty.channel.ChannelHandlerContext
+import org.apache.pekko.actor.Props
+import org.apache.pekko.actor.ReceiveTimeout
+import org.apache.pekko.cluster.pubsub.DistributedPubSub
+import org.apache.pekko.cluster.pubsub.DistributedPubSubMediator.Subscribe
+import org.apache.pekko.cluster.pubsub.DistributedPubSubMediator.Unsubscribe
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.toJavaDuration
 

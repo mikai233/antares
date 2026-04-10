@@ -1,6 +1,5 @@
 package com.mikai233.common.core
 
-import akka.actor.Address
 import com.esotericsoftware.kryo.io.Input
 import com.mikai233.common.config.patchByVersion
 import com.mikai233.common.extension.logger
@@ -16,6 +15,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.future.await
+import org.apache.pekko.actor.Address
 import java.util.zip.GZIPInputStream
 
 class Patcher(private val node: Node) {

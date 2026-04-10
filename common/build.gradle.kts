@@ -5,7 +5,7 @@ plugins {
 dependencies {
     testImplementation(platform(libTest.junit.bom))
     testImplementation(libTest.junit.jupiter)
-    implementation(libAkka.bundles.common)
+    implementation(libPekko.bundles.common)
     implementation(libKotlin.bundles.common)
     implementation(libKotlinx.core)
     runtimeOnly(libKotlinx.core.jvm)
@@ -25,7 +25,7 @@ dependencies {
     implementation(libTool.spring.data.mongodb)
     implementation(libTool.spring.retry)
     implementation(libTool.mongodb.driver.sync)
-    implementation(libTool.akka.kryo)
+    implementation(libTool.pekko.kryo)
     implementation(libTool.caffeine)
     implementation(libTool.kryo)
     implementation(libTool.lz4)

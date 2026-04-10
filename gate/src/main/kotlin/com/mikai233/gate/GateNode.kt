@@ -1,6 +1,5 @@
 package com.mikai233.gate
 
-import akka.actor.ActorRef
 import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
 import com.google.protobuf.GeneratedMessage
@@ -14,6 +13,7 @@ import com.mikai233.common.message.*
 import com.mikai233.gate.server.NettyServer
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import org.apache.pekko.actor.ActorRef
 import java.net.InetSocketAddress
 import kotlin.concurrent.thread
 

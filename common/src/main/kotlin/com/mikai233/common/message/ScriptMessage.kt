@@ -1,11 +1,11 @@
 package com.mikai233.common.message
 
-import akka.actor.AbstractActor
-import akka.actor.ActorRef
-import akka.actor.Address
 import com.mikai233.common.core.Role
 import com.mikai233.common.script.ActorScriptFunction
 import com.mikai233.common.script.Script
+import org.apache.pekko.actor.AbstractActor
+import org.apache.pekko.actor.ActorRef
+import org.apache.pekko.actor.Address
 
 /**
  * Execute a script on the node with a specific role

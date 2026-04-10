@@ -1,10 +1,5 @@
 package com.mikai233.player
 
-import akka.actor.ActorRef
-import akka.actor.Props
-import akka.actor.ReceiveTimeout
-import akka.actor.Terminated
-import akka.cluster.sharding.ShardRegion
 import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.core.actor.StatefulActor
 import com.mikai233.common.event.GameConfigUpdateEvent
@@ -17,6 +12,11 @@ import com.mikai233.common.message.ServerProtobuf
 import com.mikai233.common.message.player.*
 import com.mikai233.common.message.world.WorldMessage
 import com.mikai233.protocol.ProtoLogin
+import org.apache.pekko.actor.ActorRef
+import org.apache.pekko.actor.Props
+import org.apache.pekko.actor.ReceiveTimeout
+import org.apache.pekko.actor.Terminated
+import org.apache.pekko.cluster.sharding.ShardRegion
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration

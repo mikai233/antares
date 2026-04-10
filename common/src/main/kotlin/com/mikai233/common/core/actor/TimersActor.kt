@@ -1,8 +1,8 @@
 package com.mikai233.common.core.actor
 
-import akka.actor.AbstractActorWithTimers
-import akka.actor.Props
-import akka.actor.TimerScheduler
+import org.apache.pekko.actor.AbstractActorWithTimers
+import org.apache.pekko.actor.Props
+import org.apache.pekko.actor.TimerScheduler
 
 data class TimersInteraction(val block: (TimerScheduler) -> Unit)
 
