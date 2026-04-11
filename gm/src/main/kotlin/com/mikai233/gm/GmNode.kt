@@ -8,9 +8,10 @@ import com.mikai233.common.extension.startShardingProxy
 import com.mikai233.common.extension.startSingletonProxy
 import com.mikai233.common.message.PlayerMessageExtractor
 import com.mikai233.common.message.WorldMessageExtractor
-import com.mikai233.gm.web.Engine
+import com.mikai233.gm.web.GmWebServer
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import kotlinx.coroutines.runBlocking
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.routing.FromConfig
 import java.net.InetSocketAddress
@@ -29,7 +30,7 @@ class GmNode(
     lateinit var worldSharding: ActorRef
         private set
 
-    private lateinit var engine: Engine
+    private lateinit var webServer: GmWebServer
 
     lateinit var scriptRouter: ActorRef
         private set
@@ -40,12 +41,12 @@ class GmNode(
     override suspend fun launch() = start()
 
     override suspend fun afterStart() {
-        startWebEngine()
         startScriptRouter()
         startWorkerSingletonProxy()
         startPlayerSharding()
         startWorldSharding()
         startMonitor()
+        startWebServer()
         super.afterStart()
     }
 
@@ -66,9 +67,12 @@ class GmNode(
         workerSingletonProxy = system.startSingletonProxy(Singleton.Worker.actorName, Role.Global)
     }
 
-    private fun startWebEngine() {
-        engine = Engine(this)
-        engine.start()
+    private fun startWebServer() {
+        webServer = GmWebServer(this)
+        webServer.start()
+        addStateListener(State.Stopping) {
+            webServer.stop()
+        }
     }
 
     private fun startMonitor() {
@@ -93,7 +97,7 @@ private class Cli {
     var name: String = GlobalEnv.SYSTEM_NAME
 }
 
-suspend fun main(args: Array<String>) {
+fun main(args: Array<String>) = runBlocking {
     val cli = Cli()
     @Suppress("SpreadOperator")
     JCommander.newBuilder()

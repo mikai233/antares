@@ -1,4 +1,4 @@
 <configuration scan="true" scanPeriod="300 seconds">
-    <property scope="system" name="MODULE" value="player"/>
+    <property name="MODULE" value="player"/>
     <include resource="logback-common.xml"/>
 </configuration>

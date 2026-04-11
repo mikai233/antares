@@ -1,11 +1,8 @@
 @file:Suppress("MatchingDeclarationName")
 
-package com.mikai233.gm.web.plugins
+package com.mikai233.gm.web.support
 
-import io.ktor.server.application.*
-import io.ktor.server.plugins.requestvalidation.*
-
-class ValidateException(message: String) : Exception(message)
+class ValidateException(message: String) : RuntimeException(message)
 
 fun <T : Any> notNull(value: T?, lazyMessage: () -> Any): T {
     if (value == null) {
@@ -17,11 +14,5 @@ fun <T : Any> notNull(value: T?, lazyMessage: () -> Any): T {
 fun ensure(value: Boolean, lazyMessage: () -> Any) {
     if (!value) {
         throw ValidateException(lazyMessage().toString())
-    }
-}
-
-fun Application.configureValidation() {
-    install(RequestValidation) {
-
     }
 }

@@ -9,6 +9,7 @@ ksp = "2.3.6"
 org-apache-groovy = "5.0.5"
 prometheus = "0.16.0"
 protobuf = "4.34.1"
+spring-boot = "4.0.5"
 
 ###############################
 # 📦 Libraries
@@ -57,6 +58,11 @@ simpleclient = { module = "io.prometheus:simpleclient", version.ref = "prometheu
 simpleclient-hotspot = { module = "io.prometheus:simpleclient_hotspot", version.ref = "prometheus" }
 simpleclient-httpserver = { module = "io.prometheus:simpleclient_httpserver", version.ref = "prometheus" }
 # Spring & Mongo
+spring-boot-dependencies = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
+spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
+spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
 spring-data-mongodb = "org.springframework.data:spring-data-mongodb:5.0.4"
 spring-retry = "org.springframework.retry:spring-retry:2.0.12"
 symbol-processing-api = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "ksp" }
@@ -82,12 +88,17 @@ prometheus = [
     "simpleclient-hotspot",
     "simpleclient-httpserver",
 ]
+spring-boot-web = [
+    "spring-boot-starter-actuator",
+    "spring-boot-starter-validation",
+    "spring-boot-starter-web",
+]
 
 ###############################
 # 🔌 Plugins
 ###############################
 [plugins]
-boot = "org.springframework.boot:4.0.5"
+boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
 detekt = "io.gitlab.arturbosch.detekt:1.23.8"
 dokka = "org.jetbrains.dokka:2.2.0"
 foojay-resolver-convention = "org.gradle.toolchains.foojay-resolver-convention:1.0.0"
