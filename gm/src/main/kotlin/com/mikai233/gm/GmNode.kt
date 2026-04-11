@@ -8,6 +8,7 @@ import com.mikai233.common.extension.startShardingProxy
 import com.mikai233.common.extension.startSingletonProxy
 import com.mikai233.common.message.PlayerMessageExtractor
 import com.mikai233.common.message.WorldMessageExtractor
+import com.mikai233.gm.script.ScriptExecutionManagerActor
 import com.mikai233.gm.web.GmWebServer
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
@@ -38,6 +39,9 @@ class GmNode(
     lateinit var workerSingletonProxy: ActorRef
         private set
 
+    lateinit var scriptExecutionManager: ActorRef
+        private set
+
     override suspend fun launch() = start()
 
     override suspend fun afterStart() {
@@ -46,6 +50,7 @@ class GmNode(
         startPlayerSharding()
         startWorldSharding()
         startMonitor()
+        startScriptExecutionManager()
         startWebServer()
         super.afterStart()
     }
@@ -77,6 +82,13 @@ class GmNode(
 
     private fun startMonitor() {
         system.actorOf(MonitorActor.props(this), "monitorActor")
+    }
+
+    private fun startScriptExecutionManager() {
+        scriptExecutionManager = system.actorOf(
+            ScriptExecutionManagerActor.props(this),
+            ScriptExecutionManagerActor.NAME,
+        )
     }
 }
 

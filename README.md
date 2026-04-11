@@ -295,9 +295,24 @@ After writing the code, run the `gradle scriptClasses` task. Once the class file
 
 ### Execution
 
-Once you have the Jar or Groovy file, you can send it to the target node or Actor for execution. The project provides a set of HTTP endpoints for script dispatch, located in `gm/src/main/kotlin/com/mikai233/gm/web/route/Script.kt`. A visual management dashboard is not yet available, so tools like Postman must be used.
+Once you have the Jar or Groovy file, you can send it to the target node or Actor for execution from the GM web console,
+or call `POST /script/executions` with multipart form-data:
 
-For example, to execute a script in specific `PlayerActor`s, call `http://127.0.0.1:8080/script/player_actor_script` via form-data, passing `player_id` and the `script` file.
+- `script`: the Jar or Groovy script file.
+- `extra`: optional extra attachment.
+- `request`: JSON part describing the target and execution options.
+
+For example, to execute a script in specific `PlayerActor`s, post this `request` JSON part:
+
+```json
+{
+  "targetType": "PlayerActor",
+  "targets": ["10001", "10002"]
+}
+```
+
+The API returns a script execution record. Use `GET /script/executions` and `GET /script/executions/{id}` to query
+execution results.
 
 # Deployment
 

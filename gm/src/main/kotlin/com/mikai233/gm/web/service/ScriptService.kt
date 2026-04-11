@@ -7,37 +7,30 @@ import com.mikai233.common.core.Role
 import com.mikai233.common.core.Singleton
 import com.mikai233.common.extension.Json
 import com.mikai233.common.extension.ask
-import com.mikai233.common.extension.tell
-import com.mikai233.common.message.ExecuteActorScript
 import com.mikai233.common.message.ExecuteNodeRoleScript
-import com.mikai233.common.message.ExecuteNodeScript
-import com.mikai233.common.message.ExecuteScriptResult
+import com.mikai233.common.message.Message
 import com.mikai233.common.script.Script
 import com.mikai233.common.script.ScriptType
 import com.mikai233.common.serde.KryoPool
 import com.mikai233.gm.GmNode
-import com.mikai233.gm.web.dto.ScriptExecutionResponse
+import com.mikai233.gm.script.*
+import com.mikai233.gm.web.dto.CreateScriptExecutionRequest
 import com.mikai233.gm.web.support.ValidateException
 import com.mikai233.gm.web.support.ensure
 import com.mikai233.gm.web.support.notNull
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.future.await
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.apache.curator.x.async.api.CreateOption
 import org.apache.pekko.actor.Address
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
 import java.io.ByteArrayOutputStream
-import java.util.UUID
+import java.util.*
 import java.util.zip.GZIPOutputStream
 import kotlin.io.path.Path
 import kotlin.io.path.extension
 import kotlin.io.path.nameWithoutExtension
-import kotlin.time.Duration.Companion.seconds
-import kotlin.time.toJavaDuration
 
 @AllOpen
 @Service
@@ -45,99 +38,109 @@ class ScriptService(
     private val node: GmNode,
     private val scriptKryo: KryoPool,
 ) {
-    fun executePlayerActorScript(
+    suspend fun createExecution(
         scriptFile: MultipartFile,
         extraFile: MultipartFile?,
-        playerIds: String,
-    ): List<ScriptExecutionResponse> = runBlocking {
+        request: CreateScriptExecutionRequest,
+    ): ScriptExecutionView {
         val script = toScript(scriptFile, extraFile)
-        val players = parseLongIds(playerIds, "player_id")
-        ensure(players.isNotEmpty()) { "No player_id found" }
-        val requestId = uuid()
-        players.map { playerId ->
-            async {
-                node.playerSharding
-                    .ask<ExecuteScriptResult>(ExecuteActorScript(playerId, requestId, script))
-                    .toResponse()
-            }
-        }.awaitAll()
+        return when (request.targetType) {
+            ScriptExecutionTargetType.PlayerActor -> executePlayerActorScript(script, request.targets)
+            ScriptExecutionTargetType.WorldActor -> executeWorldActorScript(script, request.targets)
+            ScriptExecutionTargetType.GlobalActor -> executeGlobalActorScript(script, request.targets)
+            ScriptExecutionTargetType.ActorPath -> executeActorScriptByPath(script, request.targets)
+            ScriptExecutionTargetType.Node -> executeNodeScript(script, request.addresses)
+            ScriptExecutionTargetType.NodeRole -> executeNodeRoleScript(script, request)
+        }
     }
 
-    fun executeWorldActorScript(
-        scriptFile: MultipartFile,
-        extraFile: MultipartFile?,
-        worldIds: String,
-    ): List<ScriptExecutionResponse> = runBlocking {
-        val script = toScript(scriptFile, extraFile)
-        val worlds = parseLongIds(worldIds, "world_id")
+    private suspend fun executePlayerActorScript(script: Script, targets: List<String>): ScriptExecutionView {
+        val players = parseLongTargets(targets, "player_id")
+        ensure(players.isNotEmpty()) { "No player_id found" }
+        return startExecution(
+            script,
+            ScriptExecutionTargetType.PlayerActor,
+            players.mapTo(linkedSetOf()) { it.toString() },
+        )
+    }
+
+    private suspend fun executeWorldActorScript(script: Script, targets: List<String>): ScriptExecutionView {
+        val worlds = parseLongTargets(targets, "world_id")
         ensure(worlds.isNotEmpty()) { "No world_id found" }
         val missingWorlds = worlds.filter { it !in node.gameWorldMeta.worlds }
         ensure(missingWorlds.isEmpty()) {
             "worlds: ${missingWorlds.joinToString(", ")} not exists"
         }
-        val requestId = uuid()
-        worlds.map { worldId ->
-            async {
-                node.worldSharding.ask<ExecuteScriptResult>(ExecuteActorScript(worldId, requestId, script)).toResponse()
-            }
-        }.awaitAll()
+        return startExecution(
+            script,
+            ScriptExecutionTargetType.WorldActor,
+            worlds.mapTo(linkedSetOf()) { it.toString() },
+        )
     }
 
-    fun executeGlobalActorScript(
-        scriptFile: MultipartFile,
-        extraFile: MultipartFile?,
-        actorName: String,
-    ): ScriptExecutionResponse = runBlocking {
-        val script = toScript(scriptFile, extraFile)
-        val singleton = notNull(Singleton.fromActorName(actorName)) { "No singleton actor found" }
-        val requestId = uuid()
-        val executeActorScript = ExecuteActorScript(0, requestId, script)
-        when (singleton) {
-            Singleton.Worker -> node.workerSingletonProxy.ask<ExecuteScriptResult>(executeActorScript).toResponse()
+    private suspend fun executeGlobalActorScript(script: Script, targets: List<String>): ScriptExecutionView {
+        val actorName = singleTarget(targets, "actor_name")
+        when (val singleton = notNull(Singleton.fromActorName(actorName)) { "No singleton actor found" }) {
+            Singleton.Worker -> return startExecution(
+                script,
+                ScriptExecutionTargetType.GlobalActor,
+                setOf(actorName),
+            )
             Singleton.Monitor -> throw ValidateException("Singleton actor not supported: ${singleton.actorName}")
         }
     }
 
-    fun executeActorScriptByPath(
-        scriptFile: MultipartFile,
-        extraFile: MultipartFile?,
-        actorPath: String,
-    ): ScriptExecutionResponse = runBlocking {
-        val script = toScript(scriptFile, extraFile)
-        val actorSelection = node.system.actorSelection(actorPath)
-        val actorRef = runCatching {
-            actorSelection.resolveOne(3.seconds.toJavaDuration()).await()
-        }.getOrElse {
-            throw ValidateException("Channel actor not found")
-        }
-        val requestId = uuid()
-        actorRef.ask<ExecuteScriptResult>(ExecuteActorScript(0, requestId, script)).toResponse()
+    private suspend fun executeActorScriptByPath(script: Script, targets: List<String>): ScriptExecutionView {
+        val actorPath = singleTarget(targets, "actor_path")
+        ensure(actorPath.isNotBlank()) { "No actor_path found" }
+        return startExecution(script, ScriptExecutionTargetType.ActorPath, setOf(actorPath))
     }
 
-    fun executeNodeRoleScript(
-        scriptFile: MultipartFile,
-        extraFile: MultipartFile?,
-        roleName: String,
-        addresses: List<String>,
-        patch: Boolean,
-    ) = runBlocking {
-        val script = toScript(scriptFile, extraFile)
+    private suspend fun executeNodeRoleScript(
+        script: Script,
+        request: CreateScriptExecutionRequest,
+    ): ScriptExecutionView {
+        val roleName = notNull(request.role?.takeIf { it.isNotBlank() }) { "No script role found" }
         val role = runCatching { Role.valueOf(roleName) }
             .getOrElse { throw ValidateException("No script role found") }
-        val nodeRoleScript = ExecuteNodeRoleScript(uuid(), script, role, parseAddresses(addresses))
-        if (patch) {
+        val parsedAddresses = parseAddresses(request.addresses)
+        val id = uuid()
+        val nodeRoleScript = ExecuteNodeRoleScript(id, script, role, parsedAddresses)
+        if (request.patch) {
             uploadPatch(nodeRoleScript)
         }
-        node.scriptRouter.tell(nodeRoleScript)
+        return startExecutionAsync(
+            id,
+            script,
+            ScriptExecutionTargetType.NodeRole,
+            parsedAddresses.mapTo(linkedSetOf()) { it.toString() },
+            parsedAddresses,
+            role,
+        )
     }
 
-    fun executeNodeScript(
-        scriptFile: MultipartFile,
-        extraFile: MultipartFile?,
-        addresses: List<String>,
-    ) = runBlocking {
-        val script = toScript(scriptFile, extraFile)
-        node.scriptRouter.tell(ExecuteNodeScript(uuid(), script, parseAddresses(addresses)))
+    private suspend fun executeNodeScript(script: Script, addresses: List<String>): ScriptExecutionView {
+        val parsedAddresses = parseAddresses(addresses)
+        return startExecution(
+            script,
+            ScriptExecutionTargetType.Node,
+            parsedAddresses.mapTo(linkedSetOf()) { it.toString() },
+            parsedAddresses,
+        )
+    }
+
+    suspend fun listExecutions(): List<ScriptExecutionView> {
+        return node.scriptExecutionManager.ask<ScriptExecutionListView>(ListScriptExecutions)
+            .getOrThrow()
+            .executions
+    }
+
+    suspend fun getExecution(id: String): ScriptExecutionView {
+        return when (val response = node.scriptExecutionManager.ask<Message>(GetScriptExecution(id)).getOrThrow()) {
+            is ScriptExecutionView -> response
+            is ScriptExecutionNotFound -> throw ValidateException("Script execution not found: ${response.id}")
+            else -> error("Unsupported script execution response: ${response::class.qualifiedName}")
+        }
     }
 
     private suspend fun uploadPatch(nodeRoleScript: ExecuteNodeRoleScript) {
@@ -174,13 +177,25 @@ class ScriptService(
         )
     }
 
-    private fun parseLongIds(rawIds: String, fieldName: String): Set<Long> {
-        return rawIds.split(",")
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
+    private fun parseLongTargets(rawTargets: List<String>, fieldName: String): Set<Long> {
+        return normalizeTargets(rawTargets)
             .mapTo(linkedSetOf()) { rawId ->
                 notNull(rawId.toLongOrNull()) { "$fieldName:$rawId must be a number" }
             }
+    }
+
+    private fun singleTarget(rawTargets: List<String>, fieldName: String): String {
+        val targets = normalizeTargets(rawTargets)
+        ensure(targets.size == 1) { "Exactly one $fieldName is required" }
+        return targets.single()
+    }
+
+    private fun normalizeTargets(rawTargets: List<String>): List<String> {
+        return rawTargets.asSequence()
+            .flatMap { it.split(",") }
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .toList()
     }
 
     private fun parseAddresses(addresses: List<String>): Set<Address> {
@@ -188,8 +203,36 @@ class ScriptService(
             .mapTo(linkedSetOf()) { Json.fromStr<Address>(it) }
     }
 
-    private fun Result<ExecuteScriptResult>.toResponse(): ScriptExecutionResponse {
-        return ScriptExecutionResponse.from(this)
+    private suspend fun startExecution(
+        script: Script,
+        targetType: ScriptExecutionTargetType,
+        targets: Set<String>,
+        addressFilter: Set<Address> = emptySet(),
+        role: Role? = null,
+    ): ScriptExecutionView {
+        return startExecution(uuid(), script, targetType, targets, addressFilter, role)
+    }
+
+    private suspend fun startExecution(
+        id: String,
+        script: Script,
+        targetType: ScriptExecutionTargetType,
+        targets: Set<String>,
+        addressFilter: Set<Address> = emptySet(),
+        role: Role? = null,
+    ): ScriptExecutionView = startExecutionAsync(id, script, targetType, targets, addressFilter, role)
+
+    private suspend fun startExecutionAsync(
+        id: String,
+        script: Script,
+        targetType: ScriptExecutionTargetType,
+        targets: Set<String>,
+        addressFilter: Set<Address> = emptySet(),
+        role: Role? = null,
+    ): ScriptExecutionView {
+        return node.scriptExecutionManager.ask<ScriptExecutionView>(
+            StartScriptExecution(id, script, targetType, targets, addressFilter, role),
+        ).getOrThrow()
     }
 
     private fun uuid(): String = UUID.randomUUID().toString()

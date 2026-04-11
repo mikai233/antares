@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import {createRouter, createWebHistory} from 'vue-router'
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -13,5 +13,10 @@ export const router = createRouter({
       component: () => import('@/views/ScriptConsoleView.vue'),
       meta: { title: '脚本执行' },
     },
+      {
+          path: '/script-executions',
+          component: () => import('@/views/ScriptExecutionsView.vue'),
+          meta: {title: '执行记录'},
+      },
   ],
 })

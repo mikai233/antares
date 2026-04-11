@@ -31,7 +31,12 @@ data class ExecuteNodeScript(val uid: String, val script: Script, val filter: Se
  * @param uid unique id of the script
  * @param script script to execute
  */
-data class ExecuteActorScript(override val id: Long, val uid: String, val script: Script) : ShardMessage<Long>
+data class ExecuteActorScript(
+    override val id: Long,
+    val uid: String,
+    val script: Script,
+    val target: String? = null,
+) : ShardMessage<Long>
 
 /**
  * Compile a script on script actor
@@ -39,7 +44,12 @@ data class ExecuteActorScript(override val id: Long, val uid: String, val script
  * @param script script to compile
  * @param actor actor to execute the script
  */
-data class CompileActorScript(val uid: String, val script: Script, val actor: ActorRef) : Message
+data class CompileActorScript(
+    val uid: String,
+    val script: Script,
+    val actor: ActorRef,
+    val target: String? = null,
+) : Message
 
 /**
  * Execute a function on the actor
@@ -51,6 +61,7 @@ data class ExecuteActorFunction(
     val uid: String,
     val function: ActorScriptFunction<in AbstractActor>,
     val extra: ByteArray?,
+    val target: String? = null,
 ) : Message {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -61,6 +72,7 @@ data class ExecuteActorFunction(
         if (uid != other.uid) return false
         if (function != other.function) return false
         if (!extra.contentEquals(other.extra)) return false
+        if (target != other.target) return false
 
         return true
     }
@@ -69,8 +81,16 @@ data class ExecuteActorFunction(
         var result = uid.hashCode()
         result = 31 * result + function.hashCode()
         result = 31 * result + extra.contentHashCode()
+        result = 31 * result + (target?.hashCode() ?: 0)
         return result
     }
 }
 
-data class ExecuteScriptResult(val uid: String, val success: Boolean) : Message
+data class ExecuteScriptResult(
+    val uid: String,
+    val success: Boolean,
+    val target: String? = null,
+    val error: String? = null,
+    val nodeAddress: String? = null,
+    val actorPath: String? = null,
+) : Message

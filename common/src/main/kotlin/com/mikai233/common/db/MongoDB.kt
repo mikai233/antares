@@ -12,6 +12,7 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.SimpleMongoClientDatabaseFactory
 import org.springframework.data.mongodb.core.convert.DefaultDbRefResolver
 import org.springframework.data.mongodb.core.convert.MappingMongoConverter
+import org.springframework.data.mongodb.core.convert.MongoCustomConversions
 import org.springframework.data.mongodb.core.mapping.MongoMappingContext
 
 //TODO test db on start
@@ -40,10 +41,14 @@ class MongoDB(zookeeper: AsyncCuratorFramework) {
             }
             .build()
         client = MongoClients.create(settings)
+        val conversions = MongoCustomConversions.create {}
         val mappingContext = MongoMappingContext()
+        mappingContext.setSimpleTypeHolder(conversions.simpleTypeHolder)
+        mappingContext.afterPropertiesSet()
         val factory = SimpleMongoClientDatabaseFactory(client, gameDataSourceConfig.databaseName)
         val defaultResolver = DefaultDbRefResolver(factory)
         val converter = MappingMongoConverter(defaultResolver, mappingContext)
+        converter.setCustomConversions(conversions)
         converter.setMapKeyDotReplacement("#DOT#")
         converter.afterPropertiesSet()
         mongoTemplate = MongoTemplate(factory, converter)

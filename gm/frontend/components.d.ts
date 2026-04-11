@@ -13,6 +13,8 @@ declare module 'vue' {
   export interface GlobalComponents {
     AppShell: typeof import('./src/components/AppShell.vue')['default']
     ElButton: typeof import('element-plus/es')['ElButton']
+      ElDescriptions: typeof import('element-plus/es')['ElDescriptions']
+      ElDescriptionsItem: typeof import('element-plus/es')['ElDescriptionsItem']
     ElEmpty: typeof import('element-plus/es')['ElEmpty']
     ElForm: typeof import('element-plus/es')['ElForm']
     ElFormItem: typeof import('element-plus/es')['ElFormItem']
@@ -28,8 +30,13 @@ declare module 'vue' {
     ElTable: typeof import('element-plus/es')['ElTable']
     ElTableColumn: typeof import('element-plus/es')['ElTableColumn']
     ElTag: typeof import('element-plus/es')['ElTag']
+      ElText: typeof import('element-plus/es')['ElText']
     ElUpload: typeof import('element-plus/es')['ElUpload']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
   }
+
+    export interface GlobalDirectives {
+        vLoading: typeof import('element-plus/es')['ElLoadingDirective']
+    }
 }

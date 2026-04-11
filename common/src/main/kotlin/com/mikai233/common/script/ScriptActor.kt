@@ -56,7 +56,9 @@ class ScriptActor<N>(private val node: N) : AbstractActor() where N : Node {
                 val script = message.script
                 val nodeRoleScriptFunction = scriptInstance<NodeRoleScriptFunction<N>>(script)
                 nodeRoleScriptFunction.invoke(node, script.extra)
+                sender.tell(scriptResult(message.uid, true), self)
             }.onFailure {
+                sender.tell(scriptResult(message.uid, false, it), self)
                 logger.error(it, "execute role script:{} on node:{} failed", targetRole, node::class.simpleName)
             }
         }
@@ -70,7 +72,9 @@ class ScriptActor<N>(private val node: N) : AbstractActor() where N : Node {
             val script = message.script
             val nodeScriptFunction = scriptInstance<NodeScriptFunction>(script)
             nodeScriptFunction.invoke(node, script.extra)
+            sender.tell(scriptResult(message.uid, true), self)
         }.onFailure {
+            sender.tell(scriptResult(message.uid, false, it), self)
             logger.error(it, "execute node script failed on node:{}", node::class.simpleName)
         }
     }
@@ -79,11 +83,35 @@ class ScriptActor<N>(private val node: N) : AbstractActor() where N : Node {
         runCatching {
             val script = message.script
             val actorScriptFunction = scriptInstance<ActorScriptFunction<in AbstractActor>>(script)
-            message.actor.forward(ExecuteActorFunction(message.uid, actorScriptFunction, script.extra), context)
+            message.actor.forward(
+                ExecuteActorFunction(message.uid, actorScriptFunction, script.extra, message.target),
+                context,
+            )
         }.onFailure {
             logger.error(it, "compile actor script failed")
-            sender.tell(ExecuteScriptResult(message.uid, false), message.actor)
+            sender.tell(
+                ExecuteScriptResult(
+                    message.uid,
+                    false,
+                    message.target,
+                    it.message,
+                    selfMember.address().toString(),
+                    message.actor.path().toString(),
+                ),
+                message.actor,
+            )
         }
+    }
+
+    private fun scriptResult(uid: String, success: Boolean, error: Throwable? = null): ExecuteScriptResult {
+        return ExecuteScriptResult(
+            uid,
+            success,
+            selfMember.address().toString(),
+            error?.message,
+            selfMember.address().toString(),
+            self.path().toString(),
+        )
     }
 
     private fun loadClassWithCache(script: Script): KClass<*> {

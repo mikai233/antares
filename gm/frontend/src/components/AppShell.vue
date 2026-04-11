@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Monitor, Operation, SetUp } from '@element-plus/icons-vue'
+import { DocumentChecked, Monitor, Operation, SetUp } from '@element-plus/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
@@ -30,6 +30,10 @@ const router = useRouter()
         <el-menu-item index="/scripts">
           <el-icon><Operation /></el-icon>
           <span>脚本执行</span>
+        </el-menu-item>
+        <el-menu-item index="/script-executions">
+          <el-icon><DocumentChecked /></el-icon>
+          <span>执行记录</span>
         </el-menu-item>
         <el-menu-item index="/nodes" disabled>
           <el-icon><SetUp /></el-icon>

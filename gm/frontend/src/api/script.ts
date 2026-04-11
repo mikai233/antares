@@ -1,9 +1,29 @@
-import { http } from './http'
+import {http} from './http'
 
 export interface ScriptExecutionResponse {
-  uid: string | null
-  success: boolean
+    id: string
+    scriptName: string
+    scriptType: string
+    targetType: string
+    status: string
+    totalTargets: number
+    successCount: number
+    failureCount: number
+    timeoutCount: number
+    createdAt: string
+    finishedAt?: string | null
+    targets: ScriptExecutionTargetResponse[]
+}
+
+export interface ScriptExecutionTargetResponse {
+    target: string
+    status: string
+    success?: boolean | null
   error?: string | null
+    nodeAddress?: string | null
+    actorPath?: string | null
+    startedAt: string
+    finishedAt?: string | null
 }
 
 export interface ScriptUploadPayload {
@@ -11,68 +31,51 @@ export interface ScriptUploadPayload {
   extra?: File
 }
 
-export interface ActorScriptPayload extends ScriptUploadPayload {
-  actorName?: string
-  actorPath?: string
-  ids?: string
+export type ScriptExecutionTargetType =
+    | 'PlayerActor'
+    | 'WorldActor'
+    | 'GlobalActor'
+    | 'ActorPath'
+    | 'Node'
+    | 'NodeRole'
+
+export interface CreateScriptExecutionRequest {
+    targetType: ScriptExecutionTargetType
+    targets?: string[]
   role?: string
   addresses?: string[]
   patch?: boolean
 }
 
-function formData(payload: ScriptUploadPayload) {
+export interface CreateScriptExecutionPayload extends ScriptUploadPayload {
+    request: CreateScriptExecutionRequest
+}
+
+function formData(payload: CreateScriptExecutionPayload) {
   const data = new FormData()
   data.append('script', payload.script)
   if (payload.extra) {
     data.append('extra', payload.extra)
   }
+    data.append(
+        'request',
+        new Blob([JSON.stringify(payload.request)], {type: 'application/json'}),
+    )
   return data
 }
 
-function appendAddresses(data: FormData, addresses: string[] = []) {
-  addresses.filter(Boolean).forEach(address => data.append('address', address))
-}
-
-export async function executePlayerActorScript(payload: ActorScriptPayload) {
+export async function createScriptExecution(payload: CreateScriptExecutionPayload) {
   const data = formData(payload)
-  data.append('player_id', payload.ids ?? '')
-  const response = await http.post<ScriptExecutionResponse[]>('/script/player_actor_script', data)
+    const response = await http.post<ScriptExecutionResponse>('/script/executions', data)
   return response.data
 }
 
-export async function executeWorldActorScript(payload: ActorScriptPayload) {
-  const data = formData(payload)
-  data.append('world_id', payload.ids ?? '')
-  const response = await http.post<ScriptExecutionResponse[]>('/script/world_actor_script', data)
+export async function listScriptExecutions() {
+    const response = await http.get<ScriptExecutionResponse[]>('/script/executions')
   return response.data
 }
 
-export async function executeGlobalActorScript(payload: ActorScriptPayload) {
-  const data = formData(payload)
-  data.append('actor_name', payload.actorName ?? '')
-  const response = await http.post<ScriptExecutionResponse>('/script/global_actor_script', data)
+export async function getScriptExecution(id: string) {
+    const response = await http.get<ScriptExecutionResponse>(`/script/executions/${id}`)
   return response.data
-}
-
-export async function executeChannelActorScript(payload: ActorScriptPayload) {
-  const data = formData(payload)
-  data.append('actor_path', payload.actorPath ?? '')
-  const response = await http.post<ScriptExecutionResponse>('/script/channel_actor_script', data)
-  return response.data
-}
-
-export async function executeNodeScript(payload: ActorScriptPayload) {
-  const data = formData(payload)
-  appendAddresses(data, payload.addresses)
-  await http.post('/script/node_script', data)
-}
-
-export async function executeNodeRoleScript(payload: ActorScriptPayload) {
-  const data = formData(payload)
-  data.append('role', payload.role ?? '')
-  appendAddresses(data, payload.addresses)
-  if (payload.patch) {
-    data.append('patch', 'true')
-  }
-  await http.post('/script/node_role_script', data)
 }

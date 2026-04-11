@@ -40,15 +40,18 @@ abstract class StatefulActor<N>(val node: N) : AbstractActorWithStash() where N 
             }
 
             is ExecuteActorScript -> {
-                node.scriptActor.forward(CompileActorScript(msg.uid, msg.script, self), context)
+                node.scriptActor.forward(
+                    CompileActorScript(msg.uid, msg.script, self, msg.target ?: msg.id.toString()),
+                    context,
+                )
             }
 
             is ExecuteActorFunction -> {
                 try {
                     msg.function.invoke(this, msg.extra)
-                    sender.tell(ExecuteScriptResult(msg.uid, true), self)
+                    sender.tell(scriptResult(msg, true), self)
                 } catch (e: Exception) {
-                    sender.tell(ExecuteScriptResult(msg.uid, false), self)
+                    sender.tell(scriptResult(msg, false, e), self)
                     logger.error(e, "{} failed to execute actor function", self)
                 }
             }
@@ -57,6 +60,21 @@ abstract class StatefulActor<N>(val node: N) : AbstractActorWithStash() where N 
                 super.aroundReceive(receive, msg)
             }
         }
+    }
+
+    private fun scriptResult(
+        msg: ExecuteActorFunction,
+        success: Boolean,
+        error: Exception? = null,
+    ): ExecuteScriptResult {
+        return ExecuteScriptResult(
+            msg.uid,
+            success,
+            msg.target,
+            error?.message,
+            node.addr.toString(),
+            self.path().toString(),
+        )
     }
 
     private inline fun <reified T> handleRunnable(runnable: () -> Unit) {

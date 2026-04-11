@@ -3,21 +3,17 @@ import { ElMessage } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
 import { reactive, ref } from 'vue'
 import {
-  executeChannelActorScript,
-  executeGlobalActorScript,
-  executeNodeRoleScript,
-  executeNodeScript,
-  executePlayerActorScript,
-  executeWorldActorScript,
+  createScriptExecution,
+  type CreateScriptExecutionRequest,
   type ScriptExecutionResponse,
 } from '@/api/script'
 
-type TargetType = 'player' | 'world' | 'global' | 'channel' | 'node' | 'role'
+type TargetType = CreateScriptExecutionRequest['targetType']
 
 const loading = ref(false)
-const results = ref<ScriptExecutionResponse[]>([])
+const execution = ref<ScriptExecutionResponse>()
 const form = reactive({
-  target: 'player' as TargetType,
+  target: 'PlayerActor' as TargetType,
   ids: '',
   actorName: 'worker',
   actorPath: '',
@@ -37,7 +33,48 @@ function onExtraFileChange(uploadFile: { raw?: File }) {
 }
 
 function resetResults() {
-  results.value = []
+  execution.value = undefined
+}
+
+function splitLines(raw: string) {
+  return raw.split('\n').map(item => item.trim()).filter(Boolean)
+}
+
+function splitIds(raw: string) {
+  return raw.split(',').map(item => item.trim()).filter(Boolean)
+}
+
+function createRequest(): CreateScriptExecutionRequest {
+  switch (form.target) {
+    case 'PlayerActor':
+    case 'WorldActor':
+      return {
+        targetType: form.target,
+        targets: splitIds(form.ids),
+      }
+    case 'GlobalActor':
+      return {
+        targetType: form.target,
+        targets: [form.actorName],
+      }
+    case 'ActorPath':
+      return {
+        targetType: form.target,
+        targets: [form.actorPath],
+      }
+    case 'Node':
+      return {
+        targetType: form.target,
+        addresses: splitLines(form.addresses),
+      }
+    case 'NodeRole':
+      return {
+        targetType: form.target,
+        role: form.role,
+        addresses: splitLines(form.addresses),
+        patch: form.patch,
+      }
+  }
 }
 
 async function submitScript() {
@@ -48,40 +85,13 @@ async function submitScript() {
   loading.value = true
   resetResults()
 
-  const payload = {
-    script: form.scriptFile,
-    extra: form.extraFile,
-    ids: form.ids,
-    actorName: form.actorName,
-    actorPath: form.actorPath,
-    role: form.role,
-    addresses: form.addresses.split('\n').map(item => item.trim()).filter(Boolean),
-    patch: form.patch,
-  }
-
   try {
-    switch (form.target) {
-      case 'player':
-        results.value = await executePlayerActorScript(payload)
-        break
-      case 'world':
-        results.value = await executeWorldActorScript(payload)
-        break
-      case 'global':
-        results.value = [await executeGlobalActorScript(payload)]
-        break
-      case 'channel':
-        results.value = [await executeChannelActorScript(payload)]
-        break
-      case 'node':
-        await executeNodeScript(payload)
-        ElMessage.success('节点脚本已发送')
-        break
-      case 'role':
-        await executeNodeRoleScript(payload)
-        ElMessage.success('角色脚本已发送')
-        break
-    }
+    execution.value = await createScriptExecution({
+      script: form.scriptFile,
+      extra: form.extraFile,
+      request: createRequest(),
+    })
+    ElMessage.success('脚本执行任务已创建')
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '脚本执行失败')
   } finally {
@@ -97,34 +107,34 @@ async function submitScript() {
         <el-segmented
           v-model="form.target"
           :options="[
-            { label: '玩家 Actor', value: 'player' },
-            { label: '世界 Actor', value: 'world' },
-            { label: '全局 Actor', value: 'global' },
-            { label: 'Actor Path', value: 'channel' },
-            { label: '节点', value: 'node' },
-            { label: '角色节点', value: 'role' },
+            { label: '玩家 Actor', value: 'PlayerActor' },
+            { label: '世界 Actor', value: 'WorldActor' },
+            { label: '全局 Actor', value: 'GlobalActor' },
+            { label: 'Actor Path', value: 'ActorPath' },
+            { label: '节点', value: 'Node' },
+            { label: '角色节点', value: 'NodeRole' },
           ]"
         />
       </el-form-item>
 
-      <el-form-item v-if="form.target === 'player'" label="player_id">
+      <el-form-item v-if="form.target === 'PlayerActor'" label="player_id">
         <el-input v-model="form.ids" placeholder="多个 id 用逗号分隔，例如 10001,10002" />
       </el-form-item>
 
-      <el-form-item v-if="form.target === 'world'" label="world_id">
+      <el-form-item v-if="form.target === 'WorldActor'" label="world_id">
         <el-input v-model="form.ids" placeholder="多个 id 用逗号分隔，例如 1,2" />
       </el-form-item>
 
-      <el-form-item v-if="form.target === 'global'" label="actor_name">
+      <el-form-item v-if="form.target === 'GlobalActor'" label="actor_name">
         <el-input v-model="form.actorName" placeholder="例如 worker" />
       </el-form-item>
 
-      <el-form-item v-if="form.target === 'channel'" label="actor_path">
+      <el-form-item v-if="form.target === 'ActorPath'" label="actor_path">
         <el-input v-model="form.actorPath" placeholder="pekko://.../user/..." />
       </el-form-item>
 
-      <template v-if="form.target === 'node' || form.target === 'role'">
-        <el-form-item v-if="form.target === 'role'" label="role">
+      <template v-if="form.target === 'Node' || form.target === 'NodeRole'">
+        <el-form-item v-if="form.target === 'NodeRole'" label="role">
           <el-select v-model="form.role">
             <el-option label="Gate" value="Gate" />
             <el-option label="Global" value="Global" />
@@ -141,7 +151,7 @@ async function submitScript() {
             placeholder='每行一个 Address JSON；留空表示不过滤'
           />
         </el-form-item>
-        <el-form-item v-if="form.target === 'role'">
+        <el-form-item v-if="form.target === 'NodeRole'">
           <el-switch v-model="form.patch" active-text="写入 patch" />
         </el-form-item>
       </template>
@@ -178,15 +188,33 @@ async function submitScript() {
     <aside class="panel-card stack result-panel">
       <div>
         <p class="eyebrow">Result</p>
-        <h2>执行结果</h2>
+        <h2>执行任务</h2>
       </div>
 
-      <el-empty v-if="results.length === 0" description="暂无同步结果" />
-      <el-table v-else :data="results" border>
-        <el-table-column prop="uid" label="UID" min-width="220" />
-        <el-table-column prop="success" label="Success" width="110" />
-        <el-table-column prop="error" label="Error" min-width="180" />
-      </el-table>
+      <el-empty v-if="!execution" description="暂无执行任务" />
+      <template v-else>
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="Execution ID">
+            <el-text tag="code">{{ execution.id }}</el-text>
+          </el-descriptions-item>
+          <el-descriptions-item label="Status">
+            <el-tag>{{ execution.status }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="Targets">
+            {{ execution.successCount }} success /
+            {{ execution.failureCount }} failed /
+            {{ execution.timeoutCount }} timeout /
+            {{ execution.totalTargets }} total
+          </el-descriptions-item>
+        </el-descriptions>
+        <el-table :data="execution.targets" border>
+          <el-table-column prop="target" label="Target" min-width="140" />
+          <el-table-column prop="status" label="Status" width="120" />
+          <el-table-column prop="nodeAddress" label="Node" min-width="180" />
+          <el-table-column prop="actorPath" label="Actor" min-width="180" />
+          <el-table-column prop="error" label="Error" min-width="180" />
+        </el-table>
+      </template>
     </aside>
   </section>
 </template>
