@@ -10,6 +10,7 @@ import com.mikai233.gm.GmNode
 import org.apache.pekko.actor.AbstractActor
 import org.apache.pekko.actor.Props
 import java.time.Instant
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.toJavaDuration
 
@@ -17,6 +18,8 @@ class ScriptExecutionManagerActor(private val node: GmNode) : AbstractActor() {
     companion object {
         const val NAME = "scriptExecutionManager"
         private const val MAX_EXECUTION_RECORDS = 1_000
+        private const val MAX_DIRTY_TARGETS = 200
+        private val PERSISTENCE_FLUSH_INTERVAL = 500.milliseconds
 
         fun props(node: GmNode): Props {
             return Props.create(ScriptExecutionManagerActor::class.java) { ScriptExecutionManagerActor(node) }
@@ -31,6 +34,11 @@ class ScriptExecutionManagerActor(private val node: GmNode) : AbstractActor() {
         val targets: MutableMap<String, MutableTarget>,
         val createdAt: Instant,
         val dynamicTargets: Boolean,
+        var totalTargets: Int,
+        var runningCount: Int,
+        var successCount: Int = 0,
+        var failureCount: Int = 0,
+        var timeoutCount: Int = 0,
         var status: ScriptExecutionStatus = ScriptExecutionStatus.Running,
         var finishedAt: Instant? = null,
     )
@@ -46,15 +54,18 @@ class ScriptExecutionManagerActor(private val node: GmNode) : AbstractActor() {
         var finishedAt: Instant? = null,
     )
 
+    private data class DirtyTarget(val executionId: String, val target: ScriptExecutionTargetView)
+
     private data class ScriptExecutionTimeout(val id: String)
+
+    private data object FlushScriptExecutionPersistence
 
     private val logger = actorLogger()
     private val repository = ScriptExecutionRepository { node.mongoDB.mongoTemplate }
-    private val executions = object : LinkedHashMap<String, MutableExecution>() {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, MutableExecution>?): Boolean {
-            return size > MAX_EXECUTION_RECORDS
-        }
-    }
+    private val dirtyExecutions = linkedSetOf<String>()
+    private val dirtyTargets = linkedMapOf<String, DirtyTarget>()
+    private var persistenceFlushScheduled = false
+    private val executions = LinkedHashMap<String, MutableExecution>()
 
     override fun preStart() {
         loadRecentExecutions()
@@ -67,24 +78,29 @@ class ScriptExecutionManagerActor(private val node: GmNode) : AbstractActor() {
             .match(GetScriptExecution::class.java) { handleGet(it) }
             .match(ListScriptExecutions::class.java) { handleList() }
             .match(ScriptExecutionTimeout::class.java) { handleTimeout(it) }
+            .match(FlushScriptExecutionPersistence::class.java) { flushPersistence() }
             .build()
     }
 
     private fun handleStart(command: StartScriptExecution) {
+        val targets = command.targets.associateWith {
+            MutableTarget(it, ScriptExecutionTargetStatus.Running, startedAt = Instant.now())
+        }.toMutableMap()
         val execution = MutableExecution(
             command.id,
             command.script.name,
             command.script.type.name,
             command.targetType,
-            command.targets.associateWith {
-                MutableTarget(it, ScriptExecutionTargetStatus.Running, startedAt = Instant.now())
-            }.toMutableMap(),
+            targets,
             Instant.now(),
             command.targetType in setOf(ScriptExecutionTargetType.Node, ScriptExecutionTargetType.NodeRole) &&
                 command.targets.isEmpty(),
+            targets.size,
+            targets.size,
         )
         executions.put(command.id, execution)
-        persist(execution, persistTargets = true)
+        evictCompletedExecutions()
+        persist(execution)
         scheduleTimeout(command.id)
         dispatch(command)
         sender.tell(execution.toView(), self)
@@ -149,35 +165,39 @@ class ScriptExecutionManagerActor(private val node: GmNode) : AbstractActor() {
 
     private fun handleResult(result: ExecuteScriptResult) {
         val execution = executions[result.uid] ?: return
-        val target = result.target ?: result.actorPath ?: result.nodeAddress ?: sender.path().toString()
-        val targetRecord = execution.targets.getOrPut(target) {
-            MutableTarget(target, ScriptExecutionTargetStatus.Running, startedAt = Instant.now())
+        if (execution.finishedAt != null) {
+            return
         }
-        targetRecord.status = if (result.success) {
+        val target = result.target ?: result.actorPath ?: result.nodeAddress ?: sender.path().toString()
+        val targetRecord = getOrPutTarget(execution, target)
+        val nextStatus = if (result.success) {
             ScriptExecutionTargetStatus.Success
         } else {
             ScriptExecutionTargetStatus.Failed
         }
+        updateTargetStatus(execution, targetRecord, nextStatus)
         targetRecord.success = result.success
         targetRecord.error = result.error
         targetRecord.nodeAddress = result.nodeAddress
         targetRecord.actorPath = result.actorPath
         targetRecord.finishedAt = Instant.now()
         refreshExecutionStatus(execution)
-        persist(execution)
-        persistTarget(execution.id, targetRecord)
+        markExecutionDirty(execution)
+        markTargetDirty(execution.id, targetRecord)
     }
 
     private fun handleGet(query: GetScriptExecution) {
         val cachedExecution = executions[query.id]
-        val execution = runCatching {
-            repository.findById(query.id)?.toView(
-                repository.findTargets(query.id).map { it.toView() },
-            )
-        }
+        val execution = cachedExecution
+            ?.takeIf { it.canServeDetailView() }
+            ?.toView()
+            ?: runCatching {
+                repository.findById(query.id)?.toView(
+                    repository.findTargets(query.id).map { it.toView() },
+                )
+            }
             .onFailure { logger.error(it, "load script execution:{} failed", query.id) }
             .getOrNull()
-            ?: cachedExecution?.toView()
         sender.tell(execution ?: ScriptExecutionNotFound(query.id), self)
     }
 
@@ -202,7 +222,7 @@ class ScriptExecutionManagerActor(private val node: GmNode) : AbstractActor() {
         execution.targets.values
             .filter { it.status == ScriptExecutionTargetStatus.Running }
             .forEach {
-                it.status = ScriptExecutionTargetStatus.Timeout
+                updateTargetStatus(execution, it, ScriptExecutionTargetStatus.Timeout)
                 it.success = false
                 it.error = "Script execution timed out"
                 it.finishedAt = Instant.now()
@@ -213,44 +233,36 @@ class ScriptExecutionManagerActor(private val node: GmNode) : AbstractActor() {
         } else {
             refreshExecutionStatus(execution, forceFinish = true)
         }
-        persist(execution, persistTargets = true)
+        persist(execution)
         logger.warning("script execution:{} timed out", timeout.id)
     }
 
     private fun markFailed(id: String, target: String, error: String) {
         val execution = executions[id] ?: return
-        val targetRecord = execution.targets.getOrPut(target) {
-            MutableTarget(target, ScriptExecutionTargetStatus.Running, startedAt = Instant.now())
-        }
-        targetRecord.status = ScriptExecutionTargetStatus.Failed
+        val targetRecord = getOrPutTarget(execution, target)
+        updateTargetStatus(execution, targetRecord, ScriptExecutionTargetStatus.Failed)
         targetRecord.success = false
         targetRecord.error = error
         targetRecord.finishedAt = Instant.now()
         refreshExecutionStatus(execution)
-        persist(execution)
-        persistTarget(execution.id, targetRecord)
+        markExecutionDirty(execution, flushImmediately = true)
+        markTargetDirty(execution.id, targetRecord, flushImmediately = true)
     }
 
     private fun refreshExecutionStatus(execution: MutableExecution, forceFinish: Boolean = false) {
         if (execution.dynamicTargets && !forceFinish) {
             return
         }
-        if (execution.targets.isEmpty()) {
+        if (execution.totalTargets == 0) {
             return
         }
-        val allFinished = execution.targets.values.all {
-            it.status != ScriptExecutionTargetStatus.Running
-        }
-        if (!allFinished && !forceFinish) {
+        if (execution.runningCount > 0 && !forceFinish) {
             return
         }
-        val successCount = execution.targets.values.count { it.status == ScriptExecutionTargetStatus.Success }
-        val timeoutCount = execution.targets.values.count { it.status == ScriptExecutionTargetStatus.Timeout }
-        val failureCount = execution.targets.values.count { it.status == ScriptExecutionTargetStatus.Failed }
         execution.status = when {
-            timeoutCount == execution.targets.size -> ScriptExecutionStatus.Timeout
-            successCount == execution.targets.size -> ScriptExecutionStatus.Completed
-            failureCount == execution.targets.size -> ScriptExecutionStatus.Failed
+            execution.timeoutCount == execution.totalTargets -> ScriptExecutionStatus.Timeout
+            execution.successCount == execution.totalTargets -> ScriptExecutionStatus.Completed
+            execution.failureCount == execution.totalTargets -> ScriptExecutionStatus.Failed
             else -> ScriptExecutionStatus.PartialFailed
         }
         execution.finishedAt = Instant.now()
@@ -282,9 +294,20 @@ class ScriptExecutionManagerActor(private val node: GmNode) : AbstractActor() {
                         markRestoredRunningExecutionTimeout(execution)
                     }
                     executions[execution.id] = execution
+                    evictCompletedExecutions()
                 }
         }.onFailure {
             logger.error(it, "load script executions from db failed")
+        }
+    }
+
+    private fun evictCompletedExecutions() {
+        val iterator = executions.iterator()
+        while (executions.size > MAX_EXECUTION_RECORDS && iterator.hasNext()) {
+            val execution = iterator.next().value
+            if (execution.status != ScriptExecutionStatus.Running) {
+                iterator.remove()
+            }
         }
     }
 
@@ -293,7 +316,7 @@ class ScriptExecutionManagerActor(private val node: GmNode) : AbstractActor() {
         execution.targets.values
             .filter { it.status == ScriptExecutionTargetStatus.Running }
             .forEach {
-                it.status = ScriptExecutionTargetStatus.Timeout
+                updateTargetStatus(execution, it, ScriptExecutionTargetStatus.Timeout)
                 it.success = false
                 it.error = "GM restarted before script execution finished"
                 it.finishedAt = now
@@ -304,26 +327,116 @@ class ScriptExecutionManagerActor(private val node: GmNode) : AbstractActor() {
         } else {
             refreshExecutionStatus(execution, forceFinish = true)
         }
-        persist(execution, persistTargets = true)
+        persist(execution)
     }
 
-    private fun persist(execution: MutableExecution, persistTargets: Boolean = false) {
-        runCatching {
-            val view = execution.toView()
-            repository.saveExecution(view, execution.dynamicTargets)
-            if (persistTargets) {
-                repository.saveTargets(execution.id, view.targets)
-            }
-        }.onFailure {
-            logger.error(it, "save script execution:{} failed", execution.id)
+    private fun MutableExecution.canServeDetailView(): Boolean {
+        return status == ScriptExecutionStatus.Running ||
+                targets.isNotEmpty() ||
+                totalTargets == 0 ||
+                id in dirtyExecutions
+    }
+
+    private fun getOrPutTarget(execution: MutableExecution, target: String): MutableTarget {
+        return execution.targets.getOrPut(target) {
+            execution.totalTargets++
+            execution.runningCount++
+            MutableTarget(target, ScriptExecutionTargetStatus.Running, startedAt = Instant.now())
         }
     }
 
-    private fun persistTarget(executionId: String, target: MutableTarget) {
+    private fun updateTargetStatus(
+        execution: MutableExecution,
+        target: MutableTarget,
+        status: ScriptExecutionTargetStatus,
+    ) {
+        if (target.status == status) {
+            return
+        }
+        decrementStatusCount(execution, target.status)
+        target.status = status
+        incrementStatusCount(execution, status)
+    }
+
+    private fun decrementStatusCount(execution: MutableExecution, status: ScriptExecutionTargetStatus) {
+        when (status) {
+            ScriptExecutionTargetStatus.Running -> execution.runningCount--
+            ScriptExecutionTargetStatus.Success -> execution.successCount--
+            ScriptExecutionTargetStatus.Failed -> execution.failureCount--
+            ScriptExecutionTargetStatus.Timeout -> execution.timeoutCount--
+        }
+    }
+
+    private fun incrementStatusCount(execution: MutableExecution, status: ScriptExecutionTargetStatus) {
+        when (status) {
+            ScriptExecutionTargetStatus.Running -> execution.runningCount++
+            ScriptExecutionTargetStatus.Success -> execution.successCount++
+            ScriptExecutionTargetStatus.Failed -> execution.failureCount++
+            ScriptExecutionTargetStatus.Timeout -> execution.timeoutCount++
+        }
+    }
+
+    private fun markExecutionDirty(execution: MutableExecution, flushImmediately: Boolean = false) {
+        dirtyExecutions.add(execution.id)
+        requestPersistenceFlush(flushImmediately || execution.finishedAt != null)
+    }
+
+    private fun markTargetDirty(
+        executionId: String,
+        target: MutableTarget,
+        flushImmediately: Boolean = false,
+    ) {
+        dirtyTargets["$executionId:${target.target}"] = DirtyTarget(executionId, target.toView())
+        requestPersistenceFlush(flushImmediately || dirtyTargets.size >= MAX_DIRTY_TARGETS)
+    }
+
+    private fun requestPersistenceFlush(immediately: Boolean) {
+        if (immediately) {
+            self.tell(FlushScriptExecutionPersistence, self)
+            return
+        }
+        if (persistenceFlushScheduled) {
+            return
+        }
+        persistenceFlushScheduled = true
+        context.system.scheduler().scheduleOnce(
+            PERSISTENCE_FLUSH_INTERVAL.toJavaDuration(),
+            self,
+            FlushScriptExecutionPersistence,
+            context.dispatcher,
+            self,
+        )
+    }
+
+    private fun flushPersistence() {
+        persistenceFlushScheduled = false
+        if (dirtyExecutions.isEmpty() && dirtyTargets.isEmpty()) {
+            return
+        }
+        val executionDocuments = dirtyExecutions
+            .mapNotNull { executions[it] }
+            .map { it.toDocument() }
+        val targetDocuments = dirtyTargets.values
+            .map { it.target.toDocument(it.executionId) }
         runCatching {
-            repository.saveTarget(executionId, target.toView())
+            repository.saveExecutions(executionDocuments)
+            repository.saveTargetDocuments(targetDocuments)
+            dirtyExecutions.clear()
+            dirtyTargets.clear()
         }.onFailure {
-            logger.error(it, "save script execution:{} target:{} failed", executionId, target.target)
+            logger.error(it, "flush script execution persistence failed")
+            requestPersistenceFlush(immediately = false)
+        }
+    }
+
+    private fun persist(execution: MutableExecution) {
+        runCatching {
+            repository.saveExecution(execution.toDocument())
+            repository.saveTargets(execution.id, execution.targets.values.map { it.toView() })
+            dirtyExecutions.remove(execution.id)
+            dirtyTargets.keys.removeIf { it.startsWith("${execution.id}:") }
+        }.onFailure {
+            logger.error(it, "save script execution:{} failed", execution.id)
         }
     }
 
@@ -335,27 +448,51 @@ class ScriptExecutionManagerActor(private val node: GmNode) : AbstractActor() {
             scriptType,
             targetType,
             status,
-            targetViews.size,
-            targetViews.count { it.status == ScriptExecutionTargetStatus.Success },
-            targetViews.count { it.status == ScriptExecutionTargetStatus.Failed },
-            targetViews.count { it.status == ScriptExecutionTargetStatus.Timeout },
+            totalTargets,
+            successCount,
+            failureCount,
+            timeoutCount,
             createdAt,
             finishedAt,
             targetViews,
         )
     }
 
+    private fun MutableExecution.toDocument(): ScriptExecutionDocument {
+        return ScriptExecutionDocument(
+            id,
+            scriptName,
+            scriptType,
+            targetType,
+            status,
+            totalTargets,
+            successCount,
+            failureCount,
+            timeoutCount,
+            createdAt,
+            finishedAt,
+            dynamicTargets,
+        )
+    }
+
     private fun ScriptExecutionDocument.toMutableExecution(
         targetDocuments: List<ScriptExecutionTargetDocument>,
     ): MutableExecution {
+        val targets = targetDocuments.associate { it.target to it.toMutableTarget() }.toMutableMap()
+        val targetCount = targets.size
         return MutableExecution(
             id,
             scriptName,
             scriptType,
             targetType,
-            targetDocuments.associate { it.target to it.toMutableTarget() }.toMutableMap(),
+            targets,
             createdAt,
             dynamicTargets,
+            totalTargets.takeIf { it > 0 } ?: targetCount,
+            targets.values.count { it.status == ScriptExecutionTargetStatus.Running },
+            successCount,
+            failureCount,
+            timeoutCount,
             status,
             finishedAt,
         )

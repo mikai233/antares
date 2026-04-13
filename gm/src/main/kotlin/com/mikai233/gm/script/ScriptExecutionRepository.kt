@@ -1,22 +1,51 @@
 package com.mikai233.gm.script
 
+import org.springframework.data.domain.Sort
+import org.springframework.data.mongodb.core.BulkOperations
+import org.springframework.data.mongodb.core.FindAndReplaceOptions
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.findById
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.domain.Sort
 
 class ScriptExecutionRepository(private val mongoTemplate: () -> MongoTemplate) {
     fun saveExecution(view: ScriptExecutionView, dynamicTargets: Boolean) {
         mongoTemplate().save(view.toDocument(dynamicTargets))
     }
 
-    fun saveTarget(executionId: String, target: ScriptExecutionTargetView) {
-        mongoTemplate().save(target.toDocument(executionId))
+    fun saveExecution(document: ScriptExecutionDocument) {
+        mongoTemplate().save(document)
+    }
+
+    fun saveExecutions(documents: List<ScriptExecutionDocument>) {
+        if (documents.isEmpty()) {
+            return
+        }
+        val operations = mongoTemplate().bulkOps(BulkOperations.BulkMode.UNORDERED, ScriptExecutionDocument::class.java)
+        val options = FindAndReplaceOptions.options().upsert()
+        documents.forEach { document ->
+            val query = Query.query(Criteria.where(ScriptExecutionDocument::id.name).`is`(document.id))
+            operations.replaceOne(query, document, options)
+        }
+        operations.execute()
     }
 
     fun saveTargets(executionId: String, targets: List<ScriptExecutionTargetView>) {
-        targets.forEach { saveTarget(executionId, it) }
+        saveTargetDocuments(targets.map { it.toDocument(executionId) })
+    }
+
+    fun saveTargetDocuments(documents: List<ScriptExecutionTargetDocument>) {
+        if (documents.isEmpty()) {
+            return
+        }
+        val operations = mongoTemplate()
+            .bulkOps(BulkOperations.BulkMode.UNORDERED, ScriptExecutionTargetDocument::class.java)
+        val options = FindAndReplaceOptions.options().upsert()
+        documents.forEach { document ->
+            val query = Query.query(Criteria.where(ScriptExecutionTargetDocument::id.name).`is`(document.id))
+            operations.replaceOne(query, document, options)
+        }
+        operations.execute()
     }
 
     fun findById(id: String): ScriptExecutionDocument? {
