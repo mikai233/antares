@@ -1,7 +1,7 @@
 package com.mikai233.common.db.tracked
 
-import com.mikai233.common.db.Entity
 import com.mikai233.common.db.AutoFlushMemData
+import com.mikai233.common.db.Entity
 import com.mikai233.common.db.MemData
 import com.mikai233.common.extension.logger
 import org.springframework.data.mongodb.core.MongoTemplate

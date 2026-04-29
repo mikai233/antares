@@ -1,6 +1,6 @@
 package com.mikai233.common.db.tracked
 
-import java.util.Deque
+import java.util.*
 
 @Suppress("UNCHECKED_CAST")
 private const val DEFAULT_WRITE_BOUNDARY_DEPTH = 2
@@ -92,9 +92,9 @@ private fun writeBoundaryFor(path: DbPath, value: Any?): DirtyTarget? {
 
 private fun canHaveNestedMutation(value: Any?): Boolean {
     return value is DirtyTargetAware ||
-        value is PersistentValue ||
-        value is MutableMap<*, *> ||
-        value is MutableList<*> ||
-        value is MutableSet<*> ||
-        value is Deque<*>
+            value is PersistentValue ||
+            value is MutableMap<*, *> ||
+            value is MutableList<*> ||
+            value is MutableSet<*> ||
+            value is Deque<*>
 }

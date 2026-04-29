@@ -37,15 +37,15 @@ class GmWebServer(private val node: GmNode) {
             "server.address" to node.config.getStringOrDefault("gm.web.host", "ktor.deployment.host", "0.0.0.0"),
             "server.port" to node.config.getIntOrDefault("gm.web.port", "ktor.deployment.port", 8080),
             "spring.servlet.multipart.max-file-size" to
-                node.config.getStringOrDefault(
-                    "gm.web.multipart.max-file-size",
-                    defaultValue = "128MB",
-                ),
+                    node.config.getStringOrDefault(
+                        "gm.web.multipart.max-file-size",
+                        defaultValue = "128MB",
+                    ),
             "spring.servlet.multipart.max-request-size" to
-                node.config.getStringOrDefault(
-                    "gm.web.multipart.max-request-size",
-                    defaultValue = "128MB",
-                ),
+                    node.config.getStringOrDefault(
+                        "gm.web.multipart.max-request-size",
+                        defaultValue = "128MB",
+                    ),
             "management.endpoints.web.exposure.include" to "health,info,metrics",
         )
     }

@@ -86,6 +86,7 @@ class ScriptService(
                 ScriptExecutionTargetType.GlobalActor,
                 setOf(actorName),
             )
+
             Singleton.Monitor -> throw ValidateException("Singleton actor not supported: ${singleton.actorName}")
         }
     }

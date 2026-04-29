@@ -94,7 +94,7 @@ class ScriptExecutionManagerActor(private val node: GmNode) : AbstractActor() {
             targets,
             Instant.now(),
             command.targetType in setOf(ScriptExecutionTargetType.Node, ScriptExecutionTargetType.NodeRole) &&
-                command.targets.isEmpty(),
+                    command.targets.isEmpty(),
             targets.size,
             targets.size,
         )
@@ -196,8 +196,8 @@ class ScriptExecutionManagerActor(private val node: GmNode) : AbstractActor() {
                     repository.findTargets(query.id).map { it.toView() },
                 )
             }
-            .onFailure { logger.error(it, "load script execution:{} failed", query.id) }
-            .getOrNull()
+                .onFailure { logger.error(it, "load script execution:{} failed", query.id) }
+                .getOrNull()
         sender.tell(execution ?: ScriptExecutionNotFound(query.id), self)
     }
 

@@ -59,7 +59,7 @@ class TrackedEntityProcessor(
             unsupportedProperties.forEach { property ->
                 environment.logger.error(
                     "Unsupported tracked property ${property.source.parentDeclaration?.qualifiedName?.asString()}.${property.name}: " +
-                        property.type.resolve().declaration.qualifiedName?.asString(),
+                            property.type.resolve().declaration.qualifiedName?.asString(),
                     property.type,
                 )
             }
@@ -265,7 +265,7 @@ private fun KSClassDeclaration.isTypeOrSubclassOf(qualifiedName: String): Boolea
 private data class TrackedProperty(
     val source: KSPropertyDeclaration,
     val name: String,
-    val type: com.google.devtools.ksp.symbol.KSTypeReference,
+    val type: KSTypeReference,
     val typeName: TypeName,
     val kind: PropertyKind,
     val mutable: Boolean,
