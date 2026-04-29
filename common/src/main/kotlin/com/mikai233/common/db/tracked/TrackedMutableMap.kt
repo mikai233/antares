@@ -95,7 +95,8 @@ class TrackedMutableMap<K, V>(
 
     @Suppress("UNCHECKED_CAST")
     private fun trackValue(key: K, value: V): V {
-        return trackedValue?.invoke(key, value) ?: trackMutableValue(path.child(key), value, queue, currentDirtyTarget()) as V
+        return trackedValue?.invoke(key, value)
+            ?: trackMutableValue(path.child(key), value, queue, currentDirtyTarget()) as V
     }
 
     private fun currentDirtyTarget(): DirtyTarget? {

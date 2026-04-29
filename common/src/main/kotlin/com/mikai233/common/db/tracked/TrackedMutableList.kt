@@ -85,7 +85,8 @@ class TrackedMutableList<E>(
 
     @Suppress("UNCHECKED_CAST")
     private fun trackValue(index: Int, value: E): E {
-        return trackedValue?.invoke(index, value) ?: trackMutableValue(path.child(index), value, queue, currentDirtyTarget()) as E
+        return trackedValue?.invoke(index, value)
+            ?: trackMutableValue(path.child(index), value, queue, currentDirtyTarget()) as E
     }
 
     private fun currentDirtyTarget(): DirtyTarget? {

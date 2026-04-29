@@ -135,6 +135,11 @@ private class PendingPatch {
     }
 
     fun toWrite(key: WriteKey): PendingWrite {
-        return PendingWrite(key, sets.mapValues { (_, value) -> persistentValueOf(value) }, unsets.toSet(), incs.toMap())
+        return PendingWrite(
+            key,
+            sets.mapValues { (_, value) -> persistentValueOf(value) },
+            unsets.toSet(),
+            incs.toMap(),
+        )
     }
 }
