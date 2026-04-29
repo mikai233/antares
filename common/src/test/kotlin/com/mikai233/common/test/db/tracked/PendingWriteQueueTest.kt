@@ -1,12 +1,6 @@
 package com.mikai233.common.test.db.tracked
 
-import com.mikai233.common.db.tracked.ChangeOp
-import com.mikai233.common.db.tracked.DbPath
-import com.mikai233.common.db.tracked.PendingWriteQueue
-import com.mikai233.common.db.tracked.TrackContext
-import com.mikai233.common.db.tracked.TrackedMutableList
-import com.mikai233.common.db.tracked.TrackedMutableMap
-import com.mikai233.common.db.tracked.trackedValue
+import com.mikai233.common.db.tracked.*
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -17,7 +11,7 @@ class PendingWriteQueueTest {
     @Test
     fun `property delegate records last field value`() {
         val queue = PendingWriteQueue()
-        val entity = ScalarTrackedEntity(TrackContext("scalar", 1, "1001", queue), "old", 1)
+        val entity = ScalarTrackedEntity(TrackContext("scalar", 1, "1001", queue, "data"), "old", 1)
 
         entity.name = "new"
         entity.level += 2

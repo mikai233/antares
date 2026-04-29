@@ -3,13 +3,13 @@ package com.mikai233.common.db.tracked
 data class WriteKey(
     val slot: String,
     val bucket: Int,
-    val entityId: String,
+    val entityId: Any?,
 )
 
 data class DbPath(
     val slot: String,
     val bucket: Int,
-    val entityId: String,
+    val entityId: Any?,
     val fieldPath: String,
 ) {
     val writeKey: WriteKey

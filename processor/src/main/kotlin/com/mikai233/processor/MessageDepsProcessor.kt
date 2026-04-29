@@ -17,6 +17,7 @@ class MessageDepsProcessor(private val codeGenerator: CodeGenerator) : SymbolPro
 
     private val targetDeclarations = mutableSetOf<KSClassDeclaration>()
     private val visitedDeclarations = mutableSetOf<KSClassDeclaration>()
+    private val targetClassNames = mutableMapOf<String, ClassName>()
     private val ignoreQualifiedNames: MutableSet<String> = mutableSetOf("com.google.protobuf.GeneratedMessage")
 
     override fun process(resolver: Resolver): List<KSAnnotated> {
@@ -33,6 +34,11 @@ class MessageDepsProcessor(private val codeGenerator: CodeGenerator) : SymbolPro
                     targetDeclarations,
                     ignoreQualifiedNames,
                 )
+                targetDeclarations.forEach { declaration ->
+                    declaration.qualifiedName?.asString()?.let { qualifiedName ->
+                        targetClassNames[qualifiedName] = declaration.toClassName()
+                    }
+                }
             }
         }
         return emptyList()
@@ -44,7 +50,7 @@ class MessageDepsProcessor(private val codeGenerator: CodeGenerator) : SymbolPro
             Array::class.asClassName().parameterizedBy(KClass::class.asClassName().parameterizedBy(STAR))
 
         // 拆分为多个分片
-        val partitions = targetDeclarations.sortedBy { it.qualifiedName?.asString() ?: "" }.chunked(maxSizePerFile)
+        val partitions = targetClassNames.toSortedMap().values.chunked(maxSizePerFile)
 
         val fileNames = mutableListOf<String>()
 
@@ -59,8 +65,8 @@ class MessageDepsProcessor(private val codeGenerator: CodeGenerator) : SymbolPro
                         .initializer(
                             buildCodeBlock {
                                 add("arrayOf(\n")
-                                chunk.forEachIndexed { chunkIndex, declaration ->
-                                    add("%T::class", declaration.toClassName())
+                                chunk.forEachIndexed { chunkIndex, className ->
+                                    add("%T::class", className)
                                     if (chunkIndex != chunk.size - 1) {
                                         add(",\n")
                                     }

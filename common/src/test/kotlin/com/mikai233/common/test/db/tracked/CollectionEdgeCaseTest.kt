@@ -1,29 +1,9 @@
 package com.mikai233.common.test.db.tracked
 
-import com.mikai233.common.db.tracked.DbPath
-import com.mikai233.common.db.tracked.PendingWriteQueue
-import com.mikai233.common.db.tracked.PersistentValue
-import com.mikai233.common.db.tracked.TrackContext
-import com.mikai233.common.db.tracked.TrackedMutableList
-import com.mikai233.common.db.tracked.TrackedObjectSupport
-import com.mikai233.common.db.tracked.TrackedMutableMap
-import com.mikai233.common.db.tracked.TrackedMutableSet
-import com.mikai233.common.db.tracked.persistentValueOf
-import com.mikai233.common.db.tracked.trackedBooleanArray
-import com.mikai233.common.db.tracked.trackedDeque
-import com.mikai233.common.db.tracked.trackedDoubleArray
-import com.mikai233.common.db.tracked.trackedFloatArray
-import com.mikai233.common.db.tracked.trackedIntArray
-import com.mikai233.common.db.tracked.trackedLongArray
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertIterableEquals
-import org.junit.jupiter.api.Assertions.assertTrue
+import com.mikai233.common.db.tracked.*
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
-import java.util.ArrayDeque
-import java.util.EnumMap
-import java.util.EnumSet
-import java.util.TreeMap
-import java.util.TreeSet
+import java.util.*
 
 class CollectionEdgeCaseTest {
     @Test
@@ -165,7 +145,7 @@ class CollectionEdgeCaseTest {
     @Test
     fun `deque operations keep familiar queue api and persist final order`() {
         val queue = PendingWriteQueue()
-        val entity = DequeTrackedEntity(TrackContext("slot", 1, "entity", queue), ArrayDeque(listOf(2, 3)))
+        val entity = DequeTrackedEntity(TrackContext("slot", 1, "entity", queue, "data"), ArrayDeque(listOf(2, 3)))
 
         entity.pending.addFirst(1)
         entity.pending.addLast(4)
@@ -180,7 +160,7 @@ class CollectionEdgeCaseTest {
     fun `tracked primitive arrays support index assignment`() {
         val queue = PendingWriteQueue()
         val entity = ArrayTrackedEntity(
-            ctx = TrackContext("slot", 1, "entity", queue),
+            ctx = TrackContext("slot", 1, "entity", queue, "data"),
             scores = intArrayOf(1, 2, 3),
             totals = longArrayOf(10L, 20L),
             flags = booleanArrayOf(false, false),

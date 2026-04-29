@@ -1,10 +1,12 @@
 package com.mikai233.common.entity
 
 import com.mikai233.common.db.Entity
+import com.mikai233.common.db.tracked.TrackEntity
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.PersistenceCreator
 import org.springframework.data.mongodb.core.mapping.Document
 
+@TrackEntity
 @Document(collection = "world_action")
 data class WorldAction(
     @Id

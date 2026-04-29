@@ -1,18 +1,6 @@
 package com.mikai233.common.test.db.tracked
 
-import com.mikai233.common.db.tracked.DbPath
-import com.mikai233.common.db.tracked.ChangeQueue
-import com.mikai233.common.db.tracked.DirtyTarget
-import com.mikai233.common.db.tracked.DirtyTargetAware
-import com.mikai233.common.db.tracked.PendingWriteQueue
-import com.mikai233.common.db.tracked.PersistentValue
-import com.mikai233.common.db.tracked.TrackContext
-import com.mikai233.common.db.tracked.TrackedObjectSupport
-import com.mikai233.common.db.tracked.persistentValueOf
-import com.mikai233.common.db.tracked.trackedList
-import com.mikai233.common.db.tracked.trackedMap
-import com.mikai233.common.db.tracked.trackedSet
-import com.mikai233.common.db.tracked.trackedValue
+import com.mikai233.common.db.tracked.*
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -21,7 +9,7 @@ class ComplexTrackedEntityTest {
     @Test
     fun `complex wrapper tracks common collection operations and nested collection mutations`() {
         val queue = PendingWriteQueue()
-        val entity = ComplexTrackedEntity.create(TrackContext("complex_slot", 3, "entity:1", queue))
+        val entity = ComplexTrackedEntity.create(TrackContext("complex_slot", 3, "entity:1", queue, "data"))
 
         entity.title = "season-two"
         entity.stats["attack"] = 12
@@ -61,7 +49,7 @@ class ComplexTrackedEntityTest {
     fun `immutable val object is kept without wrapper`() {
         val queue = PendingWriteQueue()
         val profile = ImmutableProfile(level = 1, title = "rookie")
-        val entity = ImmutableFieldTrackedEntity(TrackContext("complex_slot", 3, "entity:1", queue), profile)
+        val entity = ImmutableFieldTrackedEntity(TrackContext("complex_slot", 3, "entity:1", queue, "data"), profile)
 
         assertTrue(entity.profile === profile)
         assertTrue(queue.snapshot().isEmpty())
@@ -71,7 +59,7 @@ class ComplexTrackedEntityTest {
     @Test
     fun `nested map inside list updates the two-level boundary when parent list is not structurally changed`() {
         val queue = PendingWriteQueue()
-        val entity = ComplexTrackedEntity.create(TrackContext("complex_slot", 3, "entity:1", queue))
+        val entity = ComplexTrackedEntity.create(TrackContext("complex_slot", 3, "entity:1", queue, "data"))
 
         entity.stageRewards[0]["gold"] = 200
 
@@ -82,7 +70,7 @@ class ComplexTrackedEntityTest {
     @Test
     fun `nested collection added then changed keeps the latest value in parent set operation`() {
         val queue = PendingWriteQueue()
-        val entity = ComplexTrackedEntity.create(TrackContext("complex_slot", 3, "entity:1", queue))
+        val entity = ComplexTrackedEntity.create(TrackContext("complex_slot", 3, "entity:1", queue, "data"))
 
         entity.stageRewards.add(mutableMapOf("star" to 1))
         entity.stageRewards.last()["star"] = 3
@@ -99,7 +87,7 @@ class ComplexTrackedEntityTest {
     fun `recursive container wrapping tracks more than two nested levels`() {
         val queue = PendingWriteQueue()
         val entity = DeepContainerTrackedEntity(
-            TrackContext("complex_slot", 3, "entity:1", queue),
+            TrackContext("complex_slot", 3, "entity:1", queue, "data"),
             linkedMapOf(
                 "rooms" to mutableListOf(
                     linkedMapOf(7 to mutableListOf("mob")),

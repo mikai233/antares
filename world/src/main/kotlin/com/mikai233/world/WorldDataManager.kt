@@ -1,7 +1,7 @@
 package com.mikai233.world
 
+import com.mikai233.common.db.AutoFlushMemData
 import com.mikai233.common.db.DataManager
-import com.mikai233.common.db.TraceableMemData
 import com.mikai233.common.extension.logger
 import com.mikai233.common.extension.tell
 import com.mikai233.common.extension.tryCatch
@@ -16,13 +16,13 @@ import kotlin.reflect.full.primaryConstructor
 class WorldDataManager(private val world: WorldActor) : DataManager<WorldActor>() {
     private val logger = logger()
 
-    private val traceableMemData: MutableList<TraceableMemData<*, *>> = mutableListOf()
+    private val autoFlushMemData: MutableList<AutoFlushMemData> = mutableListOf()
 
     override fun init() {
         MemImpl.forEach {
             val primaryConstructor =
                 requireNotNull(it.primaryConstructor) { "${it.qualifiedName} primary constructor not found" }
-            val mem = primaryConstructor.call(world.worldId, { world.node.mongoDB.mongoTemplate }, world.coroutineScope)
+            val mem = primaryConstructor.call(world.worldId, { world.node.mongoDB.mongoTemplate })
             managers[it] = mem
         }
         logger.info("{} start loading data", world.worldId)
@@ -38,24 +38,21 @@ class WorldDataManager(private val world: WorldActor) : DataManager<WorldActor>(
                     logger.info("world:{} load {} complete", world.worldId, manager.simpleName)
                 }
             }.awaitAll()
-            managers.values.filterIsInstance<TraceableMemData<*, *>>().forEach {
-                it.markCleanup()
-                traceableMemData.add(it)
-            }
+            managers.values.filterIsInstance<AutoFlushMemData>().forEach { autoFlushMemData.add(it) }
             logger.info("world:{} data load complete", world.worldId)
             world.self tell WorldInitialized
         }
     }
 
     fun tick() {
-        traceableMemData.forEach {
+        autoFlushMemData.forEach {
             tryCatch(logger) {
-                it.traceEntities()
+                it.tick()
             }
         }
     }
 
     fun flush(): Boolean {
-        return traceableMemData.all { it.flush() }
+        return autoFlushMemData.all { it.flush() }
     }
 }

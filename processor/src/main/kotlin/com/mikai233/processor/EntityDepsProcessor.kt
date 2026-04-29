@@ -23,6 +23,7 @@ class EntityDepsProcessor(private val codeGenerator: CodeGenerator) : SymbolProc
 
     private val targetDeclarations = mutableSetOf<KSClassDeclaration>()
     private val visitedDeclarations = mutableSetOf<KSClassDeclaration>()
+    private val targetClassNames = mutableMapOf<String, ClassName>()
 
     override fun process(resolver: Resolver): List<KSAnnotated> {
         resolver.getAllFiles().filter { it.packageName.asString().startsWith("com.mikai233.common.entity") }
@@ -34,6 +35,11 @@ class EntityDepsProcessor(private val codeGenerator: CodeGenerator) : SymbolProc
                     }
                 entityKSClassDeclarations.forEach { ksClassDeclaration ->
                     collectKSClassDeclaration(ksClassDeclaration, visitedDeclarations, targetDeclarations, emptySet())
+                    targetDeclarations.forEach { declaration ->
+                        declaration.qualifiedName?.asString()?.let { qualifiedName ->
+                            targetClassNames[qualifiedName] = declaration.toClassName()
+                        }
+                    }
                 }
             }
         return emptyList()
@@ -45,7 +51,7 @@ class EntityDepsProcessor(private val codeGenerator: CodeGenerator) : SymbolProc
             Array::class.asClassName().parameterizedBy(KClass::class.asClassName().parameterizedBy(STAR))
 
         // 拆分为多个分片
-        val partitions = targetDeclarations.sortedBy { it.qualifiedName?.asString() ?: "" }.chunked(maxSizePerFile)
+        val partitions = targetClassNames.toSortedMap().values.chunked(maxSizePerFile)
 
         val fileNames = mutableListOf<String>()
 
@@ -60,8 +66,8 @@ class EntityDepsProcessor(private val codeGenerator: CodeGenerator) : SymbolProc
                         .initializer(
                             buildCodeBlock {
                                 add("arrayOf(\n")
-                                chunk.forEachIndexed { chunkIndex, declaration ->
-                                    add("%T::class", declaration.toClassName())
+                                chunk.forEachIndexed { chunkIndex, className ->
+                                    add("%T::class", className)
                                     if (chunkIndex != chunk.size - 1) {
                                         add(",\n")
                                     }

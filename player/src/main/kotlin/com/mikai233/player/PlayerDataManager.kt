@@ -1,7 +1,7 @@
 package com.mikai233.player
 
+import com.mikai233.common.db.AutoFlushMemData
 import com.mikai233.common.db.DataManager
-import com.mikai233.common.db.TraceableMemData
 import com.mikai233.common.extension.logger
 import com.mikai233.common.extension.tell
 import com.mikai233.common.extension.tryCatch
@@ -15,14 +15,13 @@ import kotlin.reflect.full.primaryConstructor
 class PlayerDataManager(private val player: PlayerActor) : DataManager<PlayerActor>() {
     private val logger = logger()
 
-    private val traceableMemData: MutableList<TraceableMemData<*, *>> = mutableListOf()
+    private val autoFlushMemData: MutableList<AutoFlushMemData> = mutableListOf()
 
     override fun init() {
         MemImpl.forEach {
             val primaryConstructor =
                 requireNotNull(it.primaryConstructor) { "${it.qualifiedName} primary constructor not found" }
-            val mem =
-                primaryConstructor.call(player.playerId, { player.node.mongoDB.mongoTemplate }, player.coroutineScope)
+            val mem = primaryConstructor.call(player.playerId, { player.node.mongoDB.mongoTemplate })
             managers[it] = mem
         }
         logger.info("{} start loading data", player.playerId)
@@ -38,24 +37,21 @@ class PlayerDataManager(private val player: PlayerActor) : DataManager<PlayerAct
                     logger.info("player:{} load {} complete", player.playerId, manager.simpleName)
                 }
             }.awaitAll()
-            managers.values.filterIsInstance<TraceableMemData<*, *>>().forEach {
-                it.markCleanup()
-                traceableMemData.add(it)
-            }
+            managers.values.filterIsInstance<AutoFlushMemData>().forEach { autoFlushMemData.add(it) }
             logger.info("player:{} data load complete", player.playerId)
             player.self tell PlayerInitialized
         }
     }
 
     fun tick() {
-        traceableMemData.forEach {
+        autoFlushMemData.forEach {
             tryCatch(logger) {
-                it.traceEntities()
+                it.tick()
             }
         }
     }
 
     fun flush(): Boolean {
-        return traceableMemData.all { it.flush() }
+        return autoFlushMemData.all { it.flush() }
     }
 }
