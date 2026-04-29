@@ -56,7 +56,9 @@ class TrackedMutableList<E>(
     override fun set(index: Int, element: E): E {
         val valueToStore = trackValue(index, element)
         val previous = backing.set(index, valueToStore)
-        queue.enqueueSet(path.child(index), valueToStore, currentDirtyTarget())
+        if (persistentValueOf(previous) != persistentValueOf(valueToStore)) {
+            queue.enqueueSet(path.child(index), valueToStore, currentDirtyTarget())
+        }
         return previous
     }
 

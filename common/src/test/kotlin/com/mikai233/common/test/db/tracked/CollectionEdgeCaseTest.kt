@@ -4,6 +4,7 @@ import com.mikai233.common.db.tracked.DbPath
 import com.mikai233.common.db.tracked.PendingWriteQueue
 import com.mikai233.common.db.tracked.PersistentValue
 import com.mikai233.common.db.tracked.TrackContext
+import com.mikai233.common.db.tracked.TrackedMutableList
 import com.mikai233.common.db.tracked.TrackedObjectSupport
 import com.mikai233.common.db.tracked.TrackedMutableMap
 import com.mikai233.common.db.tracked.TrackedMutableSet
@@ -49,7 +50,7 @@ class CollectionEdgeCaseTest {
 
         assertIterableEquals(listOf(1, 2, 3), map.keys)
         val persistentMap = map.toPersistentValue() as Map<*, *>
-        assertIterableEquals(listOf(1, 2, 3), persistentMap.keys)
+        assertIterableEquals(listOf("1", "2", "3"), persistentMap.keys)
     }
 
     @Test
@@ -62,7 +63,7 @@ class CollectionEdgeCaseTest {
         set.add(2)
 
         assertIterableEquals(listOf(1, 2, 3), set)
-        assertEquals(setOf(1, 2, 3), set.toPersistentValue())
+        assertEquals(listOf(1, 2, 3), set.toPersistentValue())
     }
 
     @Test
@@ -79,7 +80,7 @@ class CollectionEdgeCaseTest {
         set.first()[0]["score"] = 2
 
         val write = queue.snapshot().single()
-        assertEquals(setOf(listOf(mapOf("score" to 2))), write.sets["data.groups"])
+        assertEquals(listOf(listOf(mapOf("score" to 2))), write.sets["data.groups"])
         assertTrue(write.unsets.isEmpty())
     }
 
@@ -95,7 +96,7 @@ class CollectionEdgeCaseTest {
         set.first().count = 11
 
         val write = queue.snapshot().single()
-        assertEquals(setOf(mapOf("id" to 1, "count" to 11)), write.sets["data.items"])
+        assertEquals(listOf(mapOf("id" to 1, "count" to 11)), write.sets["data.items"])
     }
 
     @Test
@@ -117,7 +118,48 @@ class CollectionEdgeCaseTest {
 
         val write = queue.snapshot().single()
         assertEquals(100, write.sets["data.resources.Gold"])
-        assertEquals(setOf("Gem"), write.sets["data.flags"])
+        assertEquals(listOf("Gem"), write.sets["data.flags"])
+    }
+
+    @Test
+    fun `persistent values use encoded mongo field keys and list collections`() {
+        val value = linkedMapOf<Any?, Any?>(
+            "a.b" to 1,
+            "cost\$gold" to linkedMapOf(2 to "silver"),
+            Resource.Gold to linkedSetOf(Resource.Gem),
+        )
+
+        assertEquals(
+            linkedMapOf(
+                "a%2Eb" to 1,
+                "cost%24gold" to linkedMapOf("2" to "silver"),
+                "Gold" to listOf("Gem"),
+            ),
+            persistentValueOf(value),
+        )
+    }
+
+    @Test
+    fun `nested map iterator remove is lifted to dirty target boundary`() {
+        val queue = PendingWriteQueue()
+        val initialValue: MutableList<MutableMap<String, Int>> = mutableListOf(linkedMapOf("a" to 1, "b" to 2))
+        val list = TrackedMutableList(
+            DbPath("slot", 1, "entity", "data.items"),
+            initialValue,
+            queue,
+        )
+        val nested = list[0]
+        val iterator = nested.entries.iterator()
+
+        while (iterator.hasNext()) {
+            if (iterator.next().key == "a") {
+                iterator.remove()
+            }
+        }
+
+        val write = queue.snapshot().single()
+        assertEquals(mapOf("b" to 2), write.sets["data.items.0"])
+        assertTrue(write.unsets.isEmpty())
     }
 
     @Test

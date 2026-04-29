@@ -43,7 +43,7 @@ class ComplexTrackedEntityTest {
         assertEquals("season-two", write.sets["data.title"])
         assertEquals(12, write.sets["data.stats.attack"])
         assertEquals("pvp", write.sets["data.tags.1"])
-        assertEquals(setOf("arena", "tower"), write.sets["data.unlocked"])
+        assertEquals(listOf("arena", "tower"), write.sets["data.unlocked"])
         assertEquals(listOf(10, 20, 30), write.sets["data.scoreBuckets.daily"])
         assertEquals(listOf(1, 2), write.sets["data.scoreBuckets.weekly"])
         assertEquals(
@@ -112,9 +112,9 @@ class ComplexTrackedEntityTest {
         entity.deep.getValue("events")[0].getValue(3).add("close")
 
         val write = queue.snapshot().single()
-        assertEquals(listOf(mapOf(7 to listOf("mob", "boss"))), write.sets["data.deep.rooms"])
+        assertEquals(listOf(mapOf("7" to listOf("mob", "boss"))), write.sets["data.deep.rooms"])
         assertEquals(
-            listOf(mapOf(3 to listOf("open", "close"))),
+            listOf(mapOf("3" to listOf("open", "close"))),
             write.sets["data.deep.events"],
         )
     }

@@ -13,9 +13,12 @@ fun persistentValueOf(value: Any?): Any? {
         is BooleanArray -> value.toList()
         is DoubleArray -> value.toList()
         is FloatArray -> value.toList()
-        is Map<*, *> -> value.mapValues { (_, childValue) -> persistentValueOf(childValue) }
+        is Map<*, *> -> value.entries.associateTo(linkedMapOf()) { (childKey, childValue) ->
+            DbPath.encodePathPart(childKey) to persistentValueOf(childValue)
+        }
+
         is List<*> -> value.map(::persistentValueOf)
-        is Set<*> -> value.map(::persistentValueOf).toSet()
+        is Set<*> -> value.map(::persistentValueOf)
         is Collection<*> -> value.map(::persistentValueOf)
         else -> value
     }

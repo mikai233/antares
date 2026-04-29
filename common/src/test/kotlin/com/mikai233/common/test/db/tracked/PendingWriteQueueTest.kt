@@ -4,6 +4,7 @@ import com.mikai233.common.db.tracked.ChangeOp
 import com.mikai233.common.db.tracked.DbPath
 import com.mikai233.common.db.tracked.PendingWriteQueue
 import com.mikai233.common.db.tracked.TrackContext
+import com.mikai233.common.db.tracked.TrackedMutableList
 import com.mikai233.common.db.tracked.TrackedMutableMap
 import com.mikai233.common.db.tracked.trackedValue
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -51,6 +52,19 @@ class PendingWriteQueueTest {
 
         val write = queue.snapshot().single()
         assertEquals(mapOf("data.bag.1" to "b"), write.sets)
+    }
+
+    @Test
+    fun `equal map and list assignments are not enqueued`() {
+        val queue = PendingWriteQueue()
+        val map = TrackedMutableMap(rootPath, linkedMapOf(1 to "a"), queue)
+        val list = TrackedMutableList(DbPath("player", 1, "1001", "data.tags"), mutableListOf("pve"), queue)
+
+        map[1] = "a"
+        map.entries.single().setValue("a")
+        list[0] = "pve"
+
+        assertTrue(queue.snapshot().isEmpty())
     }
 
     @Test

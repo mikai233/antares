@@ -63,8 +63,11 @@ class TrackedMutableMap<K, V>(
 
     override fun put(key: K, value: V): V? {
         val valueToStore = trackValue(key, value)
+        val existed = backing.containsKey(key)
         val previous = backing.put(key, valueToStore)
-        queue.enqueueSet(path.child(key), valueToStore, currentDirtyTarget())
+        if (!existed || persistentValueOf(previous) != persistentValueOf(valueToStore)) {
+            queue.enqueueSet(path.child(key), valueToStore, currentDirtyTarget())
+        }
         return previous
     }
 
@@ -90,7 +93,9 @@ class TrackedMutableMap<K, V>(
     }
 
     override fun toPersistentValue(): Any? {
-        return backing.mapValues { (_, value) -> persistentValue(value) }
+        return backing.entries.associateTo(linkedMapOf()) { (key, value) ->
+            DbPath.encodePathPart(key) to persistentValue(value)
+        }
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -146,7 +151,7 @@ class TrackedMutableMap<K, V>(
         override fun remove() {
             val entry = requireNotNull(current) { "next() must be called before remove()" }
             iterator.remove()
-            queue.enqueue(ChangeOp.Unset(path.child(entry.key)))
+            queue.enqueueUnset(path.child(entry.key), currentDirtyTarget())
             current = null
         }
     }
@@ -163,7 +168,9 @@ class TrackedMutableMap<K, V>(
         override fun setValue(newValue: V): V {
             val valueToStore = trackValue(key, newValue)
             val previous = entry.setValue(valueToStore)
-            queue.enqueueSet(path.child(key), valueToStore, currentDirtyTarget())
+            if (persistentValueOf(previous) != persistentValueOf(valueToStore)) {
+                queue.enqueueSet(path.child(key), valueToStore, currentDirtyTarget())
+            }
             return previous
         }
     }

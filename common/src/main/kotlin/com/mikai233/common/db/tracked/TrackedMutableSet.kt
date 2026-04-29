@@ -85,7 +85,7 @@ class TrackedMutableSet<E>(
     }
 
     override fun toPersistentValue(): Any? {
-        return backing.map(persistentValue).toSet()
+        return backing.map(persistentValue)
     }
 
     @Suppress("UNCHECKED_CAST")
