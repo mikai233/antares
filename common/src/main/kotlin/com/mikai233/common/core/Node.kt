@@ -13,14 +13,24 @@ import com.mikai233.common.extension.Json
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import io.github.mikai233.asteria.core.AsteriaModule
+import io.github.mikai233.asteria.core.AsteriaApplicationBuilder
+import io.github.mikai233.asteria.core.EntityKind
 import io.github.mikai233.asteria.core.ModuleContext
 import io.github.mikai233.asteria.core.NodeRuntime
 import io.github.mikai233.asteria.core.RoleKey
+import io.github.mikai233.asteria.core.RuntimeTopology
 import io.github.mikai233.asteria.core.ServiceRegistry
+import io.github.mikai233.asteria.core.SingletonName
+import io.github.mikai233.asteria.core.gameApplication
 import io.github.mikai233.asteria.id.WorkerIdModule
 import io.github.mikai233.asteria.id.WorkerIdModuleOptions
 import io.github.mikai233.asteria.id.WorkerIdOwner
 import io.github.mikai233.asteria.id.zookeeper.ZookeeperWorkerIdRepository
+import io.github.mikai233.asteria.cluster.pekko.ConfiguredPekkoClusterStartup
+import io.github.mikai233.asteria.cluster.pekko.EntityShardRegistry
+import io.github.mikai233.asteria.cluster.pekko.PekkoClusterJoin
+import io.github.mikai233.asteria.cluster.pekko.PekkoRuntimeModule
+import io.github.mikai233.asteria.cluster.pekko.SingletonActorRegistry
 import io.github.mikai233.asteria.script.engine.groovy.GroovyScriptEngine
 import io.github.mikai233.asteria.script.engine.jar.JarScriptEngine
 import io.github.mikai233.asteria.script.pekko.ScriptModule
@@ -115,6 +125,13 @@ open class Node(
     final override var state: State = State.Unstarted
         private set
 
+    private lateinit var moduleContext: ModuleContext
+
+    private var runtimeModules: List<AsteriaModule> = emptyList()
+
+    @Volatile
+    private var runtimeModulesStopped = false
+
     protected open suspend fun changeState(newState: State) {
         val previousState = state
         state = newState
@@ -129,6 +146,8 @@ open class Node(
     fun addStateListener(state: State, listener: suspend () -> Unit) {
         stateListeners.computeIfAbsent(state) { mutableListOf() }.add(listener)
     }
+
+    open suspend fun launch() = start()
 
     protected open suspend fun start() {
         beforeStart()
@@ -145,17 +164,18 @@ open class Node(
     }
 
     protected open suspend fun startSystem() {
-        val remoteConfig = resolveRemoteConfig()
-        val config = remoteConfig.withFallback(config)
-        system = ActorSystem.create(name, config)
-        services.register(ActorSystem::class, system)
+        changeState(State.Starting)
+        runtimeModules = runtimeModules()
+        moduleContext = ModuleContext(this, services, runtimeTopology())
+        runtimeModules.forEach { it.install(moduleContext) }
+        runtimeModules.forEach { it.start(moduleContext) }
+        system = services.get(ActorSystem::class)
         coroutineScope = CoroutineScope(system.dispatcher.asCoroutineDispatcher() + SupervisorJob())
         addCoordinatedShutdownTasks()
-        installScriptRuntime()
+        addStateListener(State.Stopping) { stopRuntimeModules() }
         spawnBroadcastActor()
         spawnBroadcastRouter()
         resolveGameConfigManager()
-        changeState(State.Starting)
     }
 
     protected open suspend fun afterStart() {
@@ -231,33 +251,75 @@ open class Node(
         return ConfigFactory.parseMap(configs)
     }
 
-    private suspend fun installScriptRuntime() {
-        val module = ScriptModule {
+    protected open fun runtimeTopology(): RuntimeTopology {
+        return RuntimeTopology(declaredRoles = roles)
+    }
+
+    protected fun buildRuntimeTopology(configure: AsteriaApplicationBuilder.() -> Unit): RuntimeTopology {
+        val applicationName = name
+        val application = gameApplication {
+            name = applicationName
+            configure()
+        }
+        return RuntimeTopology(
+            declaredRoles = application.declaredRoles,
+            entities = application.entities,
+            singletons = application.singletons,
+        )
+    }
+
+    protected open fun runtimeModules(): List<AsteriaModule> {
+        return runtimeModulesBeforePekko() + pekkoRuntimeModule() + scriptRuntimeModule() + runtimeModulesAfterPekko()
+    }
+
+    protected open fun runtimeModulesBeforePekko(): List<AsteriaModule> = emptyList()
+
+    protected open fun runtimeModulesAfterPekko(): List<AsteriaModule> = emptyList()
+
+    private fun pekkoRuntimeModule(): AsteriaModule {
+        return PekkoRuntimeModule(
+            ConfiguredPekkoClusterStartup(
+                configFactory = { resolveRemoteConfig().withFallback(config) },
+                rolesFactory = { _, _ -> roles },
+                join = PekkoClusterJoin.SeedNodes,
+            ),
+        )
+    }
+
+    private fun scriptRuntimeModule(): AsteriaModule {
+        return ScriptModule {
             engine(GroovyScriptEngine())
             engine(JarScriptEngine())
             allowNodeScripts = true
             allowActorScripts = true
         }
-        installRuntimeModule(module)
     }
 
-    protected suspend fun installWorkerIdRuntime() {
-        val module = WorkerIdModule(
+    protected fun workerIdRuntimeModule(): AsteriaModule {
+        return WorkerIdModule(
             repository = ZookeeperWorkerIdRepository(zookeeper, WORKER_IDS),
             options = WorkerIdModuleOptions(
                 owner = { WorkerIdOwner(addr.toString()) },
             ),
         )
-        installRuntimeModule(module)
     }
 
-    protected suspend fun installRuntimeModule(module: AsteriaModule) {
-        val context = ModuleContext(this, services)
-        module.install(context)
-        module.start(context)
-        addStateListener(State.Stopping) {
-            module.stop(context)
+    private suspend fun stopRuntimeModules() {
+        if (runtimeModulesStopped) {
+            return
         }
+        runtimeModulesStopped = true
+        runtimeModules.asReversed()
+            .filterNot { it is PekkoRuntimeModule }
+            .forEach { it.stop(moduleContext) }
+    }
+
+    protected fun entityShard(type: ShardEntityType): ActorRef {
+        return services.get(EntityShardRegistry::class)[EntityKind(type.name)]
+    }
+
+    protected fun singletonActor(singleton: Singleton): ActorRef {
+        return services.get(SingletonActorRegistry::class)[SingletonName(singleton.actorName)]
     }
 
     private fun spawnBroadcastActor() {

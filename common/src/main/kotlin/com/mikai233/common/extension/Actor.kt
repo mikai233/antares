@@ -1,21 +1,11 @@
 package com.mikai233.common.extension
 
-import com.mikai233.common.core.Role
 import com.mikai233.common.message.Message
 import kotlinx.coroutines.future.await
 import org.apache.pekko.actor.*
-import org.apache.pekko.cluster.sharding.ClusterSharding
-import org.apache.pekko.cluster.sharding.ClusterShardingSettings
-import org.apache.pekko.cluster.sharding.ShardCoordinator
-import org.apache.pekko.cluster.sharding.ShardRegion
-import org.apache.pekko.cluster.singleton.ClusterSingletonManager
-import org.apache.pekko.cluster.singleton.ClusterSingletonManagerSettings
-import org.apache.pekko.cluster.singleton.ClusterSingletonProxy
-import org.apache.pekko.cluster.singleton.ClusterSingletonProxySettings
 import org.apache.pekko.event.Logging
 import org.apache.pekko.event.LoggingAdapter
 import org.apache.pekko.pattern.Patterns
-import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
@@ -46,33 +36,6 @@ fun <R> ActorRef.blockingAsk(
         Patterns.ask(this, message, timeout.toJavaDuration()).toCompletableFuture()
             .get(timeout.inWholeMilliseconds, TimeUnit.MILLISECONDS) as R
     }
-}
-
-fun ActorSystem.startSingleton(name: String, role: Role, props: Props, handoffMessage: Message): ActorRef {
-    val settings = ClusterSingletonManagerSettings.create(this).withRole(role.name)
-    val singletonProps = ClusterSingletonManager.props(props, handoffMessage, settings)
-    return actorOf(singletonProps, name)
-}
-
-fun ActorSystem.startSingletonProxy(name: String, role: Role): ActorRef {
-    val settings = ClusterSingletonProxySettings.create(this).withRole(role.name)
-    return actorOf(ClusterSingletonProxy.props("/user/${name}", settings))
-}
-
-fun ActorSystem.startSharding(
-    typename: String,
-    role: Role,
-    props: Props,
-    handoffMessage: Message,
-    extractor: ShardRegion.MessageExtractor,
-    strategy: ShardCoordinator.ShardAllocationStrategy,
-): ActorRef {
-    val settings = ClusterShardingSettings.create(this).withRole(role.name)
-    return ClusterSharding.get(this).start(typename, props, settings, extractor, strategy, handoffMessage)
-}
-
-fun ActorSystem.startShardingProxy(typename: String, role: Role, extractor: ShardRegion.MessageExtractor): ActorRef {
-    return ClusterSharding.get(this).startProxy(typename, Optional.of(role.name), extractor)
 }
 
 fun TimerScheduler.startSingleTimer(key: Any, message: Any, delay: Duration) {

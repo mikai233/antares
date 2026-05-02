@@ -3,15 +3,18 @@ package com.mikai233.world
 import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
 import com.google.protobuf.GeneratedMessage
+import com.mikai233.common.PLAYER_SHARD_NUM
+import com.mikai233.common.WORLD_SHARD_NUM
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.*
 import com.mikai233.common.entity.EntityKryoPool
-import com.mikai233.common.extension.startSharding
-import com.mikai233.common.extension.startShardingProxy
 import com.mikai233.common.message.*
 import com.mikai233.common.message.world.HandoffWorld
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import io.github.mikai233.asteria.cluster.pekko.actor
+import io.github.mikai233.asteria.cluster.pekko.allocationStrategy
+import io.github.mikai233.asteria.cluster.pekko.extractor
 import io.github.mikai233.asteria.id.IdGenerator
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.cluster.sharding.ShardCoordinator
@@ -24,7 +27,7 @@ class WorldNode(
     config: Config,
     zookeeperConnectString: String,
     sameJvm: Boolean = false,
-) : Launcher, Node(addr, listOf(Role.World), name, config, zookeeperConnectString, sameJvm) {
+) : Node(addr, listOf(Role.World), name, config, zookeeperConnectString, sameJvm) {
     lateinit var playerSharding: ActorRef
         private set
 
@@ -42,36 +45,35 @@ class WorldNode(
 
     val gmDispatcher = GmDispatcher(handlerReflect)
 
-    override suspend fun launch() = start()
-
     override suspend fun beforeStart() {
         super.beforeStart()
         thread { EntityKryoPool }
     }
 
+    override fun runtimeModulesBeforePekko() = listOf(workerIdRuntimeModule())
+
+    override fun runtimeTopology() = buildRuntimeTopology {
+        entity<Long>(ShardEntityType.PlayerActor.name) {
+            role(Role.Player.name)
+            shardCount = PLAYER_SHARD_NUM
+            extractor(PlayerMessageExtractor)
+        }
+        entity<Long>(ShardEntityType.WorldActor.name) {
+            role(Role.World.name)
+            shardCount = WORLD_SHARD_NUM
+            handoffMessage = HandoffWorld
+            extractor(WorldMessageExtractor)
+            allocationStrategy(ShardCoordinator.LeastShardAllocationStrategy(1, 3))
+            actor { runtime, _ -> WorldActor.props(runtime as WorldNode) }
+        }
+    }
+
     override suspend fun afterStart() {
-        installWorkerIdRuntime()
         idGenerator = services.get(IdGenerator::class)
-        startPlayerSharding()
-        startWorldSharding()
+        playerSharding = entityShard(ShardEntityType.PlayerActor)
+        worldSharding = entityShard(ShardEntityType.WorldActor)
         startWorldWaker()
         super.afterStart()
-    }
-
-    private fun startPlayerSharding() {
-        playerSharding =
-            system.startShardingProxy(ShardEntityType.PlayerActor.name, Role.Player, PlayerMessageExtractor)
-    }
-
-    private fun startWorldSharding() {
-        worldSharding = system.startSharding(
-            ShardEntityType.WorldActor.name,
-            Role.World,
-            WorldActor.props(this),
-            HandoffWorld,
-            WorldMessageExtractor,
-            ShardCoordinator.LeastShardAllocationStrategy(1, 3),
-        )
     }
 
     private fun startWorldWaker() {
