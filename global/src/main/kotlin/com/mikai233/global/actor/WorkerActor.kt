@@ -1,15 +1,15 @@
 package com.mikai233.global.actor
 
-import com.mikai233.common.core.actor.StatefulActor
 import com.mikai233.common.message.Message
 import com.mikai233.common.message.global.worker.HandoffWorker
 import com.mikai233.global.GlobalNode
 import com.mikai233.global.data.WorkerIdMem
+import io.github.mikai233.asteria.actor.AsteriaActor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.apache.pekko.actor.Props
 
-class WorkerActor(node: GlobalNode) : StatefulActor<GlobalNode>(node) {
+class WorkerActor(val node: GlobalNode) : AsteriaActor<GlobalNode>(node) {
     companion object {
         fun props(node: GlobalNode): Props = Props.create(WorkerActor::class.java, node)
     }
@@ -19,7 +19,7 @@ class WorkerActor(node: GlobalNode) : StatefulActor<GlobalNode>(node) {
     override fun preStart() {
         super.preStart()
         logger.info("{} started", self)
-        launch {
+        launch(timeout = null) {
             runCatching {
                 withContext(Dispatchers.IO) {
                     uidMem.load()

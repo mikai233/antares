@@ -9,6 +9,7 @@ import com.mikai233.common.event.PlayerCreateEvent
 import com.mikai233.common.event.PlayerLoginEvent
 import com.mikai233.common.extension.invokeOnTargetMode
 import com.mikai233.common.extension.logger
+import com.mikai233.common.extension.tell
 import com.mikai233.common.extension.tryCatch
 import com.mikai233.common.message.MessageHandler
 import com.mikai233.player.PlayerActor
@@ -38,7 +39,7 @@ class PlayerHandler : MessageHandler {
 
     @Handle(PlayerCreateEvent::class)
     fun handlePlayerCreateEvent(player: PlayerActor) {
-        player.fireEvent(PlayerLoginEvent)
+        player.self tell PlayerLoginEvent
     }
 
     @Handle(GameConfigUpdatedEvent::class)

@@ -36,6 +36,7 @@ class WorldDataManager(private val world: WorldActor) {
                 logger.error("{} loading data failed, world will stop", world.worldId, throwable)
                 world.passivate()
             },
+            timeout = null,
         ) {
             dataManager.loadEager()
             logger.info("world:{} data load complete", world.worldId)

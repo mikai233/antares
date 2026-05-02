@@ -3,6 +3,7 @@ package com.mikai233.world.service
 import com.mikai233.common.annotation.AllOpen
 import com.mikai233.common.constants.WorldActionType
 import com.mikai233.common.event.GameConfigUpdatedEvent
+import com.mikai233.common.extension.tell
 import com.mikai233.common.message.channel.SubscribeTopic
 import com.mikai233.common.message.channel.UnsubscribeTopic
 import com.mikai233.common.message.world.SubscribeTopicCrossWorld
@@ -17,7 +18,7 @@ class WorldService {
         val longHashcode = world.node.gameConfigManagerHashcode.asLong()
         if (longHashcode != action.actionParam) {
             action.actionParam = longHashcode
-            world.fireEvent(GameConfigUpdatedEvent)
+            world.self tell GameConfigUpdatedEvent
         }
     }
 

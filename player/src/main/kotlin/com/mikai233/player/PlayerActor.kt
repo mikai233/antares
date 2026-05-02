@@ -1,7 +1,6 @@
 package com.mikai233.player
 
 import com.google.protobuf.GeneratedMessage
-import com.mikai233.common.core.actor.StatefulActor
 import com.mikai233.common.event.GameConfigUpdateEvent
 import com.mikai233.common.extension.ask
 import com.mikai233.common.extension.tell
@@ -12,6 +11,7 @@ import com.mikai233.common.message.ServerProtobuf
 import com.mikai233.common.message.player.*
 import com.mikai233.common.message.world.WorldMessage
 import com.mikai233.protocol.ProtoLogin
+import io.github.mikai233.asteria.actor.AsteriaActor
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.actor.Props
 import org.apache.pekko.actor.ReceiveTimeout
@@ -21,7 +21,7 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
-class PlayerActor(node: PlayerNode) : StatefulActor<PlayerNode>(node) {
+class PlayerActor(val node: PlayerNode) : AsteriaActor<PlayerNode>(node) {
     companion object {
         val PlayerTickDuration = 1.seconds
 

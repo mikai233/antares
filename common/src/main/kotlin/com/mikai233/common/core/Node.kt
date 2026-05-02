@@ -13,6 +13,9 @@ import com.mikai233.common.extension.Json
 import com.mikai233.common.script.ScriptActor
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import io.github.mikai233.asteria.core.NodeRuntime
+import io.github.mikai233.asteria.core.RoleKey
+import io.github.mikai233.asteria.core.ServiceRegistry
 import io.prometheus.client.exporter.HTTPServer
 import io.prometheus.client.hotspot.DefaultExports
 import kotlinx.coroutines.*
@@ -49,13 +52,18 @@ import kotlin.random.nextLong
  */
 open class Node(
     val addr: InetSocketAddress,
-    val roles: List<Role>,
-    val name: String,
+    val nodeRoles: List<Role>,
+    override val name: String,
     val config: Config,
     zookeeperConnectString: String,
     private val sameJvm: Boolean = false,
-) {
+) : NodeRuntime {
     val logger: Logger = LoggerFactory.getLogger(javaClass)
+
+    override val roles: Set<RoleKey>
+        get() = nodeRoles.mapTo(linkedSetOf()) { RoleKey(it.name) }
+
+    override val services: ServiceRegistry = ServiceRegistry()
 
     lateinit var system: ActorSystem
         protected set
@@ -99,7 +107,7 @@ open class Node(
     val playerBroadcastEventBus = PlayerBroadcastEventBus()
 
     @Volatile
-    var state: State = State.Unstarted
+    final override var state: State = State.Unstarted
         private set
 
     protected open suspend fun changeState(newState: State) {
@@ -206,7 +214,7 @@ open class Node(
         val seedNodes = seedNodeConfigs.map { (host, config) -> formatSeedNode(name, host, config.port) }
 
         val configs = mutableMapOf(
-            "pekko.cluster.roles" to roles.map { it.name },
+            "pekko.cluster.roles" to nodeRoles.map { it.name },
             "pekko.remote.artery.canonical.hostname" to addr.hostString,
             "pekko.remote.artery.canonical.port" to addr.port,
             "pekko.cluster.seed-nodes" to seedNodes,

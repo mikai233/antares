@@ -2,7 +2,6 @@ package com.mikai233.world
 
 import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.broadcast.PlayerBroadcastEnvelope
-import com.mikai233.common.core.actor.StatefulActor
 import com.mikai233.common.event.GameConfigUpdateEvent
 import com.mikai233.common.event.WorldActiveEvent
 import com.mikai233.common.extension.ask
@@ -11,12 +10,13 @@ import com.mikai233.common.message.Message
 import com.mikai233.common.message.WorldProtobufEnvelope
 import com.mikai233.common.message.player.PlayerMessage
 import com.mikai233.common.message.world.*
+import io.github.mikai233.asteria.actor.AsteriaActor
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.actor.Props
 import org.apache.pekko.cluster.sharding.ShardRegion
 import kotlin.time.Duration.Companion.seconds
 
-class WorldActor(node: WorldNode) : StatefulActor<WorldNode>(node) {
+class WorldActor(val node: WorldNode) : AsteriaActor<WorldNode>(node) {
     companion object {
         val WorldTickDuration = 1.seconds
 
@@ -60,7 +60,7 @@ class WorldActor(node: WorldNode) : StatefulActor<WorldNode>(node) {
             .match(WorldInitialized::class.java) {
                 unstashAll()
                 startTimerWithFixedDelay(WorldTick, WorldTick, WorldTickDuration)
-                fireEvent(WorldActiveEvent)
+                self tell WorldActiveEvent
                 context.become(active())
             }
             .match(HandoffWorld::class.java) { context.stop(self) }

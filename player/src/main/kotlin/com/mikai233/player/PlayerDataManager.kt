@@ -35,6 +35,7 @@ class PlayerDataManager(private val player: PlayerActor) {
                 logger.error("{} loading data failed, player will stop", player.playerId, throwable)
                 player.passivate()
             },
+            timeout = null,
         ) {
             dataManager.loadEager()
             logger.info("player:{} data load complete", player.playerId)

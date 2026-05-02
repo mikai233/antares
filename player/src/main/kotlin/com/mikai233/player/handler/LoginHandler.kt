@@ -28,7 +28,7 @@ class LoginHandler : MessageHandler {
         val resp = loginService.loginSuccessResp(player)
         player.send(resp)
         player.sender.tell(PlayerLoginResp)
-        player.fireEvent(PlayerLoginEvent)
+        player.self tell PlayerLoginEvent
         repeat(100) {
             player.send(
                 testNotify {

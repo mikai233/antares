@@ -1,9 +1,9 @@
 package com.mikai233.gm
 
-import com.mikai233.common.core.actor.StatefulActor
+import io.github.mikai233.asteria.actor.AsteriaActor
 import org.apache.pekko.actor.Props
 
-class MonitorActor(node: GmNode) : StatefulActor<GmNode>(node) {
+class MonitorActor(val node: GmNode) : AsteriaActor<GmNode>(node) {
     companion object {
         fun props(node: GmNode): Props = Props.create(MonitorActor::class.java, node)
     }
