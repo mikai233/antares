@@ -13,6 +13,7 @@ import com.mikai233.common.core.*
 import com.mikai233.common.message.*
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import io.github.mikai233.asteria.core.AsteriaApplicationBuilder
 import io.github.mikai233.asteria.cluster.pekko.extractor
 import io.github.mikai233.asteria.gateway.netty.NettyGatewayServerOptions
 import io.github.mikai233.asteria.gateway.netty.NettyTcpGatewayServerTransport
@@ -54,16 +55,18 @@ class GateNode(
         super.beforeStart()
     }
 
-    override fun runtimeTopology() = buildRuntimeTopology {
-        entity<Long>(ShardEntityType.PlayerActor.name) {
-            role(Role.Player.name)
-            shardCount = PLAYER_SHARD_NUM
-            extractor(PlayerMessageExtractor)
-        }
-        entity<Long>(ShardEntityType.WorldActor.name) {
-            role(Role.World.name)
-            shardCount = WORLD_SHARD_NUM
-            extractor(WorldMessageExtractor)
+    override fun configureRuntime(builder: AsteriaApplicationBuilder) {
+        builder.apply {
+            entity<Long>(ShardEntityType.PlayerActor.name) {
+                role(Role.Player.name)
+                shardCount = PLAYER_SHARD_NUM
+                extractor(PlayerMessageExtractor)
+            }
+            entity<Long>(ShardEntityType.WorldActor.name) {
+                role(Role.World.name)
+                shardCount = WORLD_SHARD_NUM
+                extractor(WorldMessageExtractor)
+            }
         }
     }
 

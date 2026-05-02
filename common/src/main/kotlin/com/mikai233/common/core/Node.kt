@@ -1,24 +1,21 @@
 package com.mikai233.common.core
 
-import com.google.common.hash.HashCode
-import com.google.common.hash.Hashing
 import com.google.common.io.Resources
-import com.mikai233.common.broadcast.PlayerBroadcastActor
 import com.mikai233.common.broadcast.PlayerBroadcastEventBus
 import com.mikai233.common.config.*
 import com.mikai233.common.db.MongoDB
-import com.mikai233.common.event.GameConfigUpdateEvent
 import com.mikai233.common.excel.*
 import com.mikai233.common.extension.Json
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import io.github.mikai233.asteria.config.center.zookeeper.ZookeeperConfigCenterModule
 import io.github.mikai233.asteria.core.AsteriaModule
 import io.github.mikai233.asteria.core.AsteriaApplicationBuilder
+import io.github.mikai233.asteria.core.AsteriaModuleLifecycle
 import io.github.mikai233.asteria.core.EntityKind
 import io.github.mikai233.asteria.core.ModuleContext
 import io.github.mikai233.asteria.core.NodeRuntime
 import io.github.mikai233.asteria.core.RoleKey
-import io.github.mikai233.asteria.core.RuntimeTopology
 import io.github.mikai233.asteria.core.ServiceRegistry
 import io.github.mikai233.asteria.core.SingletonName
 import io.github.mikai233.asteria.core.gameApplication
@@ -34,20 +31,15 @@ import io.github.mikai233.asteria.cluster.pekko.SingletonActorRegistry
 import io.github.mikai233.asteria.script.engine.groovy.GroovyScriptEngine
 import io.github.mikai233.asteria.script.engine.jar.JarScriptEngine
 import io.github.mikai233.asteria.script.pekko.ScriptModule
-import io.prometheus.client.exporter.HTTPServer
-import io.prometheus.client.hotspot.DefaultExports
 import kotlinx.coroutines.*
 import kotlinx.coroutines.future.await
 import org.apache.curator.framework.CuratorFrameworkFactory
-import org.apache.curator.framework.recipes.cache.CuratorCache
-import org.apache.curator.framework.recipes.cache.CuratorCacheListener
 import org.apache.curator.retry.ExponentialBackoffRetry
 import org.apache.curator.x.async.AsyncCuratorFramework
 import org.apache.pekko.Done
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.actor.CoordinatedShutdown
-import org.apache.pekko.routing.FromConfig
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
@@ -88,7 +80,7 @@ open class Node(
 
     lateinit var coroutineScope: CoroutineScope
 
-    val zookeeper: AsyncCuratorFramework by lazy {
+    private val zookeeperClient: AsyncCuratorFramework by lazy {
         val client = CuratorFrameworkFactory.newClient(
             zookeeperConnectString,
             ExponentialBackoffRetry(2000, 10, 60000),
@@ -97,33 +89,39 @@ open class Node(
         AsyncCuratorFramework.wrap(client)
     }
 
-    val mongoDB = MongoDB(zookeeper)
+    val zookeeper: AsyncCuratorFramework
+        get() = services.find(AsyncCuratorFramework::class) ?: zookeeperClient
 
-    private val gameWorldMetaCache = ConfigCache(zookeeper, GAME_WORLDS, GameWorldMeta::class)
+    val mongoDB: MongoDB
+        get() = services.get(MongoDB::class)
 
-    val gameWorldMeta get() = gameWorldMetaCache.config
+    val gameWorldMeta: GameWorldMeta
+        get() = gameConfigService.gameWorldMeta
 
-    val gameWorldConfigCache = ConfigChildrenCache(zookeeper, GAME_WORLDS, GameWorldConfig::class)
+    val gameWorldConfigCache: ConfigChildrenCache<GameWorldConfig>
+        get() = gameConfigService.gameWorldConfigCache
 
-    @Volatile
-    lateinit var gameConfigManager: GameConfigManager
-        private set
+    val gameConfigManager: GameConfigManager
+        get() = gameConfigService.gameConfigManager
 
-    @Volatile
-    lateinit var gameConfigManagerHashcode: HashCode
-        private set
+    val gameConfigManagerHashcode
+        get() = gameConfigService.gameConfigManagerHashcode
 
-    lateinit var broadcastRouter: ActorRef
-        protected set
+    val broadcastRouter: ActorRef
+        get() = services.get(PlayerBroadcastRuntime::class).router
 
-    lateinit var prometheusServer: HTTPServer
-        protected set
+    val playerBroadcastEventBus: PlayerBroadcastEventBus
+        get() = services.get(PlayerBroadcastEventBus::class)
 
-    val playerBroadcastEventBus = PlayerBroadcastEventBus()
+    @PublishedApi
+    internal val gameConfigService: GameConfigService
+        get() = services.get(GameConfigService::class)
 
     @Volatile
     final override var state: State = State.Unstarted
         private set
+
+    private lateinit var lifecycle: AsteriaModuleLifecycle
 
     private lateinit var moduleContext: ModuleContext
 
@@ -132,10 +130,14 @@ open class Node(
     @Volatile
     private var runtimeModulesStopped = false
 
-    protected open suspend fun changeState(newState: State) {
+    private fun updateState(newState: State) {
         val previousState = state
         state = newState
         logger.info("{} state change from:{} to:{}", this::class.simpleName, previousState, newState)
+    }
+
+    protected open suspend fun changeState(newState: State) {
+        updateState(newState)
         stateListeners[newState]?.forEach { listener ->
             listener()
         }
@@ -156,26 +158,26 @@ open class Node(
     }
 
     protected open suspend fun beforeStart() {
-        DefaultExports.initialize()
-        val port = addr.port + 1000
-        prometheusServer = HTTPServer(port)
-        logger.info("Prometheus metrics available at http://localhost:{}/metrics", port)
-        addStateListener(State.Stopping) { prometheusServer.close() }
     }
 
     protected open suspend fun startSystem() {
-        changeState(State.Starting)
         runtimeModules = runtimeModules()
-        moduleContext = ModuleContext(this, services, runtimeTopology())
-        runtimeModules.forEach { it.install(moduleContext) }
-        runtimeModules.forEach { it.start(moduleContext) }
+        val application = gameApplication {
+            name = this@Node.name
+            runtimeModules.forEach(::install)
+            configureRuntime(this)
+        }
+        moduleContext = ModuleContext(this, services, application.topology)
+        lifecycle = application.bind(this) { newState ->
+            if (newState != State.Started) {
+                updateState(newState)
+            }
+        }
+        lifecycle.launch()
         system = services.get(ActorSystem::class)
         coroutineScope = CoroutineScope(system.dispatcher.asCoroutineDispatcher() + SupervisorJob())
         addCoordinatedShutdownTasks()
         addStateListener(State.Stopping) { stopRuntimeModules() }
-        spawnBroadcastActor()
-        spawnBroadcastRouter()
-        resolveGameConfigManager()
     }
 
     protected open suspend fun afterStart() {
@@ -251,30 +253,35 @@ open class Node(
         return ConfigFactory.parseMap(configs)
     }
 
-    protected open fun runtimeTopology(): RuntimeTopology {
-        return RuntimeTopology(declaredRoles = roles)
-    }
-
-    protected fun buildRuntimeTopology(configure: AsteriaApplicationBuilder.() -> Unit): RuntimeTopology {
-        val applicationName = name
-        val application = gameApplication {
-            name = applicationName
-            configure()
+    protected open fun configureRuntime(builder: AsteriaApplicationBuilder) {
+        builder.apply {
+            nodeRoles.forEach { role(it.name) }
         }
-        return RuntimeTopology(
-            declaredRoles = application.declaredRoles,
-            entities = application.entities,
-            singletons = application.singletons,
-        )
     }
 
     protected open fun runtimeModules(): List<AsteriaModule> {
-        return runtimeModulesBeforePekko() + pekkoRuntimeModule() + scriptRuntimeModule() + runtimeModulesAfterPekko()
+        return commonRuntimeModulesBeforePekko() +
+            runtimeModulesBeforePekko() +
+            pekkoRuntimeModule() +
+            scriptRuntimeModule() +
+            runtimeModulesAfterPekko()
     }
 
     protected open fun runtimeModulesBeforePekko(): List<AsteriaModule> = emptyList()
 
     protected open fun runtimeModulesAfterPekko(): List<AsteriaModule> = emptyList()
+
+    private fun commonRuntimeModulesBeforePekko(): List<AsteriaModule> {
+        return listOf(
+            ZookeeperConfigCenterModule {
+                client(zookeeper)
+            },
+            PrometheusMetricsModule(addr.port + 1000),
+            MongoDbModule { zookeeper },
+            GameConfigModule { zookeeper },
+            PlayerBroadcastModule(),
+        )
+    }
 
     private fun pekkoRuntimeModule(): AsteriaModule {
         return PekkoRuntimeModule(
@@ -322,65 +329,12 @@ open class Node(
         return services.get(SingletonActorRegistry::class)[SingletonName(singleton.actorName)]
     }
 
-    private fun spawnBroadcastActor() {
-        system.actorOf(PlayerBroadcastActor.props(this), PlayerBroadcastActor.NAME)
-    }
-
-    private fun spawnBroadcastRouter() {
-        broadcastRouter = system.actorOf(FromConfig.getInstance().props(), "broadcastRouter")
-    }
-
     inline fun <reified T : V> getConfig(): T {
-        return gameConfigManager.get<T>()
+        return gameConfigService.getConfig<T>()
     }
 
     inline fun <reified T : GameConfigs<K, C>, C : GameConfig<K>, K : Any> getConfigById(id: K): C {
-        return gameConfigManager.getById<T, _, _>(id)
-    }
-
-    private suspend fun resolveGameConfigManager() {
-        //配置表哈希需要稳定的哈希函数
-        fun calculateConfigHash(bytes: ByteArray) {
-            gameConfigManagerHashcode = Hashing.murmur3_128(233).hashBytes(bytes)
-        }
-
-        val cache = CuratorCache.build(zookeeper.unwrap(), GAME_CONFIG, CuratorCache.Options.SINGLE_NODE_CACHE)
-        addStateListener(State.Stopping) { cache.close() }
-        val bytes = zookeeper.data.forPath(GAME_CONFIG).await()
-        gameConfigManager = GameConfigManagerSerde.deserialize(bytes)
-        calculateConfigHash(bytes)
-        cache.listenable().addListener { type, oldData, data ->
-            when (type) {
-                CuratorCacheListener.Type.NODE_CREATED -> {
-                    gameConfigManager = GameConfigManagerSerde.deserialize(data.data)
-                    logger.info(
-                        "{} created, version: {}",
-                        GameConfigManager::class.simpleName,
-                        gameConfigManager.version,
-                    )
-                    calculateConfigHash(bytes)
-                    system.eventStream.publish(GameConfigUpdateEvent)
-                }
-
-                CuratorCacheListener.Type.NODE_CHANGED -> {
-                    gameConfigManager = GameConfigManagerSerde.deserialize(data.data)
-                    logger.info(
-                        "{} updated, version: {}",
-                        GameConfigManager::class.simpleName,
-                        gameConfigManager.version,
-                    )
-                    calculateConfigHash(bytes)
-                    system.eventStream.publish(GameConfigUpdateEvent)
-                }
-
-                CuratorCacheListener.Type.NODE_DELETED -> {
-                    logger.warn("Node {} deleted:{}", GameConfigManager::class.simpleName, oldData.path)
-                }
-
-                null -> Unit
-            }
-        }
-        cache.start()
+        return gameConfigService.getConfigById<T, C, K>(id)
     }
 
     fun version() = Resources.getResource("version").readText()

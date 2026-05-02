@@ -13,6 +13,7 @@ dependencies {
     api("io.github.mikai233:persistence-core:1.0-SNAPSHOT")
     api("io.github.mikai233:persistence-mongodb:1.0-SNAPSHOT")
     api("io.github.mikai233:config-core:1.0-SNAPSHOT")
+    api("io.github.mikai233:config-center-zookeeper:1.0-SNAPSHOT")
     api("io.github.mikai233:script-core:1.0-SNAPSHOT")
     api("io.github.mikai233:script-pekko:1.0-SNAPSHOT")
     api("io.github.mikai233:script-engine-groovy:1.0-SNAPSHOT")

@@ -12,6 +12,7 @@ import com.mikai233.common.message.*
 import com.mikai233.common.message.player.HandoffPlayer
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import io.github.mikai233.asteria.core.AsteriaApplicationBuilder
 import io.github.mikai233.asteria.cluster.pekko.actor
 import io.github.mikai233.asteria.cluster.pekko.allocationStrategy
 import io.github.mikai233.asteria.cluster.pekko.extractor
@@ -52,19 +53,21 @@ class PlayerNode(
 
     override fun runtimeModulesBeforePekko() = listOf(workerIdRuntimeModule())
 
-    override fun runtimeTopology() = buildRuntimeTopology {
-        entity<Long>(ShardEntityType.PlayerActor.name) {
-            role(Role.Player.name)
-            shardCount = PLAYER_SHARD_NUM
-            handoffMessage = HandoffPlayer
-            extractor(PlayerMessageExtractor)
-            allocationStrategy(ShardCoordinator.LeastShardAllocationStrategy(1, 3))
-            actor { runtime, _ -> PlayerActor.props(runtime as PlayerNode) }
-        }
-        entity<Long>(ShardEntityType.WorldActor.name) {
-            role(Role.World.name)
-            shardCount = WORLD_SHARD_NUM
-            extractor(WorldMessageExtractor)
+    override fun configureRuntime(builder: AsteriaApplicationBuilder) {
+        builder.apply {
+            entity<Long>(ShardEntityType.PlayerActor.name) {
+                role(Role.Player.name)
+                shardCount = PLAYER_SHARD_NUM
+                handoffMessage = HandoffPlayer
+                extractor(PlayerMessageExtractor)
+                allocationStrategy(ShardCoordinator.LeastShardAllocationStrategy(1, 3))
+                actor { runtime, _ -> PlayerActor.props(runtime as PlayerNode) }
+            }
+            entity<Long>(ShardEntityType.WorldActor.name) {
+                role(Role.World.name)
+                shardCount = WORLD_SHARD_NUM
+                extractor(WorldMessageExtractor)
+            }
         }
     }
 

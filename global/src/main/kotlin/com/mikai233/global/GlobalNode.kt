@@ -13,6 +13,7 @@ import com.mikai233.common.message.WorldMessageExtractor
 import com.mikai233.global.actor.WorkerActor
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import io.github.mikai233.asteria.core.AsteriaApplicationBuilder
 import io.github.mikai233.asteria.cluster.pekko.actor
 import io.github.mikai233.asteria.cluster.pekko.extractor
 import org.apache.pekko.actor.ActorRef
@@ -41,21 +42,23 @@ class GlobalNode(
         thread { EntityKryoPool }
     }
 
-    override fun runtimeTopology() = buildRuntimeTopology {
-        entity<Long>(ShardEntityType.PlayerActor.name) {
-            role(Role.Player.name)
-            shardCount = PLAYER_SHARD_NUM
-            extractor(PlayerMessageExtractor)
-        }
-        entity<Long>(ShardEntityType.WorldActor.name) {
-            role(Role.World.name)
-            shardCount = WORLD_SHARD_NUM
-            extractor(WorldMessageExtractor)
-        }
-        singleton(Singleton.Worker.actorName) {
-            role(Role.Global.name)
-            handoffMessage = HandoffWorker
-            actor { runtime, _ -> WorkerActor.props(runtime as GlobalNode) }
+    override fun configureRuntime(builder: AsteriaApplicationBuilder) {
+        builder.apply {
+            entity<Long>(ShardEntityType.PlayerActor.name) {
+                role(Role.Player.name)
+                shardCount = PLAYER_SHARD_NUM
+                extractor(PlayerMessageExtractor)
+            }
+            entity<Long>(ShardEntityType.WorldActor.name) {
+                role(Role.World.name)
+                shardCount = WORLD_SHARD_NUM
+                extractor(WorldMessageExtractor)
+            }
+            singleton(Singleton.Worker.actorName) {
+                role(Role.Global.name)
+                handoffMessage = HandoffWorker
+                actor { runtime, _ -> WorkerActor.props(runtime as GlobalNode) }
+            }
         }
     }
 
