@@ -1,0 +1,55 @@
+package com.mikai233.gate
+
+import com.mikai233.common.core.State
+import com.mikai233.common.extension.logger
+import com.mikai233.common.extension.tell
+import com.mikai233.common.message.StopChannel
+import io.github.mikai233.asteria.gateway.GatewayCloseReason
+import io.github.mikai233.asteria.gateway.GatewayConnection
+import io.github.mikai233.asteria.gateway.GatewayFrame
+import io.github.mikai233.asteria.gateway.GatewaySession
+import io.github.mikai233.asteria.gateway.GatewaySessionAttributeKey
+import io.github.mikai233.asteria.gateway.GatewaySessionId
+import io.github.mikai233.asteria.gateway.GatewayTransportHandler
+import org.apache.pekko.actor.ActorRef
+
+val GateChannelActorKey: GatewaySessionAttributeKey<ActorRef> = GatewaySessionAttributeKey("gate.channelActor")
+
+class GateTransportHandler(private val node: GateNode) : GatewayTransportHandler {
+    private val logger = logger()
+
+    override suspend fun connected(connection: GatewayConnection): GatewaySession {
+        val session = GatewaySession(GatewaySessionId(connection.id.value), connection)
+        node.protocolCodec.initialize(session)
+        if (node.state == State.Started) {
+            val channelActor = node.system.actorOf(ChannelActor.props(node, session))
+            session.set(GateChannelActorKey, channelActor)
+        } else {
+            logger.warn("gate is not running, current state:{}, session will close", node.state)
+            session.close(GatewayCloseReason.Application)
+        }
+        return session
+    }
+
+    override suspend fun received(session: GatewaySession, frame: GatewayFrame) {
+        session.markRead()
+        val channelActor = session.get(GateChannelActorKey)
+        if (channelActor == null) {
+            logger.warn("failed to forward frame because channel actor not found, session:{}", session.id.value)
+            session.close(GatewayCloseReason.Application)
+            return
+        }
+        val message = node.protocolCodec.decodeClient(session, frame)
+        channelActor.tell(message)
+    }
+
+    override suspend fun disconnected(session: GatewaySession, cause: Throwable?) {
+        val reason = if (cause == null) {
+            GatewayCloseReason.TransportInactive
+        } else {
+            GatewayCloseReason.error(cause)
+        }
+        session.markClosed(reason)
+        session.get(GateChannelActorKey)?.tell(StopChannel)
+    }
+}

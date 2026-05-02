@@ -10,9 +10,10 @@ import com.mikai233.common.config.nettyConfigPath
 import com.mikai233.common.core.*
 import com.mikai233.common.extension.startShardingProxy
 import com.mikai233.common.message.*
-import com.mikai233.gate.server.NettyServer
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import io.github.mikai233.asteria.gateway.netty.NettyGatewayServerOptions
+import io.github.mikai233.asteria.gateway.netty.NettyTcpGatewayServerTransport
 import org.apache.pekko.actor.ActorRef
 import java.net.InetSocketAddress
 import kotlin.concurrent.thread
@@ -37,26 +38,27 @@ class GateNode(
 
     val internalDispatcher = MessageDispatcher(Message::class, handlerReflect, 1)
 
-    private val nettyServer = NettyServer(this)
-
     private val nettyConfigsCache =
         ConfigCache(zookeeper, nettyConfigPath(addr.hostString, addr.port), NettyConfig::class)
 
     val nettyConfig get() = nettyConfigsCache.config
 
+    val protocolCodec = GateProtocolCodec()
+
+    private lateinit var gatewayTransport: NettyTcpGatewayServerTransport
+
     override suspend fun launch() = start()
 
     override suspend fun beforeStart() {
         thread { MessageForward }
-        nettyServer.start()
         super.beforeStart()
-        addStateListener(State.Stopping) { nettyServer.close() }
     }
 
     override suspend fun afterStart() {
         startPlayerSharding()
         startWorldSharding()
         super.afterStart()
+        startGatewayTransport()
     }
 
     private fun startPlayerSharding() {
@@ -66,6 +68,19 @@ class GateNode(
 
     private fun startWorldSharding() {
         worldSharding = system.startShardingProxy(ShardEntityType.WorldActor.name, Role.World, WorldMessageExtractor)
+    }
+
+    private suspend fun startGatewayTransport() {
+        gatewayTransport = NettyTcpGatewayServerTransport(
+            NettyGatewayServerOptions(
+                host = nettyConfig.host,
+                port = nettyConfig.port,
+                maxFrameLength = 1024 * 100,
+            ),
+            scope = coroutineScope,
+        )
+        gatewayTransport.start(GateTransportHandler(this))
+        addStateListener(State.Stopping) { gatewayTransport.stop() }
     }
 }
 

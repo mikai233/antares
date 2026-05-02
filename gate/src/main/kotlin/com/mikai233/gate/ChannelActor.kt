@@ -4,7 +4,6 @@ package com.mikai233.gate
 import com.google.protobuf.GeneratedMessage
 import com.google.protobuf.kotlin.toByteString
 import com.mikai233.common.broadcast.Topic
-import com.mikai233.common.codec.CIPHER_KEY
 import com.mikai233.common.conf.ServerMode
 import com.mikai233.common.crypto.AESCipher
 import com.mikai233.common.crypto.ECDH
@@ -19,9 +18,9 @@ import com.mikai233.protocol.ProtoLogin.LoginReq
 import com.mikai233.protocol.ProtoLogin.LoginResp
 import com.mikai233.protocol.ProtoSystem.GmReq
 import com.mikai233.protocol.connectionExpiredNotify
+import io.github.mikai233.asteria.gateway.GatewayCloseReason
+import io.github.mikai233.asteria.gateway.GatewaySession
 import io.github.mikai233.asteria.script.pekko.ScriptableAsteriaActor
-import io.netty.channel.ChannelFutureListener
-import io.netty.channel.ChannelHandlerContext
 import org.apache.pekko.actor.Props
 import org.apache.pekko.actor.ReceiveTimeout
 import org.apache.pekko.cluster.pubsub.DistributedPubSub
@@ -30,13 +29,13 @@ import org.apache.pekko.cluster.pubsub.DistributedPubSubMediator.Unsubscribe
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.toJavaDuration
 
-class ChannelActor(val node: GateNode, private val handlerContext: ChannelHandlerContext) :
+class ChannelActor(val node: GateNode, private val session: GatewaySession) :
     ScriptableAsteriaActor<GateNode>(node) {
     companion object {
         val MaxIdleDuration = 1.minutes
 
-        fun props(node: GateNode, handlerContext: ChannelHandlerContext): Props =
-            Props.create(ChannelActor::class.java, node, handlerContext)
+        fun props(node: GateNode, session: GatewaySession): Props =
+            Props.create(ChannelActor::class.java, node, session)
     }
 
     var playerId: Long? = null
@@ -76,9 +75,8 @@ class ChannelActor(val node: GateNode, private val handlerContext: ChannelHandle
             .build()
     }
 
-    fun write(message: GeneratedMessage, listener: ChannelFutureListener? = null) {
-        val future = handlerContext.writeAndFlush(message)
-        listener?.let { future.addListener(it) }
+    fun write(message: GeneratedMessage, encrypted: Boolean = true) {
+        session.write(node.protocolCodec.encodeServer(session, message, encrypted))
     }
 
     private fun handleClientConnectMessage(clientProtobuf: ClientProtobuf) {
@@ -129,15 +127,15 @@ class ChannelActor(val node: GateNode, private val handlerContext: ChannelHandle
         playerId = playerData.playerId
         val serverKeyPair = ECDH.genKeyPair()
         val keyResp = resp.toBuilder().setServerPublicKey(serverKeyPair.publicKey.toByteString()).build()
-        write(keyResp) {
-            if (it.isSuccess) {
-                val shareKey = ECDH.calculateSharedKey(serverKeyPair.privateKey, clientPublicKey)
-                handlerContext.channel().attr(CIPHER_KEY).set(AESCipher(shareKey))
-                self tell ChannelAuthorized
-            } else {
-                logger.error(it.cause(), "write server key to client failed, stop the channel")
-                stopChannel()
-            }
+        runCatching {
+            write(keyResp, encrypted = false)
+        }.onFailure {
+            logger.error(it, "write server key to client failed, stop the channel")
+            stopChannel()
+        }.onSuccess {
+            val shareKey = ECDH.calculateSharedKey(serverKeyPair.privateKey, clientPublicKey)
+            session.set(GateCipherKey, AESCipher(shareKey))
+            self tell ChannelAuthorized
         }
     }
 
@@ -200,11 +198,8 @@ class ChannelActor(val node: GateNode, private val handlerContext: ChannelHandle
      * 断开和客户端的连接
      */
     private fun stopChannel() {
-        if (handlerContext.channel().isActive) {
-            handlerContext.close()
-        } else {
-            context.stop(self)
-        }
+        session.close(GatewayCloseReason.Application)
+        context.stop(self)
     }
 
     private fun forwardClientMessage(clientProtobuf: ClientProtobuf) {

@@ -12,8 +12,6 @@ dependencies {
     implementation(libKotlinx.core)
     runtimeOnly(libKotlinx.core.jvm)
     implementation(libLog.bundles.common)
-    implementation(libTool.netty)
-    implementation(libTool.lz4)
     implementation(libTool.reflections)
     implementation(libTool.protobuf.kotlin)
     implementation(libTool.protobuf.java.util)

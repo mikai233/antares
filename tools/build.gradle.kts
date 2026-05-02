@@ -9,7 +9,6 @@ dependencies {
     implementation(libKotlin.reflect)
     implementation(libTool.bundles.curator)
     implementation(libTool.guava)
-    implementation(libTool.lz4)
     implementation(libTool.reflections)
     implementation(libTool.easyexcel)
     implementation(libTool.jcommander)
