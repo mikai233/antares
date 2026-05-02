@@ -7,7 +7,6 @@ import com.mikai233.common.PLAYER_SHARD_NUM
 import com.mikai233.common.WORLD_SHARD_NUM
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.*
-import com.mikai233.common.entity.EntityKryoPool
 import com.mikai233.common.message.*
 import com.mikai233.common.message.world.HandoffWorld
 import com.typesafe.config.Config
@@ -20,7 +19,6 @@ import io.github.mikai233.asteria.id.IdGenerator
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.cluster.sharding.ShardCoordinator
 import java.net.InetSocketAddress
-import kotlin.concurrent.thread
 
 class WorldNode(
     addr: InetSocketAddress,
@@ -28,15 +26,15 @@ class WorldNode(
     config: Config,
     zookeeperConnectString: String,
     sameJvm: Boolean = false,
-) : Node(addr, listOf(Role.World), name, config, zookeeperConnectString, sameJvm) {
-    lateinit var playerSharding: ActorRef
-        private set
+) : GameNodeRuntime(addr, listOf(Role.World), name, config, zookeeperConnectString, sameJvm) {
+    val playerSharding: ActorRef
+        get() = entityShard(ShardEntityType.PlayerActor)
 
-    lateinit var worldSharding: ActorRef
-        private set
+    val worldSharding: ActorRef
+        get() = entityShard(ShardEntityType.WorldActor)
 
-    lateinit var idGenerator: IdGenerator
-        private set
+    val idGenerator: IdGenerator
+        get() = services.get(IdGenerator::class)
 
     private val handlerReflect = MessageHandlerReflect("com.mikai233.world.handler")
 
@@ -46,12 +44,9 @@ class WorldNode(
 
     val gmDispatcher = GmDispatcher(handlerReflect)
 
-    override suspend fun beforeStart() {
-        super.beforeStart()
-        thread { EntityKryoPool }
-    }
+    override fun modulesBeforeCluster() = listOf(EntitySerializationModule(), workerIdRuntimeModule())
 
-    override fun runtimeModulesBeforePekko() = listOf(workerIdRuntimeModule())
+    override fun modulesAfterCluster() = listOf(WorldWakerModule(this))
 
     override fun configureRuntime(builder: AsteriaApplicationBuilder) {
         builder.apply {
@@ -71,17 +66,6 @@ class WorldNode(
         }
     }
 
-    override suspend fun afterStart() {
-        idGenerator = services.get(IdGenerator::class)
-        playerSharding = entityShard(ShardEntityType.PlayerActor)
-        worldSharding = entityShard(ShardEntityType.WorldActor)
-        startWorldWaker()
-        super.afterStart()
-    }
-
-    private fun startWorldWaker() {
-        system.actorOf(WorldWaker.props(this), "worldWaker")
-    }
 }
 
 private class Cli {

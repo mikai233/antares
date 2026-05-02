@@ -11,6 +11,7 @@ import com.mikai233.common.config.GAME_WORLDS
 import com.mikai233.common.config.GameWorldConfig
 import com.mikai233.common.config.GameWorldMeta
 import com.mikai233.common.db.MongoDB
+import com.mikai233.common.entity.EntityKryoPool
 import com.mikai233.common.event.GameConfigUpdateEvent
 import com.mikai233.common.excel.GameConfig
 import com.mikai233.common.excel.GameConfigManager
@@ -22,6 +23,11 @@ import io.github.mikai233.asteria.core.ModuleContext
 import io.prometheus.client.exporter.HTTPServer
 import io.prometheus.client.hotspot.DefaultExports
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.concurrent.thread
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.future.await
 import org.apache.curator.framework.recipes.cache.CuratorCache
 import org.apache.curator.framework.recipes.cache.CuratorCacheListener
@@ -30,6 +36,28 @@ import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.routing.FromConfig
 import org.slf4j.LoggerFactory
+
+class PekkoCoroutineScopeModule : AsteriaModule {
+    override val name: String = "pekko-coroutine-scope"
+
+    override suspend fun start(context: ModuleContext) {
+        val system = context.services.get(ActorSystem::class)
+        val scope = CoroutineScope(system.dispatcher.asCoroutineDispatcher() + SupervisorJob())
+        context.services.register(CoroutineScope::class, scope)
+    }
+
+    override suspend fun stop(context: ModuleContext) {
+        context.services.find(CoroutineScope::class)?.cancel()
+    }
+}
+
+class EntitySerializationModule : AsteriaModule {
+    override val name: String = "entity-serialization"
+
+    override suspend fun start(context: ModuleContext) {
+        thread { EntityKryoPool }
+    }
+}
 
 class PrometheusMetricsModule(
     private val port: Int,

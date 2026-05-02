@@ -8,8 +8,6 @@ import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.*
 import com.mikai233.common.message.PlayerMessageExtractor
 import com.mikai233.common.message.WorldMessageExtractor
-import com.mikai233.gm.script.ScriptExecutionManagerActor
-import com.mikai233.gm.web.GmWebServer
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import io.github.mikai233.asteria.core.AsteriaApplicationBuilder
@@ -18,7 +16,6 @@ import io.github.mikai233.asteria.cluster.pekko.extractor
 import io.github.mikai233.asteria.cluster.pekko.singletonStartup
 import kotlinx.coroutines.runBlocking
 import org.apache.pekko.actor.ActorRef
-import org.apache.pekko.routing.FromConfig
 import java.net.InetSocketAddress
 
 class GmNode(
@@ -27,24 +24,24 @@ class GmNode(
     config: Config,
     zookeeperConnectString: String,
     sameJvm: Boolean = false,
-) : Node(addr, listOf(Role.Gm), name, config, zookeeperConnectString, sameJvm) {
+) : GameNodeRuntime(addr, listOf(Role.Gm), name, config, zookeeperConnectString, sameJvm) {
 
-    lateinit var playerSharding: ActorRef
-        private set
+    val playerSharding: ActorRef
+        get() = entityShard(ShardEntityType.PlayerActor)
 
-    lateinit var worldSharding: ActorRef
-        private set
+    val worldSharding: ActorRef
+        get() = entityShard(ShardEntityType.WorldActor)
 
-    private lateinit var webServer: GmWebServer
+    val scriptRouter: ActorRef
+        get() = services.get(GmRuntime::class).scriptRouter
 
-    lateinit var scriptRouter: ActorRef
-        private set
+    val workerSingletonProxy: ActorRef
+        get() = singletonActor(Singleton.Worker)
 
-    lateinit var workerSingletonProxy: ActorRef
-        private set
+    val scriptExecutionManager: ActorRef
+        get() = services.get(GmRuntime::class).scriptExecutionManager
 
-    lateinit var scriptExecutionManager: ActorRef
-        private set
+    override fun modulesAfterCluster() = listOf(GmRuntimeModule(this))
 
     override fun configureRuntime(builder: AsteriaApplicationBuilder) {
         builder.apply {
@@ -65,39 +62,6 @@ class GmNode(
         }
     }
 
-    override suspend fun afterStart() {
-        startScriptRouter()
-        workerSingletonProxy = singletonActor(Singleton.Worker)
-        playerSharding = entityShard(ShardEntityType.PlayerActor)
-        worldSharding = entityShard(ShardEntityType.WorldActor)
-        startMonitor()
-        startScriptExecutionManager()
-        startWebServer()
-        super.afterStart()
-    }
-
-    private fun startScriptRouter() {
-        scriptRouter = system.actorOf(FromConfig.getInstance().props(), "scriptActorRouter")
-    }
-
-    private fun startWebServer() {
-        webServer = GmWebServer(this)
-        webServer.start()
-        addStateListener(State.Stopping) {
-            webServer.stop()
-        }
-    }
-
-    private fun startMonitor() {
-        system.actorOf(MonitorActor.props(this), "monitorActor")
-    }
-
-    private fun startScriptExecutionManager() {
-        scriptExecutionManager = system.actorOf(
-            ScriptExecutionManagerActor.props(this),
-            ScriptExecutionManagerActor.NAME,
-        )
-    }
 }
 
 private class Cli {

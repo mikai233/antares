@@ -5,7 +5,7 @@ import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.config.NodeConfig
 import com.mikai233.common.config.nodePath
 import com.mikai233.common.config.serverHostsPath
-import com.mikai233.common.core.Node
+import com.mikai233.common.core.GameNodeRuntime
 import com.mikai233.common.core.Role
 import com.mikai233.common.extension.Json
 import com.mikai233.common.extension.asyncZookeeperClient
@@ -25,11 +25,11 @@ import kotlin.reflect.KClass
 import kotlin.reflect.full.primaryConstructor
 import kotlin.system.exitProcess
 
-object StardustLauncher {
+object StardustCluster {
     private val logger = logger()
     private val client = asyncZookeeperClient(GlobalEnv.zkConnect)
-    private val nodeByRole: EnumMap<Role, KClass<out Node>> = EnumMap(Role::class.java)
-    private val nodes: ArrayList<Node> = arrayListOf()
+    private val nodeByRole: EnumMap<Role, KClass<out GameNodeRuntime>> = EnumMap(Role::class.java)
+    private val nodes: ArrayList<GameNodeRuntime> = arrayListOf()
 
     init {
         Role.entries.forEach {

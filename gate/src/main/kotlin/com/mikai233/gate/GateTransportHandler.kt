@@ -1,9 +1,9 @@
 package com.mikai233.gate
 
-import com.mikai233.common.core.State
 import com.mikai233.common.extension.logger
 import com.mikai233.common.extension.tell
 import com.mikai233.common.message.StopChannel
+import io.github.mikai233.asteria.core.NodeState
 import io.github.mikai233.asteria.gateway.GatewayCloseReason
 import io.github.mikai233.asteria.gateway.GatewayConnection
 import io.github.mikai233.asteria.gateway.GatewayFrame
@@ -20,7 +20,7 @@ class GateTransportHandler(private val node: GateNode) : GatewayTransportHandler
 
     override suspend fun connected(connection: GatewayConnection): GatewaySession {
         val session = GatewaySession(GatewaySessionId(connection.id.value), connection)
-        if (node.state == State.Started) {
+        if (node.state == NodeState.Started) {
             val channelActor = node.system.actorOf(ChannelActor.props(node, session))
             session.set(GateChannelActorKey, channelActor)
         } else {

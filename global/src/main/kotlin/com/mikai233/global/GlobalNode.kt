@@ -6,7 +6,6 @@ import com.mikai233.common.PLAYER_SHARD_NUM
 import com.mikai233.common.WORLD_SHARD_NUM
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.*
-import com.mikai233.common.entity.EntityKryoPool
 import com.mikai233.common.message.PlayerMessageExtractor
 import com.mikai233.common.message.global.worker.HandoffWorker
 import com.mikai233.common.message.WorldMessageExtractor
@@ -18,7 +17,6 @@ import io.github.mikai233.asteria.cluster.pekko.actor
 import io.github.mikai233.asteria.cluster.pekko.extractor
 import org.apache.pekko.actor.ActorRef
 import java.net.InetSocketAddress
-import kotlin.concurrent.thread
 
 class GlobalNode(
     addr: InetSocketAddress,
@@ -26,21 +24,18 @@ class GlobalNode(
     config: Config,
     zookeeperConnectString: String,
     sameJvm: Boolean = false,
-) : Node(addr, listOf(Role.Global), name, config, zookeeperConnectString, sameJvm) {
+) : GameNodeRuntime(addr, listOf(Role.Global), name, config, zookeeperConnectString, sameJvm) {
 
-    lateinit var playerSharding: ActorRef
-        private set
+    val playerSharding: ActorRef
+        get() = entityShard(ShardEntityType.PlayerActor)
 
-    lateinit var worldSharding: ActorRef
-        private set
+    val worldSharding: ActorRef
+        get() = entityShard(ShardEntityType.WorldActor)
 
-    lateinit var workerActor: ActorRef
-        private set
+    val workerActor: ActorRef
+        get() = singletonActor(Singleton.Worker)
 
-    override suspend fun beforeStart() {
-        super.beforeStart()
-        thread { EntityKryoPool }
-    }
+    override fun modulesBeforeCluster() = listOf(EntitySerializationModule())
 
     override fun configureRuntime(builder: AsteriaApplicationBuilder) {
         builder.apply {
@@ -62,12 +57,6 @@ class GlobalNode(
         }
     }
 
-    override suspend fun afterStart() {
-        workerActor = singletonActor(Singleton.Worker)
-        playerSharding = entityShard(ShardEntityType.PlayerActor)
-        worldSharding = entityShard(ShardEntityType.WorldActor)
-        super.afterStart()
-    }
 }
 
 private class Cli {

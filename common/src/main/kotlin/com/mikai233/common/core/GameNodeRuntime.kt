@@ -11,9 +11,8 @@ import com.typesafe.config.ConfigFactory
 import io.github.mikai233.asteria.config.center.zookeeper.ZookeeperConfigCenterModule
 import io.github.mikai233.asteria.core.AsteriaModule
 import io.github.mikai233.asteria.core.AsteriaApplicationBuilder
-import io.github.mikai233.asteria.core.AsteriaModuleLifecycle
 import io.github.mikai233.asteria.core.EntityKind
-import io.github.mikai233.asteria.core.ModuleContext
+import io.github.mikai233.asteria.core.NodeState
 import io.github.mikai233.asteria.core.NodeRuntime
 import io.github.mikai233.asteria.core.RoleKey
 import io.github.mikai233.asteria.core.ServiceRegistry
@@ -60,7 +59,7 @@ import kotlin.random.nextLong
  * @param config 节点配置
  * @param zookeeperConnectString zookeeper连接字符串
  */
-open class Node(
+open class GameNodeRuntime(
     val addr: InetSocketAddress,
     val nodeRoles: List<Role>,
     override val name: String,
@@ -75,10 +74,11 @@ open class Node(
 
     override val services: ServiceRegistry = ServiceRegistry()
 
-    lateinit var system: ActorSystem
-        protected set
+    val system: ActorSystem
+        get() = services.get(ActorSystem::class)
 
-    lateinit var coroutineScope: CoroutineScope
+    val coroutineScope: CoroutineScope
+        get() = services.get(CoroutineScope::class)
 
     private val zookeeperClient: AsyncCuratorFramework by lazy {
         val client = CuratorFrameworkFactory.newClient(
@@ -118,70 +118,33 @@ open class Node(
         get() = services.get(GameConfigService::class)
 
     @Volatile
-    final override var state: State = State.Unstarted
+    final override var state: NodeState = NodeState.Unstarted
         private set
 
-    private lateinit var lifecycle: AsteriaModuleLifecycle
-
-    private lateinit var moduleContext: ModuleContext
-
-    private var runtimeModules: List<AsteriaModule> = emptyList()
-
-    @Volatile
-    private var runtimeModulesStopped = false
-
-    private fun updateState(newState: State) {
+    private fun updateState(newState: NodeState) {
         val previousState = state
         state = newState
         logger.info("{} state change from:{} to:{}", this::class.simpleName, previousState, newState)
     }
 
-    protected open suspend fun changeState(newState: State) {
-        updateState(newState)
-        stateListeners[newState]?.forEach { listener ->
-            listener()
-        }
-    }
-
-    private val stateListeners: EnumMap<State, MutableList<suspend () -> Unit>> = EnumMap(State::class.java)
-
-    fun addStateListener(state: State, listener: suspend () -> Unit) {
-        stateListeners.computeIfAbsent(state) { mutableListOf() }.add(listener)
-    }
-
     open suspend fun launch() = start()
 
     protected open suspend fun start() {
-        beforeStart()
         startSystem()
-        afterStart()
-    }
-
-    protected open suspend fun beforeStart() {
     }
 
     protected open suspend fun startSystem() {
-        runtimeModules = runtimeModules()
+        val modules = asteriaModules()
         val application = gameApplication {
-            name = this@Node.name
-            runtimeModules.forEach(::install)
+            name = this@GameNodeRuntime.name
+            modules.forEach(::install)
             configureRuntime(this)
         }
-        moduleContext = ModuleContext(this, services, application.topology)
-        lifecycle = application.bind(this) { newState ->
-            if (newState != State.Started) {
-                updateState(newState)
-            }
+        val lifecycle = application.bind(this) { newState ->
+            updateState(newState)
         }
         lifecycle.launch()
-        system = services.get(ActorSystem::class)
-        coroutineScope = CoroutineScope(system.dispatcher.asCoroutineDispatcher() + SupervisorJob())
         addCoordinatedShutdownTasks()
-        addStateListener(State.Stopping) { stopRuntimeModules() }
-    }
-
-    protected open suspend fun afterStart() {
-        changeState(State.Started)
     }
 
     private fun addCoordinatedShutdownTasks() {
@@ -195,13 +158,13 @@ open class Node(
             addTask(
                 CoordinatedShutdown.PhaseBeforeServiceUnbind(), "change_state_stopping",
                 taskSupplier {
-                    changeState(State.Stopping)
+                    updateState(NodeState.Stopping)
                 },
             )
             addTask(
                 CoordinatedShutdown.PhaseActorSystemTerminate(), "change_state_stopped",
                 taskSupplier {
-                    changeState(State.Stopped)
+                    updateState(NodeState.Stopped)
                 },
             )
         }
@@ -259,19 +222,20 @@ open class Node(
         }
     }
 
-    protected open fun runtimeModules(): List<AsteriaModule> {
-        return commonRuntimeModulesBeforePekko() +
-            runtimeModulesBeforePekko() +
-            pekkoRuntimeModule() +
-            scriptRuntimeModule() +
-            runtimeModulesAfterPekko()
+    protected open fun asteriaModules(): List<AsteriaModule> {
+        return commonModulesBeforeCluster() +
+            modulesBeforeCluster() +
+            pekkoClusterModule() +
+            PekkoCoroutineScopeModule() +
+            scriptModule() +
+            modulesAfterCluster()
     }
 
-    protected open fun runtimeModulesBeforePekko(): List<AsteriaModule> = emptyList()
+    protected open fun modulesBeforeCluster(): List<AsteriaModule> = emptyList()
 
-    protected open fun runtimeModulesAfterPekko(): List<AsteriaModule> = emptyList()
+    protected open fun modulesAfterCluster(): List<AsteriaModule> = emptyList()
 
-    private fun commonRuntimeModulesBeforePekko(): List<AsteriaModule> {
+    private fun commonModulesBeforeCluster(): List<AsteriaModule> {
         return listOf(
             ZookeeperConfigCenterModule {
                 client(zookeeper)
@@ -283,7 +247,7 @@ open class Node(
         )
     }
 
-    private fun pekkoRuntimeModule(): AsteriaModule {
+    private fun pekkoClusterModule(): AsteriaModule {
         return PekkoRuntimeModule(
             ConfiguredPekkoClusterStartup(
                 configFactory = { resolveRemoteConfig().withFallback(config) },
@@ -293,7 +257,7 @@ open class Node(
         )
     }
 
-    private fun scriptRuntimeModule(): AsteriaModule {
+    private fun scriptModule(): AsteriaModule {
         return ScriptModule {
             engine(GroovyScriptEngine())
             engine(JarScriptEngine())
@@ -309,16 +273,6 @@ open class Node(
                 owner = { WorkerIdOwner(addr.toString()) },
             ),
         )
-    }
-
-    private suspend fun stopRuntimeModules() {
-        if (runtimeModulesStopped) {
-            return
-        }
-        runtimeModulesStopped = true
-        runtimeModules.asReversed()
-            .filterNot { it is PekkoRuntimeModule }
-            .forEach { it.stop(moduleContext) }
     }
 
     protected fun entityShard(type: ShardEntityType): ActorRef {

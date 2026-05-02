@@ -15,12 +15,8 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import io.github.mikai233.asteria.core.AsteriaApplicationBuilder
 import io.github.mikai233.asteria.cluster.pekko.extractor
-import io.github.mikai233.asteria.gateway.netty.NettyGatewayServerOptions
-import io.github.mikai233.asteria.gateway.netty.NettyTcpGatewayServerTransport
 import org.apache.pekko.actor.ActorRef
 import java.net.InetSocketAddress
-import kotlin.concurrent.thread
-
 
 class GateNode(
     addr: InetSocketAddress,
@@ -28,12 +24,12 @@ class GateNode(
     config: Config,
     zookeeperConnectString: String,
     sameJvm: Boolean = false,
-) : Node(addr, listOf(Role.Gate), name, config, zookeeperConnectString, sameJvm) {
-    lateinit var playerSharding: ActorRef
-        private set
+) : GameNodeRuntime(addr, listOf(Role.Gate), name, config, zookeeperConnectString, sameJvm) {
+    val playerSharding: ActorRef
+        get() = entityShard(ShardEntityType.PlayerActor)
 
-    lateinit var worldSharding: ActorRef
-        private set
+    val worldSharding: ActorRef
+        get() = entityShard(ShardEntityType.WorldActor)
 
     private val handlerReflect = MessageHandlerReflect("com.mikai233.gate.handler")
 
@@ -48,12 +44,9 @@ class GateNode(
 
     val protocolCodec = GateProtocolCodec()
 
-    private lateinit var gatewayTransport: NettyTcpGatewayServerTransport
+    override fun modulesBeforeCluster() = listOf(GateMessageForwardModule())
 
-    override suspend fun beforeStart() {
-        thread { MessageForward }
-        super.beforeStart()
-    }
+    override fun modulesAfterCluster() = listOf(GateGatewayTransportModule(this))
 
     override fun configureRuntime(builder: AsteriaApplicationBuilder) {
         builder.apply {
@@ -70,26 +63,6 @@ class GateNode(
         }
     }
 
-    override suspend fun afterStart() {
-        playerSharding = entityShard(ShardEntityType.PlayerActor)
-        worldSharding = entityShard(ShardEntityType.WorldActor)
-        super.afterStart()
-        startGatewayTransport()
-    }
-
-    private suspend fun startGatewayTransport() {
-        gatewayTransport = NettyTcpGatewayServerTransport(
-            NettyGatewayServerOptions(
-                host = nettyConfig.host,
-                port = nettyConfig.port,
-                maxFrameLength = 1024 * 100,
-            ),
-            scope = coroutineScope,
-            pipelineInstaller = GateNettyPipeline.installer(protocolCodec),
-        )
-        gatewayTransport.start(GateTransportHandler(this))
-        addStateListener(State.Stopping) { gatewayTransport.stop() }
-    }
 }
 
 private class Cli {
