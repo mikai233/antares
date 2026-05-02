@@ -32,12 +32,12 @@ class WorldLoginHandler : MessageHandler {
             }
         } else {
             //exists player
-            world.sessionManager.createOrUpdateSession(playerAbstract.playerId, channelActor)
+            world.sessionManager.createOrUpdateSession(playerAbstract.id, channelActor)
             world.launch {
                 world.askPlayer<PlayerLoginResp>(
                     com.mikai233.common.message.player.PlayerLoginReq(
                         loginReq.account,
-                        playerAbstract.playerId,
+                        playerAbstract.id,
                         playerAbstract.worldId,
                         channelActor,
                     ),

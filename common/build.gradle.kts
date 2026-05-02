@@ -47,8 +47,8 @@ dependencies {
     implementation(libTool.netty)
     implementation(libTool.bundles.prometheus)
     implementation(project(":proto"))
-    implementation(project(":processor"))
     ksp(project(":processor"))
+    ksp("io.github.mikai233:persistence-mongodb-ksp:1.0-SNAPSHOT")
 }
 
 tasks.test {

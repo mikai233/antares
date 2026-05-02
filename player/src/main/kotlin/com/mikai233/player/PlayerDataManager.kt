@@ -1,5 +1,6 @@
 package com.mikai233.player
 
+import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.mikai233.common.core.ShardEntityType
 import com.mikai233.common.extension.logger
 import com.mikai233.common.extension.tell
@@ -23,6 +24,7 @@ class PlayerDataManager(private val player: PlayerActor) {
             entityId = player.playerId,
             services = ServiceRegistry().apply {
                 register(MongoTemplate::class, player.node.mongoDB.mongoTemplate)
+                register(MongoDatabase::class, player.node.mongoDB.database)
             },
         ),
         PlayerDataModules,

@@ -5,6 +5,8 @@ import com.mongodb.MongoClientSettings
 import com.mongodb.WriteConcern
 import com.mongodb.client.MongoClient
 import com.mongodb.client.MongoClients
+import com.mongodb.kotlin.client.coroutine.MongoClient as CoroutineMongoClient
+import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.SimpleMongoClientDatabaseFactory
 import org.springframework.data.mongodb.core.convert.DefaultDbRefResolver
@@ -20,6 +22,12 @@ class MongoDB(
         private set
 
     lateinit var client: MongoClient
+        private set
+
+    lateinit var coroutineClient: CoroutineMongoClient
+        private set
+
+    lateinit var database: MongoDatabase
         private set
 
     init {
@@ -48,5 +56,9 @@ class MongoDB(
         converter.setMapKeyDotReplacement("#DOT#")
         converter.afterPropertiesSet()
         mongoTemplate = MongoTemplate(factory, converter)
+
+        val hosts = gameDataSourceConfig.sources.joinToString(",") { "${it.host}:${it.port}" }
+        coroutineClient = CoroutineMongoClient.create("mongodb://$hosts")
+        database = coroutineClient.getDatabase(gameDataSourceConfig.databaseName)
     }
 }

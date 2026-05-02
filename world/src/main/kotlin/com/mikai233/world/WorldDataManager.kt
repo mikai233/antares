@@ -1,5 +1,6 @@
 package com.mikai233.world
 
+import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.mikai233.common.core.ShardEntityType
 import com.mikai233.common.extension.logger
 import com.mikai233.common.extension.tell
@@ -24,6 +25,7 @@ class WorldDataManager(private val world: WorldActor) {
             entityId = world.worldId,
             services = ServiceRegistry().apply {
                 register(MongoTemplate::class, world.node.mongoDB.mongoTemplate)
+                register(MongoDatabase::class, world.node.mongoDB.database)
             },
         ),
         WorldDataModules,

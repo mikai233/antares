@@ -1,9 +1,11 @@
 package com.mikai233.world.data
 
+import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.mikai233.common.constants.WorldActionType
-import com.mikai233.common.db.tracked.TrackedMemData
+import com.mikai233.common.db.AsteriaTrackedMemData
 import com.mikai233.common.entity.WorldAction
-import com.mikai233.common.entity.tracked.WorldActionTracked
+import com.mikai233.common.entity.WorldActionMongo
+import com.mikai233.common.entity.WorldActionTracked
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Query
@@ -12,12 +14,11 @@ import org.springframework.data.mongodb.core.query.where
 class WorldActionMem(
     private val worldId: Long,
     private val mongoTemplate: () -> MongoTemplate,
-) : TrackedMemData<WorldAction, WorldActionTracked>(
-    "world_action",
-    0,
-    mongoTemplate,
-    id = { it.id },
-    factory = ::WorldActionTracked,
+    mongoDatabase: () -> MongoDatabase,
+) : AsteriaTrackedMemData<WorldAction, WorldActionTracked>(
+    WorldActionMongo.COLLECTION,
+    mongoDatabase,
+    WorldActionMongo::wrap,
 ) {
     private var maxActionId: Long = 0
     private val worldAction: MutableMap<String, WorldActionTracked> = mutableMapOf()
@@ -58,6 +59,7 @@ class WorldActionMem(
     fun delAction(actionId: Int) {
         worldActionById.remove(actionId)?.also {
             worldAction.remove(it.id)
+            removeTracked(it.id)
         }
     }
 

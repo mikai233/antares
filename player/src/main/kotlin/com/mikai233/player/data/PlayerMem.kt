@@ -1,21 +1,18 @@
 package com.mikai233.player.data
 
-import com.mikai233.common.db.tracked.TrackedMemData
+import com.mongodb.kotlin.client.coroutine.MongoDatabase
+import com.mikai233.common.db.AsteriaTrackedMemData
 import com.mikai233.common.entity.Player
-import com.mikai233.common.entity.tracked.PlayerTracked
+import com.mikai233.common.entity.PlayerMongo
+import com.mikai233.common.entity.PlayerTracked
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.findById
 
 class PlayerMem(
     private val playerId: Long,
     private val mongoTemplate: () -> MongoTemplate,
-) : TrackedMemData<Player, PlayerTracked>(
-    "player",
-    0,
-    mongoTemplate,
-    id = { it.id },
-    factory = ::PlayerTracked,
-) {
+    mongoDatabase: () -> MongoDatabase,
+) : AsteriaTrackedMemData<Player, PlayerTracked>(PlayerMongo.COLLECTION, mongoDatabase, PlayerMongo::wrap) {
     lateinit var player: PlayerTracked
         private set
 

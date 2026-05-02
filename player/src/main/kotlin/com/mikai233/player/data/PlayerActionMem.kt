@@ -1,9 +1,11 @@
 package com.mikai233.player.data
 
+import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.mikai233.common.constants.PlayerActionType
-import com.mikai233.common.db.tracked.TrackedMemData
+import com.mikai233.common.db.AsteriaTrackedMemData
 import com.mikai233.common.entity.PlayerAction
-import com.mikai233.common.entity.tracked.PlayerActionTracked
+import com.mikai233.common.entity.PlayerActionMongo
+import com.mikai233.common.entity.PlayerActionTracked
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Query
@@ -12,12 +14,11 @@ import org.springframework.data.mongodb.core.query.where
 class PlayerActionMem(
     private val playerId: Long,
     private val mongoTemplate: () -> MongoTemplate,
-) : TrackedMemData<PlayerAction, PlayerActionTracked>(
-    "player_action",
-    0,
-    mongoTemplate,
-    id = { it.id },
-    factory = ::PlayerActionTracked,
+    mongoDatabase: () -> MongoDatabase,
+) : AsteriaTrackedMemData<PlayerAction, PlayerActionTracked>(
+    PlayerActionMongo.COLLECTION,
+    mongoDatabase,
+    PlayerActionMongo::wrap,
 ) {
     private var maxActionId: Int = 0
     private val playerAction: MutableMap<String, PlayerActionTracked> = mutableMapOf()

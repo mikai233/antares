@@ -1,15 +1,17 @@
 package com.mikai233.common.entity
 
-import com.mikai233.common.db.tracked.TrackEntity
 import io.github.mikai233.asteria.persistence.Entity
+import io.github.mikai233.asteria.persistence.AsteriaMongoEntity
+import io.github.mikai233.asteria.persistence.AsteriaMongoId
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.PersistenceCreator
 import org.springframework.data.mongodb.core.mapping.Document
 
-@TrackEntity
+@AsteriaMongoEntity(collection = "player_action", wrapperName = "PlayerActionTracked", helperName = "PlayerActionMongo")
 @Document(collection = "player_action")
 data class PlayerAction(
     @Id
+    @AsteriaMongoId
     override val id: String,
     val playerId: Long,
     val actionId: Int,

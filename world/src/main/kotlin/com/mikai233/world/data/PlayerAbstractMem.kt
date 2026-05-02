@@ -1,8 +1,10 @@
 package com.mikai233.world.data
 
-import com.mikai233.common.db.tracked.TrackedMemData
+import com.mongodb.kotlin.client.coroutine.MongoDatabase
+import com.mikai233.common.db.AsteriaTrackedMemData
 import com.mikai233.common.entity.PlayerAbstract
-import com.mikai233.common.entity.tracked.PlayerAbstractTracked
+import com.mikai233.common.entity.PlayerAbstractMongo
+import com.mikai233.common.entity.PlayerAbstractTracked
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Query
@@ -11,13 +13,12 @@ import org.springframework.data.mongodb.core.query.where
 class PlayerAbstractMem(
     private val worldId: Long,
     private val mongoTemplate: () -> MongoTemplate,
+    mongoDatabase: () -> MongoDatabase,
 ) :
-    TrackedMemData<PlayerAbstract, PlayerAbstractTracked>(
-        "player_abstract",
-        0,
-        mongoTemplate,
-        id = { it.id },
-        factory = ::PlayerAbstractTracked,
+    AsteriaTrackedMemData<PlayerAbstract, PlayerAbstractTracked>(
+        PlayerAbstractMongo.COLLECTION,
+        mongoDatabase,
+        PlayerAbstractMongo::wrap,
     ),
     Map<Long, PlayerAbstractTracked> {
     private val playerAbstracts: MutableMap<Long, PlayerAbstractTracked> = mutableMapOf()
@@ -48,6 +49,7 @@ class PlayerAbstractMem(
     fun delAbstract(playerAbstract: PlayerAbstractTracked) {
         accountToAbstracts.remove(playerAbstract.account)
         playerAbstracts.remove(playerAbstract.id)
+        removeTracked(playerAbstract.id)
     }
 
     fun getByAccount(account: String) = accountToAbstracts[account]
