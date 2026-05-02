@@ -12,7 +12,8 @@
 ## Getting Started
 
 1. Run `ZookeeperInitializer.kt` to initialize Zookeeper data.
-2. Run `GameConfigExporter.kt` to upload configuration table data to Zookeeper. The test configuration table path is `tools/src/main/resources/excel`.
+2. Run `GameConfigExporter.kt` to upload configuration table data to Zookeeper. The test configuration table path is
+   `tools/src/main/resources/excel`.
 3. Execute `Stardust.kt` to start the game server.
 
 ## Quick Start
@@ -87,12 +88,15 @@ class TestHandler : MessageHandler {
 
 ## Start Client for Protocol Debugging
 
-The debugging client is located in the `client` directory. Modify the `proto_path` in `client/lua/proto.lua` to the Protobuf protocol directory (usually no modification is needed as it uses a relative path).
-Start `client.exe` to connect to the server. You can send data by typing the protocol name in the console. For detailed operations, refer to the `README.md` inside that directory.
+The debugging client is located in the `client` directory. Modify the `proto_path` in `client/lua/proto.lua` to the
+Protobuf protocol directory (usually no modification is needed as it uses a relative path).
+Start `client.exe` to connect to the server. You can send data by typing the protocol name in the console. For detailed
+operations, refer to the `README.md` inside that directory.
 
 ## Generate Configuration Tables from Excel
 
-The default configuration table format is as follows. The first five rows are headers: the first row is field names, the second is data types, the third is field scope (Client and Server, or Client only), and the fifth row contains comments.
+The default configuration table format is as follows. The first five rows are headers: the first row is field names, the
+second is data types, the third is field scope (Client and Server, or Client only), and the fifth row contains comments.
 
 | **id** | **group** | **task_id** | **condition** |    **reward**     | **point** |
 |:------:|:---------:|:-----------:|:-------------:|:-----------------:|:---------:|
@@ -104,7 +108,8 @@ The default configuration table format is as follows. The first five rows are he
 |   2    |     1     |      1      |       1       |       1,1,1       |     1     |
 |   3    |     1     |      1      |       1       |       1,1,1       |     1     |
 
-Run `tools/src/main/kotlin/com/mikai233/tools/excel/GameConfigGenerator.kt` to generate configuration table code based on the Excel format.
+Run `tools/src/main/kotlin/com/mikai233/tools/excel/GameConfigGenerator.kt` to generate configuration table code based
+on the Excel format.
 
 The generated code format is as follows:
 
@@ -155,17 +160,23 @@ class TestConfigs : GameConfigs<Int, TestConfig>() {
 
 ### Regenerate Configuration Table Serialization Dependencies
 
-After generating new configuration table code, you need to execute `tools/src/main/kotlin/com/mikai233/tools/excel/GameConfigImplDepsGenerator.kt` to regenerate the serialization dependencies.
+After generating new configuration table code, you need to execute
+`tools/src/main/kotlin/com/mikai233/tools/excel/GameConfigImplDepsGenerator.kt` to regenerate the serialization
+dependencies.
 
 ### Export Binary or Upload to Zookeeper
 
-Once the code is generated, you can parse the Excel data into the data structures and serialize them into binary. The game server will then be able to load these directly by deserializing them upon startup.
+Once the code is generated, you can parse the Excel data into the data structures and serialize them into binary. The
+game server will then be able to load these directly by deserializing them upon startup.
 
-Execute `tools/src/main/kotlin/com/mikai233/tools/excel/GameConfigExporter.kt` to export the data. By default, it uploads to Zookeeper, where the server reads and deserializes the data at startup.
+Execute `tools/src/main/kotlin/com/mikai233/tools/excel/GameConfigExporter.kt` to export the data. By default, it
+uploads to Zookeeper, where the server reads and deserializes the data at startup.
 
 ## Define Entity
 
-This project uses MongoDB. An `Entity` must implement the `Entity` interface and use `@Id` for the primary key and `@Document` for the collection name. The project convention is that collection names in MongoDB should be in lowercase snake_case. An `Entity` must also contain a companion object with a no-arg static method to create a default instance.
+This project uses MongoDB. An `Entity` must implement the `Entity` interface and use `@Id` for the primary key and
+`@Document` for the collection name. The project convention is that collection names in MongoDB should be in lowercase
+snake_case. An `Entity` must also contain a companion object with a no-arg static method to create a default instance.
 
 ```kotlin
 @Document(collection = "player_abstract")
@@ -190,7 +201,10 @@ data class PlayerAbstract(
 
 ## Define MemData
 
-`TraceableMemData` provides an implementation for automatically tracking dirty data and asynchronously writing to the database. You don't need to manually save player data after modification; implementations inheriting from `TraceableMemData` will automatically track changes and periodically sync to the DB. If the data object is immutable, simply inherit from `MemData`.
+`TraceableMemData` provides an implementation for automatically tracking dirty data and asynchronously writing to the
+database. You don't need to manually save player data after modification; implementations inheriting from
+`TraceableMemData` will automatically track changes and periodically sync to the DB. If the data object is immutable,
+simply inherit from `MemData`.
 
 ```kotlin
 class PlayerAbstractMem(
@@ -235,7 +249,9 @@ class PlayerAbstractMem(
 
 ## Execute Scripts / Hotfix Logic
 
-Modules with a `script` directory support script execution, including both Jar and Groovy types. Jar scripts can be written in any JVM language, though they require compilation. Groovy scripts are flexible and don't need compilation, but require familiarity with Groovy and how it interacts with Kotlin.
+Modules with a `script` directory support script execution, including both Jar and Groovy types. Jar scripts can be
+written in any JVM language, though they require compilation. Groovy scripts are flexible and don't need compilation,
+but require familiarity with Groovy and how it interacts with Kotlin.
 
 ### Writing Scripts
 
@@ -291,7 +307,9 @@ class TestGroovyActorScript implements ActorScriptFunction<PlayerActor> {
 
 ### Compiling Scripts
 
-After writing the code, run the `gradle scriptClasses` task. Once the class files are generated, refresh the Gradle tasks. You will find `buildJarForXXX` tasks under the `script` directory of the corresponding module. Executing these will build the Jar package. If the task doesn't appear, check if the class files were generated in the build directory.
+After writing the code, run the `gradle scriptClasses` task. Once the class files are generated, refresh the Gradle
+tasks. You will find `buildJarForXXX` tasks under the `script` directory of the corresponding module. Executing these
+will build the Jar package. If the task doesn't appear, check if the class files were generated in the build directory.
 
 ### Execution
 
@@ -316,4 +334,5 @@ execution results.
 
 # Deployment
 
-Run the Gradle task `gradle release` to package each node into a Jar. The resulting Jars will be collected in the `release` directory.
+Run the Gradle task `gradle release` to package each node into a Jar. The resulting Jars will be collected in the
+`release` directory.
