@@ -7,6 +7,8 @@ dependencies {
     testImplementation(libTest.junit.jupiter)
     api("io.github.mikai233:foundation-core:1.0-SNAPSHOT")
     api("io.github.mikai233:foundation-actor:1.0-SNAPSHOT")
+    api("io.github.mikai233:foundation-id:1.0-SNAPSHOT")
+    api("io.github.mikai233:foundation-id-zookeeper:1.0-SNAPSHOT")
     api("io.github.mikai233:cluster-pekko:1.0-SNAPSHOT")
     api("io.github.mikai233:persistence-core:1.0-SNAPSHOT")
     api("io.github.mikai233:persistence-mongodb:1.0-SNAPSHOT")

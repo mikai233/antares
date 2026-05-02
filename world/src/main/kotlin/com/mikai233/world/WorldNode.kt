@@ -1,22 +1,18 @@
 package com.mikai233.world
 
-import SnowflakeGenerator
 import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
 import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.*
 import com.mikai233.common.entity.EntityKryoPool
-import com.mikai233.common.extension.ask
 import com.mikai233.common.extension.startSharding
 import com.mikai233.common.extension.startShardingProxy
-import com.mikai233.common.extension.startSingletonProxy
 import com.mikai233.common.message.*
-import com.mikai233.common.message.global.worker.WorkerIdReq
-import com.mikai233.common.message.global.worker.WorkerIdResp
 import com.mikai233.common.message.world.HandoffWorld
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import io.github.mikai233.asteria.id.IdGenerator
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.cluster.sharding.ShardCoordinator
 import java.net.InetSocketAddress
@@ -35,10 +31,7 @@ class WorldNode(
     lateinit var worldSharding: ActorRef
         private set
 
-    lateinit var workerSingletonProxy: ActorRef
-        private set
-
-    lateinit var snowflakeGenerator: SnowflakeGenerator
+    lateinit var idGenerator: IdGenerator
         private set
 
     private val handlerReflect = MessageHandlerReflect("com.mikai233.world.handler")
@@ -57,8 +50,8 @@ class WorldNode(
     }
 
     override suspend fun afterStart() {
-        startWorkerSingletonProxy()
-        startSnowflakeGenerator()
+        installWorkerIdRuntime()
+        idGenerator = services.get(IdGenerator::class)
         startPlayerSharding()
         startWorldSharding()
         startWorldWaker()
@@ -79,16 +72,6 @@ class WorldNode(
             WorldMessageExtractor,
             ShardCoordinator.LeastShardAllocationStrategy(1, 3),
         )
-    }
-
-    private fun startWorkerSingletonProxy() {
-        workerSingletonProxy = system.startSingletonProxy(Singleton.Worker.actorName, Role.Global)
-    }
-
-    private suspend fun startSnowflakeGenerator() {
-        val resp = workerSingletonProxy.ask<WorkerIdResp>(WorkerIdReq(addr.toString())).getOrThrow()
-        snowflakeGenerator = SnowflakeGenerator(resp.id.toLong())
-        logger.info("apply worker id: {} for addr: {}", resp.id, addr)
     }
 
     private fun startWorldWaker() {

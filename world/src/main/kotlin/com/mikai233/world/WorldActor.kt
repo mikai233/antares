@@ -140,7 +140,7 @@ class WorldActor(val node: WorldNode) : ScriptableAsteriaActor<WorldNode>(node) 
         return node.worldSharding.ask(message)
     }
 
-    fun nextId() = node.snowflakeGenerator.nextId()
+    fun nextId() = node.idGenerator.nextId()
 
     private fun canInitialize(): Boolean {
         return node.gameWorldMeta.worlds.contains(worldId)

@@ -173,5 +173,5 @@ class PlayerActor(val node: PlayerNode) : ScriptableAsteriaActor<PlayerNode>(nod
         return node.worldSharding.ask(message)
     }
 
-    fun nextId() = node.snowflakeGenerator.nextId()
+    fun nextId() = node.idGenerator.nextId()
 }

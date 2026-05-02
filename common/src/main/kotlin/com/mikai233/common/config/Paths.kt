@@ -12,6 +12,8 @@ const val GAME_WORLDS = "$ROOT/game_worlds"
 
 const val GAME_CONFIG = "$ROOT/game_config"
 
+const val WORKER_IDS = "$ROOT/worker_ids"
+
 fun serverHostsPath(hostname: String) = "$SERVER_HOSTS/$hostname"
 
 fun nodePath(hostname: String, nodeName: String) = "${serverHostsPath(hostname)}/$nodeName"

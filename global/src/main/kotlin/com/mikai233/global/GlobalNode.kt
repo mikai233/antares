@@ -2,14 +2,14 @@ package com.mikai233.global
 
 import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
-import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.*
 import com.mikai233.common.entity.EntityKryoPool
 import com.mikai233.common.extension.startShardingProxy
 import com.mikai233.common.extension.startSingleton
-import com.mikai233.common.message.*
+import com.mikai233.common.message.PlayerMessageExtractor
 import com.mikai233.common.message.global.worker.HandoffWorker
+import com.mikai233.common.message.WorldMessageExtractor
 import com.mikai233.global.actor.WorkerActor
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
@@ -33,12 +33,6 @@ class GlobalNode(
 
     lateinit var workerActor: ActorRef
         private set
-
-    private val handlerReflect = MessageHandlerReflect("com.mikai233.global.handler")
-
-    val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, handlerReflect, 1)
-
-    val internalDispatcher = MessageDispatcher(Message::class, handlerReflect, 1)
 
     override suspend fun launch() = start()
 

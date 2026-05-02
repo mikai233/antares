@@ -12,10 +12,15 @@ import com.mikai233.common.excel.*
 import com.mikai233.common.extension.Json
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import io.github.mikai233.asteria.core.AsteriaModule
 import io.github.mikai233.asteria.core.ModuleContext
 import io.github.mikai233.asteria.core.NodeRuntime
 import io.github.mikai233.asteria.core.RoleKey
 import io.github.mikai233.asteria.core.ServiceRegistry
+import io.github.mikai233.asteria.id.WorkerIdModule
+import io.github.mikai233.asteria.id.WorkerIdModuleOptions
+import io.github.mikai233.asteria.id.WorkerIdOwner
+import io.github.mikai233.asteria.id.zookeeper.ZookeeperWorkerIdRepository
 import io.github.mikai233.asteria.script.engine.groovy.GroovyScriptEngine
 import io.github.mikai233.asteria.script.engine.jar.JarScriptEngine
 import io.github.mikai233.asteria.script.pekko.ScriptModule
@@ -233,9 +238,26 @@ open class Node(
             allowNodeScripts = true
             allowActorScripts = true
         }
+        installRuntimeModule(module)
+    }
+
+    protected suspend fun installWorkerIdRuntime() {
+        val module = WorkerIdModule(
+            repository = ZookeeperWorkerIdRepository(zookeeper, WORKER_IDS),
+            options = WorkerIdModuleOptions(
+                owner = { WorkerIdOwner(addr.toString()) },
+            ),
+        )
+        installRuntimeModule(module)
+    }
+
+    protected suspend fun installRuntimeModule(module: AsteriaModule) {
         val context = ModuleContext(this, services)
         module.install(context)
         module.start(context)
+        addStateListener(State.Stopping) {
+            module.stop(context)
+        }
     }
 
     private fun spawnBroadcastActor() {
