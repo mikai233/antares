@@ -4,10 +4,10 @@ import com.google.common.io.Resources
 import com.mikai233.common.broadcast.PlayerBroadcastEventBus
 import com.mikai233.common.config.*
 import com.mikai233.common.db.MongoDB
-import com.mikai233.common.excel.*
-import com.mikai233.common.extension.Json
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import io.github.mikai233.asteria.cluster.config.ClusterConfigLayout
+import io.github.mikai233.asteria.cluster.config.ClusterConfigModule
 import io.github.mikai233.asteria.config.center.zookeeper.ZookeeperConfigCenterModule
 import io.github.mikai233.asteria.core.AsteriaModule
 import io.github.mikai233.asteria.core.AsteriaApplicationBuilder
@@ -22,16 +22,14 @@ import io.github.mikai233.asteria.id.WorkerIdModule
 import io.github.mikai233.asteria.id.WorkerIdModuleOptions
 import io.github.mikai233.asteria.id.WorkerIdOwner
 import io.github.mikai233.asteria.id.zookeeper.ZookeeperWorkerIdRepository
-import io.github.mikai233.asteria.cluster.pekko.ConfiguredPekkoClusterStartup
 import io.github.mikai233.asteria.cluster.pekko.EntityShardRegistry
-import io.github.mikai233.asteria.cluster.pekko.PekkoClusterJoin
 import io.github.mikai233.asteria.cluster.pekko.PekkoRuntimeModule
 import io.github.mikai233.asteria.cluster.pekko.SingletonActorRegistry
+import io.github.mikai233.asteria.cluster.pekko.TopologyPekkoClusterStartup
 import io.github.mikai233.asteria.script.engine.groovy.GroovyScriptEngine
 import io.github.mikai233.asteria.script.engine.jar.JarScriptEngine
 import io.github.mikai233.asteria.script.pekko.ScriptModule
 import kotlinx.coroutines.*
-import kotlinx.coroutines.future.await
 import org.apache.curator.framework.CuratorFrameworkFactory
 import org.apache.curator.retry.ExponentialBackoffRetry
 import org.apache.curator.x.async.AsyncCuratorFramework
@@ -63,6 +61,7 @@ open class GameNodeRuntime(
     val addr: InetSocketAddress,
     val nodeRoles: List<Role>,
     override val name: String,
+    val nodeId: String,
     val config: Config,
     zookeeperConnectString: String,
     private val sameJvm: Boolean = false,
@@ -95,17 +94,14 @@ open class GameNodeRuntime(
     val mongoDB: MongoDB
         get() = services.get(MongoDB::class)
 
-    val gameWorldMeta: GameWorldMeta
-        get() = gameConfigService.gameWorldMeta
+    val gameWorldIds: Set<Long>
+        get() = gameWorldConfigService.worldIds
 
-    val gameWorldConfigCache: ConfigChildrenCache<GameWorldConfig>
-        get() = gameConfigService.gameWorldConfigCache
+    val gameWorldConfigs: Map<Long, GameWorldConfig>
+        get() = gameWorldConfigService.worldsById
 
-    val gameConfigManager: GameConfigManager
-        get() = gameConfigService.gameConfigManager
-
-    val gameConfigManagerHashcode
-        get() = gameConfigService.gameConfigManagerHashcode
+    val gameConfigVersion: String
+        get() = services.get(io.github.mikai233.asteria.config.ConfigService::class).current().revision.version
 
     val broadcastRouter: ActorRef
         get() = services.get(PlayerBroadcastRuntime::class).router
@@ -114,8 +110,8 @@ open class GameNodeRuntime(
         get() = services.get(PlayerBroadcastEventBus::class)
 
     @PublishedApi
-    internal val gameConfigService: GameConfigService
-        get() = services.get(GameConfigService::class)
+    internal val gameWorldConfigService: GameWorldConfigService
+        get() = services.get(GameWorldConfigService::class)
 
     @Volatile
     final override var state: NodeState = NodeState.Unstarted
@@ -179,43 +175,6 @@ open class GameNodeRuntime(
         }
     }
 
-    private fun formatSeedNode(systemName: String, host: String, port: Int) = "pekko://$systemName@$host:$port"
-
-    /**
-     * 获取zookeeper中整个集群的种子节点配置
-     */
-    protected open suspend fun resolveRemoteConfig(): Config {
-        val nodeConfigs = coroutineScope {
-            val nodePaths = zookeeper.children.forPath(SERVER_HOSTS).await().map { host ->
-                val hostPath = serverHostsPath(host)
-                async {
-                    val nodeNames = zookeeper.children.forPath(hostPath).await()
-                    nodeNames.map { host to nodePath(host, it) }
-                }
-            }.awaitAll().flatten()
-            nodePaths.map { (host, path) ->
-                async {
-                    val data = zookeeper.data.forPath(path).await()
-                    host to Json.fromBytes<NodeConfig>(data)
-                }
-            }.awaitAll()
-        }
-        val seedNodeConfigs = nodeConfigs.filter { (_, config) -> config.seed }
-        val seedNodes = seedNodeConfigs.map { (host, config) -> formatSeedNode(name, host, config.port) }
-
-        val configs = mutableMapOf(
-            "pekko.cluster.roles" to nodeRoles.map { it.name },
-            "pekko.remote.artery.canonical.hostname" to addr.hostString,
-            "pekko.remote.artery.canonical.port" to addr.port,
-            "pekko.cluster.seed-nodes" to seedNodes,
-            "pekko.cluster.auto-down-unreachable-after" to "off",
-        )
-        if (sameJvm) {
-            configs["pekko.cluster.jmx.multi-mbeans-in-same-jvm"] = "on"
-        }
-        return ConfigFactory.parseMap(configs)
-    }
-
     protected open fun configureRuntime(builder: AsteriaApplicationBuilder) {
         builder.apply {
             nodeRoles.forEach { role(it.name) }
@@ -226,6 +185,7 @@ open class GameNodeRuntime(
         return commonModulesBeforeCluster() +
             modulesBeforeCluster() +
             pekkoClusterModule() +
+            pekkoRuntimeModule() +
             PekkoCoroutineScopeModule() +
             scriptModule() +
             modulesAfterCluster()
@@ -241,20 +201,28 @@ open class GameNodeRuntime(
                 client(zookeeper)
             },
             PrometheusMetricsModule(addr.port + 1000),
-            MongoDbModule { zookeeper },
-            GameConfigModule { zookeeper },
+            MongoDbModule(),
+            GameWorldConfigModule(),
+            GameConfigModule(),
             PlayerBroadcastModule(),
         )
     }
 
     private fun pekkoClusterModule(): AsteriaModule {
-        return PekkoRuntimeModule(
-            ConfiguredPekkoClusterStartup(
-                configFactory = { resolveRemoteConfig().withFallback(config) },
-                rolesFactory = { _, _ -> roles },
-                join = PekkoClusterJoin.SeedNodes,
-            ),
-        )
+        return ClusterConfigModule {
+            layout = ClusterConfigLayout.default(name)
+        }
+    }
+
+    private fun pekkoRuntimeModule(): AsteriaModule {
+        val runtimeConfig = if (sameJvm) {
+            ConfigFactory.parseMap(
+                mapOf("pekko.cluster.jmx.multi-mbeans-in-same-jvm" to "on"),
+            ).withFallback(config)
+        } else {
+            config
+        }
+        return PekkoRuntimeModule(TopologyPekkoClusterStartup(nodeId, config = runtimeConfig))
     }
 
     private fun scriptModule(): AsteriaModule {
@@ -281,14 +249,6 @@ open class GameNodeRuntime(
 
     protected fun singletonActor(singleton: Singleton): ActorRef {
         return services.get(SingletonActorRegistry::class)[SingletonName(singleton.actorName)]
-    }
-
-    inline fun <reified T : V> getConfig(): T {
-        return gameConfigService.getConfig<T>()
-    }
-
-    inline fun <reified T : GameConfigs<K, C>, C : GameConfig<K>, K : Any> getConfigById(id: K): C {
-        return gameConfigService.getConfigById<T, C, K>(id)
     }
 
     fun version() = Resources.getResource("version").readText()

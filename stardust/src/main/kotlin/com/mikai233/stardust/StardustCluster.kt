@@ -2,12 +2,8 @@ package com.mikai233.stardust
 
 import ch.qos.logback.classic.LoggerContext
 import com.mikai233.common.conf.GlobalEnv
-import com.mikai233.common.config.NodeConfig
-import com.mikai233.common.config.nodePath
-import com.mikai233.common.config.serverHostsPath
 import com.mikai233.common.core.GameNodeRuntime
 import com.mikai233.common.core.Role
-import com.mikai233.common.extension.Json
 import com.mikai233.common.extension.asyncZookeeperClient
 import com.mikai233.common.extension.logger
 import com.mikai233.gate.GateNode
@@ -16,8 +12,12 @@ import com.mikai233.gm.GmNode
 import com.mikai233.player.PlayerNode
 import com.mikai233.world.WorldNode
 import com.typesafe.config.ConfigFactory
+import io.github.mikai233.asteria.cluster.config.ClusterConfigLayout
+import io.github.mikai233.asteria.cluster.config.RuntimeNodeConfig
+import io.github.mikai233.asteria.config.center.JacksonConfigCodec
+import io.github.mikai233.asteria.config.center.RuntimeConfigRepository
+import io.github.mikai233.asteria.config.center.zookeeper.ZookeeperConfigStore
 import kotlinx.coroutines.*
-import kotlinx.coroutines.future.await
 import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
 import java.util.*
@@ -58,17 +58,13 @@ object StardustCluster {
     }
 
     suspend fun launch() {
-        val hostname = GlobalEnv.machineIp
-        val hostPath = serverHostsPath(hostname)
-        val nodeConfigs = coroutineScope {
-            client.children.forPath(hostPath).await().map {
-                val nodePath = nodePath(hostname, it)
-                async {
-                    val bytes = client.data.forPath(nodePath).await()
-                    Json.fromBytes<NodeConfig>(bytes)
-                }
-            }.awaitAll()
-        }.sortedByDescending { it.seed }
+        val repository = RuntimeConfigRepository(ZookeeperConfigStore(client), JacksonConfigCodec())
+        val layout = ClusterConfigLayout.default(GlobalEnv.SYSTEM_NAME)
+        val nodeConfigs = repository.children<RuntimeNodeConfig>(layout.nodes)
+            .values
+            .values
+            .map { it.value }
+            .sortedByDescending { it.seed }
         val zookeeperConnectString = GlobalEnv.zkConnect
         val systemName = GlobalEnv.SYSTEM_NAME
         val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
@@ -81,22 +77,29 @@ object StardustCluster {
         supervisorScope {
             nodeConfigs.forEach { nodeConfig ->
                 launch(exceptionHandler) {
-                    logger.info("{} launch node with config:{}", hostname, nodeConfig)
-                    val nodeClass = nodeByRole[nodeConfig.role]
+                    logger.info("launch node with config:{}", nodeConfig)
+                    val role = requireNotNull(nodeConfig.roles.firstNotNullOfOrNull(::roleOf)) {
+                        "node ${nodeConfig.nodeId} has no known game role: ${nodeConfig.roles}"
+                    }
+                    val nodeClass = nodeByRole[role]
                     if (nodeClass != null) {
                         val constructor =
                             requireNotNull(nodeClass.primaryConstructor) { "$nodeClass primaryConstructor not found" }
-                        val addr = InetSocketAddress(hostname, nodeConfig.port)
-                        val config = ConfigFactory.load("${nodeConfig.role.name.lowercase()}.conf")
+                        val addr = InetSocketAddress(nodeConfig.host, nodeConfig.port)
+                        val config = ConfigFactory.load("${role.name.lowercase()}.conf")
                         val sameJvm = true
-                        val node = constructor.call(addr, systemName, config, zookeeperConnectString, sameJvm)
+                        val node = constructor.call(addr, systemName, nodeConfig.nodeId, config, zookeeperConnectString, sameJvm)
                         node.launch()
                         nodes.add(node)
                     } else {
-                        logger.error("node of role:{} not register", nodeConfig.role)
+                        logger.error("node of role:{} not register", role)
                     }
                 }
             }
         }
+    }
+
+    private fun roleOf(role: String): Role? {
+        return Role.entries.firstOrNull { it.name == role }
     }
 }

@@ -122,7 +122,7 @@ class WorldWaker(private val node: WorldNode) : AbstractActor() {
             ServerMode.DevMode -> 0.seconds
             ServerMode.ReleaseMode -> 5.seconds
         }
-        val pendingWorlds = node.gameWorldMeta.worlds.toMutableList()
+        val pendingWorlds = node.gameWorldIds.toMutableList()
 
         var cooldownCounter = 0
 

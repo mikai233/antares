@@ -21,10 +21,11 @@ import java.net.InetSocketAddress
 class GmNode(
     addr: InetSocketAddress,
     name: String,
+    nodeId: String = "gm-${addr.port}",
     config: Config,
     zookeeperConnectString: String,
     sameJvm: Boolean = false,
-) : GameNodeRuntime(addr, listOf(Role.Gm), name, config, zookeeperConnectString, sameJvm) {
+) : GameNodeRuntime(addr, listOf(Role.Gm), name, nodeId, config, zookeeperConnectString, sameJvm) {
 
     val playerSharding: ActorRef
         get() = entityShard(ShardEntityType.PlayerActor)
@@ -79,6 +80,9 @@ private class Cli {
 
     @Parameter(names = ["-n", "--name"], description = "system name")
     var name: String = GlobalEnv.SYSTEM_NAME
+
+    @Parameter(names = ["-i", "--node-id"], description = "runtime node id")
+    var nodeId: String? = null
 }
 
 fun main(args: Array<String>) = runBlocking {
@@ -90,5 +94,5 @@ fun main(args: Array<String>) = runBlocking {
         .parse(*args)
     val addr = InetSocketAddress(cli.host, cli.port)
     val config = ConfigFactory.load(cli.conf)
-    GmNode(addr, cli.name, config, cli.zookeeper).launch()
+    GmNode(addr, cli.name, cli.nodeId ?: "gm-${cli.port}", config, cli.zookeeper).launch()
 }

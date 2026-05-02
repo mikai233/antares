@@ -9,19 +9,8 @@ dependencies {
     implementation(libKotlin.reflect)
     implementation(libTool.bundles.curator)
     implementation(libTool.guava)
-    implementation(libTool.lz4)
-    implementation(libTool.reflections)
-    implementation(libTool.easyexcel)
     implementation(libTool.jcommander)
     implementation(project(":common"))
-}
-
-tasks.register<JavaExec>("exportGameConfig") {
-    val excelPath: String by project
-    group = "other"
-    args = listOf("-e", excelPath, "-v", Version.PROJECT_VERSION)
-    mainClass = "com.mikai233.tools.excel.GameConfigExporterKt"
-    classpath = sourceSets["main"].runtimeClasspath
 }
 
 tasks.test {

@@ -11,7 +11,7 @@ import com.mikai233.player.data.PlayerActionMem
 class PlayerService {
     fun onGameConfigUpdated(player: PlayerActor) {
         val action = player.manager.get<PlayerActionMem>().getOrCreateAction(PlayerActionType.GameConfigVersion)
-        val longHashcode = player.node.gameConfigManagerHashcode.asLong()
+        val longHashcode = player.node.gameConfigVersion.hashCode().toLong()
         if (longHashcode != action.actionParam) {
             action.actionParam = longHashcode
             player.self tell GameConfigUpdatedEvent

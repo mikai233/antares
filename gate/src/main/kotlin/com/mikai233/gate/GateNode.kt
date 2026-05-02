@@ -6,9 +6,6 @@ import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.PLAYER_SHARD_NUM
 import com.mikai233.common.WORLD_SHARD_NUM
 import com.mikai233.common.conf.GlobalEnv
-import com.mikai233.common.config.ConfigCache
-import com.mikai233.common.config.NettyConfig
-import com.mikai233.common.config.nettyConfigPath
 import com.mikai233.common.core.*
 import com.mikai233.common.message.*
 import com.typesafe.config.Config
@@ -21,10 +18,11 @@ import java.net.InetSocketAddress
 class GateNode(
     addr: InetSocketAddress,
     name: String,
+    nodeId: String = "gate-${addr.port}",
     config: Config,
     zookeeperConnectString: String,
     sameJvm: Boolean = false,
-) : GameNodeRuntime(addr, listOf(Role.Gate), name, config, zookeeperConnectString, sameJvm) {
+) : GameNodeRuntime(addr, listOf(Role.Gate), name, nodeId, config, zookeeperConnectString, sameJvm) {
     val playerSharding: ActorRef
         get() = entityShard(ShardEntityType.PlayerActor)
 
@@ -36,11 +34,6 @@ class GateNode(
     val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, handlerReflect, 1)
 
     val internalDispatcher = MessageDispatcher(Message::class, handlerReflect, 1)
-
-    private val nettyConfigsCache =
-        ConfigCache(zookeeper, nettyConfigPath(addr.hostString, addr.port), NettyConfig::class)
-
-    val nettyConfig get() = nettyConfigsCache.config
 
     val protocolCodec = GateProtocolCodec()
 
@@ -80,6 +73,9 @@ private class Cli {
 
     @Parameter(names = ["-n", "--name"], description = "system name")
     var name: String = GlobalEnv.SYSTEM_NAME
+
+    @Parameter(names = ["-i", "--node-id"], description = "runtime node id")
+    var nodeId: String? = null
 }
 
 suspend fun main(args: Array<String>) {
@@ -91,5 +87,5 @@ suspend fun main(args: Array<String>) {
         .parse(*args)
     val addr = InetSocketAddress(cli.host, cli.port)
     val config = ConfigFactory.load(cli.conf)
-    GateNode(addr, cli.name, config, cli.zookeeper).launch()
+    GateNode(addr, cli.name, cli.nodeId ?: "gate-${cli.port}", config, cli.zookeeper).launch()
 }

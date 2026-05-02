@@ -15,7 +15,7 @@ import com.mikai233.world.data.WorldActionMem
 class WorldService {
     fun onGameConfigUpdated(world: WorldActor) {
         val action = world.manager.get<WorldActionMem>().getOrCreateAction(WorldActionType.GameConfigVersion)
-        val longHashcode = world.node.gameConfigManagerHashcode.asLong()
+        val longHashcode = world.node.gameConfigVersion.hashCode().toLong()
         if (longHashcode != action.actionParam) {
             action.actionParam = longHashcode
             world.self tell GameConfigUpdatedEvent

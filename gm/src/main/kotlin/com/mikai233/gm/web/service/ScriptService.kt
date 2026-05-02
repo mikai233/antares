@@ -53,7 +53,7 @@ class ScriptService(
     private suspend fun executeWorldActorScript(script: ScriptArtifact, targets: List<String>): ScriptExecutionView {
         val worlds = parseLongTargets(targets, "world_id")
         ensure(worlds.isNotEmpty()) { "No world_id found" }
-        val missingWorlds = worlds.filter { it !in node.gameWorldMeta.worlds }
+        val missingWorlds = worlds.filter { it !in node.gameWorldIds }
         ensure(missingWorlds.isEmpty()) {
             "worlds: ${missingWorlds.joinToString(", ")} not exists"
         }

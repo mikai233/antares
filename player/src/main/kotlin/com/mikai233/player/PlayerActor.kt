@@ -11,6 +11,7 @@ import com.mikai233.common.message.ServerProtobuf
 import com.mikai233.common.message.player.*
 import com.mikai233.common.message.world.WorldMessage
 import com.mikai233.protocol.ProtoLogin
+import io.github.mikai233.asteria.actor.ActorTimerSupport
 import io.github.mikai233.asteria.script.pekko.ScriptableAsteriaActor
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.actor.Props
@@ -31,10 +32,12 @@ class PlayerActor(val node: PlayerNode) : ScriptableAsteriaActor<PlayerNode>(nod
     val playerId: Long = self.path().name().toLong()
 
     private var channelActor: ActorRef? = null
+    private val timers = ActorTimerSupport(this)
     val manager = PlayerDataManager(this)
 
     override fun preStart() {
         super.preStart()
+        timers.start()
         node.system.eventStream.subscribe(self, GameConfigUpdateEvent::class.java)
         logger.info("{} started", self)
     }
@@ -59,7 +62,7 @@ class PlayerActor(val node: PlayerNode) : ScriptableAsteriaActor<PlayerNode>(nod
         return receiveBuilder()
             .match(PlayerInitialized::class.java) {
                 unstashAll()
-                startTimerWithFixedDelay(PlayerTick, PlayerTick, PlayerTickDuration)
+                timers.startTimerWithFixedDelay(PlayerTick, PlayerTick, PlayerTickDuration)
                 context.setReceiveTimeout(1.minutes.toJavaDuration())
                 context.become(active())
             }

@@ -23,10 +23,11 @@ import java.net.InetSocketAddress
 class WorldNode(
     addr: InetSocketAddress,
     name: String,
+    nodeId: String = "world-${addr.port}",
     config: Config,
     zookeeperConnectString: String,
     sameJvm: Boolean = false,
-) : GameNodeRuntime(addr, listOf(Role.World), name, config, zookeeperConnectString, sameJvm) {
+) : GameNodeRuntime(addr, listOf(Role.World), name, nodeId, config, zookeeperConnectString, sameJvm) {
     val playerSharding: ActorRef
         get() = entityShard(ShardEntityType.PlayerActor)
 
@@ -83,6 +84,9 @@ private class Cli {
 
     @Parameter(names = ["-n", "--name"], description = "system name")
     var name: String = GlobalEnv.SYSTEM_NAME
+
+    @Parameter(names = ["-i", "--node-id"], description = "runtime node id")
+    var nodeId: String? = null
 }
 
 suspend fun main(args: Array<String>) {
@@ -94,5 +98,5 @@ suspend fun main(args: Array<String>) {
         .parse(*args)
     val addr = InetSocketAddress(cli.host, cli.port)
     val config = ConfigFactory.load(cli.conf)
-    WorldNode(addr, cli.name, config, cli.zookeeper).launch()
+    WorldNode(addr, cli.name, cli.nodeId ?: "world-${cli.port}", config, cli.zookeeper).launch()
 }

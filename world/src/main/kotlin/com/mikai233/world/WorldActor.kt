@@ -10,6 +10,7 @@ import com.mikai233.common.message.Message
 import com.mikai233.common.message.WorldProtobufEnvelope
 import com.mikai233.common.message.player.PlayerMessage
 import com.mikai233.common.message.world.*
+import io.github.mikai233.asteria.actor.ActorTimerSupport
 import io.github.mikai233.asteria.script.pekko.ScriptableAsteriaActor
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.actor.Props
@@ -25,11 +26,13 @@ class WorldActor(val node: WorldNode) : ScriptableAsteriaActor<WorldNode>(node) 
 
     val worldId: Long = self.path().name().toLong()
 
+    private val timers = ActorTimerSupport(this)
     val sessionManager = WorldSessionManager(this)
     val manager = WorldDataManager(this)
 
     override fun preStart() {
         super.preStart()
+        timers.start()
         node.system.eventStream.subscribe(self, GameConfigUpdateEvent::class.java)
         logger.info("{} started", self)
     }
@@ -59,7 +62,7 @@ class WorldActor(val node: WorldNode) : ScriptableAsteriaActor<WorldNode>(node) 
         return receiveBuilder()
             .match(WorldInitialized::class.java) {
                 unstashAll()
-                startTimerWithFixedDelay(WorldTick, WorldTick, WorldTickDuration)
+                timers.startTimerWithFixedDelay(WorldTick, WorldTick, WorldTickDuration)
                 self tell WorldActiveEvent
                 context.become(active())
             }
@@ -143,7 +146,7 @@ class WorldActor(val node: WorldNode) : ScriptableAsteriaActor<WorldNode>(node) 
     fun nextId() = node.idGenerator.nextId()
 
     private fun canInitialize(): Boolean {
-        return node.gameWorldMeta.worlds.contains(worldId)
+        return worldId in node.gameWorldIds
     }
 
     fun broadcast(message: GeneratedMessage, topic: String, include: Set<Long>, exclude: Set<Long>) {

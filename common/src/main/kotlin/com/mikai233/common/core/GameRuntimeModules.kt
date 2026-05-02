@@ -1,37 +1,36 @@
 package com.mikai233.common.core
 
-import com.google.common.hash.HashCode
-import com.google.common.hash.Hashing
 import com.mikai233.common.broadcast.PlayerBroadcastActor
 import com.mikai233.common.broadcast.PlayerBroadcastEventBus
-import com.mikai233.common.config.ConfigCache
-import com.mikai233.common.config.ConfigChildrenCache
-import com.mikai233.common.config.GAME_CONFIG
-import com.mikai233.common.config.GAME_WORLDS
+import com.mikai233.common.config.DATA_SOURCE_GAME
 import com.mikai233.common.config.GameWorldConfig
-import com.mikai233.common.config.GameWorldMeta
+import com.mikai233.common.config.GAME_CONFIG_PUBLICATION
+import com.mikai233.common.config.GAME_WORLDS
 import com.mikai233.common.db.MongoDB
 import com.mikai233.common.entity.EntityKryoPool
 import com.mikai233.common.event.GameConfigUpdateEvent
-import com.mikai233.common.excel.GameConfig
-import com.mikai233.common.excel.GameConfigManager
-import com.mikai233.common.excel.GameConfigManagerSerde
-import com.mikai233.common.excel.GameConfigs
-import com.mikai233.common.excel.V
+import io.github.mikai233.asteria.config.ConfigHotReloadOptions
+import io.github.mikai233.asteria.config.ConfigHotReloadService
+import io.github.mikai233.asteria.config.ConfigReloadFailureListener
+import io.github.mikai233.asteria.config.ConfigReloadMonitor
+import io.github.mikai233.asteria.config.ConfigService
+import io.github.mikai233.asteria.config.center.ConfigCenterReloadTrigger
+import io.github.mikai233.asteria.config.center.ConfigStore
+import io.github.mikai233.asteria.config.center.ConfigWatchMode
+import io.github.mikai233.asteria.config.center.RuntimeConfigRepository
+import io.github.mikai233.asteria.config.publisher.ConfigPublicationLayout
+import io.github.mikai233.asteria.config.publisher.ConfigPublicationLubanBinaryLoader
 import io.github.mikai233.asteria.core.AsteriaModule
 import io.github.mikai233.asteria.core.ModuleContext
 import io.prometheus.client.exporter.HTTPServer
 import io.prometheus.client.hotspot.DefaultExports
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.future.await
-import org.apache.curator.framework.recipes.cache.CuratorCache
-import org.apache.curator.framework.recipes.cache.CuratorCacheListener
-import org.apache.curator.x.async.AsyncCuratorFramework
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.routing.FromConfig
@@ -85,90 +84,95 @@ class PrometheusMetricsModule(
     }
 }
 
-class MongoDbModule(
-    private val zookeeper: () -> AsyncCuratorFramework,
-) : AsteriaModule {
+class MongoDbModule : AsteriaModule {
     override val name: String = "game-mongodb"
 
     override suspend fun install(context: ModuleContext) {
-        context.services.register(MongoDB::class, MongoDB(zookeeper()))
+        val repository = context.services.get(RuntimeConfigRepository::class)
+        val config = repository.get<com.mikai233.common.config.DataSourceConfig>(DATA_SOURCE_GAME)?.value
+            ?: error("runtime config $DATA_SOURCE_GAME not found")
+        context.services.register(MongoDB::class, MongoDB(config))
     }
 }
 
-class GameConfigService(
-    zookeeper: AsyncCuratorFramework,
+class GameWorldConfigService(
+    worldsById: Map<Long, GameWorldConfig>,
 ) {
-    private val gameWorldMetaCache = ConfigCache(zookeeper, GAME_WORLDS, GameWorldMeta::class)
+    val worldsById: Map<Long, GameWorldConfig> = worldsById.toSortedMap()
 
-    val gameWorldMeta: GameWorldMeta get() = gameWorldMetaCache.config
+    val worldIds: Set<Long> get() = worldsById.keys
+}
 
-    val gameWorldConfigCache = ConfigChildrenCache(zookeeper, GAME_WORLDS, GameWorldConfig::class)
+class GameWorldConfigModule : AsteriaModule {
+    override val name: String = "game-world-config"
 
-    @Volatile
-    lateinit var gameConfigManager: GameConfigManager
-        private set
-
-    @Volatile
-    lateinit var gameConfigManagerHashcode: HashCode
-        private set
-
-    internal fun updateGameConfig(bytes: ByteArray) {
-        gameConfigManager = GameConfigManagerSerde.deserialize(bytes)
-        gameConfigManagerHashcode = Hashing.murmur3_128(233).hashBytes(bytes)
-    }
-
-    inline fun <reified T : V> getConfig(): T {
-        return gameConfigManager.get<T>()
-    }
-
-    inline fun <reified T : GameConfigs<K, C>, C : GameConfig<K>, K : Any> getConfigById(id: K): C {
-        return gameConfigManager.getById<T, _, _>(id)
+    override suspend fun install(context: ModuleContext) {
+        val repository = context.services.get(RuntimeConfigRepository::class)
+        val worlds = repository.children<GameWorldConfig>(GAME_WORLDS)
+            .values
+            .values
+            .map { it.value }
+            .associateBy { it.id }
+        context.services.register(GameWorldConfigService::class, GameWorldConfigService(worlds))
     }
 }
 
-class GameConfigModule(
-    private val zookeeper: () -> AsyncCuratorFramework,
-) : AsteriaModule {
+class GameConfigModule : AsteriaModule {
     override val name: String = "game-config"
 
     private val logger = LoggerFactory.getLogger(GameConfigModule::class.java)
-    private var cache: CuratorCache? = null
+    private var hotReloadService: ConfigHotReloadService? = null
 
     override suspend fun install(context: ModuleContext) {
-        val client = zookeeper()
-        val service = GameConfigService(client)
-        service.updateGameConfig(client.data.forPath(GAME_CONFIG).await())
-        context.services.register(GameConfigService::class, service)
-
-        cache = CuratorCache.build(client.unwrap(), GAME_CONFIG, CuratorCache.Options.SINGLE_NODE_CACHE).also { cache ->
-            cache.listenable().addListener { type, oldData, data ->
-                when (type) {
-                    CuratorCacheListener.Type.NODE_CREATED,
-                    CuratorCacheListener.Type.NODE_CHANGED,
-                    -> {
-                        service.updateGameConfig(data.data)
-                        logger.info(
-                            "{} updated, version: {}",
-                            GameConfigManager::class.simpleName,
-                            service.gameConfigManager.version,
-                        )
-                        context.services.find(ActorSystem::class)?.eventStream?.publish(GameConfigUpdateEvent)
-                    }
-
-                    CuratorCacheListener.Type.NODE_DELETED -> {
-                        logger.warn("Node {} deleted:{}", GameConfigManager::class.simpleName, oldData.path)
-                    }
-
-                    null -> Unit
-                }
+        val store = context.services.get(ConfigStore::class)
+        val service = ConfigService(
+            ConfigPublicationLubanBinaryLoader(
+                tablesType = GameTables::class,
+                store = store,
+                layout = ConfigPublicationLayout(GAME_CONFIG_PUBLICATION),
+            ),
+        )
+        val monitor = ConfigReloadMonitor()
+        service.subscribe(monitor)
+        service.subscribe { result ->
+            if (result.previous != null) {
+                context.services.find(ActorSystem::class)?.eventStream?.publish(GameConfigUpdateEvent)
             }
-            cache.start()
         }
+        context.services.register(ConfigService::class, service)
+        context.services.register(ConfigReloadMonitor::class, monitor)
+        hotReloadService = ConfigHotReloadService(
+            service = service,
+            options = ConfigHotReloadOptions(
+                trigger = ConfigCenterReloadTrigger(
+                    store = store,
+                    path = ConfigPublicationLayout(GAME_CONFIG_PUBLICATION).currentPath,
+                    mode = ConfigWatchMode.Value,
+                ),
+                debounce = 2.seconds,
+                failureListeners = listOf(ConfigReloadFailureListener { event ->
+                    logger.error("game config hot reload failed", event.error)
+                }),
+            ),
+        )
+    }
+
+    override suspend fun start(context: ModuleContext) {
+        context.services.get(ConfigService::class).load()
+        hotReloadService?.start()
     }
 
     override suspend fun stop(context: ModuleContext) {
-        cache?.close()
-        cache = null
+        hotReloadService?.stop()
+        hotReloadService = null
+    }
+}
+
+class GameTables(
+    @Suppress("UNUSED_PARAMETER") loader: Loader,
+) {
+    interface Loader {
+        fun load(file: String): Any
     }
 }
 

@@ -12,7 +12,7 @@ class TestPlayerScript : ActorScript<PlayerActor>() {
     override fun executeActor(context: ActorScriptContext<PlayerActor>): ScriptExecutionResult? {
         val player = context.actor
         logger.info("playerId:{} hello world", player.playerId)
-        player.node.gameWorldConfigCache.forEach { (id, config) ->
+        player.node.gameWorldConfigs.forEach { (id, config) ->
             logger.info("id:{} config:{}", id, config)
         }
         return null

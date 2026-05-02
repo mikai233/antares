@@ -12,8 +12,7 @@
 ## Getting Started
 
 1. Run `ZookeeperInitializer.kt` to initialize Zookeeper data.
-2. Run `GameConfigExporter.kt` to upload configuration table data to Zookeeper. The test configuration table path is
-   `tools/src/main/resources/excel`.
+2. Publish game configuration through Asteria's Luban publication model.
 3. Execute `Stardust.kt` to start the game server.
 
 ## Quick Start
@@ -93,84 +92,10 @@ Protobuf protocol directory (usually no modification is needed as it uses a rela
 Start `client.exe` to connect to the server. You can send data by typing the protocol name in the console. For detailed
 operations, refer to the `README.md` inside that directory.
 
-## Generate Configuration Tables from Excel
+## Game Configuration
 
-The default configuration table format is as follows. The first five rows are headers: the first row is field names, the
-second is data types, the third is field scope (Client and Server, or Client only), and the fifth row contains comments.
-
-| **id** | **group** | **task_id** | **condition** |    **reward**     | **point** |
-|:------:|:---------:|:-----------:|:-------------:|:-----------------:|:---------:|
-|  int   |    int    |     int     |      int      | vector3_array_int |    int    |
-| allkey |    all    |     all     |      all      |        all        |    all    |
-|        |           |             |               |                   |           |
-|   id   |   Group   |   Task ID   |   Condition   |      Reward       |   Point   |
-|   1    |     1     |      1      |       1       |       1,1,1       |     1     |
-|   2    |     1     |      1      |       1       |       1,1,1       |     1     |
-|   3    |     1     |      1      |       1       |       1,1,1       |     1     |
-
-Run `tools/src/main/kotlin/com/mikai233/tools/excel/GameConfigGenerator.kt` to generate configuration table code based
-on the Excel format.
-
-The generated code format is as follows:
-
-```kotlin
-/**
- * @param id id
- * @param group Group
- * @param taskId Task ID
- * @param condition Condition
- * @param reward Reward
- * @param point Point
- */
-data class TestConfig(
-    val id: Int,
-    val group: Int,
-    val taskId: Int,
-    val condition: Int,
-    val reward: List<Triple<Int, Int, Int>>,
-    val point: Int,
-) : GameConfig<Int> {
-    override fun id(): Int = id
-}
-
-class TestConfigs : GameConfigs<Int, TestConfig>() {
-    override fun excelName(): String = "test.xlsx"
-
-    override fun parseRow(row: Row): TestConfig {
-        val id = row.parseInt("id")
-        val group = row.parseInt("group")
-        val taskId = row.parseInt("task_id")
-        val condition = row.parseInt("condition")
-        val reward = row.parseIntTripleArray("reward")
-        val point = row.parseInt("point")
-        return TestConfig(id, group, taskId, condition, reward, point)
-    }
-
-    override fun parseComplete(): Unit = Unit
-
-    /**
-     * TODO: Implement validation logic
-     */
-    override fun validate() {
-    }
-}
-```
-
-## Exporting Configuration Table Data
-
-### Regenerate Configuration Table Serialization Dependencies
-
-After generating new configuration table code, you need to execute
-`tools/src/main/kotlin/com/mikai233/tools/excel/GameConfigImplDepsGenerator.kt` to regenerate the serialization
-dependencies.
-
-### Export Binary or Upload to Zookeeper
-
-Once the code is generated, you can parse the Excel data into the data structures and serialize them into binary. The
-game server will then be able to load these directly by deserializing them upon startup.
-
-Execute `tools/src/main/kotlin/com/mikai233/tools/excel/GameConfigExporter.kt` to export the data. By default, it
-uploads to Zookeeper, where the server reads and deserializes the data at startup.
+Game configuration is loaded through Asteria's unified config model. Runtime nodes read the current Luban publication
+from Zookeeper and hot reload when the publication pointer changes.
 
 ## Define Entity
 
@@ -265,7 +190,7 @@ class TestPlayerScript : ActorScriptFunction<PlayerActor> {
 
     override fun invoke(player: PlayerActor, p2: ByteArray?) {
         logger.info("playerId:{} hello world", player.playerId)
-        player.node.gameWorldConfigCache.forEach { (id, config) ->
+        player.node.gameWorldConfigs.forEach { (id, config) ->
             logger.info("id:{} config:{}", id, config)
         }
     }
