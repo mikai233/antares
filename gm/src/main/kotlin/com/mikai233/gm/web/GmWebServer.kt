@@ -1,6 +1,5 @@
 package com.mikai233.gm.web
 
-import com.mikai233.common.core.Patcher
 import com.mikai233.gm.GmNode
 import com.typesafe.config.Config
 import org.springframework.boot.WebApplicationType
@@ -19,7 +18,6 @@ class GmWebServer(private val node: GmNode) {
             .initializers(
                 ApplicationContextInitializer { applicationContext: GenericApplicationContext ->
                     applicationContext.beanFactory.registerSingleton("gmNode", node)
-                    applicationContext.beanFactory.registerSingleton("scriptKryo", Patcher.scriptKryo())
                 },
             )
             .run()

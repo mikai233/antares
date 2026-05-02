@@ -1,33 +1,20 @@
 package com.mikai233.gm.web.service
 
-import com.esotericsoftware.kryo.io.Output
 import com.mikai233.common.annotation.AllOpen
-import com.mikai233.common.config.patchByVersion
 import com.mikai233.common.core.Role
 import com.mikai233.common.core.Singleton
-import com.mikai233.common.extension.Json
 import com.mikai233.common.extension.ask
-import com.mikai233.common.message.ExecuteNodeRoleScript
 import com.mikai233.common.message.Message
-import com.mikai233.common.script.Script
-import com.mikai233.common.script.ScriptType
-import com.mikai233.common.serde.KryoPool
 import com.mikai233.gm.GmNode
 import com.mikai233.gm.script.*
 import com.mikai233.gm.web.dto.CreateScriptExecutionRequest
 import com.mikai233.gm.web.support.ValidateException
 import com.mikai233.gm.web.support.ensure
 import com.mikai233.gm.web.support.notNull
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.future.await
-import kotlinx.coroutines.withContext
-import org.apache.curator.x.async.api.CreateOption
-import org.apache.pekko.actor.Address
+import io.github.mikai233.asteria.script.ScriptArtifact
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
-import java.io.ByteArrayOutputStream
 import java.util.*
-import java.util.zip.GZIPOutputStream
 import kotlin.io.path.Path
 import kotlin.io.path.extension
 import kotlin.io.path.nameWithoutExtension
@@ -36,7 +23,6 @@ import kotlin.io.path.nameWithoutExtension
 @Service
 class ScriptService(
     private val node: GmNode,
-    private val scriptKryo: KryoPool,
 ) {
     suspend fun createExecution(
         scriptFile: MultipartFile,
@@ -54,7 +40,7 @@ class ScriptService(
         }
     }
 
-    private suspend fun executePlayerActorScript(script: Script, targets: List<String>): ScriptExecutionView {
+    private suspend fun executePlayerActorScript(script: ScriptArtifact, targets: List<String>): ScriptExecutionView {
         val players = parseLongTargets(targets, "player_id")
         ensure(players.isNotEmpty()) { "No player_id found" }
         return startExecution(
@@ -64,7 +50,7 @@ class ScriptService(
         )
     }
 
-    private suspend fun executeWorldActorScript(script: Script, targets: List<String>): ScriptExecutionView {
+    private suspend fun executeWorldActorScript(script: ScriptArtifact, targets: List<String>): ScriptExecutionView {
         val worlds = parseLongTargets(targets, "world_id")
         ensure(worlds.isNotEmpty()) { "No world_id found" }
         val missingWorlds = worlds.filter { it !in node.gameWorldMeta.worlds }
@@ -78,7 +64,7 @@ class ScriptService(
         )
     }
 
-    private suspend fun executeGlobalActorScript(script: Script, targets: List<String>): ScriptExecutionView {
+    private suspend fun executeGlobalActorScript(script: ScriptArtifact, targets: List<String>): ScriptExecutionView {
         val actorName = singleTarget(targets, "actor_name")
         when (val singleton = notNull(Singleton.fromActorName(actorName)) { "No singleton actor found" }) {
             Singleton.Worker -> return startExecution(
@@ -91,41 +77,43 @@ class ScriptService(
         }
     }
 
-    private suspend fun executeActorScriptByPath(script: Script, targets: List<String>): ScriptExecutionView {
+    private suspend fun executeActorScriptByPath(script: ScriptArtifact, targets: List<String>): ScriptExecutionView {
         val actorPath = singleTarget(targets, "actor_path")
         ensure(actorPath.isNotBlank()) { "No actor_path found" }
         return startExecution(script, ScriptExecutionTargetType.ActorPath, setOf(actorPath))
     }
 
     private suspend fun executeNodeRoleScript(
-        script: Script,
+        script: ScriptArtifact,
         request: CreateScriptExecutionRequest,
     ): ScriptExecutionView {
+        ensure(!request.patch) {
+            "Script patch upload is not supported after migrating to Asteria ScriptRuntime"
+        }
         val roleName = notNull(request.role?.takeIf { it.isNotBlank() }) { "No script role found" }
         val role = runCatching { Role.valueOf(roleName) }
             .getOrElse { throw ValidateException("No script role found") }
         val parsedAddresses = parseAddresses(request.addresses)
-        val id = uuid()
-        val nodeRoleScript = ExecuteNodeRoleScript(id, script, role, parsedAddresses)
-        if (request.patch) {
-            uploadPatch(nodeRoleScript)
+        ensure(parsedAddresses.isEmpty()) {
+            "Asteria ScriptTarget.Role does not support role + address filtering yet"
         }
+        val id = uuid()
         return startExecutionAsync(
             id,
             script,
             ScriptExecutionTargetType.NodeRole,
-            parsedAddresses.mapTo(linkedSetOf()) { it.toString() },
-            parsedAddresses,
+            emptySet(),
+            emptySet(),
             role,
         )
     }
 
-    private suspend fun executeNodeScript(script: Script, addresses: List<String>): ScriptExecutionView {
+    private suspend fun executeNodeScript(script: ScriptArtifact, addresses: List<String>): ScriptExecutionView {
         val parsedAddresses = parseAddresses(addresses)
         return startExecution(
             script,
             ScriptExecutionTargetType.Node,
-            parsedAddresses.mapTo(linkedSetOf()) { it.toString() },
+            parsedAddresses,
             parsedAddresses,
         )
     }
@@ -144,38 +132,17 @@ class ScriptService(
         }
     }
 
-    private suspend fun uploadPatch(nodeRoleScript: ExecuteNodeRoleScript) {
-        val bytes = withContext(Dispatchers.IO) {
-            val bos = ByteArrayOutputStream()
-            Output(GZIPOutputStream(bos)).use {
-                scriptKryo.use { writeClassAndObject(it, nodeRoleScript) }
-            }
-            bos.toByteArray()
-        }
-        val patchByVersion = patchByVersion(node.version())
-        val scriptPath = "${patchByVersion}/${nodeRoleScript.script.name}"
-        node.zookeeper.create()
-            .withOptions(setOf(CreateOption.createParentsIfNeeded, CreateOption.setDataIfExists))
-            .forPath(scriptPath, bytes)
-            .await()
-    }
-
-    private fun toScript(scriptFile: MultipartFile, extraFile: MultipartFile?): Script {
+    private fun toScript(scriptFile: MultipartFile, extraFile: MultipartFile?): ScriptArtifact {
         val originalFileName = notNull(scriptFile.originalFilename) { "No file name" }
         val path = Path(originalFileName)
         val extension = path.extension.lowercase()
         ensure(extension == "jar" || extension == "groovy") { "File extension must be jar or groovy" }
-        val scriptType = when (extension) {
-            "jar" -> ScriptType.JarScript
-            "groovy" -> ScriptType.GroovyScript
+        val engine = when (extension) {
+            "jar" -> "jar"
+            "groovy" -> "groovy"
             else -> error("Unsupported script type: $extension")
         }
-        return Script(
-            path.nameWithoutExtension,
-            scriptType,
-            scriptFile.bytes,
-            extraFile?.bytes,
-        )
+        return ScriptArtifact(path.nameWithoutExtension, engine, scriptFile.bytes, extraFile?.bytes)
     }
 
     private fun parseLongTargets(rawTargets: List<String>, fieldName: String): Set<Long> {
@@ -199,16 +166,16 @@ class ScriptService(
             .toList()
     }
 
-    private fun parseAddresses(addresses: List<String>): Set<Address> {
+    private fun parseAddresses(addresses: List<String>): Set<String> {
         return addresses.filter { it.isNotBlank() }
-            .mapTo(linkedSetOf()) { Json.fromStr<Address>(it) }
+            .mapTo(linkedSetOf()) { it.trim() }
     }
 
     private suspend fun startExecution(
-        script: Script,
+        script: ScriptArtifact,
         targetType: ScriptExecutionTargetType,
         targets: Set<String>,
-        addressFilter: Set<Address> = emptySet(),
+        addressFilter: Set<String> = emptySet(),
         role: Role? = null,
     ): ScriptExecutionView {
         return startExecution(uuid(), script, targetType, targets, addressFilter, role)
@@ -216,19 +183,19 @@ class ScriptService(
 
     private suspend fun startExecution(
         id: String,
-        script: Script,
+        script: ScriptArtifact,
         targetType: ScriptExecutionTargetType,
         targets: Set<String>,
-        addressFilter: Set<Address> = emptySet(),
+        addressFilter: Set<String> = emptySet(),
         role: Role? = null,
     ): ScriptExecutionView = startExecutionAsync(id, script, targetType, targets, addressFilter, role)
 
     private suspend fun startExecutionAsync(
         id: String,
-        script: Script,
+        script: ScriptArtifact,
         targetType: ScriptExecutionTargetType,
         targets: Set<String>,
-        addressFilter: Set<Address> = emptySet(),
+        addressFilter: Set<String> = emptySet(),
         role: Role? = null,
     ): ScriptExecutionView {
         return node.scriptExecutionManager.ask<ScriptExecutionView>(

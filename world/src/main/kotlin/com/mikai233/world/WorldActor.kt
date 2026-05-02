@@ -10,13 +10,13 @@ import com.mikai233.common.message.Message
 import com.mikai233.common.message.WorldProtobufEnvelope
 import com.mikai233.common.message.player.PlayerMessage
 import com.mikai233.common.message.world.*
-import io.github.mikai233.asteria.actor.AsteriaActor
+import io.github.mikai233.asteria.script.pekko.ScriptableAsteriaActor
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.actor.Props
 import org.apache.pekko.cluster.sharding.ShardRegion
 import kotlin.time.Duration.Companion.seconds
 
-class WorldActor(val node: WorldNode) : AsteriaActor<WorldNode>(node) {
+class WorldActor(val node: WorldNode) : ScriptableAsteriaActor<WorldNode>(node) {
     companion object {
         val WorldTickDuration = 1.seconds
 

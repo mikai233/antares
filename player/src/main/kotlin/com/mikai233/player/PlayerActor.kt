@@ -11,7 +11,7 @@ import com.mikai233.common.message.ServerProtobuf
 import com.mikai233.common.message.player.*
 import com.mikai233.common.message.world.WorldMessage
 import com.mikai233.protocol.ProtoLogin
-import io.github.mikai233.asteria.actor.AsteriaActor
+import io.github.mikai233.asteria.script.pekko.ScriptableAsteriaActor
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.actor.Props
 import org.apache.pekko.actor.ReceiveTimeout
@@ -21,7 +21,7 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
-class PlayerActor(val node: PlayerNode) : AsteriaActor<PlayerNode>(node) {
+class PlayerActor(val node: PlayerNode) : ScriptableAsteriaActor<PlayerNode>(node) {
     companion object {
         val PlayerTickDuration = 1.seconds
 

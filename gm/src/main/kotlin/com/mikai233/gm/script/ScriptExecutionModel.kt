@@ -2,8 +2,7 @@ package com.mikai233.gm.script
 
 import com.mikai233.common.core.Role
 import com.mikai233.common.message.Message
-import com.mikai233.common.script.Script
-import org.apache.pekko.actor.Address
+import io.github.mikai233.asteria.script.ScriptArtifact
 import java.time.Instant
 
 enum class ScriptExecutionTargetType {
@@ -60,10 +59,10 @@ data class ScriptExecutionListView(val executions: List<ScriptExecutionView>) : 
 
 data class StartScriptExecution(
     val id: String,
-    val script: Script,
+    val script: ScriptArtifact,
     val targetType: ScriptExecutionTargetType,
     val targets: Set<String> = emptySet(),
-    val addressFilter: Set<Address> = emptySet(),
+    val addressFilter: Set<String> = emptySet(),
     val role: Role? = null,
 ) : Message
 

@@ -4,12 +4,12 @@ import com.mikai233.common.message.Message
 import com.mikai233.common.message.global.worker.HandoffWorker
 import com.mikai233.global.GlobalNode
 import com.mikai233.global.data.WorkerIdMem
-import io.github.mikai233.asteria.actor.AsteriaActor
+import io.github.mikai233.asteria.script.pekko.ScriptableAsteriaActor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.apache.pekko.actor.Props
 
-class WorkerActor(val node: GlobalNode) : AsteriaActor<GlobalNode>(node) {
+class WorkerActor(val node: GlobalNode) : ScriptableAsteriaActor<GlobalNode>(node) {
     companion object {
         fun props(node: GlobalNode): Props = Props.create(WorkerActor::class.java, node)
     }

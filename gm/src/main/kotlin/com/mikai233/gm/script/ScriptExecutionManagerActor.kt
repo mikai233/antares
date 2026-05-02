@@ -1,12 +1,18 @@
 package com.mikai233.gm.script
 
 import com.mikai233.common.core.Singleton
+import com.mikai233.common.core.ShardEntityType
 import com.mikai233.common.extension.actorLogger
-import com.mikai233.common.message.ExecuteActorScript
-import com.mikai233.common.message.ExecuteNodeRoleScript
-import com.mikai233.common.message.ExecuteNodeScript
-import com.mikai233.common.message.ExecuteScriptResult
 import com.mikai233.gm.GmNode
+import io.github.mikai233.asteria.core.EntityKind
+import io.github.mikai233.asteria.core.RoleKey
+import io.github.mikai233.asteria.core.SingletonName
+import io.github.mikai233.asteria.script.ScriptExecutionCommand
+import io.github.mikai233.asteria.script.ScriptExecutionResult
+import io.github.mikai233.asteria.script.ScriptTarget
+import io.github.mikai233.asteria.script.pekko.ExecuteActorScript
+import io.github.mikai233.asteria.script.pekko.ExecuteEntityActorScript
+import io.github.mikai233.asteria.script.pekko.PekkoScriptRuntime
 import org.apache.pekko.actor.AbstractActor
 import org.apache.pekko.actor.Props
 import java.time.Instant
@@ -74,7 +80,7 @@ class ScriptExecutionManagerActor(private val node: GmNode) : AbstractActor() {
     override fun createReceive(): Receive {
         return receiveBuilder()
             .match(StartScriptExecution::class.java) { handleStart(it) }
-            .match(ExecuteScriptResult::class.java) { handleResult(it) }
+            .match(ScriptExecutionResult::class.java) { handleResult(it) }
             .match(GetScriptExecution::class.java) { handleGet(it) }
             .match(ListScriptExecutions::class.java) { handleList() }
             .match(ScriptExecutionTimeout::class.java) { handleTimeout(it) }
@@ -89,7 +95,7 @@ class ScriptExecutionManagerActor(private val node: GmNode) : AbstractActor() {
         val execution = MutableExecution(
             command.id,
             command.script.name,
-            command.script.type.name,
+            command.script.engine,
             command.targetType,
             targets,
             Instant.now(),
@@ -111,7 +117,12 @@ class ScriptExecutionManagerActor(private val node: GmNode) : AbstractActor() {
             ScriptExecutionTargetType.PlayerActor -> {
                 command.targets.forEach { target ->
                     node.playerSharding.tell(
-                        ExecuteActorScript(target.toLong(), command.id, command.script, target),
+                        ExecuteEntityActorScript(
+                            id = target,
+                            executionId = command.id,
+                            artifact = command.script,
+                            target = ScriptTarget.Entity(EntityKind(ShardEntityType.PlayerActor.name), listOf(target)),
+                        ),
                         self,
                     )
                 }
@@ -120,7 +131,12 @@ class ScriptExecutionManagerActor(private val node: GmNode) : AbstractActor() {
             ScriptExecutionTargetType.WorldActor -> {
                 command.targets.forEach { target ->
                     node.worldSharding.tell(
-                        ExecuteActorScript(target.toLong(), command.id, command.script, target),
+                        ExecuteEntityActorScript(
+                            id = target,
+                            executionId = command.id,
+                            artifact = command.script,
+                            target = ScriptTarget.Entity(EntityKind(ShardEntityType.WorldActor.name), listOf(target)),
+                        ),
                         self,
                     )
                 }
@@ -130,7 +146,14 @@ class ScriptExecutionManagerActor(private val node: GmNode) : AbstractActor() {
                 val target = command.targets.single()
                 val singleton = Singleton.fromActorName(target)
                 if (singleton == Singleton.Worker) {
-                    node.workerSingletonProxy.tell(ExecuteActorScript(0, command.id, command.script, target), self)
+                    node.workerSingletonProxy.tell(
+                        ExecuteActorScript(
+                            executionId = command.id,
+                            artifact = command.script,
+                            target = ScriptTarget.Singleton(SingletonName(target)),
+                        ),
+                        self,
+                    )
                 } else {
                     markFailed(
                         command.id,
@@ -143,28 +166,47 @@ class ScriptExecutionManagerActor(private val node: GmNode) : AbstractActor() {
             ScriptExecutionTargetType.ActorPath -> {
                 command.targets.forEach { target ->
                     node.system.actorSelection(target).tell(
-                        ExecuteActorScript(0, command.id, command.script, target),
+                        ExecuteActorScript(
+                            executionId = command.id,
+                            artifact = command.script,
+                            target = ScriptTarget.ActorPath(listOf(target)),
+                        ),
                         self,
                     )
                 }
             }
 
             ScriptExecutionTargetType.Node -> {
-                node.scriptRouter.tell(ExecuteNodeScript(command.id, command.script, command.addressFilter), self)
+                scriptRuntime().actor.tell(
+                    ScriptExecutionCommand(
+                        executionId = command.id,
+                        target = ScriptTarget.Node(command.targets.toList()),
+                        artifact = command.script,
+                    ),
+                    self,
+                )
             }
 
             ScriptExecutionTargetType.NodeRole -> {
                 val role = requireNotNull(command.role) { "NodeRole execution requires role" }
-                node.scriptRouter.tell(
-                    ExecuteNodeRoleScript(command.id, command.script, role, command.addressFilter),
+                scriptRuntime().actor.tell(
+                    ScriptExecutionCommand(
+                        executionId = command.id,
+                        target = ScriptTarget.Role(RoleKey(role.name)),
+                        artifact = command.script,
+                    ),
                     self,
                 )
             }
         }
     }
 
-    private fun handleResult(result: ExecuteScriptResult) {
-        val execution = executions[result.uid] ?: return
+    private fun scriptRuntime(): PekkoScriptRuntime {
+        return node.services.get(PekkoScriptRuntime::class)
+    }
+
+    private fun handleResult(result: ScriptExecutionResult) {
+        val execution = executions[result.executionId] ?: return
         if (execution.finishedAt != null) {
             return
         }

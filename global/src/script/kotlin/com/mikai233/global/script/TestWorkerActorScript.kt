@@ -1,10 +1,13 @@
 package com.mikai233.global.script
 
-import com.mikai233.common.script.ActorScriptFunction
 import com.mikai233.global.actor.WorkerActor
+import io.github.mikai233.asteria.script.ActorScript
+import io.github.mikai233.asteria.script.ActorScriptContext
+import io.github.mikai233.asteria.script.ScriptExecutionResult
 
-class TestWorkerActorScript : ActorScriptFunction<WorkerActor> {
-    override fun invoke(p1: WorkerActor, p2: ByteArray?) {
-        p1.logger.info("{}", this::class.qualifiedName)
+class TestWorkerActorScript : ActorScript<WorkerActor>() {
+    override fun executeActor(context: ActorScriptContext<WorkerActor>): ScriptExecutionResult? {
+        context.actor.logger.info("{}", this::class.qualifiedName)
+        return null
     }
 }

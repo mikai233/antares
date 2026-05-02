@@ -19,7 +19,7 @@ import com.mikai233.protocol.ProtoLogin.LoginReq
 import com.mikai233.protocol.ProtoLogin.LoginResp
 import com.mikai233.protocol.ProtoSystem.GmReq
 import com.mikai233.protocol.connectionExpiredNotify
-import io.github.mikai233.asteria.actor.AsteriaActor
+import io.github.mikai233.asteria.script.pekko.ScriptableAsteriaActor
 import io.netty.channel.ChannelFutureListener
 import io.netty.channel.ChannelHandlerContext
 import org.apache.pekko.actor.Props
@@ -30,7 +30,8 @@ import org.apache.pekko.cluster.pubsub.DistributedPubSubMediator.Unsubscribe
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.toJavaDuration
 
-class ChannelActor(val node: GateNode, private val handlerContext: ChannelHandlerContext) : AsteriaActor<GateNode>(node) {
+class ChannelActor(val node: GateNode, private val handlerContext: ChannelHandlerContext) :
+    ScriptableAsteriaActor<GateNode>(node) {
     companion object {
         val MaxIdleDuration = 1.minutes
 
