@@ -1,28 +1,42 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
-import { reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import {
-  createScriptExecution,
-  type CreateScriptExecutionRequest,
-  type ScriptExecutionResponse,
+  createScriptJob,
+  describeScriptTarget,
+  getScriptMetadata,
+  itemError,
+  listScriptJobItems,
+  type GmScriptMetadata,
+  type GmScriptTargetRequest,
+  type GmScriptTargetType,
+  type ScriptJob,
+  type ScriptJobItem,
 } from '@/api/script'
 
-type TargetType = CreateScriptExecutionRequest['targetType']
-
 const loading = ref(false)
-const execution = ref<ScriptExecutionResponse>()
+const metadata = ref<GmScriptMetadata>()
+const job = ref<ScriptJob>()
+const items = ref<ScriptJobItem[]>([])
+
 const form = reactive({
-  target: 'PlayerActor' as TargetType,
+  target: 'entity' as GmScriptTargetType,
+  entityKind: 'PlayerActor',
   ids: '',
   actorName: 'worker',
-  actorPath: '',
+  actorPaths: '',
   role: 'Player',
   addresses: '',
-  patch: false,
+  maxConcurrentItems: undefined as number | undefined,
   scriptFile: undefined as File | undefined,
   extraFile: undefined as File | undefined,
 })
+
+const roleOptions = computed(() => metadata.value?.roles ?? ['Gate', 'Global', 'Gm', 'Player', 'World'])
+const entityKindOptions = computed(() => metadata.value?.entityKinds ?? ['PlayerActor', 'WorldActor'])
+const singletonOptions = computed(() => metadata.value?.singletons ?? ['worker'])
+const nodeAddressOptions = computed(() => metadata.value?.nodeAddresses ?? [])
 
 function onScriptFileChange(uploadFile: { raw?: File }) {
   form.scriptFile = uploadFile.raw
@@ -32,48 +46,61 @@ function onExtraFileChange(uploadFile: { raw?: File }) {
   form.extraFile = uploadFile.raw
 }
 
-function resetResults() {
-  execution.value = undefined
-}
-
 function splitLines(raw: string) {
   return raw.split('\n').map(item => item.trim()).filter(Boolean)
 }
 
-function splitIds(raw: string) {
+function splitCsv(raw: string) {
   return raw.split(',').map(item => item.trim()).filter(Boolean)
 }
 
-function createRequest(): CreateScriptExecutionRequest {
+function createTarget(): GmScriptTargetRequest {
   switch (form.target) {
-    case 'PlayerActor':
-    case 'WorldActor':
+    case 'all-nodes':
+      return { type: 'all-nodes' }
+    case 'role':
       return {
-        targetType: form.target,
-        targets: splitIds(form.ids),
-      }
-    case 'GlobalActor':
-      return {
-        targetType: form.target,
-        targets: [form.actorName],
-      }
-    case 'ActorPath':
-      return {
-        targetType: form.target,
-        targets: [form.actorPath],
-      }
-    case 'Node':
-      return {
-        targetType: form.target,
-        addresses: splitLines(form.addresses),
-      }
-    case 'NodeRole':
-      return {
-        targetType: form.target,
+        type: 'role',
         role: form.role,
-        addresses: splitLines(form.addresses),
-        patch: form.patch,
       }
+    case 'nodes':
+      return {
+        type: 'nodes',
+        addresses: splitLines(form.addresses),
+      }
+    case 'actor-paths':
+      return {
+        type: 'actor-paths',
+        paths: splitLines(form.actorPaths),
+      }
+    case 'entity':
+      return {
+        type: 'entity',
+        kind: form.entityKind,
+        ids: splitCsv(form.ids),
+      }
+    case 'singleton':
+      return {
+        type: 'singleton',
+        name: form.actorName,
+      }
+  }
+}
+
+async function loadMetadata() {
+  try {
+    metadata.value = await getScriptMetadata()
+    if (metadata.value.roles.length > 0 && !metadata.value.roles.includes(form.role)) {
+      form.role = metadata.value.roles[0]
+    }
+    if (metadata.value.entityKinds.length > 0 && !metadata.value.entityKinds.includes(form.entityKind)) {
+      form.entityKind = metadata.value.entityKinds[0]
+    }
+    if (metadata.value.singletons.length > 0 && !metadata.value.singletons.includes(form.actorName)) {
+      form.actorName = metadata.value.singletons[0]
+    }
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '加载脚本元数据失败')
   }
 }
 
@@ -82,22 +109,29 @@ async function submitScript() {
     ElMessage.warning('请选择脚本文件')
     return
   }
+
   loading.value = true
-  resetResults()
+  job.value = undefined
+  items.value = []
 
   try {
-    execution.value = await createScriptExecution({
+    const createdJob = await createScriptJob({
       script: form.scriptFile,
       extra: form.extraFile,
-      request: createRequest(),
+      target: createTarget(),
+      maxConcurrentItems: form.maxConcurrentItems,
     })
-    ElMessage.success('脚本执行任务已创建')
+    job.value = createdJob
+    items.value = (await listScriptJobItems(createdJob.id)).items
+    ElMessage.success('脚本任务已创建')
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '脚本执行失败')
+    ElMessage.error(error instanceof Error ? error.message : '脚本任务提交失败')
   } finally {
     loading.value = false
   }
 }
+
+onMounted(loadMetadata)
 </script>
 
 <template>
@@ -107,54 +141,86 @@ async function submitScript() {
         <el-segmented
           v-model="form.target"
           :options="[
-            { label: '玩家 Actor', value: 'PlayerActor' },
-            { label: '世界 Actor', value: 'WorldActor' },
-            { label: '全局 Actor', value: 'GlobalActor' },
-            { label: 'Actor Path', value: 'ActorPath' },
-            { label: '节点', value: 'Node' },
-            { label: '角色节点', value: 'NodeRole' },
+            { label: '实体 Actor', value: 'entity' },
+            { label: '单例 Actor', value: 'singleton' },
+            { label: 'Actor Path', value: 'actor-paths' },
+            { label: '节点', value: 'nodes' },
+            { label: '角色节点', value: 'role' },
+            { label: '全节点', value: 'all-nodes' },
           ]"
         />
       </el-form-item>
 
-      <el-form-item v-if="form.target === 'PlayerActor'" label="player_id">
-        <el-input v-model="form.ids" placeholder="多个 id 用逗号分隔，例如 10001,10002" />
-      </el-form-item>
-
-      <el-form-item v-if="form.target === 'WorldActor'" label="world_id">
-        <el-input v-model="form.ids" placeholder="多个 id 用逗号分隔，例如 1,2" />
-      </el-form-item>
-
-      <el-form-item v-if="form.target === 'GlobalActor'" label="actor_name">
-        <el-input v-model="form.actorName" placeholder="例如 worker" />
-      </el-form-item>
-
-      <el-form-item v-if="form.target === 'ActorPath'" label="actor_path">
-        <el-input v-model="form.actorPath" placeholder="pekko://.../user/..." />
-      </el-form-item>
-
-      <template v-if="form.target === 'Node' || form.target === 'NodeRole'">
-        <el-form-item v-if="form.target === 'NodeRole'" label="role">
-          <el-select v-model="form.role">
-            <el-option label="Gate" value="Gate" />
-            <el-option label="Global" value="Global" />
-            <el-option label="Gm" value="Gm" />
-            <el-option label="Player" value="Player" />
-            <el-option label="World" value="World" />
+      <template v-if="form.target === 'entity'">
+        <el-form-item label="Entity Kind">
+          <el-select v-model="form.entityKind">
+            <el-option
+              v-for="entityKind in entityKindOptions"
+              :key="entityKind"
+              :label="entityKind"
+              :value="entityKind"
+            />
           </el-select>
         </el-form-item>
-        <el-form-item label="address 过滤">
+        <el-form-item label="Entity IDs">
+          <el-input v-model="form.ids" placeholder="多个 id 用逗号分隔，例如 10001,10002" />
+        </el-form-item>
+      </template>
+
+      <el-form-item v-if="form.target === 'singleton'" label="Singleton">
+        <el-select v-model="form.actorName" filterable allow-create default-first-option>
+          <el-option
+            v-for="singleton in singletonOptions"
+            :key="singleton"
+            :label="singleton"
+            :value="singleton"
+          />
+        </el-select>
+      </el-form-item>
+
+      <el-form-item v-if="form.target === 'actor-paths'" label="Actor Paths">
+        <el-input
+          v-model="form.actorPaths"
+          type="textarea"
+          :rows="4"
+          placeholder="每行一个 actor path"
+        />
+      </el-form-item>
+
+      <template v-if="form.target === 'nodes' || form.target === 'role'">
+        <el-form-item v-if="form.target === 'role'" label="Role">
+          <el-select v-model="form.role">
+            <el-option
+              v-for="role in roleOptions"
+              :key="role"
+              :label="role"
+              :value="role"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item v-if="form.target === 'nodes'" label="Addresses">
           <el-input
             v-model="form.addresses"
             type="textarea"
             :rows="4"
-            placeholder='每行一个 Address JSON；留空表示不过滤'
+            :placeholder="
+              nodeAddressOptions.length > 0
+                ? nodeAddressOptions.join('\n')
+                : '每行一个 Pekko address'
+            "
           />
         </el-form-item>
-        <el-form-item v-if="form.target === 'NodeRole'">
-          <el-switch v-model="form.patch" active-text="写入 patch" />
-        </el-form-item>
+        <el-alert
+          v-if="form.target === 'role'"
+          title="角色节点任务会发往当前集群中全部匹配角色的节点。"
+          type="info"
+          :closable="false"
+        />
       </template>
+
+      <el-form-item label="最大并发项">
+        <el-input-number v-model="form.maxConcurrentItems" :min="1" :step="1" />
+      </el-form-item>
 
       <el-form-item label="脚本文件">
         <el-upload
@@ -181,38 +247,49 @@ async function submitScript() {
       </el-form-item>
 
       <el-button type="primary" size="large" :loading="loading" @click="submitScript">
-        执行脚本
+        提交任务
       </el-button>
     </el-form>
 
     <aside class="panel-card stack result-panel">
       <div>
         <p class="eyebrow">Result</p>
-        <h2>执行任务</h2>
+        <h2>脚本任务</h2>
       </div>
 
-      <el-empty v-if="!execution" description="暂无执行任务" />
+      <el-empty v-if="!job" description="暂无脚本任务" />
       <template v-else>
         <el-descriptions :column="1" border>
-          <el-descriptions-item label="Execution ID">
-            <el-text tag="code">{{ execution.id }}</el-text>
+          <el-descriptions-item label="Job ID">
+            <el-text tag="code">{{ job.id }}</el-text>
           </el-descriptions-item>
           <el-descriptions-item label="Status">
-            <el-tag>{{ execution.status }}</el-tag>
+            <el-tag>{{ job.status }}</el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="Targets">
-            {{ execution.successCount }} success /
-            {{ execution.failureCount }} failed /
-            {{ execution.timeoutCount }} timeout /
-            {{ execution.totalTargets }} total
+          <el-descriptions-item label="Items">
+            {{ job.completedItems }} completed /
+            {{ job.failedItems }} failed /
+            {{ job.cancelledItems }} cancelled /
+            {{ job.totalItems }} total
           </el-descriptions-item>
         </el-descriptions>
-        <el-table :data="execution.targets" border>
-          <el-table-column prop="target" label="Target" min-width="140" />
+        <el-table :data="items" border>
+          <el-table-column label="Target" min-width="180">
+            <template #default="{ row }">
+              {{ describeScriptTarget(row.target) }}
+            </template>
+          </el-table-column>
           <el-table-column prop="status" label="Status" width="120" />
-          <el-table-column prop="nodeAddress" label="Node" min-width="180" />
-          <el-table-column prop="actorPath" label="Actor" min-width="180" />
-          <el-table-column prop="error" label="Error" min-width="180" />
+          <el-table-column label="Results" width="100">
+            <template #default="{ row }">
+              {{ row.results.length }}
+            </template>
+          </el-table-column>
+          <el-table-column label="Error" min-width="220">
+            <template #default="{ row }">
+              {{ itemError(row) ?? '-' }}
+            </template>
+          </el-table-column>
         </el-table>
       </template>
     </aside>

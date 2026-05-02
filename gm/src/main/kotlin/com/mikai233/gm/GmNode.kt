@@ -33,14 +33,8 @@ class GmNode(
     val worldSharding: ActorRef
         get() = entityShard(ShardEntityType.WorldActor)
 
-    val scriptRouter: ActorRef
-        get() = services.get(GmRuntime::class).scriptRouter
-
     val workerSingletonProxy: ActorRef
         get() = singletonActor(Singleton.Worker)
-
-    val scriptExecutionManager: ActorRef
-        get() = services.get(GmRuntime::class).scriptExecutionManager
 
     override fun modulesAfterCluster() = listOf(GmRuntimeModule(this))
 

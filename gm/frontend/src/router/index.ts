@@ -11,12 +11,12 @@ export const router = createRouter({
         {
             path: '/scripts',
             component: () => import('@/views/ScriptConsoleView.vue'),
-            meta: {title: '脚本执行'},
+            meta: {title: '脚本任务'},
         },
         {
-            path: '/script-executions',
-            component: () => import('@/views/ScriptExecutionsView.vue'),
-            meta: {title: '执行记录'},
+            path: '/script-jobs',
+            component: () => import('@/views/ScriptJobsView.vue'),
+            meta: {title: '任务记录'},
         },
     ],
 })

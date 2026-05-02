@@ -26,7 +26,7 @@ const gm = useGmStore()
       <h2>把 GM 能力拆成独立模块</h2>
     </div>
     <el-space wrap>
-      <el-tag>脚本执行</el-tag>
+      <el-tag>脚本任务</el-tag>
       <el-tag type="success">节点状态</el-tag>
       <el-tag type="warning">操作审计</el-tag>
       <el-tag type="info">权限接入</el-tag>

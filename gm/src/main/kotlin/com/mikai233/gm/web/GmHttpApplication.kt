@@ -5,4 +5,4 @@ import org.springframework.boot.autoconfigure.SpringBootApplication
 
 @AllOpen
 @SpringBootApplication
-class GmWebApplication
+class GmHttpApplication

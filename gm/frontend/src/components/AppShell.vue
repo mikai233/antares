@@ -29,11 +29,11 @@ const router = useRouter()
         </el-menu-item>
         <el-menu-item index="/scripts">
           <el-icon><Operation /></el-icon>
-          <span>脚本执行</span>
+          <span>脚本任务</span>
         </el-menu-item>
-        <el-menu-item index="/script-executions">
+        <el-menu-item index="/script-jobs">
           <el-icon><DocumentChecked /></el-icon>
-          <span>执行记录</span>
+          <span>任务记录</span>
         </el-menu-item>
         <el-menu-item index="/nodes" disabled>
           <el-icon><SetUp /></el-icon>
