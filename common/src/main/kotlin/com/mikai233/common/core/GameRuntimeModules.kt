@@ -6,6 +6,8 @@ import com.mikai233.common.config.DATA_SOURCE_GAME
 import com.mikai233.common.config.GameWorldConfig
 import com.mikai233.common.config.GAME_CONFIG_PUBLICATION
 import com.mikai233.common.config.GAME_WORLDS
+import com.mikai233.common.config.luban.GameConfigSnapshotLoader
+import com.mikai233.common.config.luban.GameTables
 import com.mikai233.common.db.MongoDB
 import com.mikai233.common.entity.EntityKryoPool
 import com.mikai233.common.event.GameConfigUpdateEvent
@@ -126,10 +128,12 @@ class GameConfigModule : AsteriaModule {
     override suspend fun install(context: ModuleContext) {
         val store = context.services.get(ConfigStore::class)
         val service = ConfigService(
-            ConfigPublicationLubanBinaryLoader(
-                tablesType = GameTables::class,
-                store = store,
-                layout = ConfigPublicationLayout(GAME_CONFIG_PUBLICATION),
+            GameConfigSnapshotLoader(
+                ConfigPublicationLubanBinaryLoader(
+                    tablesType = GameTables::class,
+                    store = store,
+                    layout = ConfigPublicationLayout(GAME_CONFIG_PUBLICATION),
+                ),
             ),
         )
         val monitor = ConfigReloadMonitor()
@@ -165,14 +169,6 @@ class GameConfigModule : AsteriaModule {
     override suspend fun stop(context: ModuleContext) {
         hotReloadService?.stop()
         hotReloadService = null
-    }
-}
-
-class GameTables(
-    @Suppress("UNUSED_PARAMETER") loader: Loader,
-) {
-    interface Loader {
-        fun load(file: String): Any
     }
 }
 

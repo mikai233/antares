@@ -97,6 +97,16 @@ operations, refer to the `README.md` inside that directory.
 Game configuration is loaded through Asteria's unified config model. Runtime nodes read the current Luban publication
 from Zookeeper and hot reload when the publication pointer changes.
 
+The repository includes demo Luban-style tables under `com.mikai233.common.config.luban`:
+
+- `items`: scalar fields, enum values, and repeated attribute objects.
+- `monsters`: nested rewards and repeated skill IDs.
+- `drop_pools`: weighted drop entries.
+- `scenes`: vectors and rectangle ranges.
+- `activities`: string IDs, time windows, map conditions, and rewards.
+
+`ZookeeperInitializer.kt` publishes these demo artifacts through Asteria `ConfigPublisher`.
+
 ## Define Entity
 
 This project uses MongoDB. An `Entity` must implement the `Entity` interface and use `@Id` for the primary key and

@@ -3,12 +3,14 @@ package com.mikai233.common.core
 import com.google.common.io.Resources
 import com.mikai233.common.broadcast.PlayerBroadcastEventBus
 import com.mikai233.common.config.*
+import com.mikai233.common.config.luban.GameTables
 import com.mikai233.common.db.MongoDB
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import io.github.mikai233.asteria.cluster.config.ClusterConfigLayout
 import io.github.mikai233.asteria.cluster.config.ClusterConfigModule
 import io.github.mikai233.asteria.config.center.zookeeper.ZookeeperConfigCenterModule
+import io.github.mikai233.asteria.config.requireComponent
 import io.github.mikai233.asteria.core.AsteriaModule
 import io.github.mikai233.asteria.core.AsteriaApplicationBuilder
 import io.github.mikai233.asteria.core.EntityKind
@@ -102,6 +104,9 @@ open class GameNodeRuntime(
 
     val gameConfigVersion: String
         get() = services.get(io.github.mikai233.asteria.config.ConfigService::class).current().revision.version
+
+    val gameTables: GameTables
+        get() = services.get(io.github.mikai233.asteria.config.ConfigService::class).current().requireComponent()
 
     val broadcastRouter: ActorRef
         get() = services.get(PlayerBroadcastRuntime::class).router

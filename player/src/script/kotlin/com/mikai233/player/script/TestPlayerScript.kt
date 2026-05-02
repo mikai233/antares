@@ -15,6 +15,8 @@ class TestPlayerScript : ActorScript<PlayerActor>() {
         player.node.gameWorldConfigs.forEach { (id, config) ->
             logger.info("id:{} config:{}", id, config)
         }
+        val item = player.node.gameTables.getTbItem().get(1001)
+        logger.info("demo item config:{}", item)
         return null
     }
 }

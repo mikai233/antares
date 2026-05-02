@@ -8,19 +8,22 @@ import com.mikai233.common.config.GAME_CONFIG_PUBLICATION
 import com.mikai233.common.config.GAME_WORLDS
 import com.mikai233.common.config.GameWorldConfig
 import com.mikai233.common.config.NettyConfig
+import com.mikai233.common.config.luban.DemoGameConfigArtifacts
+import com.mikai233.common.config.luban.GameConfigSnapshotLoader
+import com.mikai233.common.config.luban.GameTables
 import com.mikai233.common.config.nettyConfigPath
 import com.mikai233.common.extension.asyncZookeeperClient
 import io.github.mikai233.asteria.cluster.config.ClusterConfigLayout
 import io.github.mikai233.asteria.cluster.config.ClusterTopology
 import io.github.mikai233.asteria.cluster.config.RuntimeNodeConfig
-import io.github.mikai233.asteria.config.ConfigRevision
 import io.github.mikai233.asteria.config.center.JacksonConfigCodec
 import io.github.mikai233.asteria.config.center.RuntimeConfigRepository
 import io.github.mikai233.asteria.config.center.zookeeper.ZookeeperConfigStore
+import io.github.mikai233.asteria.config.luban.LubanBinaryConfigLoader
+import io.github.mikai233.asteria.config.luban.MemoryLubanDataSource
+import io.github.mikai233.asteria.config.publisher.ConfigArtifactSource
 import io.github.mikai233.asteria.config.publisher.ConfigPublicationLayout
-import io.github.mikai233.asteria.config.publisher.ConfigPublicationManifest
-import io.github.mikai233.asteria.config.publisher.CurrentConfigPublication
-import java.time.Instant
+import io.github.mikai233.asteria.config.publisher.ConfigPublisher
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -61,7 +64,7 @@ fun main() = runBlocking {
         repository.put(GAME_WORLDS / world.id.toString(), world)
     }
 
-    publishEmptyGameConfig(repository)
+    publishDemoGameConfig(store)
 }
 
 private fun generateGameWorld(worldId: Long): GameWorldConfig {
@@ -74,25 +77,17 @@ private fun generateGameWorld(worldId: Long): GameWorldConfig {
     )
 }
 
-private suspend fun publishEmptyGameConfig(repository: RuntimeConfigRepository) {
+private suspend fun publishDemoGameConfig(store: ZookeeperConfigStore) {
     val layout = ConfigPublicationLayout(GAME_CONFIG_PUBLICATION)
-    val revision = ConfigRevision(version = "empty", checksum = "empty")
-    val generatedAt = Instant.now()
-    repository.put(
-        layout.manifestPath(revision),
-        ConfigPublicationManifest(
-            revision = revision,
-            generatedAt = generatedAt,
-            tables = emptyList(),
-            artifacts = emptyList(),
+    ConfigPublisher(
+        loader = GameConfigSnapshotLoader(
+            LubanBinaryConfigLoader(
+                tablesType = GameTables::class,
+                dataSource = MemoryLubanDataSource(DemoGameConfigArtifacts.bytesByPath()),
+            ),
         ),
-    )
-    repository.put(
-        layout.currentPath,
-        CurrentConfigPublication(
-            revision = revision,
-            manifestPath = layout.manifestPath(revision).value,
-            publishedAt = generatedAt,
-        ),
-    )
+        artifactSource = ConfigArtifactSource { DemoGameConfigArtifacts.artifacts() },
+        store = store,
+        layout = layout,
+    ).publish()
 }
