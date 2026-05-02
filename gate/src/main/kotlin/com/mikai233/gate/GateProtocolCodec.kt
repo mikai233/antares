@@ -1,57 +1,53 @@
 package com.mikai233.gate
 
 import com.google.protobuf.GeneratedMessage
-import com.mikai233.common.crypto.AESCipher
 import com.mikai233.common.message.ClientProtobuf
 import com.mikai233.protocol.idForServerMessage
 import com.mikai233.protocol.parserForClientMessage
-import io.github.mikai233.asteria.gateway.BinaryGatewayPacket
+import com.mikai233.protocol.parserForServerMessage
 import io.github.mikai233.asteria.gateway.GatewayFrame
-import io.github.mikai233.asteria.gateway.GatewaySession
-import io.github.mikai233.asteria.gateway.GatewaySessionAttributeKey
-import io.github.mikai233.asteria.gateway.IndexedBinaryGatewayPacketCodec
+import java.nio.ByteBuffer
 
-val GateCipherKey: GatewaySessionAttributeKey<AESCipher> = GatewaySessionAttributeKey("gate.cipher")
-val GateSessionPacketCodecKey: GatewaySessionAttributeKey<IndexedBinaryGatewayPacketCodec> =
-    GatewaySessionAttributeKey("gate.packetCodec")
-
+/**
+ * Internal adapter between Asteria GatewayFrame and this game's protobuf envelope.
+ *
+ * This is not the client wire format. The wire format is still owned by the Netty pipeline:
+ * FrameCodec -> CryptoCodec -> PacketCodec -> LZ4Codec -> ProtobufCodec.
+ */
 class GateProtocolCodec {
-    fun initialize(session: GatewaySession) {
-        session.set(GateSessionPacketCodecKey, IndexedBinaryGatewayPacketCodec())
+    fun encodeClient(message: ClientProtobuf): GatewayFrame {
+        return encode(message.id, message.message.toByteArray())
     }
 
-    fun decodeClient(session: GatewaySession, frame: GatewayFrame): ClientProtobuf {
-        val packet = packetCodec(session).decode(decrypt(session, frame))
-        val parser = parserForClientMessage(packet.messageId)
-        return ClientProtobuf(packet.messageId, parser.parseFrom(packet.payload))
+    fun decodeClient(frame: GatewayFrame): ClientProtobuf {
+        val (id, payload) = decode(frame)
+        val parser = parserForClientMessage(id)
+        return ClientProtobuf(id, parser.parseFrom(payload))
     }
 
-    fun encodeServer(
-        session: GatewaySession,
-        message: GeneratedMessage,
-        encrypted: Boolean = true,
-    ): GatewayFrame {
-        val packet = BinaryGatewayPacket(
-            messageId = idForServerMessage(message.javaClass),
-            payload = message.toByteArray(),
-        )
-        val frame = packetCodec(session).encode(packet)
-        return if (encrypted) encrypt(session, frame) else frame
+    fun encodeServer(message: GeneratedMessage): GatewayFrame {
+        return encode(idForServerMessage(message.javaClass), message.toByteArray())
     }
 
-    private fun packetCodec(session: GatewaySession): IndexedBinaryGatewayPacketCodec {
-        return requireNotNull(session.get(GateSessionPacketCodecKey)) {
-            "gate packet codec not initialized for session ${session.id.value}"
-        }
+    fun decodeServer(frame: GatewayFrame): GeneratedMessage {
+        val (id, payload) = decode(frame)
+        val parser = parserForServerMessage(id)
+        return parser.parseFrom(payload)
     }
 
-    private fun decrypt(session: GatewaySession, frame: GatewayFrame): GatewayFrame {
-        val cipher = session.get(GateCipherKey) ?: return frame
-        return GatewayFrame(cipher.decrypt(frame.bytes))
+    private fun encode(id: Int, payload: ByteArray): GatewayFrame {
+        val buffer = ByteBuffer.allocate(Int.SIZE_BYTES + payload.size)
+        buffer.putInt(id)
+        buffer.put(payload)
+        return GatewayFrame(buffer.array())
     }
 
-    private fun encrypt(session: GatewaySession, frame: GatewayFrame): GatewayFrame {
-        val cipher = session.get(GateCipherKey) ?: return frame
-        return GatewayFrame(cipher.encrypt(frame.bytes))
+    private fun decode(frame: GatewayFrame): Pair<Int, ByteArray> {
+        val buffer = ByteBuffer.wrap(frame.bytes)
+        require(buffer.remaining() >= Int.SIZE_BYTES) { "gate protobuf frame is too short" }
+        val id = buffer.int
+        val payload = ByteArray(buffer.remaining())
+        buffer.get(payload)
+        return id to payload
     }
 }

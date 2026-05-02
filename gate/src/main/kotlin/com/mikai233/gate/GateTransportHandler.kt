@@ -20,7 +20,6 @@ class GateTransportHandler(private val node: GateNode) : GatewayTransportHandler
 
     override suspend fun connected(connection: GatewayConnection): GatewaySession {
         val session = GatewaySession(GatewaySessionId(connection.id.value), connection)
-        node.protocolCodec.initialize(session)
         if (node.state == State.Started) {
             val channelActor = node.system.actorOf(ChannelActor.props(node, session))
             session.set(GateChannelActorKey, channelActor)
@@ -39,7 +38,7 @@ class GateTransportHandler(private val node: GateNode) : GatewayTransportHandler
             session.close(GatewayCloseReason.Application)
             return
         }
-        val message = node.protocolCodec.decodeClient(session, frame)
+        val message = node.protocolCodec.decodeClient(frame)
         channelActor.tell(message)
     }
 

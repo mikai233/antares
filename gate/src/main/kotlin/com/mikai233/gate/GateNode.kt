@@ -78,6 +78,7 @@ class GateNode(
                 maxFrameLength = 1024 * 100,
             ),
             scope = coroutineScope,
+            pipelineInstaller = GateNettyPipeline.installer(protocolCodec),
         )
         gatewayTransport.start(GateTransportHandler(this))
         addStateListener(State.Stopping) { gatewayTransport.stop() }

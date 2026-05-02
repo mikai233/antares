@@ -40,6 +40,8 @@ dependencies {
     implementation(libTool.pekko.kryo)
     implementation(libTool.caffeine)
     implementation(libTool.kryo)
+    implementation(libTool.lz4)
+    implementation(libTool.netty)
     implementation(libTool.bundles.prometheus)
     implementation(project(":proto"))
     implementation(project(":processor"))

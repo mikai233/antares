@@ -18,7 +18,6 @@ import com.mikai233.protocol.ProtoLogin.LoginReq
 import com.mikai233.protocol.ProtoLogin.LoginResp
 import com.mikai233.protocol.ProtoSystem.GmReq
 import com.mikai233.protocol.connectionExpiredNotify
-import io.github.mikai233.asteria.gateway.GatewayCloseReason
 import io.github.mikai233.asteria.gateway.GatewaySession
 import io.github.mikai233.asteria.script.pekko.ScriptableAsteriaActor
 import org.apache.pekko.actor.Props
@@ -75,8 +74,8 @@ class ChannelActor(val node: GateNode, private val session: GatewaySession) :
             .build()
     }
 
-    fun write(message: GeneratedMessage, encrypted: Boolean = true) {
-        session.write(node.protocolCodec.encodeServer(session, message, encrypted))
+    fun write(message: GeneratedMessage) {
+        session.write(node.protocolCodec.encodeServer(message))
     }
 
     private fun handleClientConnectMessage(clientProtobuf: ClientProtobuf) {
@@ -128,13 +127,13 @@ class ChannelActor(val node: GateNode, private val session: GatewaySession) :
         val serverKeyPair = ECDH.genKeyPair()
         val keyResp = resp.toBuilder().setServerPublicKey(serverKeyPair.publicKey.toByteString()).build()
         runCatching {
-            write(keyResp, encrypted = false)
+            write(keyResp)
         }.onFailure {
             logger.error(it, "write server key to client failed, stop the channel")
             stopChannel()
         }.onSuccess {
             val shareKey = ECDH.calculateSharedKey(serverKeyPair.privateKey, clientPublicKey)
-            session.set(GateCipherKey, AESCipher(shareKey))
+            session.enableGateCipher(AESCipher(shareKey))
             self tell ChannelAuthorized
         }
     }
@@ -198,7 +197,7 @@ class ChannelActor(val node: GateNode, private val session: GatewaySession) :
      * 断开和客户端的连接
      */
     private fun stopChannel() {
-        session.close(GatewayCloseReason.Application)
+        session.closeGateChannel()
         context.stop(self)
     }
 
