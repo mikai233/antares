@@ -5,19 +5,19 @@ import com.google.protobuf.Parser
 import kotlin.reflect.KClass
 
 public enum class CSEnum(
-  public val id: Int,
+    public val id: Int,
 ) {
-  PingReq(1),
-  GmReq(2),
-  TestReq(3),
-  LoginReq(10001),
-  ;
+    PingReq(1),
+    GmReq(2),
+    TestReq(3),
+    LoginReq(10001),
+    ;
 
-  public companion object {
-    private val entriesById: Map<Int, CSEnum> = entries.associateBy { it.id }
+    public companion object {
+        private val entriesById: Map<Int, CSEnum> = entries.associateBy { it.id }
 
-    public operator fun `get`(id: Int): CSEnum = requireNotNull(entriesById[id]) { "$id not found" }
-  }
+        public operator fun `get`(id: Int): CSEnum = requireNotNull(entriesById[id]) { "$id not found" }
+    }
 }
 
 /**
@@ -69,13 +69,14 @@ private val ClientToServerParserById: Map<Int, Parser<out GeneratedMessage>> =
 public fun idForClientMessage(messageClass: Class<out GeneratedMessage>): Int =
     requireNotNull(ClientToServerMessageIdByClass[messageClass]) {
         "Client proto id for ${messageClass.name} not found"
-}
+    }
 
 public fun idForClientMessage(messageKClass: KClass<out GeneratedMessage>): Int = idForClientMessage(messageKClass.java)
 
-public fun parserForClientMessage(id: Int): Parser<out GeneratedMessage> = requireNotNull(ClientToServerParserById[id]) {
-    "parser for Client proto $id not found"
-}
+public fun parserForClientMessage(id: Int): Parser<out GeneratedMessage> =
+    requireNotNull(ClientToServerParserById[id]) {
+        "parser for Client proto $id not found"
+    }
 
 public fun registerClientParsersByType(target: MutableMap<Class<out GeneratedMessage>, Parser<out GeneratedMessage>>) {
     registerClientToServerParsersByTypeChunk0(target)

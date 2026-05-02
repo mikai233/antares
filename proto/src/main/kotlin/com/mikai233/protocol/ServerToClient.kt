@@ -5,20 +5,20 @@ import com.google.protobuf.Parser
 import kotlin.reflect.KClass
 
 public enum class SCEnum(
-  public val id: Int,
+    public val id: Int,
 ) {
-  PingResp(1),
-  GmResp(2),
-  TestResp(3),
-  LoginResp(10001),
-  TestNotify(99999),
-  ;
+    PingResp(1),
+    GmResp(2),
+    TestResp(3),
+    LoginResp(10001),
+    TestNotify(99999),
+    ;
 
-  public companion object {
-    private val entriesById: Map<Int, SCEnum> = entries.associateBy { it.id }
+    public companion object {
+        private val entriesById: Map<Int, SCEnum> = entries.associateBy { it.id }
 
-    public operator fun `get`(id: Int): SCEnum = requireNotNull(entriesById[id]) { "$id not found" }
-  }
+        public operator fun `get`(id: Int): SCEnum = requireNotNull(entriesById[id]) { "$id not found" }
+    }
 }
 
 /**
@@ -80,7 +80,7 @@ public fun idForServerMessage(messageKClass: KClass<out GeneratedMessage>): Int 
 public fun parserForServerMessage(id: Int): Parser<out GeneratedMessage> =
     requireNotNull(ServerToClientParserById[id]) {
         "parser for Server proto $id not found"
-}
+    }
 
 public fun registerServerParsersByType(target: MutableMap<Class<out GeneratedMessage>, Parser<out GeneratedMessage>>) {
     registerServerToClientParsersByTypeChunk0(target)
