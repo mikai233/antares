@@ -12,27 +12,13 @@ import com.mikai233.common.excel.*
 import com.mikai233.common.extension.Json
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import io.github.mikai233.asteria.core.ModuleContext
 import io.github.mikai233.asteria.core.NodeRuntime
 import io.github.mikai233.asteria.core.RoleKey
 import io.github.mikai233.asteria.core.ServiceRegistry
-import io.github.mikai233.asteria.observability.Metrics
-import io.github.mikai233.asteria.observability.NoopMetrics
-import io.github.mikai233.asteria.observability.NoopTracer
-import io.github.mikai233.asteria.observability.Tracer
-import io.github.mikai233.asteria.script.DefaultScriptPolicy
-import io.github.mikai233.asteria.script.InMemoryScriptExecutionStore
-import io.github.mikai233.asteria.script.NoopScriptAuditSink
-import io.github.mikai233.asteria.script.ScriptAuditSink
-import io.github.mikai233.asteria.script.ScriptEngineRegistry
-import io.github.mikai233.asteria.script.ScriptExecutionStore
-import io.github.mikai233.asteria.script.ScriptExecutor
-import io.github.mikai233.asteria.script.ScriptPolicy
-import io.github.mikai233.asteria.script.ScriptRunner
-import io.github.mikai233.asteria.script.ScriptRuntime
 import io.github.mikai233.asteria.script.engine.groovy.GroovyScriptEngine
 import io.github.mikai233.asteria.script.engine.jar.JarScriptEngine
-import io.github.mikai233.asteria.script.pekko.PekkoScriptRuntime
-import io.github.mikai233.asteria.script.pekko.ScriptRuntimeActor
+import io.github.mikai233.asteria.script.pekko.ScriptModule
 import io.prometheus.client.exporter.HTTPServer
 import io.prometheus.client.hotspot.DefaultExports
 import kotlinx.coroutines.*
@@ -241,33 +227,15 @@ open class Node(
     }
 
     private suspend fun installScriptRuntime() {
-        val engines = listOf(GroovyScriptEngine(), JarScriptEngine())
-        val registry = ScriptEngineRegistry(engines)
-        val executor = ScriptExecutor(registry)
-        val policy = DefaultScriptPolicy(
-            allowNodeScripts = true,
-            allowActorScripts = true,
-            allowedEngines = engines.mapTo(mutableSetOf()) { it.name },
-        )
-        val auditSink = NoopScriptAuditSink
-        val executionStore = InMemoryScriptExecutionStore()
-        val runner = ScriptRunner(executor, policy, auditSink, executionStore)
-        services.register(ScriptEngineRegistry::class, registry)
-        services.register(ScriptExecutor::class, executor)
-        services.register(ScriptPolicy::class, policy)
-        services.register(ScriptAuditSink::class, auditSink)
-        services.register(ScriptExecutionStore::class, executionStore)
-        services.register(ScriptRunner::class, runner)
-
-        val actor = system.actorOf(ScriptRuntimeActor.props(this), ScriptRuntimeActor.NAME)
-        val runtime = PekkoScriptRuntime(
-            actor = actor,
-            system = system,
-            tracer = services.find(Tracer::class) ?: NoopTracer,
-            metrics = services.find(Metrics::class) ?: NoopMetrics,
-        )
-        services.register(PekkoScriptRuntime::class, runtime)
-        services.register(ScriptRuntime::class, runtime)
+        val module = ScriptModule {
+            engine(GroovyScriptEngine())
+            engine(JarScriptEngine())
+            allowNodeScripts = true
+            allowActorScripts = true
+        }
+        val context = ModuleContext(this, services)
+        module.install(context)
+        module.start(context)
     }
 
     private fun spawnBroadcastActor() {
