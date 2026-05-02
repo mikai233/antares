@@ -23,7 +23,7 @@ class WorldActionMem(
     private val worldAction: MutableMap<String, WorldActionTracked> = mutableMapOf()
     private val worldActionById: MutableMap<Int, WorldActionTracked> = mutableMapOf()
 
-    override fun init() {
+    override suspend fun load() {
         val template = mongoTemplate()
         val actions = template.find<WorldAction>(Query.query(where(WorldAction::worldId).`is`(worldId)))
         actions.forEach {

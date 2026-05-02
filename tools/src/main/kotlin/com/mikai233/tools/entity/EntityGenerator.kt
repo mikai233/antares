@@ -1,7 +1,7 @@
 package com.mikai233.tools.entity
 
-import com.mikai233.common.db.Entity
 import com.mikai233.common.extension.upperCamelToSnakeCase
+import io.github.mikai233.asteria.persistence.Entity
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import kotlin.io.path.Path
@@ -187,7 +187,7 @@ private fun buildType(className: ClassName, isEntity: Boolean, depth: Int) {
         properties.add(propertySpec)
     }
     if (isEntity) {
-        typeSpecBuilder.addSuperinterface(Entity::class)
+        typeSpecBuilder.addSuperinterface(Entity::class.asClassName().parameterizedBy(Int::class.asClassName()))
         // 导入的注解类
         val documentAnnotation = ClassName("org.springframework.data.mongodb.core.mapping", "Document")
         val idAnnotation = ClassName("org.springframework.data.annotation", "Id")
@@ -199,6 +199,7 @@ private fun buildType(className: ClassName, isEntity: Boolean, depth: Int) {
             .build()
         val idPropertySpec = PropertySpec.builder("id", Int::class)
             .addAnnotation(idAnnotation)
+            .addModifiers(KModifier.OVERRIDE)
             .initializer("id")
             .build()
         properties.add(0, idPropertySpec)

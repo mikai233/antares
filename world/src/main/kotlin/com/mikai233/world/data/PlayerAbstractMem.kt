@@ -16,20 +16,20 @@ class PlayerAbstractMem(
         "player_abstract",
         0,
         mongoTemplate,
-        id = { it.playerId },
+        id = { it.id },
         factory = ::PlayerAbstractTracked,
     ),
     Map<Long, PlayerAbstractTracked> {
     private val playerAbstracts: MutableMap<Long, PlayerAbstractTracked> = mutableMapOf()
     private val accountToAbstracts: MutableMap<String, PlayerAbstractTracked> = mutableMapOf()
 
-    override fun init() {
+    override suspend fun load() {
         val template = mongoTemplate()
         val playerAbstractList =
             template.find<PlayerAbstract>(Query.query(where(PlayerAbstract::worldId).`is`(worldId)))
         playerAbstractList.forEach {
             val tracked = attachLoaded(it)
-            playerAbstracts[it.playerId] = tracked
+            playerAbstracts[it.id] = tracked
             accountToAbstracts[it.account] = tracked
         }
     }
@@ -39,15 +39,15 @@ class PlayerAbstractMem(
     }
 
     fun addAbstract(abstract: PlayerAbstract) {
-        check(playerAbstracts.containsKey(abstract.playerId).not()) { "abstract:${abstract.playerId} already exists" }
+        check(playerAbstracts.containsKey(abstract.id).not()) { "abstract:${abstract.id} already exists" }
         val tracked = createTracked(abstract)
-        playerAbstracts[abstract.playerId] = tracked
+        playerAbstracts[abstract.id] = tracked
         accountToAbstracts[abstract.account] = tracked
     }
 
     fun delAbstract(playerAbstract: PlayerAbstractTracked) {
         accountToAbstracts.remove(playerAbstract.account)
-        playerAbstracts.remove(playerAbstract.playerId)
+        playerAbstracts.remove(playerAbstract.id)
     }
 
     fun getByAccount(account: String) = accountToAbstracts[account]

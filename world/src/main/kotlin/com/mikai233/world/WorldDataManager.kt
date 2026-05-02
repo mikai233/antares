@@ -1,30 +1,35 @@
 package com.mikai233.world
 
-import com.mikai233.common.db.AutoFlushMemData
-import com.mikai233.common.db.DataManager
+import com.mikai233.common.core.ShardEntityType
 import com.mikai233.common.extension.logger
 import com.mikai233.common.extension.tell
-import com.mikai233.common.extension.tryCatch
+import com.mikai233.common.extension.tryCatchSuspend
 import com.mikai233.common.message.world.WorldInitialized
+import io.github.mikai233.asteria.core.EntityKind
+import io.github.mikai233.asteria.core.ServiceRegistry
+import io.github.mikai233.asteria.persistence.DataManager
+import io.github.mikai233.asteria.persistence.DataScope
+import io.github.mikai233.asteria.persistence.MemData
 import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlin.reflect.full.primaryConstructor
+import org.springframework.data.mongodb.core.MongoTemplate
+import kotlin.reflect.KClass
 
 
-class WorldDataManager(private val world: WorldActor) : DataManager<WorldActor>() {
+class WorldDataManager(private val world: WorldActor) {
     private val logger = logger()
 
-    private val autoFlushMemData: MutableList<AutoFlushMemData> = mutableListOf()
+    private val dataManager = DataManager(
+        DataScope(
+            entityKind = EntityKind(ShardEntityType.WorldActor.name),
+            entityId = world.worldId,
+            services = ServiceRegistry().apply {
+                register(MongoTemplate::class, world.node.mongoDB.mongoTemplate)
+            },
+        ),
+        WorldDataModules,
+    )
 
-    override fun init() {
-        MemImpl.forEach {
-            val primaryConstructor =
-                requireNotNull(it.primaryConstructor) { "${it.qualifiedName} primary constructor not found" }
-            val mem = primaryConstructor.call(world.worldId, { world.node.mongoDB.mongoTemplate })
-            managers[it] = mem
-        }
+    fun init() {
         logger.info("{} start loading data", world.worldId)
         world.launch(
             CoroutineExceptionHandler { _, throwable ->
@@ -32,27 +37,31 @@ class WorldDataManager(private val world: WorldActor) : DataManager<WorldActor>(
                 world.passivate()
             },
         ) {
-            managers.map { (manager, mem) ->
-                async(Dispatchers.IO) {
-                    mem.init()
-                    logger.info("world:{} load {} complete", world.worldId, manager.simpleName)
-                }
-            }.awaitAll()
-            managers.values.filterIsInstance<AutoFlushMemData>().forEach { autoFlushMemData.add(it) }
+            dataManager.loadEager()
             logger.info("world:{} data load complete", world.worldId)
             world.self tell WorldInitialized
         }
     }
 
+    fun <T : MemData> get(type: KClass<T>): T {
+        return dataManager.requireLoaded(type)
+    }
+
+    inline fun <reified T : MemData> get(): T {
+        return get(T::class)
+    }
+
     fun tick() {
-        autoFlushMemData.forEach {
-            tryCatch(logger) {
-                it.tick()
+        world.launch(timeout = null) {
+            tryCatchSuspend(logger) {
+                dataManager.tick()
             }
         }
     }
 
-    fun flush(): Boolean {
-        return autoFlushMemData.all { it.flush() }
+    fun flush(onComplete: (Boolean) -> Unit) {
+        world.launch(timeout = null) {
+            onComplete(dataManager.flush())
+        }
     }
 }

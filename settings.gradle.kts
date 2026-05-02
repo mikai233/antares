@@ -1,5 +1,7 @@
 rootProject.name = "antares"
 
+includeBuild("/Users/mikai/IdeaProjects/Asteria")
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {

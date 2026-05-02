@@ -31,7 +31,7 @@ class EntityDepsProcessor(private val codeGenerator: CodeGenerator) : SymbolProc
                 sources.add(ksFile)
                 val entityKSClassDeclarations =
                     ksFile.declarations.filterIsInstance<KSClassDeclaration>().filter { ksClassDeclaration ->
-                        ksClassDeclaration.isSubclassOf("com.mikai233.common.db.Entity")
+                        ksClassDeclaration.isSubclassOf("io.github.mikai233.asteria.persistence.Entity")
                     }
                 entityKSClassDeclarations.forEach { ksClassDeclaration ->
                     collectKSClassDeclaration(ksClassDeclaration, visitedDeclarations, targetDeclarations, emptySet())

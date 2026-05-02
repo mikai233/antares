@@ -94,8 +94,10 @@ class PlayerActor(node: PlayerNode) : StatefulActor<PlayerNode>(node) {
             .match(PlayerUnloaded::class.java) { context.stop(self) }
             .match(Terminated::class.java) { handleTerminated(it) }
             .match(PlayerTick::class.java) {
-                if (manager.flush()) {
-                    self tell PlayerUnloaded
+                manager.flush { flushed ->
+                    if (flushed) {
+                        self tell PlayerUnloaded
+                    }
                 }
             }
             .build()

@@ -155,19 +155,32 @@ kotlin {
 }
 
 fun Project.configureJvmTarget() {
-    tasks.withType<JavaCompile> {
+    tasks.withType<JavaCompile>().configureEach {
+        javaCompiler.set(
+            javaToolchains.compilerFor {
+                languageVersion.set(JavaLanguageVersion.of(21))
+            },
+        )
         sourceCompatibility = "21"
         targetCompatibility = "21"
+        options.release.set(21)
         with(options) {
             encoding = "UTF-8"
             isFork = true
         }
     }
-    tasks.withType<KotlinCompile> {
+    tasks.withType<KotlinCompile>().configureEach {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_21)
             javaParameters.set(true)
         }
+    }
+    tasks.withType<JavaExec>().configureEach {
+        javaLauncher.set(
+            javaToolchains.launcherFor {
+                languageVersion.set(JavaLanguageVersion.of(21))
+            },
+        )
     }
 }
 

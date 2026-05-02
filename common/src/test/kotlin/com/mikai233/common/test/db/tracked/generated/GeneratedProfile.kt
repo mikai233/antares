@@ -1,14 +1,14 @@
 package com.mikai233.common.test.db.tracked.generated
 
-import com.mikai233.common.db.Entity
 import com.mikai233.common.db.tracked.TrackEntity
+import io.github.mikai233.asteria.persistence.Entity
 import org.springframework.data.annotation.Id
 import java.util.*
 
 @TrackEntity
 data class GeneratedProfile(
     @Id
-    val id: String,
+    override val id: String,
     val account: String,
     var nickname: String,
     var title: String?,
@@ -20,7 +20,7 @@ data class GeneratedProfile(
     val flags: MutableSet<String>,
     val pending: Deque<Int>,
     val scores: IntArray,
-) : Entity {
+) : Entity<String> {
     companion object {
         fun sample(): GeneratedProfile {
             return GeneratedProfile(

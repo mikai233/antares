@@ -19,7 +19,7 @@ class PlayerMem(
     lateinit var player: PlayerTracked
         private set
 
-    override fun init() {
+    override suspend fun load() {
         val template = mongoTemplate()
         val player = template.findById<Player>(playerId)
         if (player != null) {

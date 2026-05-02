@@ -81,8 +81,10 @@ class WorldActor(node: WorldNode) : StatefulActor<WorldNode>(node) {
         return receiveBuilder()
             .match(WorldUnloaded::class.java) { context.stop(self) }
             .match(WorldTick::class.java) {
-                if (manager.flush()) {
-                    self tell WorldUnloaded
+                manager.flush { flushed ->
+                    if (flushed) {
+                        self tell WorldUnloaded
+                    }
                 }
             }
             .build()

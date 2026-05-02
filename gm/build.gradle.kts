@@ -4,6 +4,7 @@ dependencies {
     testImplementation(platform(libTest.junit.bom))
     testImplementation(libTest.junit.jupiter)
     testImplementation(libTool.spring.boot.starter.test)
+    implementation("io.github.mikai233:gm-core:1.0-SNAPSHOT")
     implementation(libPekko.bundles.common)
 //    implementation(libPekko.discovery)
     implementation(libPekko.management)

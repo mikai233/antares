@@ -5,6 +5,13 @@ plugins {
 dependencies {
     testImplementation(platform(libTest.junit.bom))
     testImplementation(libTest.junit.jupiter)
+    api("io.github.mikai233:foundation-core:1.0-SNAPSHOT")
+    api("io.github.mikai233:foundation-actor:1.0-SNAPSHOT")
+    api("io.github.mikai233:cluster-pekko:1.0-SNAPSHOT")
+    api("io.github.mikai233:persistence-core:1.0-SNAPSHOT")
+    api("io.github.mikai233:persistence-mongodb:1.0-SNAPSHOT")
+    api("io.github.mikai233:config-core:1.0-SNAPSHOT")
+    api("io.github.mikai233:script-core:1.0-SNAPSHOT")
     implementation(libPekko.bundles.common)
     implementation(libKotlin.bundles.common)
     implementation(libKotlinx.core)

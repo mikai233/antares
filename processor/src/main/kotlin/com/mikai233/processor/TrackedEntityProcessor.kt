@@ -13,7 +13,7 @@ import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.toTypeName
 
 private const val TRACK_ENTITY_ANNOTATION = "com.mikai233.common.db.tracked.TrackEntity"
-private const val ENTITY_QUALIFIED_NAME = "com.mikai233.common.db.Entity"
+private const val ENTITY_QUALIFIED_NAME = "io.github.mikai233.asteria.persistence.Entity"
 
 class TrackedEntityProcessor(
     private val environment: SymbolProcessorEnvironment,

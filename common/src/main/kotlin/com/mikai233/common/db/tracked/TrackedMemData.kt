@@ -1,9 +1,8 @@
 package com.mikai233.common.db.tracked
 
-import com.mikai233.common.db.AutoFlushMemData
-import com.mikai233.common.db.Entity
-import com.mikai233.common.db.MemData
 import com.mikai233.common.extension.logger
+import io.github.mikai233.asteria.persistence.AutoFlushMemData
+import io.github.mikai233.asteria.persistence.Entity
 import org.springframework.data.mongodb.core.MongoTemplate
 
 abstract class TrackedMemData<E, T>(
@@ -13,7 +12,7 @@ abstract class TrackedMemData<E, T>(
     private val id: (E) -> Any?,
     private val factory: (TrackContext, E) -> T,
     private val fieldRoot: String = "",
-) : MemData<T>, AutoFlushMemData where E : Entity, T : TrackedEntity<E> {
+) : AutoFlushMemData where E : Entity<*>, T : TrackedEntity<E> {
     private val logger = logger()
     protected val queue = PendingWriteQueue()
     private val flusher = MongoPendingWriteFlusher(queue, mongoTemplate)
@@ -51,11 +50,11 @@ abstract class TrackedMemData<E, T>(
         }
     }
 
-    override fun tick() {
+    override suspend fun tick() {
         flush()
     }
 
-    override fun flush(): Boolean {
+    override suspend fun flush(): Boolean {
         return runCatching {
             flusher.flush()
         }.onFailure { throwable ->

@@ -20,12 +20,12 @@ class WorkerHandler : MessageHandler {
     fun handleWorkerIdReq(actor: WorkerActor, req: WorkerIdReq) {
         val workerId = actor.uidMem.workerIdFor(req.addr)
         if (workerId != null) {
-            actor.sender.tell(WorkerIdResp(workerId.id))
+            actor.sender.tell(WorkerIdResp(workerId.workerId))
         } else {
             val sender = actor.sender
             actor.launch {
                 val newWorkerId = actor.uidMem.newWorkerIdFor(req.addr)
-                sender.tell(WorkerIdResp(newWorkerId.id))
+                sender.tell(WorkerIdResp(newWorkerId.workerId))
             }
         }
     }

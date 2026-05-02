@@ -22,7 +22,7 @@ class WorkerActor(node: GlobalNode) : StatefulActor<GlobalNode>(node) {
         launch {
             runCatching {
                 withContext(Dispatchers.IO) {
-                    uidMem.init()
+                    uidMem.load()
                 }
             }
                 .onFailure {

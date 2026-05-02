@@ -23,7 +23,7 @@ class PlayerActionMem(
     private val playerAction: MutableMap<String, PlayerActionTracked> = mutableMapOf()
     private val playerActionById: MutableMap<Int, PlayerActionTracked> = mutableMapOf()
 
-    override fun init() {
+    override suspend fun load() {
         val template = mongoTemplate()
         val actions = template.find<PlayerAction>(Query.query(where(PlayerAction::playerId).`is`(playerId)))
         actions.forEach {

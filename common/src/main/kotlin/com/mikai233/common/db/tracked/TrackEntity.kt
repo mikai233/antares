@@ -1,6 +1,6 @@
 package com.mikai233.common.db.tracked
 
-import com.mikai233.common.db.Entity
+import io.github.mikai233.asteria.persistence.Entity
 
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.SOURCE)
@@ -14,7 +14,7 @@ annotation class TrackIgnore
 @Retention(AnnotationRetention.SOURCE)
 annotation class StableId
 
-interface TrackedEntity<E> : Entity, PersistentValue where E : Entity {
+interface TrackedEntity<E> : PersistentValue where E : Entity<*> {
     val trackId: Any?
 
     fun toEntity(): E
