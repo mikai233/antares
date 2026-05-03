@@ -7,8 +7,6 @@ import com.mikai233.common.config.luban.GameTables
 import com.mikai233.common.db.MongoDB
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import io.github.mikai233.asteria.cluster.config.ClusterConfigLayout
-import io.github.mikai233.asteria.cluster.config.ClusterConfigModule
 import io.github.mikai233.asteria.config.center.zookeeper.ZookeeperConfigCenterModule
 import io.github.mikai233.asteria.config.requireComponent
 import io.github.mikai233.asteria.core.AsteriaModule
@@ -25,14 +23,11 @@ import io.github.mikai233.asteria.id.WorkerIdModuleOptions
 import io.github.mikai233.asteria.id.WorkerIdOwner
 import io.github.mikai233.asteria.id.zookeeper.ZookeeperWorkerIdRepository
 import io.github.mikai233.asteria.cluster.pekko.EntityShardRegistry
-import io.github.mikai233.asteria.cluster.pekko.PekkoRuntimeModule
 import io.github.mikai233.asteria.cluster.pekko.SingletonActorRegistry
-import io.github.mikai233.asteria.cluster.pekko.TopologyPekkoClusterStartup
-import io.github.mikai233.asteria.rpc.RpcModule
 import io.github.mikai233.asteria.script.engine.groovy.GroovyScriptEngine
 import io.github.mikai233.asteria.script.engine.jar.JarScriptEngine
 import io.github.mikai233.asteria.script.pekko.ScriptModule
-import io.github.mikai233.asteria.starter.GameServerStartupSummaryModule
+import io.github.mikai233.asteria.starter.clusterGameApplication
 import kotlinx.coroutines.*
 import org.apache.curator.framework.CuratorFrameworkFactory
 import org.apache.curator.retry.ExponentialBackoffRetry
@@ -137,19 +132,11 @@ open class GameNodeRuntime(
     }
 
     protected open suspend fun startSystem() {
-        val application = gameApplication {
+        val application = clusterGameApplication(nodeId = nodeId, pekkoConfig = runtimeConfig()) {
             name = this@GameNodeRuntime.name
-            val applicationName = this@GameNodeRuntime.name
             commonModulesBeforeCluster().forEach(::install)
             modulesBeforeCluster().forEach(::install)
-            install(RpcModule.autoDiscover())
             configureRuntime(this)
-            install(
-                ClusterConfigModule {
-                    layout = ClusterConfigLayout.default(applicationName)
-                },
-            )
-            install(PekkoRuntimeModule(TopologyPekkoClusterStartup(nodeId, config = runtimeConfig())))
             install(PekkoCoroutineScopeModule())
             install(
                 ScriptModule {
@@ -160,7 +147,6 @@ open class GameNodeRuntime(
                 },
             )
             modulesAfterCluster().forEach(::install)
-            install(GameServerStartupSummaryModule("config-center"))
         }
         val lifecycle = application.bind(this) { newState ->
             updateState(newState)

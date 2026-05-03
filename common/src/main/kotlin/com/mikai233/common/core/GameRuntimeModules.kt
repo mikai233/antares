@@ -11,11 +11,7 @@ import com.mikai233.common.config.luban.GameTables
 import com.mikai233.common.db.MongoDB
 import com.mikai233.common.entity.EntityKryoPool
 import com.mikai233.common.event.GameConfigUpdateEvent
-import io.github.mikai233.asteria.config.ConfigHotReloadOptions
-import io.github.mikai233.asteria.config.ConfigHotReloadService
-import io.github.mikai233.asteria.config.ConfigReloadFailureListener
-import io.github.mikai233.asteria.config.ConfigReloadMonitor
-import io.github.mikai233.asteria.config.ConfigService
+import io.github.mikai233.asteria.config.ConfigModule
 import io.github.mikai233.asteria.config.center.ConfigCenterReloadTrigger
 import io.github.mikai233.asteria.config.center.ConfigStore
 import io.github.mikai233.asteria.config.center.ConfigWatchMode
@@ -28,7 +24,6 @@ import io.prometheus.client.exporter.HTTPServer
 import io.prometheus.client.hotspot.DefaultExports
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
-import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -123,52 +118,47 @@ class GameConfigModule : AsteriaModule {
     override val name: String = "game-config"
 
     private val logger = LoggerFactory.getLogger(GameConfigModule::class.java)
-    private var hotReloadService: ConfigHotReloadService? = null
+    private var delegate: AsteriaModule? = null
 
     override suspend fun install(context: ModuleContext) {
         val store = context.services.get(ConfigStore::class)
-        val service = ConfigService(
-            GameConfigSnapshotLoader(
-                ConfigPublicationLubanBinaryLoader(
-                    tablesType = GameTables::class,
-                    store = store,
-                    layout = ConfigPublicationLayout(GAME_CONFIG_PUBLICATION),
+        delegate = ConfigModule {
+            loader(
+                GameConfigSnapshotLoader(
+                    ConfigPublicationLubanBinaryLoader(
+                        tablesType = GameTables::class,
+                        store = store,
+                        layout = ConfigPublicationLayout(GAME_CONFIG_PUBLICATION),
+                    ),
                 ),
-            ),
-        )
-        val monitor = ConfigReloadMonitor()
-        service.subscribe(monitor)
-        service.subscribe { result ->
-            if (result.previous != null) {
-                context.services.find(ActorSystem::class)?.eventStream?.publish(GameConfigUpdateEvent)
+            )
+            onReload { result ->
+                if (result.previous != null) {
+                    context.services.find(ActorSystem::class)?.eventStream?.publish(GameConfigUpdateEvent)
+                }
             }
-        }
-        context.services.register(ConfigService::class, service)
-        context.services.register(ConfigReloadMonitor::class, monitor)
-        hotReloadService = ConfigHotReloadService(
-            service = service,
-            options = ConfigHotReloadOptions(
-                trigger = ConfigCenterReloadTrigger(
-                    store = store,
-                    path = ConfigPublicationLayout(GAME_CONFIG_PUBLICATION).currentPath,
-                    mode = ConfigWatchMode.Value,
-                ),
-                debounce = 2.seconds,
-                failureListeners = listOf(ConfigReloadFailureListener { event ->
+            hotReload {
+                trigger(
+                    ConfigCenterReloadTrigger(
+                        store = store,
+                        path = ConfigPublicationLayout(GAME_CONFIG_PUBLICATION).currentPath,
+                        mode = ConfigWatchMode.Value,
+                    ),
+                )
+                onFailure { event ->
                     logger.error("game config hot reload failed", event.error)
-                }),
-            ),
-        )
+                }
+            }
+        }.also { it.install(context) }
     }
 
     override suspend fun start(context: ModuleContext) {
-        context.services.get(ConfigService::class).load()
-        hotReloadService?.start()
+        delegate?.start(context)
     }
 
     override suspend fun stop(context: ModuleContext) {
-        hotReloadService?.stop()
-        hotReloadService = null
+        delegate?.stop(context)
+        delegate = null
     }
 }
 
