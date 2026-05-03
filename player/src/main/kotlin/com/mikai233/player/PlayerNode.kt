@@ -15,10 +15,15 @@ import com.mikai233.common.event.PlayerLoginEvent
 import com.mikai233.common.message.player.PlayerCreateReq
 import com.mikai233.common.message.player.PlayerLoginReq
 import com.mikai233.common.message.player.HandoffPlayer
-import com.mikai233.player.handler.GameConfigHandler
-import com.mikai233.player.handler.LoginHandler
-import com.mikai233.player.handler.PlayerHandler
-import com.mikai233.player.handler.TestHandler
+import com.mikai233.player.handler.event.GameConfigUpdateEventHandler
+import com.mikai233.player.handler.event.GameConfigUpdatedEventHandler
+import com.mikai233.player.handler.event.PlayerCreateEventHandler
+import com.mikai233.player.handler.event.PlayerLoginEventHandler
+import com.mikai233.player.handler.gm.TestGmHandler
+import com.mikai233.player.handler.message.player.PlayerCreateReqHandler
+import com.mikai233.player.handler.message.player.PlayerLoginReqHandler
+import com.mikai233.player.handler.protocol.system.GmReqHandler
+import com.mikai233.player.handler.protocol.test.TestReqHandler
 import com.mikai233.protocol.ProtoSystem.GmReq
 import com.mikai233.protocol.ProtoTest.TestReq
 import com.typesafe.config.Config
@@ -49,27 +54,28 @@ class PlayerNode(
     val idGenerator: IdGenerator
         get() = services.get(IdGenerator::class)
 
-    private val gameConfigHandler = GameConfigHandler()
-    private val loginHandler = LoginHandler()
-    private val playerHandler = PlayerHandler()
-    private val testHandler = TestHandler()
+    private val gameConfigUpdateEventHandler = GameConfigUpdateEventHandler()
+    private val gameConfigUpdatedEventHandler = GameConfigUpdatedEventHandler()
+    private val playerCreateEventHandler = PlayerCreateEventHandler()
+    private val playerLoginEventHandler = PlayerLoginEventHandler()
+    private val testGmHandler = TestGmHandler()
+    private val playerCreateReqHandler = PlayerCreateReqHandler()
+    private val playerLoginReqHandler = PlayerLoginReqHandler()
+    private val gmReqHandler = GmReqHandler(testGmHandler)
+    private val testReqHandler = TestReqHandler()
 
     val protobufDispatcher = ActorMessageDispatcher<PlayerActor, GeneratedMessage>(this).apply {
-        register(GmReq::class, playerHandler::handleGmReq)
-        register(TestReq::class, testHandler::handleTestReq)
+        register(GmReq::class, gmReqHandler)
+        register(TestReq::class, testReqHandler)
     }
 
     val internalDispatcher = ActorMessageDispatcher<PlayerActor, Message>(this).apply {
-        register(GameConfigUpdateEvent::class) { actor, _ -> gameConfigHandler.handleGameConfigUpdate(actor) }
-        register(PlayerLoginReq::class, loginHandler::handlePlayerLoginReq)
-        register(PlayerCreateReq::class, loginHandler::handlePlayerCreateReq)
-        register(PlayerLoginEvent::class) { actor, _ -> playerHandler.handlePlayerLoginEvent(actor) }
-        register(PlayerCreateEvent::class) { actor, _ -> playerHandler.handlePlayerCreateEvent(actor) }
-        register(GameConfigUpdatedEvent::class) { actor, _ -> playerHandler.handleGameConfigUpdatedEvent(actor) }
-    }
-
-    val gmDispatcher = ActorCommandDispatcher<PlayerActor>().apply {
-        register("testGm", playerHandler::handleTestGm)
+        register(GameConfigUpdateEvent::class, gameConfigUpdateEventHandler)
+        register(PlayerLoginReq::class, playerLoginReqHandler)
+        register(PlayerCreateReq::class, playerCreateReqHandler)
+        register(PlayerLoginEvent::class, playerLoginEventHandler)
+        register(PlayerCreateEvent::class, playerCreateEventHandler)
+        register(GameConfigUpdatedEvent::class, gameConfigUpdatedEventHandler)
     }
 
     override fun modulesBeforeCluster() = listOf(EntitySerializationModule(), workerIdRuntimeModule())

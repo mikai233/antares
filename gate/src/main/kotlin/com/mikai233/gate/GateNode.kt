@@ -11,14 +11,16 @@ import com.mikai233.common.message.*
 import com.mikai233.common.broadcast.PlayerBroadcastEnvelope
 import com.mikai233.common.message.channel.SubscribeTopic
 import com.mikai233.common.message.channel.UnsubscribeTopic
+import com.mikai233.gate.handler.message.broadcast.PlayerBroadcastEnvelopeHandler
+import com.mikai233.gate.handler.message.channel.SubscribeTopicHandler
+import com.mikai233.gate.handler.message.channel.UnsubscribeTopicHandler
+import com.mikai233.gate.handler.protocol.system.PingReqHandler
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import io.github.mikai233.asteria.cluster.pekko.EntityShardRegistry
 import io.github.mikai233.asteria.cluster.pekko.SingletonActorRegistry
 import io.github.mikai233.asteria.core.AsteriaApplicationBuilder
 import io.github.mikai233.asteria.cluster.pekko.extractor
-import com.mikai233.gate.handler.BroadcastHandler
-import com.mikai233.gate.handler.PingHandler
 import com.mikai233.protocol.ProtoSystem.PingReq
 import org.apache.pekko.actor.ActorRef
 import java.net.InetSocketAddress
@@ -37,17 +39,19 @@ class GateNode(
     val worldSharding: ActorRef
         get() = entityShard(ShardEntityType.WorldActor)
 
-    private val pingHandler = PingHandler()
-    private val broadcastHandler = BroadcastHandler()
+    private val pingReqHandler = PingReqHandler()
+    private val playerBroadcastEnvelopeHandler = PlayerBroadcastEnvelopeHandler()
+    private val subscribeTopicHandler = SubscribeTopicHandler()
+    private val unsubscribeTopicHandler = UnsubscribeTopicHandler()
 
     val protobufDispatcher = ActorMessageDispatcher<ChannelActor, GeneratedMessage>(this).apply {
-        register(PingReq::class) { actor, _ -> pingHandler.handlePingReq(actor) }
+        register(PingReq::class, pingReqHandler)
     }
 
     val internalDispatcher = ActorMessageDispatcher<ChannelActor, Message>(this).apply {
-        register(PlayerBroadcastEnvelope::class, broadcastHandler::handlePlayerBroadcastEnvelope)
-        register(SubscribeTopic::class, broadcastHandler::handleSubscribeTopic)
-        register(UnsubscribeTopic::class, broadcastHandler::handleUnsubscribeTopic)
+        register(PlayerBroadcastEnvelope::class, playerBroadcastEnvelopeHandler)
+        register(SubscribeTopic::class, subscribeTopicHandler)
+        register(UnsubscribeTopic::class, unsubscribeTopicHandler)
     }
 
     val protocolCodec = GateProtocolCodec()
