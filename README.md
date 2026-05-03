@@ -1,6 +1,6 @@
-# Asteria Game Cluster Example
+# Antares
 
-This repository is an example game cluster built on top of Asteria.
+This repository is a game server scaffold built on top of Asteria.
 
 It keeps a non-trivial demo domain in place:
 - `gate`: client access and gateway routing
@@ -10,7 +10,7 @@ It keeps a non-trivial demo domain in place:
 - `gm`: admin backend and script entrypoints
 - `tools`: local bootstrap helpers for config center and generated data
 
-The old in-repo framework layer has been stripped back. Nodes now launch through Asteria-oriented runtime wiring, while `tools` keeps a development-only helper for starting the whole cluster in one JVM.
+It is intended as a reusable starting point for real game services, not just a minimal demo. Besides core cluster wiring, the scaffold keeps patterns for the kinds of business problems that repeatedly show up in game backends, such as MongoDB historical-data compatibility and configuration-driven data evolution.
 
 ## Requirements
 
@@ -21,7 +21,7 @@ The old in-repo framework layer has been stripped back. Nodes now launch through
 
 ## Dependencies
 
-The example now resolves Asteria directly from Maven Central. The current dependency line targets `io.github.realm-labs.asteria:0.1.2`.
+The project resolves Asteria directly from Maven Central. The current dependency line targets `io.github.realm-labs.asteria:0.1.3`.
 
 ## Quick Start
 
@@ -46,7 +46,7 @@ It also publishes:
 - demo world definitions
 - demo Luban-style game config artifacts
 
-## What This Example Demonstrates
+## What This Scaffold Demonstrates
 
 - Asteria-based node startup with explicit role and shard registration
 - internal RPC on top of `ProtoRpc`
@@ -87,9 +87,9 @@ Game configuration is loaded through Asteria's unified config model. Runtime nod
 
 Demo tables live under `common/src/main/kotlin/com/mikai233/common/config/luban/` and cover items, monsters, drop pools, scenes, and activities.
 
-## Persistence Example
+## Persistence Patterns
 
-The example keeps the existing Mongo-backed entity and memdata flow so the repository stays large enough to demonstrate real game-cluster concerns instead of only toy handlers.
+The scaffold keeps the Mongo-backed entity and memdata flow, including compatibility-oriented entity factory patterns for handling older persisted documents while preserving strict business constructors.
 
 ## Debug Client
 

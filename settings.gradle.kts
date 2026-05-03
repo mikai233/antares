@@ -1,4 +1,4 @@
-rootProject.name = "asteria-game-cluster-example"
+rootProject.name = "antares"
 
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)

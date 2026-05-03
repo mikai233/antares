@@ -12,7 +12,7 @@ const router = useRouter()
       <div class="brand">
         <div class="brand-mark">GM</div>
         <div>
-          <strong>Asteria Console</strong>
+          <strong>Antares Console</strong>
           <span>Cluster operations</span>
         </div>
       </div>
