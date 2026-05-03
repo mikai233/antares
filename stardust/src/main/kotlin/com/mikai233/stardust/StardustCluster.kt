@@ -11,6 +11,7 @@ import com.mikai233.global.GlobalNode
 import com.mikai233.gm.GmNode
 import com.mikai233.player.PlayerNode
 import com.mikai233.world.WorldNode
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import io.github.realmlabs.asteria.cluster.config.ClusterConfigLayout
 import io.github.realmlabs.asteria.cluster.config.RuntimeNodeConfig
@@ -20,19 +21,36 @@ import io.github.realmlabs.asteria.config.center.zookeeper.ZookeeperConfigStore
 import kotlinx.coroutines.*
 import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
-import kotlin.reflect.KClass
-import kotlin.reflect.full.primaryConstructor
 import kotlin.system.exitProcess
 
 object StardustCluster {
+    private typealias NodeFactory = (
+        addr: InetSocketAddress,
+        name: String,
+        nodeId: String,
+        config: Config,
+        zookeeperConnectString: String,
+        sameJvm: Boolean,
+    ) -> LaunchableNode
+
     private val logger = logger()
     private val client = asyncZookeeperClient(GlobalEnv.zkConnect)
-    private val nodeByRole: Map<String, KClass<out LaunchableNode>> = mapOf(
-        GameRoles.Player to PlayerNode::class,
-        GameRoles.Gate to GateNode::class,
-        GameRoles.World to WorldNode::class,
-        GameRoles.Global to GlobalNode::class,
-        GameRoles.Gm to GmNode::class,
+    private val nodeByRole: Map<String, NodeFactory> = mapOf(
+        GameRoles.Player to { addr, name, nodeId, config, zookeeperConnectString, sameJvm ->
+            PlayerNode(addr, name, nodeId, config, zookeeperConnectString, sameJvm)
+        },
+        GameRoles.Gate to { addr, name, nodeId, config, zookeeperConnectString, sameJvm ->
+            GateNode(addr, name, nodeId, config, zookeeperConnectString, sameJvm)
+        },
+        GameRoles.World to { addr, name, nodeId, config, zookeeperConnectString, sameJvm ->
+            WorldNode(addr, name, nodeId, config, zookeeperConnectString, sameJvm)
+        },
+        GameRoles.Global to { addr, name, nodeId, config, zookeeperConnectString, sameJvm ->
+            GlobalNode(addr, name, nodeId, config, zookeeperConnectString, sameJvm)
+        },
+        GameRoles.Gm to { addr, name, nodeId, config, zookeeperConnectString, sameJvm ->
+            GmNode(addr, name, nodeId, config, zookeeperConnectString, sameJvm)
+        },
     )
     private val nodes: ArrayList<LaunchableNode> = arrayListOf()
 
@@ -60,14 +78,12 @@ object StardustCluster {
                     val role = requireNotNull(nodeConfig.roles.firstOrNull(nodeByRole::containsKey)) {
                         "node ${nodeConfig.nodeId} has no known game role: ${nodeConfig.roles}"
                     }
-                    val nodeClass = nodeByRole[role]
-                    if (nodeClass != null) {
-                        val constructor =
-                            requireNotNull(nodeClass.primaryConstructor) { "$nodeClass primaryConstructor not found" }
+                    val nodeFactory = nodeByRole[role]
+                    if (nodeFactory != null) {
                         val addr = InetSocketAddress(nodeConfig.host, nodeConfig.port)
                         val config = ConfigFactory.load("${role.lowercase()}.conf")
                         val sameJvm = true
-                        val node = constructor.call(addr, systemName, nodeConfig.nodeId, config, zookeeperConnectString, sameJvm)
+                        val node = nodeFactory(addr, systemName, nodeConfig.nodeId, config, zookeeperConnectString, sameJvm)
                         node.launch()
                         nodes.add(node)
                     } else {
