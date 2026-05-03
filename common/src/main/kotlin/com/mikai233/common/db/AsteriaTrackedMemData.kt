@@ -23,7 +23,7 @@ abstract class AsteriaTrackedMemData<E, T>(
     }
 
     protected fun removeTracked(entityId: Any) {
-        runtimes.remove(entityId)
+        runtimes.remove(entityId)?.enqueueDelete()
     }
 
     override suspend fun tick() {

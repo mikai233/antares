@@ -79,9 +79,6 @@ val NodeRuntime.gameWorldIds: Set<Long>
 val NodeRuntime.gameWorldConfigs: Map<Long, GameWorldConfig>
     get() = gameWorldConfigService.worldsById
 
-val NodeRuntime.gameConfigVersion: String
-    get() = services.get(ConfigService::class).current().revision.version
-
 val NodeRuntime.gameTables: GameTables
     get() = services.get(ConfigService::class).current().requireComponent()
 

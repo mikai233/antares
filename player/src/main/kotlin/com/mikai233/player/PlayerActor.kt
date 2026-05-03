@@ -1,15 +1,14 @@
 package com.mikai233.player
 
 import com.google.protobuf.GeneratedMessage
+import io.github.realmlabs.asteria.config.ConfigChangedEvent
 import com.mikai233.common.core.system
-import com.mikai233.common.event.GameConfigUpdateEvent
 import com.mikai233.common.extension.ask
 import com.mikai233.common.extension.tell
 import com.mikai233.common.message.player.*
 import com.mikai233.protocol.ProtoLogin
 import com.mikai233.protocol.ProtoRpc.ChannelExpiredReq
 import com.mikai233.protocol.ProtoRpc.PlayerChannelClosedReq
-import com.mikai233.common.event.GameConfigUpdatedEvent
 import com.mikai233.common.event.PlayerCreateEvent
 import com.mikai233.common.event.PlayerLoginEvent
 import io.github.realmlabs.asteria.actor.ActorTimerSupport
@@ -45,7 +44,7 @@ class PlayerActor(val node: PlayerNode) : ScriptableAsteriaActor<PlayerNode>(nod
     override fun preStart() {
         super.preStart()
         timers.start()
-        node.system.eventStream.subscribe(self, GameConfigUpdateEvent::class.java)
+        node.system.eventStream.subscribe(self, ConfigChangedEvent::class.java)
         lifecycle.startLoading()
         logger.info("{} started", self)
     }
@@ -74,10 +73,9 @@ class PlayerActor(val node: PlayerNode) : ScriptableAsteriaActor<PlayerNode>(nod
             .match(PlayerTick::class.java) { manager.tick() }
             .match(GeneratedMessage::class.java) { handleProtobufMessage(it) }
             .match(ReceiveTimeout::class.java) { if (!isOnline()) passivate() }
-            .match(GameConfigUpdateEvent::class.java) { handlePlayerMessage(it) }
+            .match(ConfigChangedEvent::class.java) { handlePlayerMessage(it) }
             .match(PlayerLoginEvent::class.java) { handlePlayerMessage(it) }
             .match(PlayerCreateEvent::class.java) { handlePlayerMessage(it) }
-            .match(GameConfigUpdatedEvent::class.java) { handlePlayerMessage(it) }
             .build()
     }
 

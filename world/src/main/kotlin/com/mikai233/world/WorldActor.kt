@@ -1,11 +1,11 @@
 package com.mikai233.world
 
 import com.google.protobuf.GeneratedMessage
+import io.github.realmlabs.asteria.config.ConfigChangedEvent
 import com.mikai233.common.broadcast.PlayerBroadcastEnvelope
 import com.mikai233.common.core.broadcastRouter
 import com.mikai233.common.core.gameWorldIds
 import com.mikai233.common.core.system
-import com.mikai233.common.event.GameConfigUpdateEvent
 import com.mikai233.common.event.WorldActiveEvent
 import com.mikai233.common.extension.ask
 import com.mikai233.common.extension.tell
@@ -46,7 +46,7 @@ class WorldActor(val node: WorldNode) : ScriptableAsteriaActor<WorldNode>(node) 
     override fun preStart() {
         super.preStart()
         timers.start()
-        node.system.eventStream.subscribe(self, GameConfigUpdateEvent::class.java)
+        node.system.eventStream.subscribe(self, ConfigChangedEvent::class.java)
         lifecycle.startLoading()
         logger.info("{} started", self)
     }
@@ -71,11 +71,12 @@ class WorldActor(val node: WorldNode) : ScriptableAsteriaActor<WorldNode>(node) 
             .match(HandoffWorld::class.java) { lifecycle.beginStop() }
             .match(WorldTick::class.java) { manager.tick() }
             .match(GeneratedMessage::class.java) { handleProtobufMessage(it) }
+            .match(ConfigChangedEvent::class.java) { handleWorldMessage(it) }
             .match(Message::class.java) { handleWorldMessage(it) }
             .build()
     }
 
-    private fun handleWorldMessage(message: Message) {
+    private fun handleWorldMessage(message: Any) {
         try {
             node.internalDispatcher.dispatchActor(node, this, message)
         } catch (e: Exception) {

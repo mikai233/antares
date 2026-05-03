@@ -3,6 +3,7 @@ package com.mikai233.player.handler.message.player
 import com.mikai233.common.annotation.AllOpen
 import com.mikai233.common.core.system
 import com.mikai233.common.extension.decodeActorRef
+import com.mikai233.common.event.PlayerCreateEvent
 import com.mikai233.common.extension.tell
 import com.mikai233.player.PlayerHandlerContext
 import com.mikai233.player.PlayerMessageHandler
@@ -18,5 +19,6 @@ class PlayerCreateReqHandler : PlayerMessageHandler<PlayerCreateReq> {
         loginService.createPlayer(actor, message)
         val response = loginService.loginSuccessResp(actor)
         actor.sender.tell(PlayerCreateResp.newBuilder().setResponse(response).build())
+        actor.self tell PlayerCreateEvent
     }
 }

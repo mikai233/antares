@@ -1,5 +1,7 @@
 package com.mikai233.common.test.db
 
+import com.mikai233.common.entity.PlayerActivity
+import com.mikai233.common.entity.PlayerActivityMongo
 import com.mikai233.common.entity.WorldAction
 import com.mikai233.common.entity.WorldActionMongo
 import kotlinx.coroutines.reactor.awaitSingle
@@ -41,6 +43,9 @@ class SpringDataMongoCompatibilityTest {
     fun cleanup() {
         runBlocking {
             template.dropCollection(WorldActionMongo.COLLECTION)
+                .onErrorResume { reactor.core.publisher.Mono.empty() }
+                .awaitSingleOrNull()
+            template.dropCollection(PlayerActivityMongo.COLLECTION)
                 .onErrorResume { reactor.core.publisher.Mono.empty() }
                 .awaitSingleOrNull()
         }
@@ -157,5 +162,33 @@ class SpringDataMongoCompatibilityTest {
         assertEquals(10, loaded.actionId)
         assertEquals(7L, loaded.latestActionMills)
         assertEquals(8L, loaded.actionParam)
+    }
+
+    @Test
+    fun playerActivityLegacyDocumentMissingDuplicatedFieldsShouldApplyDefaults() = runBlocking {
+        template.insert(
+            Document(
+                mapOf(
+                    "_id" to "7_daily_login",
+                    "playerId" to 7L,
+                    "activityId" to "daily_login",
+                )
+            ),
+            PlayerActivityMongo.COLLECTION,
+        ).awaitSingle()
+
+        val loaded = template.findOne(
+            query(where("_id").`is`("7_daily_login")),
+            PlayerActivity::class.java,
+            PlayerActivityMongo.COLLECTION,
+        ).awaitSingle()
+
+        assertEquals("7_daily_login", loaded.id)
+        assertEquals(7L, loaded.playerId)
+        assertEquals("daily_login", loaded.activityId)
+        assertEquals("", loaded.activityName)
+        assertEquals(0, loaded.unlockLevel)
+        assertEquals("", loaded.conditionSummary)
+        assertEquals("", loaded.rewardSummary)
     }
 }

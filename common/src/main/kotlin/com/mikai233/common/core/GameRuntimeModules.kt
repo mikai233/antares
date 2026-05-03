@@ -9,7 +9,6 @@ import com.mikai233.common.config.GAME_WORLDS
 import com.mikai233.common.config.luban.GameConfigSnapshotLoader
 import com.mikai233.common.config.luban.GameTables
 import com.mikai233.common.db.MongoDB
-import com.mikai233.common.event.GameConfigUpdateEvent
 import io.github.realmlabs.asteria.config.ConfigModule
 import io.github.realmlabs.asteria.config.center.ConfigCenterReloadTrigger
 import io.github.realmlabs.asteria.config.center.ConfigStore
@@ -123,9 +122,8 @@ class GameConfigModule : AsteriaModule {
                 ),
             )
             onReload { result ->
-                if (result.previous != null) {
-                    context.services.find(ActorSystem::class)?.eventStream?.publish(GameConfigUpdateEvent)
-                }
+                val event = result.changeEventOrNull() ?: return@onReload
+                context.services.find(ActorSystem::class)?.eventStream?.publish(event)
             }
             hotReload {
                 trigger(

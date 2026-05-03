@@ -5,16 +5,15 @@ import com.beust.jcommander.Parameter
 import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.PLAYER_SHARD_NUM
 import com.mikai233.common.WORLD_SHARD_NUM
+import com.mikai233.common.config.ConfigChangeDispatcher
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.*
-import com.mikai233.common.event.GameConfigUpdateEvent
-import com.mikai233.common.event.GameConfigUpdatedEvent
 import com.mikai233.common.event.PlayerCreateEvent
 import com.mikai233.common.event.PlayerLoginEvent
 import com.mikai233.common.message.player.HandoffPlayer
 import com.mikai233.common.rpc.GameRpcProtocolDefinition
-import com.mikai233.player.handler.event.GameConfigUpdateEventHandler
-import com.mikai233.player.handler.event.GameConfigUpdatedEventHandler
+import com.mikai233.player.config.PlayerActivityConfigChangeHandler
+import com.mikai233.player.handler.event.ConfigChangedEventHandler
 import com.mikai233.player.handler.event.PlayerCreateEventHandler
 import com.mikai233.player.handler.event.PlayerLoginEventHandler
 import com.mikai233.player.handler.gm.TestGmHandler
@@ -36,6 +35,7 @@ import io.github.realmlabs.asteria.core.ServiceRegistry
 import io.github.realmlabs.asteria.cluster.pekko.actor
 import io.github.realmlabs.asteria.cluster.pekko.allocationStrategy
 import io.github.realmlabs.asteria.cluster.pekko.extractor
+import io.github.realmlabs.asteria.config.ConfigChangedEvent
 import io.github.realmlabs.asteria.id.IdGenerator
 import io.github.realmlabs.asteria.message.MessageDispatcher
 import org.apache.pekko.actor.ActorRef
@@ -70,8 +70,8 @@ class PlayerNode(
     val idGenerator: IdGenerator
         get() = services.get(IdGenerator::class)
 
-    private val gameConfigUpdateEventHandler = GameConfigUpdateEventHandler()
-    private val gameConfigUpdatedEventHandler = GameConfigUpdatedEventHandler()
+    private val configChangedEventHandler = ConfigChangedEventHandler()
+    private val playerActivityConfigChangeHandler = PlayerActivityConfigChangeHandler()
     private val playerCreateEventHandler = PlayerCreateEventHandler()
     private val playerLoginEventHandler = PlayerLoginEventHandler()
     private val testGmHandler = TestGmHandler()
@@ -90,11 +90,14 @@ class PlayerNode(
     }
     val protobufDispatcher = MessageDispatcher(protobufHandlers)
 
+    val configChangeDispatcher = ConfigChangeDispatcher<PlayerActor>(
+        listOf(playerActivityConfigChangeHandler),
+    )
+
     private val internalHandlers = PlayerMessageHandlerRegistry<Any>().apply {
-        register(GameConfigUpdateEvent::class, gameConfigUpdateEventHandler)
+        register(ConfigChangedEvent::class, configChangedEventHandler)
         register(PlayerLoginEvent::class, playerLoginEventHandler)
         register(PlayerCreateEvent::class, playerCreateEventHandler)
-        register(GameConfigUpdatedEvent::class, gameConfigUpdatedEventHandler)
     }
     val internalDispatcher = MessageDispatcher(internalHandlers)
 

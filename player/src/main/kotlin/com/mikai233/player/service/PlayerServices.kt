@@ -8,6 +8,3 @@ package com.mikai233.player.service
 
 @Volatile
 var loginService = LoginService()
-
-@Volatile
-var playerService = PlayerService()

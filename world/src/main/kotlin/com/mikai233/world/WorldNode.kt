@@ -5,10 +5,9 @@ import com.beust.jcommander.Parameter
 import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.PLAYER_SHARD_NUM
 import com.mikai233.common.WORLD_SHARD_NUM
+import com.mikai233.common.config.ConfigChangeDispatcher
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.*
-import com.mikai233.common.event.GameConfigUpdateEvent
-import com.mikai233.common.event.GameConfigUpdatedEvent
 import com.mikai233.common.event.WorldActiveEvent
 import com.mikai233.common.message.Message
 import com.mikai233.common.message.world.HandoffWorld
@@ -26,10 +25,10 @@ import io.github.realmlabs.asteria.core.ServiceRegistry
 import io.github.realmlabs.asteria.cluster.pekko.actor
 import io.github.realmlabs.asteria.cluster.pekko.allocationStrategy
 import io.github.realmlabs.asteria.cluster.pekko.extractor
+import io.github.realmlabs.asteria.config.ConfigChangedEvent
 import io.github.realmlabs.asteria.id.IdGenerator
 import io.github.realmlabs.asteria.message.MessageDispatcher
-import com.mikai233.world.handler.event.GameConfigUpdateEventHandler
-import com.mikai233.world.handler.event.GameConfigUpdatedEventHandler
+import com.mikai233.world.handler.event.ConfigChangedEventHandler
 import com.mikai233.world.handler.event.WorldActiveEventHandler
 import com.mikai233.world.handler.gm.TestBroadcastHandler
 import com.mikai233.world.handler.message.world.PlayerLoginHandler
@@ -69,8 +68,7 @@ class WorldNode(
     val idGenerator: IdGenerator
         get() = services.get(IdGenerator::class)
 
-    private val gameConfigUpdateEventHandler = GameConfigUpdateEventHandler()
-    private val gameConfigUpdatedEventHandler = GameConfigUpdatedEventHandler()
+    private val configChangedEventHandler = ConfigChangedEventHandler()
     private val worldActiveEventHandler = WorldActiveEventHandler()
     private val testBroadcastHandler = TestBroadcastHandler()
     private val playerLoginHandler = PlayerLoginHandler()
@@ -88,10 +86,11 @@ class WorldNode(
     }
     val protobufDispatcher = MessageDispatcher(protobufHandlers)
 
-    private val internalHandlers = WorldMessageHandlerRegistry<Message>().apply {
+    val configChangeDispatcher = ConfigChangeDispatcher<WorldActor>()
+
+    private val internalHandlers = WorldMessageHandlerRegistry<Any>().apply {
         register(WorldActiveEvent::class, worldActiveEventHandler)
-        register(GameConfigUpdateEvent::class, gameConfigUpdateEventHandler)
-        register(GameConfigUpdatedEvent::class, gameConfigUpdatedEventHandler)
+        register(ConfigChangedEvent::class, configChangedEventHandler)
     }
     val internalDispatcher = MessageDispatcher(internalHandlers)
 
