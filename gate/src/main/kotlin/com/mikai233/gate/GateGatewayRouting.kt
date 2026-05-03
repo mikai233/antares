@@ -42,7 +42,7 @@ class GateGatewayRouter(
     private val messageFactory = GateGatewayMessageFactory()
     private val localHandler = GateGatewayLocalHandler()
 
-    suspend fun dispatch(
+    fun dispatch(
         session: GatewaySession,
         packet: ClientProtobuf,
     ): GatewayRoute {
@@ -61,7 +61,7 @@ class GateGatewayRouter(
 }
 
 private class GateGatewayRouteResolver : GatewayRouteResolver<ClientProtobuf> {
-    override suspend fun resolve(context: GatewaySessionContext, packet: ClientProtobuf): GatewayRoute {
+    override fun resolve(context: GatewaySessionContext, packet: ClientProtobuf): GatewayRoute {
         return when (val message = packet.message) {
             is PingReq -> GatewayRoute(RouteTarget.GatewayLocal)
             is TestReq -> GatewayRoute(PlayerRouteTarget, requirePlayerId(context.session))

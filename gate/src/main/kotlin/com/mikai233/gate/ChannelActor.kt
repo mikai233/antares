@@ -26,7 +26,6 @@ import com.mikai233.protocol.connectionExpiredNotify
 import io.github.realmlabs.asteria.gateway.GatewaySession
 import io.github.realmlabs.asteria.gateway.GatewaySessionContext
 import io.github.realmlabs.asteria.script.pekko.ScriptableAsteriaActor
-import kotlinx.coroutines.runBlocking
 import org.apache.pekko.actor.Props
 import org.apache.pekko.actor.ReceiveTimeout
 import org.apache.pekko.cluster.pubsub.DistributedPubSub
@@ -202,9 +201,7 @@ class ChannelActor(val node: GateNode, private val session: GatewaySession) :
     private fun forwardClientMessage(clientProtobuf: ClientProtobuf) {
         logger.debug("forward message:{}", formatMessage(clientProtobuf.message))
         try {
-            runBlocking {
-                node.gatewayRouter.dispatch(session, clientProtobuf)
-            }
+            node.gatewayRouter.dispatch(session, clientProtobuf)
         } catch (e: Exception) {
             logger.error(e, "channel:{} forward client message:{} failed", self, clientProtobuf.message)
         }

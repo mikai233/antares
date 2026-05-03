@@ -15,7 +15,6 @@ import io.github.realmlabs.asteria.core.ServiceRegistry
 import io.github.realmlabs.asteria.cluster.pekko.PekkoSingletonStartup
 import io.github.realmlabs.asteria.cluster.pekko.extractor
 import io.github.realmlabs.asteria.cluster.pekko.singletonStartup
-import kotlinx.coroutines.runBlocking
 import org.apache.pekko.actor.ActorRef
 import java.net.InetSocketAddress
 
@@ -96,7 +95,7 @@ private class Cli {
     var nodeId: String? = null
 }
 
-fun main(args: Array<String>) = runBlocking {
+suspend fun main(args: Array<String>) {
     val cli = Cli()
     @Suppress("SpreadOperator")
     JCommander.newBuilder()

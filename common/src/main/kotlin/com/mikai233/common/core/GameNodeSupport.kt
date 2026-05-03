@@ -2,8 +2,6 @@ package com.mikai233.common.core
 
 import com.google.common.io.Resources
 import com.mikai233.common.broadcast.PlayerBroadcastEventBus
-import com.mikai233.common.config.GAME_CONFIG_PUBLICATION
-import com.mikai233.common.config.GAME_WORLDS
 import com.mikai233.common.config.GameWorldConfig
 import com.mikai233.common.config.WORKER_IDS
 import com.mikai233.common.config.luban.GameTables
@@ -13,17 +11,11 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import io.github.realmlabs.asteria.cluster.pekko.EntityShardRegistry
 import io.github.realmlabs.asteria.cluster.pekko.SingletonActorRegistry
+import io.github.realmlabs.asteria.cluster.pekko.addSuspendTask
 import io.github.realmlabs.asteria.config.ConfigService
 import io.github.realmlabs.asteria.config.center.zookeeper.ZookeeperConfigCenterModule
 import io.github.realmlabs.asteria.config.requireComponent
-import io.github.realmlabs.asteria.core.AsteriaApplicationBuilder
-import io.github.realmlabs.asteria.core.AsteriaModule
-import io.github.realmlabs.asteria.core.EntityKind
-import io.github.realmlabs.asteria.core.NodeRuntime
-import io.github.realmlabs.asteria.core.NodeState
-import io.github.realmlabs.asteria.core.RoleKey
-import io.github.realmlabs.asteria.core.ServiceRegistry
-import io.github.realmlabs.asteria.core.SingletonName
+import io.github.realmlabs.asteria.core.*
 import io.github.realmlabs.asteria.id.WorkerIdModule
 import io.github.realmlabs.asteria.id.WorkerIdModuleOptions
 import io.github.realmlabs.asteria.id.WorkerIdOwner
@@ -34,19 +26,15 @@ import io.github.realmlabs.asteria.script.pekko.ScriptModule
 import io.github.realmlabs.asteria.starter.clusterGameApplication
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
 import org.apache.curator.x.async.AsyncCuratorFramework
-import org.apache.pekko.Done
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.actor.CoordinatedShutdown
 import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CompletionStage
-import java.util.function.Supplier
 import kotlin.random.Random
 import kotlin.random.nextLong
+import kotlin.time.Duration.Companion.milliseconds
 
 object GameRoles {
     const val Player = "Player"
@@ -198,35 +186,23 @@ class ClusterNodeBootstrap(
 
     private fun addCoordinatedShutdownTasks(onStateChange: (NodeState) -> Unit) {
         with(CoordinatedShutdown.get(runtime.system)) {
-            addTask(
+            addSuspendTask(
                 CoordinatedShutdown.PhaseClusterLeave(),
                 "leave_delay",
-                taskSupplier {
-                    delay(Random.nextLong(1000L..5000L))
-                },
-            )
-            addTask(
+            ) {
+                delay(Random.nextLong(1000L..5000L).milliseconds)
+            }
+            addSuspendTask(
                 CoordinatedShutdown.PhaseBeforeServiceUnbind(),
                 "change_state_stopping",
-                taskSupplier {
+            ) {
                     onStateChange(NodeState.Stopping)
-                },
-            )
-            addTask(
+            }
+            addSuspendTask(
                 CoordinatedShutdown.PhaseActorSystemTerminate(),
                 "change_state_stopped",
-                taskSupplier {
+            ) {
                     onStateChange(NodeState.Stopped)
-                },
-            )
-        }
-    }
-
-    private fun taskSupplier(task: suspend () -> Unit): Supplier<CompletionStage<Done>> {
-        return Supplier {
-            CompletableFuture.supplyAsync {
-                runBlocking { task.invoke() }
-                Done.done()
             }
         }
     }
