@@ -1,6 +1,9 @@
 dependencies {
     testImplementation(platform(libTest.junit.bom))
     testImplementation(libTest.junit.jupiter)
+    implementation(libTool.bundles.asteria.cluster)
+    implementation(libTool.bundles.asteria.config)
+    implementation(libTool.bundles.asteria.persistence)
     implementation(libTool.kotlinpoet)
     implementation(libLog.bundles.common)
     implementation(libKotlinx.datetime)

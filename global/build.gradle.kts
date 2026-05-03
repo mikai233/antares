@@ -5,6 +5,9 @@ plugins {
 dependencies {
     testImplementation(platform(libTest.junit.bom))
     testImplementation(libTest.junit.jupiter)
+    implementation(libTool.bundles.asteria.foundation)
+    implementation(libTool.bundles.asteria.cluster)
+    implementation(libTool.bundles.asteria.script)
     implementation(libPekko.bundles.common)
     implementation(libKotlinx.core)
     implementation(libKotlinx.datetime.jvm)

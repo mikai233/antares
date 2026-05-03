@@ -19,18 +19,9 @@ The old in-repo framework layer has been stripped back. Nodes now launch through
 - Zookeeper
 - Gradle 9
 
-## Local Asteria Development
+## Dependencies
 
-`settings.gradle.kts` automatically uses a sibling checkout at `../Asteria` when it exists:
-
-```kotlin
-val localAsteria = file("../Asteria")
-if (localAsteria.exists()) {
-    includeBuild(localAsteria)
-}
-```
-
-If you are not developing Asteria locally, remove that composite build or replace dependencies with published versions.
+The example now resolves Asteria directly from Maven Central. The current dependency line targets `io.github.realm-labs.asteria:0.1.2`.
 
 ## Quick Start
 

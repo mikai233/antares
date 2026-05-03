@@ -1,10 +1,5 @@
 rootProject.name = "asteria-game-cluster-example"
 
-val localAsteria = file("../Asteria")
-if (localAsteria.exists()) {
-    includeBuild(localAsteria)
-}
-
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
