@@ -1,4 +1,4 @@
-package com.mikai233.stardust
+package com.mikai233.tools.cluster
 
 import ch.qos.logback.classic.LoggerContext
 import com.mikai233.common.conf.GlobalEnv
@@ -18,12 +18,14 @@ import io.github.realmlabs.asteria.cluster.config.RuntimeNodeConfig
 import io.github.realmlabs.asteria.config.center.JacksonConfigCodec
 import io.github.realmlabs.asteria.config.center.RuntimeConfigRepository
 import io.github.realmlabs.asteria.config.center.zookeeper.ZookeeperConfigStore
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
 import kotlin.system.exitProcess
 
-object StardustCluster {
+object DevClusterLauncher {
     private typealias NodeFactory = (
         addr: InetSocketAddress,
         name: String,
@@ -34,7 +36,6 @@ object StardustCluster {
     ) -> LaunchableNode
 
     private val logger = logger()
-    private val client = asyncZookeeperClient(GlobalEnv.zkConnect)
     private val nodeByRole: Map<String, NodeFactory> = mapOf(
         GameRoles.Player to { addr, name, nodeId, config, zookeeperConnectString, sameJvm ->
             PlayerNode(addr, name, nodeId, config, zookeeperConnectString, sameJvm)
@@ -52,46 +53,47 @@ object StardustCluster {
             GmNode(addr, name, nodeId, config, zookeeperConnectString, sameJvm)
         },
     )
-    private val nodes: ArrayList<LaunchableNode> = arrayListOf()
 
     suspend fun launch() {
-        val repository = RuntimeConfigRepository(ZookeeperConfigStore(client), JacksonConfigCodec())
+        val repository = RuntimeConfigRepository(
+            ZookeeperConfigStore(asyncZookeeperClient(GlobalEnv.zkConnect)),
+            JacksonConfigCodec(),
+        )
         val layout = ClusterConfigLayout.default(GlobalEnv.SYSTEM_NAME)
         val nodeConfigs = repository.children<RuntimeNodeConfig>(layout.nodes)
             .values
             .values
             .map { it.value }
             .sortedByDescending { it.seed }
-        val zookeeperConnectString = GlobalEnv.zkConnect
-        val systemName = GlobalEnv.SYSTEM_NAME
+
         val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
-            logger.error("launch node error", throwable)
-            // 确保日志打印完成
-            val loggerContext: LoggerContext = LoggerFactory.getILoggerFactory() as LoggerContext
-            loggerContext.stop()
+            logger.error("failed to launch development cluster", throwable)
+            (LoggerFactory.getILoggerFactory() as LoggerContext).stop()
             exitProcess(-1)
         }
+
         supervisorScope {
             nodeConfigs.forEach { nodeConfig ->
                 launch(exceptionHandler) {
-                    logger.info("launch node with config:{}", nodeConfig)
+                    logger.info("launch development node: {}", nodeConfig)
                     val role = requireNotNull(nodeConfig.roles.firstOrNull(nodeByRole::containsKey)) {
                         "node ${nodeConfig.nodeId} has no known game role: ${nodeConfig.roles}"
                     }
-                    val nodeFactory = nodeByRole[role]
-                    if (nodeFactory != null) {
-                        val addr = InetSocketAddress(nodeConfig.host, nodeConfig.port)
-                        val config = ConfigFactory.load("${role.lowercase()}.conf")
-                        val sameJvm = true
-                        val node = nodeFactory(addr, systemName, nodeConfig.nodeId, config, zookeeperConnectString, sameJvm)
-                        node.launch()
-                        nodes.add(node)
-                    } else {
-                        logger.error("node of role:{} not register", role)
-                    }
+                    val nodeFactory = requireNotNull(nodeByRole[role]) { "node factory missing for role: $role" }
+                    val addr = InetSocketAddress(nodeConfig.host, nodeConfig.port)
+                    val config = ConfigFactory.load("${role.lowercase()}.conf")
+                    nodeFactory(
+                        addr,
+                        GlobalEnv.SYSTEM_NAME,
+                        nodeConfig.nodeId,
+                        config,
+                        GlobalEnv.zkConnect,
+                        true,
+                    ).launch()
                 }
             }
         }
     }
-
 }
+
+suspend fun main() = DevClusterLauncher.launch()

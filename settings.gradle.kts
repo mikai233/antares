@@ -1,6 +1,9 @@
-rootProject.name = "antares"
+rootProject.name = "asteria-game-cluster-example"
 
-includeBuild("/Users/mikai/IdeaProjects/Asteria")
+val localAsteria = file("../Asteria")
+if (localAsteria.exists()) {
+    includeBuild(localAsteria)
+}
 
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
@@ -39,5 +42,4 @@ include("player")
 include("proto")
 include("global")
 include("world")
-include("stardust")
 include("gm")

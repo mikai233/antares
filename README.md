@@ -1,276 +1,105 @@
-# antares
+# Asteria Game Cluster Example
 
-# Pekko-based Distributed Game Server
+This repository is an example game cluster built on top of Asteria.
 
-## Development Environment
+It keeps a non-trivial demo domain in place:
+- `gate`: client access and gateway routing
+- `player`: player shard and actor logic
+- `world`: world shard, world wakeup, and broadcast examples
+- `global`: shared cluster services
+- `gm`: admin backend and script entrypoints
+- `tools`: local bootstrap helpers for config center and generated data
 
-- JDK21 (azul-21)
+The old in-repo framework layer has been stripped back. Nodes now launch through Asteria-oriented runtime wiring, while `tools` keeps a development-only helper for starting the whole cluster in one JVM.
+
+## Requirements
+
+- JDK 21
 - MongoDB
-- Gradle 9
 - Zookeeper
+- Gradle 9
 
-## Getting Started
+## Local Asteria Development
 
-1. Run `ZookeeperInitializer.kt` to initialize Zookeeper data.
-2. Publish game configuration through Asteria's Luban publication model.
-3. Execute `Stardust.kt` to start the game server.
+`settings.gradle.kts` automatically uses a sibling checkout at `../Asteria` when it exists:
+
+```kotlin
+val localAsteria = file("../Asteria")
+if (localAsteria.exists()) {
+    includeBuild(localAsteria)
+}
+```
+
+If you are not developing Asteria locally, remove that composite build or replace dependencies with published versions.
 
 ## Quick Start
 
-### Define Protobuf Protocol
+1. Start MongoDB and Zookeeper.
+2. Run `tools/src/main/kotlin/com/mikai233/tools/zookeeper/ZookeeperInitializer.kt`.
+3. Launch `tools/src/main/kotlin/com/mikai233/tools/cluster/DevClusterLauncher.kt`.
+4. Optionally start the protocol debug client in `client/`.
 
-```protobuf
-syntax = "proto3";
+If you want to debug an individual node, the node mains in `global/`, `player/`, `world/`, `gate/`, and `gm/` are still available.
 
-package com.mikai233.protocol;
+The bootstrap tool writes a default topology into Zookeeper:
+- `player-2333`
+- `player-2334`
+- `world-2335`
+- `global-2336`
+- `gate-2337`
+- `gm-2338`
 
-message TestReq {
+It also publishes:
+- demo MongoDB datasource config
+- gate netty config on port `6666`
+- demo world definitions
+- demo Luban-style game config artifacts
 
-}
+## What This Example Demonstrates
 
-message TestResp {
+- Asteria-based node startup with explicit role and shard registration
+- internal RPC on top of `ProtoRpc`
+- explicit handler registration through `MessageDispatcher`
+- actor-oriented handler contexts
+- config center integration and Luban publication loading
+- Mongo-backed entity and memdata patterns
+- GM scripts and admin operations
 
-}
-```
+## Message Handling
 
-### Assign Protocol IDs
-
-The protocol IDs for requests and responses must match.
-
-```protobuf
-syntax = "proto3";
-import "proto_system.proto";
-import "proto_login.proto";
-import "proto_test.proto";
-
-package com.mikai233.protocol;
-
-message MessageClientToServer {
-  PingReq ping_req = 1;
-  GmReq gm_req = 2;
-  TestReq test_req = 3;
-  LoginReq login_req = 10001;
-}
-```
-
-```protobuf
-syntax = "proto3";
-import "proto_system.proto";
-import "proto_login.proto";
-import "proto_test.proto";
-
-package com.mikai233.protocol;
-
-message MessageServerToClient {
-  PingResp ping_resp = 1;
-  GmResp gm_resp = 2;
-  TestResp test_resp = 3;
-  LoginResp login_resp = 10001;
-  TestNotify test_notify = 99999;
-}
-```
-
-## Define `MessageHandler` to Handle Messages
-
-A `MessageHandler` can contain any number of message handling functions, simply use the `@Handle` annotation.
+Handlers are registered explicitly. This project no longer uses reflection-style `@Handle` scanning.
 
 ```kotlin
-@AllOpen
-class TestHandler : MessageHandler {
-    @Handle
-    fun handleTestReq(player: PlayerActor, testReq: TestReq) {
-        player.send(testResp { })
+private val protobufHandlers = PlayerMessageHandlerRegistry<GeneratedMessage>().apply {
+    register(GmReq::class, gmReqHandler)
+    register(TestReq::class, testReqHandler)
+    register(PlayerLoginReq::class, playerLoginReqHandler)
+}
+
+val protobufDispatcher = MessageDispatcher(protobufHandlers)
+```
+
+Actor handlers use Asteria actor contexts directly:
+
+```kotlin
+class PlayerLoginEventHandler : PlayerMessageHandler<PlayerLoginEvent> {
+    override fun handle(context: PlayerHandlerContext, message: PlayerLoginEvent) {
+        val player = context.actor
+        // business logic
     }
 }
 ```
-
-## Start Client for Protocol Debugging
-
-The debugging client is located in the `client` directory. Modify the `proto_path` in `client/lua/proto.lua` to the
-Protobuf protocol directory (usually no modification is needed as it uses a relative path).
-Start `client.exe` to connect to the server. You can send data by typing the protocol name in the console. For detailed
-operations, refer to the `README.md` inside that directory.
 
 ## Game Configuration
 
-Game configuration is loaded through Asteria's unified config model. Runtime nodes read the current Luban publication
-from Zookeeper and hot reload when the publication pointer changes.
+Game configuration is loaded through Asteria's unified config model. Runtime nodes read the current Luban publication from Zookeeper and hot reload when the publication pointer changes.
 
-The repository includes demo Luban-style tables under `com.mikai233.common.config.luban`:
+Demo tables live under `common/src/main/kotlin/com/mikai233/common/config/luban/` and cover items, monsters, drop pools, scenes, and activities.
 
-- `items`: scalar fields, enum values, and repeated attribute objects.
-- `monsters`: nested rewards and repeated skill IDs.
-- `drop_pools`: weighted drop entries.
-- `scenes`: vectors and rectangle ranges.
-- `activities`: string IDs, time windows, map conditions, and rewards.
+## Persistence Example
 
-`ZookeeperInitializer.kt` publishes these demo artifacts through Asteria `ConfigPublisher`.
+The example keeps the existing Mongo-backed entity and memdata flow so the repository stays large enough to demonstrate real game-cluster concerns instead of only toy handlers.
 
-## Define Entity
+## Debug Client
 
-This project uses MongoDB. An `Entity` must implement the `Entity` interface and use `@Id` for the primary key and
-`@Document` for the collection name. The project convention is that collection names in MongoDB should be in lowercase
-snake_case. An `Entity` must also contain a companion object with a no-arg static method to create a default instance.
-
-```kotlin
-@Document(collection = "player_abstract")
-data class PlayerAbstract(
-    @Id
-    val playerId: Long,
-    val worldId: Long,
-    val account: String,
-    var nickname: String,
-    var level: Int,
-    val createTime: Long,
-) : Entity {
-    companion object {
-        @JvmStatic
-        @PersistenceCreator
-        fun create(): PlayerAbstract {
-            return PlayerAbstract(0, 0, "", "", 0, 0)
-        }
-    }
-}
-```
-
-## Define MemData
-
-`TraceableMemData` provides an implementation for automatically tracking dirty data and asynchronously writing to the
-database. You don't need to manually save player data after modification; implementations inheriting from
-`TraceableMemData` will automatically track changes and periodically sync to the DB. If the data object is immutable,
-simply inherit from `MemData`.
-
-```kotlin
-class PlayerAbstractMem(
-    private val worldId: Long,
-    private val mongoTemplate: () -> MongoTemplate,
-    mongoDatabase: () -> MongoDatabase,
-) :
-    AsteriaTrackedMemData<PlayerAbstract, PlayerAbstractTracked>(
-        PlayerAbstractMongo.COLLECTION,
-        mongoDatabase,
-        PlayerAbstractMongo::wrap,
-    ) {
-    private val playerAbstracts: MutableMap<Long, PlayerAbstractTracked> = mutableMapOf()
-    private val accountToAbstracts: MutableMap<String, PlayerAbstractTracked> = mutableMapOf()
-
-    override fun init() {
-        val template = mongoTemplate()
-        val playerAbstractList =
-            template.find<PlayerAbstract>(Query.query(where(PlayerAbstract::worldId).`is`(worldId)))
-        playerAbstractList.forEach {
-            playerAbstracts[it.playerId] = it
-            accountToAbstracts[it.account] = it
-        }
-    }
-
-    override fun entities(): Map<Long, PlayerAbstract> {
-        return playerAbstracts
-    }
-
-    fun addAbstract(abstract: PlayerAbstract) {
-        check(playerAbstracts.containsKey(abstract.playerId).not()) { "abstract:${abstract.playerId} already exists" }
-        playerAbstracts[abstract.playerId] = abstract
-        accountToAbstracts[abstract.account] = abstract
-    }
-
-    fun delAbstract(playerAbstract: PlayerAbstract) {
-        accountToAbstracts.remove(playerAbstract.account)
-        playerAbstracts.remove(playerAbstract.playerId)
-    }
-
-    operator fun get(playerId: Long) = playerAbstracts[playerId]
-
-    fun getByAccount(account: String) = accountToAbstracts[account]
-}
-```
-
-## Execute Scripts / Hotfix Logic
-
-Modules with a `script` directory support script execution, including both Jar and Groovy types. Jar scripts can be
-written in any JVM language, though they require compilation. Groovy scripts are flexible and don't need compilation,
-but require familiarity with Groovy and how it interacts with Kotlin.
-
-### Writing Scripts
-
-#### Kotlin
-
-Can be executed within a specific Actor to query or modify player data:
-
-```kotlin
-class TestPlayerScript : ActorScriptFunction<PlayerActor> {
-    private val logger = logger()
-
-    override fun invoke(player: PlayerActor, p2: ByteArray?) {
-        logger.info("playerId:{} hello world", player.playerId)
-        player.node.gameWorldConfigs.forEach { (id, config) ->
-            logger.info("id:{} config:{}", id, config)
-        }
-    }
-}
-```
-
-Can be used to patch business logic:
-
-```kotlin
-class LoginServiceFix : LoginService() {
-    val logger = logger()
-    override fun createPlayer(player: PlayerActor, playerCreateReq: PlayerCreateReq) {
-        logger.info("fix logic")
-        super.createPlayer(player, playerCreateReq)
-    }
-}
-
-class PlayerScriptFunction : NodeRoleScriptFunction<PlayerNode> {
-    private val logger = logger()
-
-    override fun invoke(p1: PlayerNode, p2: ByteArray?) {
-        loginService = LoginServiceFix()
-        logger.info("fix login service done")
-    }
-}
-```
-
-### Groovy
-
-```groovy
-class TestGroovyActorScript implements ActorScriptFunction<PlayerActor> {
-    @Override
-    Unit invoke(PlayerActor playerActor, byte[] bytes) {
-        playerActor.logger.info("hello groovy")
-        return null
-    }
-}
-```
-
-### Compiling Scripts
-
-After writing the code, run the `gradle scriptClasses` task. Once the class files are generated, refresh the Gradle
-tasks. You will find `buildJarForXXX` tasks under the `script` directory of the corresponding module. Executing these
-will build the Jar package. If the task doesn't appear, check if the class files were generated in the build directory.
-
-### Execution
-
-Once you have the Jar or Groovy file, you can send it to the target node or Actor for execution from the GM web console,
-or call `POST /script/executions` with multipart form-data:
-
-- `script`: the Jar or Groovy script file.
-- `extra`: optional extra attachment.
-- `request`: JSON part describing the target and execution options.
-
-For example, to execute a script in specific `PlayerActor`s, post this `request` JSON part:
-
-```json
-{
-  "targetType": "PlayerActor",
-  "targets": ["10001", "10002"]
-}
-```
-
-The API returns a script execution record. Use `GET /script/executions` and `GET /script/executions/{id}` to query
-execution results.
-
-# Deployment
-
-Run the Gradle task `gradle release` to package each node into a Jar. The resulting Jars will be collected in the
-`release` directory.
+The protocol debug client is in `client/`. Update `client/lua/proto.lua` if your local protocol path differs, then run the client to send protobuf messages to the gate node.

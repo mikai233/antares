@@ -11,6 +11,11 @@ dependencies {
     implementation(libTool.guava)
     implementation(libTool.jcommander)
     implementation(project(":common"))
+    implementation(project(":gate"))
+    implementation(project(":global"))
+    implementation(project(":gm"))
+    implementation(project(":player"))
+    implementation(project(":world"))
 }
 
 tasks.test {

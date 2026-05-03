@@ -1,4 +1,0 @@
-<configuration scan="true" scanPeriod="300 seconds">
-    <property name="MODULE" value="stardust"/>
-    <include resource="logback-common.xml"/>
-</configuration>

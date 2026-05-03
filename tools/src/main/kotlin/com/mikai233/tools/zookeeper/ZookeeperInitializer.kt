@@ -53,7 +53,7 @@ fun main() = runBlocking {
     repository.put(
         DATA_SOURCE_GAME,
         DataSourceConfig(
-            databaseName = "antares",
+            databaseName = "asteria_example",
             sources = listOf(DataSource("127.0.0.1", 27017)),
         ),
     )

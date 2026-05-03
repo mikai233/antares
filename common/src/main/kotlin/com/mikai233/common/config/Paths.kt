@@ -2,7 +2,7 @@ package com.mikai233.common.config
 
 import io.github.realmlabs.asteria.config.center.ConfigPath
 
-const val SYSTEM_NAME = "antares"
+const val SYSTEM_NAME = "asteria-example"
 
 val ROOT: ConfigPath = ConfigPath.Root / SYSTEM_NAME
 
