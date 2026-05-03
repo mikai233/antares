@@ -14,6 +14,7 @@ import com.mikai233.common.message.world.*
 import com.mikai233.protocol.ProtoSystem.GmReq
 import com.mikai233.protocol.idForServerMessage
 import io.github.realmlabs.asteria.actor.ActorTimerSupport
+import io.github.realmlabs.asteria.actor.ActorLifecycleGate
 import io.github.realmlabs.asteria.message.dispatchActor
 import io.github.realmlabs.asteria.script.pekko.ScriptableAsteriaActor
 import org.apache.pekko.actor.ActorRef
@@ -33,11 +34,20 @@ class WorldActor(val node: WorldNode) : ScriptableAsteriaActor<WorldNode>(node) 
     private val timers = ActorTimerSupport(this)
     val sessionManager = WorldSessionManager(this)
     val manager = WorldDataManager(this)
+    private val lifecycle = ActorLifecycleGate(
+        owner = this,
+        load = {
+            check(canInitialize()) { "WorldActor[$worldId] could not initialize" }
+            manager.load()
+        },
+        flush = { manager.flush() },
+    )
 
     override fun preStart() {
         super.preStart()
         timers.start()
         node.system.eventStream.subscribe(self, GameConfigUpdateEvent::class.java)
+        lifecycle.startLoading()
         logger.info("{} started", self)
     }
 
@@ -47,53 +57,21 @@ class WorldActor(val node: WorldNode) : ScriptableAsteriaActor<WorldNode>(node) 
     }
 
     override fun createReceive(): Receive {
-        return receiveBuilder()
-            .match(HandoffWorld::class.java) { context.stop(self) }
-            .matchAny {
-                if (canInitialize()) {
-                    context.become(initialize())
-                    stash()
-                    manager.init()
-                } else {
-                    context.stop(self)
-                    logger.error("WorldActor[{}] could not initialize", worldId)
-                }
-            }
-            .build()
+        return lifecycle.loadingReceive(::running)
     }
 
-    private fun initialize(): Receive {
-        return receiveBuilder()
-            .match(WorldInitialized::class.java) {
-                unstashAll()
-                timers.startTimerWithFixedDelay(WorldTick, WorldTick, WorldTickDuration)
-                self tell WorldActiveEvent
-                context.become(active())
-            }
-            .match(HandoffWorld::class.java) { context.stop(self) }
-            .matchAny { stash() }
-            .build()
+    private fun running(): Receive {
+        timers.startTimerWithFixedDelay(WorldTick, WorldTick, WorldTickDuration)
+        self tell WorldActiveEvent
+        return active()
     }
 
     private fun active(): Receive {
         return receiveBuilder()
-            .match(HandoffWorld::class.java) { context.become(stopping()) }
+            .match(HandoffWorld::class.java) { lifecycle.beginStop() }
             .match(WorldTick::class.java) { manager.tick() }
             .match(GeneratedMessage::class.java) { handleProtobufMessage(it) }
             .match(Message::class.java) { handleWorldMessage(it) }
-            .build()
-    }
-
-    private fun stopping(): Receive {
-        return receiveBuilder()
-            .match(WorldUnloaded::class.java) { context.stop(self) }
-            .match(WorldTick::class.java) {
-                manager.flush { flushed ->
-                    if (flushed) {
-                        self tell WorldUnloaded
-                    }
-                }
-            }
             .build()
     }
 

@@ -4,15 +4,12 @@ import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.mikai233.common.core.GameEntityKinds
 import com.mikai233.common.core.mongoDB
 import com.mikai233.common.extension.logger
-import com.mikai233.common.extension.tell
 import com.mikai233.common.extension.tryCatchSuspend
-import com.mikai233.common.message.player.PlayerInitialized
 import io.github.realmlabs.asteria.core.EntityKind
 import io.github.realmlabs.asteria.core.ServiceRegistry
 import io.github.realmlabs.asteria.persistence.DataManager
 import io.github.realmlabs.asteria.persistence.DataScope
 import io.github.realmlabs.asteria.persistence.MemData
-import kotlinx.coroutines.CoroutineExceptionHandler
 import org.springframework.data.mongodb.core.MongoTemplate
 import kotlin.reflect.KClass
 
@@ -31,19 +28,10 @@ class PlayerDataManager(private val player: PlayerActor) {
         PlayerDataModules,
     )
 
-    fun init() {
+    suspend fun load() {
         logger.info("{} start loading data", player.playerId)
-        player.launch(
-            CoroutineExceptionHandler { _, throwable ->
-                logger.error("{} loading data failed, player will stop", player.playerId, throwable)
-                player.passivate()
-            },
-            timeout = null,
-        ) {
-            dataManager.loadEager()
-            logger.info("player:{} data load complete", player.playerId)
-            player.self tell PlayerInitialized
-        }
+        dataManager.loadEager()
+        logger.info("player:{} data load complete", player.playerId)
     }
 
     fun <T : MemData> get(type: KClass<T>): T {
@@ -62,9 +50,7 @@ class PlayerDataManager(private val player: PlayerActor) {
         }
     }
 
-    fun flush(onComplete: (Boolean) -> Unit) {
-        player.launch(timeout = null) {
-            onComplete(dataManager.flush())
-        }
+    suspend fun flush(): Boolean {
+        return dataManager.flush()
     }
 }

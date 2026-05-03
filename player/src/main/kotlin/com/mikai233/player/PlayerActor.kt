@@ -13,6 +13,7 @@ import com.mikai233.common.event.GameConfigUpdatedEvent
 import com.mikai233.common.event.PlayerCreateEvent
 import com.mikai233.common.event.PlayerLoginEvent
 import io.github.realmlabs.asteria.actor.ActorTimerSupport
+import io.github.realmlabs.asteria.actor.ActorLifecycleGate
 import io.github.realmlabs.asteria.message.dispatchActor
 import io.github.realmlabs.asteria.script.pekko.ScriptableAsteriaActor
 import org.apache.pekko.actor.Props
@@ -34,11 +35,17 @@ class PlayerActor(val node: PlayerNode) : ScriptableAsteriaActor<PlayerNode>(nod
     private var channelActorPath: String? = null
     private val timers = ActorTimerSupport(this)
     val manager = PlayerDataManager(this)
+    private val lifecycle = ActorLifecycleGate(
+        owner = this,
+        load = { manager.load() },
+        flush = { manager.flush() },
+    )
 
     override fun preStart() {
         super.preStart()
         timers.start()
         node.system.eventStream.subscribe(self, GameConfigUpdateEvent::class.java)
+        lifecycle.startLoading()
         logger.info("{} started", self)
     }
 
@@ -48,34 +55,20 @@ class PlayerActor(val node: PlayerNode) : ScriptableAsteriaActor<PlayerNode>(nod
     }
 
     override fun createReceive(): Receive {
-        return receiveBuilder()
-            .match(HandoffPlayer::class.java) { context.stop(self) }
-            .matchAny {
-                context.become(initialize())
-                manager.init()
-                stash()
-            }
-            .build()
+        return lifecycle.loadingReceive(::running)
     }
 
-    private fun initialize(): Receive {
-        return receiveBuilder()
-            .match(PlayerInitialized::class.java) {
-                unstashAll()
-                timers.startTimerWithFixedDelay(PlayerTick, PlayerTick, PlayerTickDuration)
-                context.setReceiveTimeout(1.minutes.toJavaDuration())
-                context.become(active())
-            }
-            .match(HandoffPlayer::class.java) { context.stop(self) }
-            .matchAny { stash() }
-            .build()
+    private fun running(): Receive {
+        timers.startTimerWithFixedDelay(PlayerTick, PlayerTick, PlayerTickDuration)
+        context.setReceiveTimeout(1.minutes.toJavaDuration())
+        return active()
     }
 
     private fun active(): Receive {
         return receiveBuilder()
             .match(HandoffPlayer::class.java) {
                 context.cancelReceiveTimeout()
-                context.become(stopping())
+                lifecycle.beginStop()
             }
             .match(PlayerTick::class.java) { manager.tick() }
             .match(GeneratedMessage::class.java) { handleProtobufMessage(it) }
@@ -84,19 +77,6 @@ class PlayerActor(val node: PlayerNode) : ScriptableAsteriaActor<PlayerNode>(nod
             .match(PlayerLoginEvent::class.java) { handlePlayerMessage(it) }
             .match(PlayerCreateEvent::class.java) { handlePlayerMessage(it) }
             .match(GameConfigUpdatedEvent::class.java) { handlePlayerMessage(it) }
-            .build()
-    }
-
-    private fun stopping(): Receive {
-        return receiveBuilder()
-            .match(PlayerUnloaded::class.java) { context.stop(self) }
-            .match(PlayerTick::class.java) {
-                manager.flush { flushed ->
-                    if (flushed) {
-                        self tell PlayerUnloaded
-                    }
-                }
-            }
             .build()
     }
 
