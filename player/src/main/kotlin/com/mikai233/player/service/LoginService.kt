@@ -6,7 +6,7 @@ import com.mikai233.player.PlayerActor
 import com.mikai233.player.data.PlayerMem
 import com.mikai233.protocol.ProtoLogin
 import com.mikai233.protocol.ProtoLogin.LoginResp
-import com.mikai233.protocol.ProtoRpc.PlayerCreateReq
+import com.mikai233.protocol.ProtoRpcPlayer.PlayerCreateReq
 import com.mikai233.protocol.loginResp
 import com.mikai233.protocol.playerData
 

@@ -2,7 +2,7 @@
 # 🧩 Version Catalog (Gradle)
 ###############################
 [versions]
-asteria = "0.1.3"
+asteria = "0.1.7"
 curator = "5.9.0"
 jackson = "2.21.2"
 kotlinpoet = "2.3.0"
@@ -38,7 +38,9 @@ asteria-gm-script-spring-boot-starter = { module = "io.github.realm-labs.asteria
 asteria-persistence-core = { module = "io.github.realm-labs.asteria:persistence-core", version.ref = "asteria" }
 asteria-persistence-mongodb = { module = "io.github.realm-labs.asteria:persistence-mongodb", version.ref = "asteria" }
 asteria-persistence-mongodb-ksp = { module = "io.github.realm-labs.asteria:persistence-mongodb-ksp", version.ref = "asteria" }
+asteria-protocol-protobuf = { module = "io.github.realm-labs.asteria:protocol-protobuf", version.ref = "asteria" }
 asteria-rpc-protobuf = { module = "io.github.realm-labs.asteria:rpc-protobuf", version.ref = "asteria" }
+asteria-rpc-protobuf-pekko = { module = "io.github.realm-labs.asteria:rpc-protobuf-pekko", version.ref = "asteria" }
 asteria-script-core = { module = "io.github.realm-labs.asteria:script-core", version.ref = "asteria" }
 asteria-script-engine-groovy = { module = "io.github.realm-labs.asteria:script-engine-groovy", version.ref = "asteria" }
 asteria-script-engine-jar = { module = "io.github.realm-labs.asteria:script-engine-jar", version.ref = "asteria" }
@@ -109,6 +111,7 @@ asteria-cluster = [
     "asteria-cluster-pekko",
     "asteria-starter-game-server-pekko",
     "asteria-rpc-protobuf",
+    "asteria-rpc-protobuf-pekko",
 ]
 asteria-config = [
     "asteria-config-core",
@@ -158,5 +161,6 @@ detekt = "io.gitlab.arturbosch.detekt:1.23.8"
 dokka = "org.jetbrains.dokka:2.2.0"
 foojay-resolver-convention = "org.gradle.toolchains.foojay-resolver-convention:1.0.0"
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+asteria-protobuf-protocol-codegen = { id = "io.github.realm-labs.asteria.protobuf-protocol-codegen", version.ref = "asteria" }
 protobuf = "com.google.protobuf:0.9.6"
 version-catalog-update = "nl.littlerobots.version-catalog-update:1.1.0"

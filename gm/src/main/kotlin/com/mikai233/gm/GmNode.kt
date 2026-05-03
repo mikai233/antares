@@ -6,7 +6,7 @@ import com.mikai233.common.PLAYER_SHARD_NUM
 import com.mikai233.common.WORLD_SHARD_NUM
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.*
-import com.mikai233.common.rpc.GameRpcProtocolDefinition
+import com.mikai233.common.rpc.GameRpcProtocol
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import io.github.realmlabs.asteria.core.NodeState
@@ -55,12 +55,12 @@ class GmNode(
             entity<Long>(GameEntityKinds.PlayerActor) {
                 role(GameRoles.Player)
                 shardCount = PLAYER_SHARD_NUM
-                extractor(GameRpcProtocolDefinition.playerShardExtractor)
+                extractor(GameRpcProtocol.playerShardExtractor)
             }
             entity<Long>(GameEntityKinds.WorldActor) {
                 role(GameRoles.World)
                 shardCount = WORLD_SHARD_NUM
-                extractor(GameRpcProtocolDefinition.worldShardExtractor)
+                extractor(GameRpcProtocol.worldShardExtractor)
             }
             singleton(GameSingletons.Worker) {
                 role(GameRoles.Global)

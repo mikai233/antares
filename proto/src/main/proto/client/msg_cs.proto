@@ -1,7 +1,7 @@
 syntax = "proto3";
-import "proto_system.proto";
-import "proto_login.proto";
-import "proto_test.proto";
+import "client/proto_system.proto";
+import "client/proto_login.proto";
+import "client/proto_test.proto";
 
 package com.mikai233.protocol;
 

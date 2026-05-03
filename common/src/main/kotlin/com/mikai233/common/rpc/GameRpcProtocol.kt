@@ -1,119 +1,66 @@
 package com.mikai233.common.rpc
 
+import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.PLAYER_SHARD_NUM
 import com.mikai233.common.WORLD_SHARD_NUM
-import com.mikai233.common.core.GameEntityKinds
 import com.mikai233.protocol.ProtoLogin.LoginReq
-import com.mikai233.protocol.ProtoRpc.CrossWorldSubscribeTopicReq
-import com.mikai233.protocol.ProtoRpc.CrossWorldUnsubscribeTopicReq
-import com.mikai233.protocol.ProtoRpc.PlayerChannelClosedReq
-import com.mikai233.protocol.ProtoRpc.PlayerCreateReq
-import com.mikai233.protocol.ProtoRpc.PlayerCreateResp
-import com.mikai233.protocol.ProtoRpc.PlayerLoginReq
-import com.mikai233.protocol.ProtoRpc.PlayerLoginResp
-import com.mikai233.protocol.ProtoRpc.WorldWakeupReq
-import com.mikai233.protocol.ProtoRpc.WorldWakeupResp
 import com.mikai233.protocol.ProtoSystem.GmReq
 import com.mikai233.protocol.ProtoTest.TestReq
-import io.github.realmlabs.asteria.core.EntityKind
-import io.github.realmlabs.asteria.rpc.protobuf.GeneratedProtobufRpcProtocol
-import io.github.realmlabs.asteria.rpc.protobuf.ProtobufRpcProtocolBuilder
-import io.github.realmlabs.asteria.rpc.RpcProtocol
-import io.github.realmlabs.asteria.rpc.RpcTarget
+import io.github.realmlabs.asteria.cluster.pekko.PekkoMessageExtractor
+import io.github.realmlabs.asteria.cluster.pekko.PekkoShardExtractors
+import io.github.realmlabs.asteria.rpc.protobuf.ProtobufRpcProtocol
+import io.github.realmlabs.asteria.rpc.protobuf.ProtobufRpcProtocols
 
-class GameRpcProtocolDefinition : GeneratedProtobufRpcProtocol() {
-    override fun contribute(builder: ProtobufRpcProtocolBuilder) {
-        val playerTarget = RpcTarget.Entity(EntityKind(GameEntityKinds.PlayerActor))
-        val worldTarget = RpcTarget.Entity(EntityKind(GameEntityKinds.WorldActor))
+object GameRpcProtocol {
+    /**
+     * Generated internal protobuf RPC registry.
+     *
+     * Message ids come from `proto/protocol/rpc-protocol.json`, while shard
+     * entity-id extraction for internal RPC messages comes from proto options.
+     *
+     * Client-facing protobuf messages such as [LoginReq] and [TestReq] are not
+     * part of that internal registration model. Their shard routing is still
+     * registered explicitly below because gateway/client routing is a separate concern.
+     */
+    val protocol: ProtobufRpcProtocol by lazy {
+        ProtobufRpcProtocols.load(GameRpcProtocol::class.java.classLoader)
+    }
 
-        builder.tell(
-            id = 10_001,
-            name = "world.login",
-            target = worldTarget,
-            requestParser = LoginReq.parser(),
-            entityIdResolver = { it.worldId.toString() },
-        )
-        builder.tell(
-            id = 10_002,
-            name = "player.test",
-            target = playerTarget,
-            requestParser = TestReq.parser(),
-            entityIdResolver = { it.playerId.toString() },
-        )
-        builder.call(
-            id = 10_003,
-            name = "player.create",
-            target = playerTarget,
-            requestParser = PlayerCreateReq.parser(),
-            responseId = 10_004,
-            responseParser = PlayerCreateResp.parser(),
-            entityIdResolver = { it.playerId.toString() },
-        )
-        builder.call(
-            id = 10_005,
-            name = "player.login",
-            target = playerTarget,
-            requestParser = PlayerLoginReq.parser(),
-            responseId = 10_006,
-            responseParser = PlayerLoginResp.parser(),
-            entityIdResolver = { it.playerId.toString() },
-        )
-        builder.tell(
-            id = 10_011,
-            name = "player.channel_closed",
-            target = playerTarget,
-            requestParser = PlayerChannelClosedReq.parser(),
-            entityIdResolver = { it.playerId.toString() },
-        )
-        builder.call(
-            id = 10_012,
-            name = "world.wakeup",
-            target = worldTarget,
-            requestParser = WorldWakeupReq.parser(),
-            responseId = 10_013,
-            responseParser = WorldWakeupResp.parser(),
-            entityIdResolver = { it.worldId.toString() },
-        )
-        builder.tell(
-            id = 10_014,
-            name = "world.subscribe_topic",
-            target = worldTarget,
-            requestParser = CrossWorldSubscribeTopicReq.parser(),
-            entityIdResolver = { it.worldId.toString() },
-        )
-        builder.tell(
-            id = 10_015,
-            name = "world.unsubscribe_topic",
-            target = worldTarget,
-            requestParser = CrossWorldUnsubscribeTopicReq.parser(),
-            entityIdResolver = { it.worldId.toString() },
-        )
-        builder.entityId(GmReq::class.java) {
-            when {
-                it.playerId != 0L -> it.playerId.toString()
-                it.worldId != 0L -> it.worldId.toString()
-                else -> error("gm req missing player_id/world_id")
+    val playerShardExtractor by lazy {
+        byEntityIdHash(PLAYER_SHARD_NUM) { message ->
+            when (message) {
+                is TestReq -> message.playerId.toString()
+                is GmReq -> {
+                    require(message.playerId != 0L) { "gm req missing player_id" }
+                    message.playerId.toString()
+                }
+                else -> protocol.entityIds.requireEntityId(message)
             }
         }
     }
 
-    companion object {
-        private val provider = GameRpcProtocolDefinition()
-
-        val protocol: RpcProtocol by lazy { provider.create() }
-
-        val playerShardExtractor by lazy {
-            io.github.realmlabs.asteria.cluster.pekko.PekkoRpcShardExtractors.byRpcEntityId(
-                PLAYER_SHARD_NUM,
-                protocol.entityIds,
-            )
+    val worldShardExtractor by lazy {
+        byEntityIdHash(WORLD_SHARD_NUM) { message ->
+            when (message) {
+                is LoginReq -> message.worldId.toString()
+                is GmReq -> {
+                    require(message.worldId != 0L) { "gm req missing world_id" }
+                    message.worldId.toString()
+                }
+                else -> protocol.entityIds.requireEntityId(message)
+            }
         }
+    }
 
-        val worldShardExtractor by lazy {
-            io.github.realmlabs.asteria.cluster.pekko.PekkoRpcShardExtractors.byRpcEntityId(
-                WORLD_SHARD_NUM,
-                protocol.entityIds,
-            )
-        }
+    private fun byEntityIdHash(
+        shardCount: Int,
+        entityIdResolver: (GeneratedMessage) -> String,
+    ): PekkoMessageExtractor<GeneratedMessage> {
+        PekkoShardExtractors.validateShardCount(shardCount)
+        return PekkoMessageExtractor(
+            messageClass = GeneratedMessage::class.java,
+            entityIdResolver = entityIdResolver,
+            shardIdResolver = { _, entityId -> Math.floorMod(entityId.hashCode(), shardCount).toString() },
+        )
     }
 }

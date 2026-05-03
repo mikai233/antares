@@ -12,14 +12,14 @@ import com.mikai233.common.message.ClientProtobuf
 import com.mikai233.common.message.StopChannel
 import com.mikai233.common.message.ChannelExpired
 import com.mikai233.common.message.ChannelAuthorized
-import com.mikai233.common.rpc.GameRpcProtocolDefinition
+import com.mikai233.common.rpc.GameRpcProtocol
 import com.mikai233.gate.handler.message.broadcast.PlayerBroadcastEnvelopeHandler
 import com.mikai233.gate.handler.message.channel.SubscribeTopicHandler
 import com.mikai233.gate.handler.message.channel.UnsubscribeTopicHandler
 import com.mikai233.gate.handler.protocol.system.PingReqHandler
-import com.mikai233.protocol.ProtoRpc.BroadcastEnvelope
-import com.mikai233.protocol.ProtoRpc.SubscribeTopicReq
-import com.mikai233.protocol.ProtoRpc.UnsubscribeTopicReq
+import com.mikai233.protocol.ProtoRpcBroadcast.BroadcastEnvelope
+import com.mikai233.protocol.ProtoRpcWorld.SubscribeTopicReq
+import com.mikai233.protocol.ProtoRpcWorld.UnsubscribeTopicReq
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import io.github.realmlabs.asteria.core.NodeState
@@ -82,12 +82,12 @@ class GateNode(
             entity<Long>(GameEntityKinds.PlayerActor) {
                 role(GameRoles.Player)
                 shardCount = PLAYER_SHARD_NUM
-                extractor(GameRpcProtocolDefinition.playerShardExtractor)
+                extractor(GameRpcProtocol.playerShardExtractor)
             }
             entity<Long>(GameEntityKinds.WorldActor) {
                 role(GameRoles.World)
                 shardCount = WORLD_SHARD_NUM
-                extractor(GameRpcProtocolDefinition.worldShardExtractor)
+                extractor(GameRpcProtocol.worldShardExtractor)
             }
         }
     }

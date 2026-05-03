@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package com.mikai233.protocol;
 
-import "proto_player.proto";
+import "client/proto_player.proto";
 
 message LoginReq{
   string account = 1;

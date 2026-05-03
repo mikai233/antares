@@ -11,7 +11,7 @@ import com.mikai233.common.core.*
 import com.mikai233.common.event.PlayerCreateEvent
 import com.mikai233.common.event.PlayerLoginEvent
 import com.mikai233.common.message.player.HandoffPlayer
-import com.mikai233.common.rpc.GameRpcProtocolDefinition
+import com.mikai233.common.rpc.GameRpcProtocol
 import com.mikai233.player.config.PlayerActivityConfigChangeHandler
 import com.mikai233.player.handler.event.ConfigChangedEventHandler
 import com.mikai233.player.handler.event.PlayerCreateEventHandler
@@ -23,9 +23,9 @@ import com.mikai233.player.handler.message.player.PlayerLoginReqHandler
 import com.mikai233.player.handler.protocol.system.GmReqHandler
 import com.mikai233.player.service.LoginService
 import com.mikai233.player.handler.protocol.test.TestReqHandler
-import com.mikai233.protocol.ProtoRpc.PlayerChannelClosedReq
-import com.mikai233.protocol.ProtoRpc.PlayerCreateReq
-import com.mikai233.protocol.ProtoRpc.PlayerLoginReq
+import com.mikai233.protocol.ProtoRpcPlayer.PlayerChannelClosedReq
+import com.mikai233.protocol.ProtoRpcPlayer.PlayerCreateReq
+import com.mikai233.protocol.ProtoRpcPlayer.PlayerLoginReq
 import com.mikai233.protocol.ProtoSystem.GmReq
 import com.mikai233.protocol.ProtoTest.TestReq
 import com.typesafe.config.Config
@@ -123,14 +123,14 @@ class PlayerNode(
                 role(GameRoles.Player)
                 shardCount = PLAYER_SHARD_NUM
                 handoffMessage = HandoffPlayer
-                extractor(GameRpcProtocolDefinition.playerShardExtractor)
+                extractor(GameRpcProtocol.playerShardExtractor)
                 allocationStrategy(ShardCoordinator.LeastShardAllocationStrategy(1, 3))
                 actor { runtime, _ -> PlayerActor.props(runtime as PlayerNode) }
             }
             entity<Long>(GameEntityKinds.WorldActor) {
                 role(GameRoles.World)
                 shardCount = WORLD_SHARD_NUM
-                extractor(GameRpcProtocolDefinition.worldShardExtractor)
+                extractor(GameRpcProtocol.worldShardExtractor)
             }
         }
     }

@@ -11,11 +11,11 @@ import com.mikai233.common.core.*
 import com.mikai233.common.event.WorldActiveEvent
 import com.mikai233.common.message.Message
 import com.mikai233.common.message.world.HandoffWorld
-import com.mikai233.common.rpc.GameRpcProtocolDefinition
+import com.mikai233.common.rpc.GameRpcProtocol
 import com.mikai233.protocol.ProtoLogin.LoginReq
-import com.mikai233.protocol.ProtoRpc.CrossWorldSubscribeTopicReq
-import com.mikai233.protocol.ProtoRpc.CrossWorldUnsubscribeTopicReq
-import com.mikai233.protocol.ProtoRpc.WorldWakeupReq
+import com.mikai233.protocol.ProtoRpcWorld.CrossWorldSubscribeTopicReq
+import com.mikai233.protocol.ProtoRpcWorld.CrossWorldUnsubscribeTopicReq
+import com.mikai233.protocol.ProtoRpcWorld.WorldWakeupReq
 import com.mikai233.protocol.ProtoSystem.GmReq
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
@@ -116,13 +116,13 @@ class WorldNode(
             entity<Long>(GameEntityKinds.PlayerActor) {
                 role(GameRoles.Player)
                 shardCount = PLAYER_SHARD_NUM
-                extractor(GameRpcProtocolDefinition.playerShardExtractor)
+                extractor(GameRpcProtocol.playerShardExtractor)
             }
             entity<Long>(GameEntityKinds.WorldActor) {
                 role(GameRoles.World)
                 shardCount = WORLD_SHARD_NUM
                 handoffMessage = HandoffWorld
-                extractor(GameRpcProtocolDefinition.worldShardExtractor)
+                extractor(GameRpcProtocol.worldShardExtractor)
                 allocationStrategy(ShardCoordinator.LeastShardAllocationStrategy(1, 3))
                 actor { runtime, _ -> WorldActor.props(runtime as WorldNode) }
             }

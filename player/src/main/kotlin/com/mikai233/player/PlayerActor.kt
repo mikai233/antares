@@ -7,8 +7,8 @@ import com.mikai233.common.extension.ask
 import com.mikai233.common.extension.tell
 import com.mikai233.common.message.player.*
 import com.mikai233.protocol.ProtoLogin
-import com.mikai233.protocol.ProtoRpc.ChannelExpiredReq
-import com.mikai233.protocol.ProtoRpc.PlayerChannelClosedReq
+import com.mikai233.protocol.ProtoRpcGate.ChannelExpiredReq
+import com.mikai233.protocol.ProtoRpcPlayer.PlayerChannelClosedReq
 import com.mikai233.common.event.PlayerCreateEvent
 import com.mikai233.common.event.PlayerLoginEvent
 import io.github.realmlabs.asteria.actor.ActorTimerSupport

@@ -1,10 +1,10 @@
 package com.mikai233.world.service
 
 import com.mikai233.common.annotation.AllOpen
-import com.mikai233.protocol.ProtoRpc.CrossWorldSubscribeTopicReq
-import com.mikai233.protocol.ProtoRpc.CrossWorldUnsubscribeTopicReq
-import com.mikai233.protocol.ProtoRpc.SubscribeTopicReq
-import com.mikai233.protocol.ProtoRpc.UnsubscribeTopicReq
+import com.mikai233.protocol.ProtoRpcWorld.CrossWorldSubscribeTopicReq
+import com.mikai233.protocol.ProtoRpcWorld.CrossWorldUnsubscribeTopicReq
+import com.mikai233.protocol.ProtoRpcWorld.SubscribeTopicReq
+import com.mikai233.protocol.ProtoRpcWorld.UnsubscribeTopicReq
 import com.mikai233.world.WorldActor
 
 @AllOpen

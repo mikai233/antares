@@ -17,9 +17,9 @@ import com.mikai233.protocol.CSEnum
 import com.mikai233.protocol.ProtoLogin
 import com.mikai233.protocol.ProtoLogin.LoginReq
 import com.mikai233.protocol.ProtoLogin.LoginResp
-import com.mikai233.protocol.ProtoRpc.BroadcastEnvelope
-import com.mikai233.protocol.ProtoRpc.SubscribeTopicReq
-import com.mikai233.protocol.ProtoRpc.UnsubscribeTopicReq
+import com.mikai233.protocol.ProtoRpcBroadcast.BroadcastEnvelope
+import com.mikai233.protocol.ProtoRpcWorld.SubscribeTopicReq
+import com.mikai233.protocol.ProtoRpcWorld.UnsubscribeTopicReq
 import com.mikai233.protocol.ProtoSystem.GmReq
 import com.mikai233.protocol.connectionExpiredNotify
 import io.github.realmlabs.asteria.gateway.GatewaySession

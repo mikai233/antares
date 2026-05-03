@@ -8,8 +8,8 @@ import com.mikai233.common.core.gameWorldIds
 import com.mikai233.common.extension.actorLogger
 import com.mikai233.common.extension.ask
 import com.mikai233.common.extension.tell
-import com.mikai233.protocol.ProtoRpc.WorldWakeupReq
-import com.mikai233.protocol.ProtoRpc.WorldWakeupResp
+import com.mikai233.protocol.ProtoRpcWorld.WorldWakeupReq
+import com.mikai233.protocol.ProtoRpcWorld.WorldWakeupResp
 import kotlinx.coroutines.*
 import org.apache.pekko.actor.AbstractActor
 import org.apache.pekko.actor.ActorRef

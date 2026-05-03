@@ -81,6 +81,22 @@ class PlayerLoginEventHandler : PlayerMessageHandler<PlayerLoginEvent> {
 }
 ```
 
+## Internal RPC
+
+Internal protobuf RPC messages live under [proto/src/main/proto/rpc](/Users/mikai/IdeaProjects/akka-game-server/proto/src/main/proto/rpc), while client-facing protobuf messages live under [proto/src/main/proto/client](/Users/mikai/IdeaProjects/akka-game-server/proto/src/main/proto/client).
+
+This scaffold currently uses a centralized JSON registry for internal RPC message ids:
+- [proto/protocol/rpc-protocol.json](/Users/mikai/IdeaProjects/akka-game-server/proto/protocol/rpc-protocol.json)
+
+That registry is generated from the proto descriptor set by `:proto:generateRpcProtocolRegistry`, then consumed together with the descriptor set to generate the internal protobuf RPC protocol. Entity-id extraction for shard-routed internal RPC messages still comes from proto options on the RPC messages themselves.
+
+This is an intentional transitional model:
+- ids stay centrally managed
+- ids are not scattered across individual proto messages
+- client/gateway routing stays separate from internal RPC registration
+
+The desired long-term direction is to keep centralized id allocation while letting Asteria own the registry maintenance end to end, instead of generating `rpc-protocol.json` in the project.
+
 ## Game Configuration
 
 Game configuration is loaded through Asteria's unified config model. Runtime nodes read the current Luban publication from Zookeeper and hot reload when the publication pointer changes.

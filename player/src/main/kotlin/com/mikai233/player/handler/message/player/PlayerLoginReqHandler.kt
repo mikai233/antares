@@ -7,8 +7,8 @@ import com.mikai233.common.event.PlayerLoginEvent
 import com.mikai233.common.extension.tell
 import com.mikai233.player.PlayerHandlerContext
 import com.mikai233.player.PlayerMessageHandler
-import com.mikai233.protocol.ProtoRpc.PlayerLoginReq
-import com.mikai233.protocol.ProtoRpc.PlayerLoginResp
+import com.mikai233.protocol.ProtoRpcPlayer.PlayerLoginReq
+import com.mikai233.protocol.ProtoRpcPlayer.PlayerLoginResp
 import com.mikai233.protocol.testNotify
 import kotlin.random.Random
 

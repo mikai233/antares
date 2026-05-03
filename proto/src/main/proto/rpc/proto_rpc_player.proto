@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package com.mikai233.protocol;
+
+import "asteria_rpc_options.proto";
+import "proto_common.proto";
+import "client/proto_login.proto";
+
+message PlayerLoginReq{
+  option (asteria.rpc.entity_id) = "player_id";
+  string account = 1;
+  int64 player_id = 2;
+  int64 world_id = 3;
+  ActorRef channel_actor = 4;
+}
+
+message PlayerLoginResp{
+  LoginResp response = 1;
+}
+
+message PlayerCreateReq{
+  option (asteria.rpc.entity_id) = "player_id";
+  string account = 1;
+  int64 player_id = 2;
+  int64 world_id = 3;
+  string nickname = 4;
+  ActorRef channel_actor = 5;
+}
+
+message PlayerCreateResp{
+  LoginResp response = 1;
+}
+
+message PlayerChannelClosedReq{
+  option (asteria.rpc.entity_id) = "player_id";
+  int64 player_id = 1;
+}

@@ -7,8 +7,8 @@ import com.mikai233.common.event.PlayerCreateEvent
 import com.mikai233.common.extension.tell
 import com.mikai233.player.PlayerHandlerContext
 import com.mikai233.player.PlayerMessageHandler
-import com.mikai233.protocol.ProtoRpc.PlayerCreateReq
-import com.mikai233.protocol.ProtoRpc.PlayerCreateResp
+import com.mikai233.protocol.ProtoRpcPlayer.PlayerCreateReq
+import com.mikai233.protocol.ProtoRpcPlayer.PlayerCreateResp
 
 @AllOpen
 class PlayerCreateReqHandler : PlayerMessageHandler<PlayerCreateReq> {
