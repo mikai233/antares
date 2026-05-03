@@ -11,6 +11,7 @@ dependencies {
     api("io.github.mikai233:foundation-id-zookeeper:1.0-SNAPSHOT")
     api("io.github.mikai233:cluster-config:1.0-SNAPSHOT")
     api("io.github.mikai233:cluster-pekko:1.0-SNAPSHOT")
+    api("io.github.mikai233:starter-game-server-pekko:1.0-SNAPSHOT")
     api("io.github.mikai233:persistence-core:1.0-SNAPSHOT")
     api("io.github.mikai233:persistence-mongodb:1.0-SNAPSHOT")
     api("io.github.mikai233:config-core:1.0-SNAPSHOT")

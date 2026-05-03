@@ -28,9 +28,11 @@ import io.github.mikai233.asteria.cluster.pekko.EntityShardRegistry
 import io.github.mikai233.asteria.cluster.pekko.PekkoRuntimeModule
 import io.github.mikai233.asteria.cluster.pekko.SingletonActorRegistry
 import io.github.mikai233.asteria.cluster.pekko.TopologyPekkoClusterStartup
+import io.github.mikai233.asteria.rpc.RpcModule
 import io.github.mikai233.asteria.script.engine.groovy.GroovyScriptEngine
 import io.github.mikai233.asteria.script.engine.jar.JarScriptEngine
 import io.github.mikai233.asteria.script.pekko.ScriptModule
+import io.github.mikai233.asteria.starter.GameServerStartupSummaryModule
 import kotlinx.coroutines.*
 import org.apache.curator.framework.CuratorFrameworkFactory
 import org.apache.curator.retry.ExponentialBackoffRetry
@@ -135,11 +137,30 @@ open class GameNodeRuntime(
     }
 
     protected open suspend fun startSystem() {
-        val modules = asteriaModules()
         val application = gameApplication {
             name = this@GameNodeRuntime.name
-            modules.forEach(::install)
+            val applicationName = this@GameNodeRuntime.name
+            commonModulesBeforeCluster().forEach(::install)
+            modulesBeforeCluster().forEach(::install)
+            install(RpcModule.autoDiscover())
             configureRuntime(this)
+            install(
+                ClusterConfigModule {
+                    layout = ClusterConfigLayout.default(applicationName)
+                },
+            )
+            install(PekkoRuntimeModule(TopologyPekkoClusterStartup(nodeId, config = runtimeConfig())))
+            install(PekkoCoroutineScopeModule())
+            install(
+                ScriptModule {
+                    engine(GroovyScriptEngine())
+                    engine(JarScriptEngine())
+                    allowNodeScripts = true
+                    allowActorScripts = true
+                },
+            )
+            modulesAfterCluster().forEach(::install)
+            install(GameServerStartupSummaryModule("config-center"))
         }
         val lifecycle = application.bind(this) { newState ->
             updateState(newState)
@@ -186,16 +207,6 @@ open class GameNodeRuntime(
         }
     }
 
-    protected open fun asteriaModules(): List<AsteriaModule> {
-        return commonModulesBeforeCluster() +
-            modulesBeforeCluster() +
-            pekkoClusterModule() +
-            pekkoRuntimeModule() +
-            PekkoCoroutineScopeModule() +
-            scriptModule() +
-            modulesAfterCluster()
-    }
-
     protected open fun modulesBeforeCluster(): List<AsteriaModule> = emptyList()
 
     protected open fun modulesAfterCluster(): List<AsteriaModule> = emptyList()
@@ -213,29 +224,13 @@ open class GameNodeRuntime(
         )
     }
 
-    private fun pekkoClusterModule(): AsteriaModule {
-        return ClusterConfigModule {
-            layout = ClusterConfigLayout.default(name)
-        }
-    }
-
-    private fun pekkoRuntimeModule(): AsteriaModule {
-        val runtimeConfig = if (sameJvm) {
+    private fun runtimeConfig(): Config {
+        return if (sameJvm) {
             ConfigFactory.parseMap(
                 mapOf("pekko.cluster.jmx.multi-mbeans-in-same-jvm" to "on"),
             ).withFallback(config)
         } else {
             config
-        }
-        return PekkoRuntimeModule(TopologyPekkoClusterStartup(nodeId, config = runtimeConfig))
-    }
-
-    private fun scriptModule(): AsteriaModule {
-        return ScriptModule {
-            engine(GroovyScriptEngine())
-            engine(JarScriptEngine())
-            allowNodeScripts = true
-            allowActorScripts = true
         }
     }
 
