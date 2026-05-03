@@ -2,7 +2,9 @@ package com.mikai233.world
 
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.conf.ServerMode
-import com.mikai233.common.core.Role
+import com.mikai233.common.core.GameRoles
+import com.mikai233.common.core.coroutineScope
+import com.mikai233.common.core.gameWorldIds
 import com.mikai233.common.extension.actorLogger
 import com.mikai233.common.extension.ask
 import com.mikai233.common.extension.tell
@@ -35,7 +37,7 @@ class WorldWaker(private val node: WorldNode) : AbstractActor() {
     private val cluster: Cluster = Cluster.get(context.system)
     private var totalNodes = 0
     private var upNodes = 0
-    private val targetRole = Role.World.name
+    private val targetRole = GameRoles.World
     private val targetPercentage = 0.7
 
     override fun preStart() {
@@ -95,7 +97,7 @@ class WorldWaker(private val node: WorldNode) : AbstractActor() {
         if (totalNodes > 0) {
             val percentage = upNodes.toDouble() / totalNodes
             if (percentage >= targetPercentage) {
-                val worldRoleLeader = cluster.state().roleLeader(Role.World.name).get()
+                val worldRoleLeader = cluster.state().roleLeader(GameRoles.World).get()
                 if (worldRoleLeader == cluster.selfAddress()) {
                     val myself = self
                     node.coroutineScope.launch {

@@ -9,7 +9,9 @@ import com.mikai233.common.core.*
 import com.mikai233.common.rpc.GameRpcProtocolDefinition
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import io.github.realmlabs.asteria.core.AsteriaApplicationBuilder
+import io.github.realmlabs.asteria.core.NodeState
+import io.github.realmlabs.asteria.core.RoleKey
+import io.github.realmlabs.asteria.core.ServiceRegistry
 import io.github.realmlabs.asteria.cluster.pekko.PekkoSingletonStartup
 import io.github.realmlabs.asteria.cluster.pekko.extractor
 import io.github.realmlabs.asteria.cluster.pekko.singletonStartup
@@ -18,42 +20,58 @@ import org.apache.pekko.actor.ActorRef
 import java.net.InetSocketAddress
 
 class GmNode(
-    addr: InetSocketAddress,
-    name: String,
-    nodeId: String = "gm-${addr.port}",
-    config: Config,
+    val addr: InetSocketAddress,
+    override val name: String,
+    val nodeId: String = "gm-${addr.port}",
+    val config: Config,
     zookeeperConnectString: String,
     sameJvm: Boolean = false,
-) : GameNodeRuntime(addr, listOf(Role.Gm), name, nodeId, config, zookeeperConnectString, sameJvm) {
+) : LaunchableNode {
+    override val roles: Set<RoleKey> = setOf(RoleKey(GameRoles.Gm))
+    override val services: ServiceRegistry = ServiceRegistry()
+
+    @Volatile
+    private var currentState: NodeState = NodeState.Unstarted
+
+    override val state: NodeState
+        get() = currentState
+
+    private val clusterNode = ClusterNodeBootstrap(this, addr, nodeId, config, zookeeperConnectString, sameJvm)
 
     val playerSharding: ActorRef
-        get() = entityShard(ShardEntityType.PlayerActor)
+        get() = entityShard(GameEntityKinds.PlayerActor)
 
     val worldSharding: ActorRef
-        get() = entityShard(ShardEntityType.WorldActor)
+        get() = entityShard(GameEntityKinds.WorldActor)
 
     val workerSingletonProxy: ActorRef
-        get() = singletonActor(Singleton.Worker)
+        get() = singletonActor(GameSingletons.Worker)
 
-    override fun modulesAfterCluster() = listOf(GmRuntimeModule(this))
-
-    override fun configureRuntime(builder: AsteriaApplicationBuilder) {
-        builder.apply {
-            entity<Long>(ShardEntityType.PlayerActor.name) {
-                role(Role.Player.name)
+    override suspend fun launch() {
+        clusterNode.launch(
+            afterClusterModules = listOf(GmRuntimeModule(this)),
+            onStateChange = ::updateState,
+        ) {
+            role(GameRoles.Gm)
+            entity<Long>(GameEntityKinds.PlayerActor) {
+                role(GameRoles.Player)
                 shardCount = PLAYER_SHARD_NUM
                 extractor(GameRpcProtocolDefinition.playerShardExtractor)
             }
-            entity<Long>(ShardEntityType.WorldActor.name) {
-                role(Role.World.name)
+            entity<Long>(GameEntityKinds.WorldActor) {
+                role(GameRoles.World)
                 shardCount = WORLD_SHARD_NUM
                 extractor(GameRpcProtocolDefinition.worldShardExtractor)
             }
-            singleton(Singleton.Worker.actorName) {
-                role(Role.Global.name)
+            singleton(GameSingletons.Worker) {
+                role(GameRoles.Global)
                 singletonStartup(PekkoSingletonStartup.Proxy)
             }
         }
+    }
+
+    private fun updateState(newState: NodeState) {
+        currentState = newState
     }
 
 }

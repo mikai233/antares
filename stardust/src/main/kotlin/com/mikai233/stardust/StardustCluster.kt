@@ -2,8 +2,8 @@ package com.mikai233.stardust
 
 import ch.qos.logback.classic.LoggerContext
 import com.mikai233.common.conf.GlobalEnv
-import com.mikai233.common.core.GameNodeRuntime
-import com.mikai233.common.core.Role
+import com.mikai233.common.core.GameRoles
+import com.mikai233.common.core.LaunchableNode
 import com.mikai233.common.extension.asyncZookeeperClient
 import com.mikai233.common.extension.logger
 import com.mikai233.gate.GateNode
@@ -20,7 +20,6 @@ import io.github.realmlabs.asteria.config.center.zookeeper.ZookeeperConfigStore
 import kotlinx.coroutines.*
 import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
-import java.util.*
 import kotlin.reflect.KClass
 import kotlin.reflect.full.primaryConstructor
 import kotlin.system.exitProcess
@@ -28,34 +27,14 @@ import kotlin.system.exitProcess
 object StardustCluster {
     private val logger = logger()
     private val client = asyncZookeeperClient(GlobalEnv.zkConnect)
-    private val nodeByRole: EnumMap<Role, KClass<out GameNodeRuntime>> = EnumMap(Role::class.java)
-    private val nodes: ArrayList<GameNodeRuntime> = arrayListOf()
-
-    init {
-        Role.entries.forEach {
-            when (it) {
-                Role.Player -> {
-                    nodeByRole[it] = PlayerNode::class
-                }
-
-                Role.Gate -> {
-                    nodeByRole[it] = GateNode::class
-                }
-
-                Role.World -> {
-                    nodeByRole[it] = WorldNode::class
-                }
-
-                Role.Global -> {
-                    nodeByRole[it] = GlobalNode::class
-                }
-
-                Role.Gm -> {
-                    nodeByRole[it] = GmNode::class
-                }
-            }
-        }
-    }
+    private val nodeByRole: Map<String, KClass<out LaunchableNode>> = mapOf(
+        GameRoles.Player to PlayerNode::class,
+        GameRoles.Gate to GateNode::class,
+        GameRoles.World to WorldNode::class,
+        GameRoles.Global to GlobalNode::class,
+        GameRoles.Gm to GmNode::class,
+    )
+    private val nodes: ArrayList<LaunchableNode> = arrayListOf()
 
     suspend fun launch() {
         val repository = RuntimeConfigRepository(ZookeeperConfigStore(client), JacksonConfigCodec())
@@ -78,7 +57,7 @@ object StardustCluster {
             nodeConfigs.forEach { nodeConfig ->
                 launch(exceptionHandler) {
                     logger.info("launch node with config:{}", nodeConfig)
-                    val role = requireNotNull(nodeConfig.roles.firstNotNullOfOrNull(::roleOf)) {
+                    val role = requireNotNull(nodeConfig.roles.firstOrNull(nodeByRole::containsKey)) {
                         "node ${nodeConfig.nodeId} has no known game role: ${nodeConfig.roles}"
                     }
                     val nodeClass = nodeByRole[role]
@@ -86,7 +65,7 @@ object StardustCluster {
                         val constructor =
                             requireNotNull(nodeClass.primaryConstructor) { "$nodeClass primaryConstructor not found" }
                         val addr = InetSocketAddress(nodeConfig.host, nodeConfig.port)
-                        val config = ConfigFactory.load("${role.name.lowercase()}.conf")
+                        val config = ConfigFactory.load("${role.lowercase()}.conf")
                         val sameJvm = true
                         val node = constructor.call(addr, systemName, nodeConfig.nodeId, config, zookeeperConnectString, sameJvm)
                         node.launch()
@@ -99,7 +78,4 @@ object StardustCluster {
         }
     }
 
-    private fun roleOf(role: String): Role? {
-        return Role.entries.firstOrNull { it.name == role }
-    }
 }

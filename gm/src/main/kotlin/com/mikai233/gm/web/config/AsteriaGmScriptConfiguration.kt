@@ -1,8 +1,10 @@
 package com.mikai233.gm.web.config
 
-import com.mikai233.common.core.Role
-import com.mikai233.common.core.ShardEntityType
-import com.mikai233.common.core.Singleton
+import com.mikai233.common.core.GameEntityKinds
+import com.mikai233.common.core.GameRoles
+import com.mikai233.common.core.GameSingletons
+import com.mikai233.common.core.gameWorldIds
+import com.mikai233.common.core.system
 import com.mikai233.gm.GmNode
 import io.github.realmlabs.asteria.core.EntityKind
 import io.github.realmlabs.asteria.core.RoleKey
@@ -42,15 +44,15 @@ class AsteriaGmScriptConfiguration {
     fun gmScriptTargetCatalog(node: GmNode): GmScriptTargetCatalog {
         return object : GmScriptTargetCatalog {
             override suspend fun listRoles(): List<String> {
-                return Role.entries.map { it.name }.sorted()
+                return GameRoles.all.sorted()
             }
 
             override suspend fun listEntityKinds(): List<String> {
-                return ShardEntityType.entries.map { it.name }.sorted()
+                return GameEntityKinds.all.sorted()
             }
 
             override suspend fun listSingletons(): List<String> {
-                return Singleton.entries.map { it.actorName }.sorted()
+                return GameSingletons.all.sorted()
             }
 
             override suspend fun listNodeAddresses(): List<String> {
@@ -58,23 +60,23 @@ class AsteriaGmScriptConfiguration {
             }
 
             override suspend fun roleExists(role: RoleKey): Boolean {
-                return Role.entries.any { it.name == role.value }
+                return role.value in GameRoles.all
             }
 
             override suspend fun entityKindExists(kind: EntityKind): Boolean {
-                return ShardEntityType.entries.any { it.name == kind.value }
+                return kind.value in GameEntityKinds.all
             }
 
             override suspend fun entityIdExists(kind: EntityKind, id: String): Boolean? {
                 return when (kind.value) {
-                    ShardEntityType.WorldActor.name -> id.toLongOrNull()?.let { it in node.gameWorldIds } ?: false
-                    ShardEntityType.PlayerActor.name -> null
+                    GameEntityKinds.WorldActor -> id.toLongOrNull()?.let { it in node.gameWorldIds } ?: false
+                    GameEntityKinds.PlayerActor -> null
                     else -> false
                 }
             }
 
             override suspend fun singletonExists(name: SingletonName): Boolean {
-                return Singleton.entries.any { it.actorName == name.value }
+                return name.value in GameSingletons.all
             }
 
             override suspend fun nodeAddressExists(address: String): Boolean {

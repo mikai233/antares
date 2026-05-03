@@ -21,7 +21,9 @@ import com.mikai233.protocol.ProtoRpc.WorldWakeupReq
 import com.mikai233.protocol.ProtoSystem.GmReq
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import io.github.realmlabs.asteria.core.AsteriaApplicationBuilder
+import io.github.realmlabs.asteria.core.NodeState
+import io.github.realmlabs.asteria.core.RoleKey
+import io.github.realmlabs.asteria.core.ServiceRegistry
 import io.github.realmlabs.asteria.cluster.pekko.actor
 import io.github.realmlabs.asteria.cluster.pekko.allocationStrategy
 import io.github.realmlabs.asteria.cluster.pekko.extractor
@@ -40,18 +42,29 @@ import org.apache.pekko.cluster.sharding.ShardCoordinator
 import java.net.InetSocketAddress
 
 class WorldNode(
-    addr: InetSocketAddress,
-    name: String,
-    nodeId: String = "world-${addr.port}",
-    config: Config,
+    val addr: InetSocketAddress,
+    override val name: String,
+    val nodeId: String = "world-${addr.port}",
+    val config: Config,
     zookeeperConnectString: String,
     sameJvm: Boolean = false,
-) : GameNodeRuntime(addr, listOf(Role.World), name, nodeId, config, zookeeperConnectString, sameJvm) {
+) : LaunchableNode {
+    override val roles: Set<RoleKey> = setOf(RoleKey(GameRoles.World))
+    override val services: ServiceRegistry = ServiceRegistry()
+
+    @Volatile
+    private var currentState: NodeState = NodeState.Unstarted
+
+    override val state: NodeState
+        get() = currentState
+
+    private val clusterNode = ClusterNodeBootstrap(this, addr, nodeId, config, zookeeperConnectString, sameJvm)
+
     val playerSharding: ActorRef
-        get() = entityShard(ShardEntityType.PlayerActor)
+        get() = entityShard(GameEntityKinds.PlayerActor)
 
     val worldSharding: ActorRef
-        get() = entityShard(ShardEntityType.WorldActor)
+        get() = entityShard(GameEntityKinds.WorldActor)
 
     val idGenerator: IdGenerator
         get() = services.get(IdGenerator::class)
@@ -80,19 +93,20 @@ class WorldNode(
         register(GameConfigUpdatedEvent::class, gameConfigUpdatedEventHandler)
     }
 
-    override fun modulesBeforeCluster() = listOf(workerIdRuntimeModule())
-
-    override fun modulesAfterCluster() = listOf(WorldWakerModule(this))
-
-    override fun configureRuntime(builder: AsteriaApplicationBuilder) {
-        builder.apply {
-            entity<Long>(ShardEntityType.PlayerActor.name) {
-                role(Role.Player.name)
+    override suspend fun launch() {
+        clusterNode.launch(
+            beforeClusterModules = listOf(clusterNode.workerIdModule()),
+            afterClusterModules = listOf(WorldWakerModule(this)),
+            onStateChange = ::updateState,
+        ) {
+            role(GameRoles.World)
+            entity<Long>(GameEntityKinds.PlayerActor) {
+                role(GameRoles.Player)
                 shardCount = PLAYER_SHARD_NUM
                 extractor(GameRpcProtocolDefinition.playerShardExtractor)
             }
-            entity<Long>(ShardEntityType.WorldActor.name) {
-                role(Role.World.name)
+            entity<Long>(GameEntityKinds.WorldActor) {
+                role(GameRoles.World)
                 shardCount = WORLD_SHARD_NUM
                 handoffMessage = HandoffWorld
                 extractor(GameRpcProtocolDefinition.worldShardExtractor)
@@ -100,6 +114,10 @@ class WorldNode(
                 actor { runtime, _ -> WorldActor.props(runtime as WorldNode) }
             }
         }
+    }
+
+    private fun updateState(newState: NodeState) {
+        currentState = newState
     }
 
 }

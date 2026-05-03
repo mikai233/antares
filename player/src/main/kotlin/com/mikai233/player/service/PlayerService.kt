@@ -2,6 +2,7 @@ package com.mikai233.player.service
 
 import com.mikai233.common.annotation.AllOpen
 import com.mikai233.common.constants.PlayerActionType
+import com.mikai233.common.core.gameConfigVersion
 import com.mikai233.common.event.GameConfigUpdatedEvent
 import com.mikai233.common.extension.tell
 import com.mikai233.player.PlayerActor

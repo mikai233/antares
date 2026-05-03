@@ -1,7 +1,8 @@
 package com.mikai233.player
 
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
-import com.mikai233.common.core.ShardEntityType
+import com.mikai233.common.core.GameEntityKinds
+import com.mikai233.common.core.mongoDB
 import com.mikai233.common.extension.logger
 import com.mikai233.common.extension.tell
 import com.mikai233.common.extension.tryCatchSuspend
@@ -20,7 +21,7 @@ class PlayerDataManager(private val player: PlayerActor) {
 
     private val dataManager = DataManager(
         DataScope(
-            entityKind = EntityKind(ShardEntityType.PlayerActor.name),
+            entityKind = EntityKind(GameEntityKinds.PlayerActor),
             entityId = player.playerId,
             services = ServiceRegistry().apply {
                 register(MongoTemplate::class, player.node.mongoDB.mongoTemplate)

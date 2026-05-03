@@ -1,6 +1,7 @@
 package com.mikai233.gate
 
-import com.mikai233.common.core.ShardEntityType
+import com.mikai233.common.core.GameEntityKinds
+import com.mikai233.common.core.system
 import com.mikai233.common.message.ClientProtobuf
 import com.mikai233.protocol.ProtoSystem.GmReq
 import com.mikai233.protocol.ProtoSystem.PingReq
@@ -23,8 +24,8 @@ import org.apache.pekko.actor.ActorRef
 val GatePlayerIdKey: GatewaySessionAttributeKey<Long> = GatewaySessionAttributeKey("gate.playerId")
 val GateWorldIdKey: GatewaySessionAttributeKey<Long> = GatewaySessionAttributeKey("gate.worldId")
 
-private val PlayerRouteTarget = RouteTarget.Entity(EntityKind(ShardEntityType.PlayerActor.name))
-private val WorldRouteTarget = RouteTarget.Entity(EntityKind(ShardEntityType.WorldActor.name))
+private val PlayerRouteTarget = RouteTarget.Entity(EntityKind(GameEntityKinds.PlayerActor))
+private val WorldRouteTarget = RouteTarget.Entity(EntityKind(GameEntityKinds.WorldActor))
 private val GmCommandTargets = mapOf(
     "testGm" to PlayerRouteTarget,
     "testBroadcast" to WorldRouteTarget,
@@ -84,7 +85,7 @@ private class GateGatewayMessageFactory : PekkoGatewayMessageFactory<ClientProto
         val target = route.target as? RouteTarget.Entity
             ?: error("expected entity route target but got ${route.target}")
         return when (target.kind) {
-            EntityKind(ShardEntityType.PlayerActor.name) -> {
+            EntityKind(GameEntityKinds.PlayerActor) -> {
                 when (val message = packet.message) {
                     is GmReq -> message.toBuilder()
                         .setPlayerId(route.entityId as Long)
@@ -99,7 +100,7 @@ private class GateGatewayMessageFactory : PekkoGatewayMessageFactory<ClientProto
                 }
             }
 
-            EntityKind(ShardEntityType.WorldActor.name) -> {
+            EntityKind(GameEntityKinds.WorldActor) -> {
                 when (val message = packet.message) {
                     is GmReq -> message.toBuilder()
                         .setPlayerId(requirePlayerId(context.session))

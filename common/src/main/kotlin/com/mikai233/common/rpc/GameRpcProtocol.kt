@@ -2,7 +2,7 @@ package com.mikai233.common.rpc
 
 import com.mikai233.common.PLAYER_SHARD_NUM
 import com.mikai233.common.WORLD_SHARD_NUM
-import com.mikai233.common.core.ShardEntityType
+import com.mikai233.common.core.GameEntityKinds
 import com.mikai233.protocol.ProtoLogin.LoginReq
 import com.mikai233.protocol.ProtoRpc.CrossWorldSubscribeTopicReq
 import com.mikai233.protocol.ProtoRpc.CrossWorldUnsubscribeTopicReq
@@ -39,8 +39,8 @@ object GameRpcProtocolDefinition : GeneratedProtobufRpcProtocol() {
     }
 
     override fun contribute(builder: ProtobufRpcProtocolBuilder) {
-        val playerTarget = RpcTarget.Entity(EntityKind(ShardEntityType.PlayerActor.name))
-        val worldTarget = RpcTarget.Entity(EntityKind(ShardEntityType.WorldActor.name))
+        val playerTarget = RpcTarget.Entity(EntityKind(GameEntityKinds.PlayerActor))
+        val worldTarget = RpcTarget.Entity(EntityKind(GameEntityKinds.WorldActor))
 
         builder.tell(
             id = 10_001,

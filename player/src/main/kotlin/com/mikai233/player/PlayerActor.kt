@@ -1,6 +1,7 @@
 package com.mikai233.player
 
 import com.google.protobuf.GeneratedMessage
+import com.mikai233.common.core.system
 import com.mikai233.common.event.GameConfigUpdateEvent
 import com.mikai233.common.extension.ask
 import com.mikai233.common.extension.tell
