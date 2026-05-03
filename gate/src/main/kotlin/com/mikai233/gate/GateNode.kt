@@ -23,8 +23,8 @@ import com.mikai233.protocol.ProtoRpc.SubscribeTopicReq
 import com.mikai233.protocol.ProtoRpc.UnsubscribeTopicReq
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import io.github.mikai233.asteria.core.AsteriaApplicationBuilder
-import io.github.mikai233.asteria.cluster.pekko.extractor
+import io.github.realmlabs.asteria.core.AsteriaApplicationBuilder
+import io.github.realmlabs.asteria.cluster.pekko.extractor
 import com.mikai233.protocol.ProtoSystem.PingReq
 import org.apache.pekko.actor.ActorRef
 import java.net.InetSocketAddress

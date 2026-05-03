@@ -31,11 +31,11 @@ import com.mikai233.protocol.ProtoSystem.GmReq
 import com.mikai233.protocol.ProtoTest.TestReq
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import io.github.mikai233.asteria.core.AsteriaApplicationBuilder
-import io.github.mikai233.asteria.cluster.pekko.actor
-import io.github.mikai233.asteria.cluster.pekko.allocationStrategy
-import io.github.mikai233.asteria.cluster.pekko.extractor
-import io.github.mikai233.asteria.id.IdGenerator
+import io.github.realmlabs.asteria.core.AsteriaApplicationBuilder
+import io.github.realmlabs.asteria.cluster.pekko.actor
+import io.github.realmlabs.asteria.cluster.pekko.allocationStrategy
+import io.github.realmlabs.asteria.cluster.pekko.extractor
+import io.github.realmlabs.asteria.id.IdGenerator
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.cluster.sharding.ShardCoordinator
 import java.net.InetSocketAddress

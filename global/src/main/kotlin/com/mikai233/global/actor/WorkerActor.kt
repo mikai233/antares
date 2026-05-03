@@ -3,7 +3,7 @@ package com.mikai233.global.actor
 import com.mikai233.common.message.Message
 import com.mikai233.common.message.global.worker.HandoffWorker
 import com.mikai233.global.GlobalNode
-import io.github.mikai233.asteria.script.pekko.ScriptableAsteriaActor
+import io.github.realmlabs.asteria.script.pekko.ScriptableAsteriaActor
 import org.apache.pekko.actor.Props
 
 class WorkerActor(val node: GlobalNode) : ScriptableAsteriaActor<GlobalNode>(node) {

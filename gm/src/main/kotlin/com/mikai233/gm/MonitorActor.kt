@@ -1,6 +1,6 @@
 package com.mikai233.gm
 
-import io.github.mikai233.asteria.script.pekko.ScriptableAsteriaActor
+import io.github.realmlabs.asteria.script.pekko.ScriptableAsteriaActor
 import org.apache.pekko.actor.Props
 
 class MonitorActor(val node: GmNode) : ScriptableAsteriaActor<GmNode>(node) {

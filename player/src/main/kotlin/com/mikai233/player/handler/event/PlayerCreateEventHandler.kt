@@ -6,8 +6,8 @@ import com.mikai233.common.event.PlayerLoginEvent
 import com.mikai233.common.extension.tell
 import com.mikai233.common.message.requireActor
 import com.mikai233.player.PlayerActor
-import io.github.mikai233.asteria.message.HandlerContext
-import io.github.mikai233.asteria.message.MessageHandler
+import io.github.realmlabs.asteria.message.HandlerContext
+import io.github.realmlabs.asteria.message.MessageHandler
 
 @AllOpen
 class PlayerCreateEventHandler : MessageHandler<PlayerCreateEvent> {

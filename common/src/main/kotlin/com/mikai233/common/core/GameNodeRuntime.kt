@@ -7,27 +7,27 @@ import com.mikai233.common.config.luban.GameTables
 import com.mikai233.common.db.MongoDB
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import io.github.mikai233.asteria.config.center.zookeeper.ZookeeperConfigCenterModule
-import io.github.mikai233.asteria.config.requireComponent
-import io.github.mikai233.asteria.core.AsteriaModule
-import io.github.mikai233.asteria.core.AsteriaApplicationBuilder
-import io.github.mikai233.asteria.core.EntityKind
-import io.github.mikai233.asteria.core.NodeState
-import io.github.mikai233.asteria.core.NodeRuntime
-import io.github.mikai233.asteria.core.RoleKey
-import io.github.mikai233.asteria.core.ServiceRegistry
-import io.github.mikai233.asteria.core.SingletonName
-import io.github.mikai233.asteria.core.gameApplication
-import io.github.mikai233.asteria.id.WorkerIdModule
-import io.github.mikai233.asteria.id.WorkerIdModuleOptions
-import io.github.mikai233.asteria.id.WorkerIdOwner
-import io.github.mikai233.asteria.id.zookeeper.ZookeeperWorkerIdRepository
-import io.github.mikai233.asteria.cluster.pekko.EntityShardRegistry
-import io.github.mikai233.asteria.cluster.pekko.SingletonActorRegistry
-import io.github.mikai233.asteria.script.engine.groovy.GroovyScriptEngine
-import io.github.mikai233.asteria.script.engine.jar.JarScriptEngine
-import io.github.mikai233.asteria.script.pekko.ScriptModule
-import io.github.mikai233.asteria.starter.clusterGameApplication
+import io.github.realmlabs.asteria.config.center.zookeeper.ZookeeperConfigCenterModule
+import io.github.realmlabs.asteria.config.requireComponent
+import io.github.realmlabs.asteria.core.AsteriaModule
+import io.github.realmlabs.asteria.core.AsteriaApplicationBuilder
+import io.github.realmlabs.asteria.core.EntityKind
+import io.github.realmlabs.asteria.core.NodeState
+import io.github.realmlabs.asteria.core.NodeRuntime
+import io.github.realmlabs.asteria.core.RoleKey
+import io.github.realmlabs.asteria.core.ServiceRegistry
+import io.github.realmlabs.asteria.core.SingletonName
+import io.github.realmlabs.asteria.core.gameApplication
+import io.github.realmlabs.asteria.id.WorkerIdModule
+import io.github.realmlabs.asteria.id.WorkerIdModuleOptions
+import io.github.realmlabs.asteria.id.WorkerIdOwner
+import io.github.realmlabs.asteria.id.zookeeper.ZookeeperWorkerIdRepository
+import io.github.realmlabs.asteria.cluster.pekko.EntityShardRegistry
+import io.github.realmlabs.asteria.cluster.pekko.SingletonActorRegistry
+import io.github.realmlabs.asteria.script.engine.groovy.GroovyScriptEngine
+import io.github.realmlabs.asteria.script.engine.jar.JarScriptEngine
+import io.github.realmlabs.asteria.script.pekko.ScriptModule
+import io.github.realmlabs.asteria.starter.clusterGameApplication
 import kotlinx.coroutines.*
 import org.apache.curator.framework.CuratorFrameworkFactory
 import org.apache.curator.retry.ExponentialBackoffRetry
@@ -100,10 +100,10 @@ open class GameNodeRuntime(
         get() = gameWorldConfigService.worldsById
 
     val gameConfigVersion: String
-        get() = services.get(io.github.mikai233.asteria.config.ConfigService::class).current().revision.version
+        get() = services.get(io.github.realmlabs.asteria.config.ConfigService::class).current().revision.version
 
     val gameTables: GameTables
-        get() = services.get(io.github.mikai233.asteria.config.ConfigService::class).current().requireComponent()
+        get() = services.get(io.github.realmlabs.asteria.config.ConfigService::class).current().requireComponent()
 
     val broadcastRouter: ActorRef
         get() = services.get(PlayerBroadcastRuntime::class).router

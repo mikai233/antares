@@ -3,14 +3,14 @@ package com.mikai233.gate
 import com.mikai233.common.extension.logger
 import com.mikai233.common.extension.tell
 import com.mikai233.common.message.StopChannel
-import io.github.mikai233.asteria.core.NodeState
-import io.github.mikai233.asteria.gateway.GatewayCloseReason
-import io.github.mikai233.asteria.gateway.GatewayConnection
-import io.github.mikai233.asteria.gateway.GatewayFrame
-import io.github.mikai233.asteria.gateway.GatewaySession
-import io.github.mikai233.asteria.gateway.GatewaySessionAttributeKey
-import io.github.mikai233.asteria.gateway.GatewaySessionId
-import io.github.mikai233.asteria.gateway.GatewayTransportHandler
+import io.github.realmlabs.asteria.core.NodeState
+import io.github.realmlabs.asteria.gateway.GatewayCloseReason
+import io.github.realmlabs.asteria.gateway.GatewayConnection
+import io.github.realmlabs.asteria.gateway.GatewayFrame
+import io.github.realmlabs.asteria.gateway.GatewaySession
+import io.github.realmlabs.asteria.gateway.GatewaySessionAttributeKey
+import io.github.realmlabs.asteria.gateway.GatewaySessionId
+import io.github.realmlabs.asteria.gateway.GatewayTransportHandler
 import org.apache.pekko.actor.ActorRef
 
 val GateChannelActorKey: GatewaySessionAttributeKey<ActorRef> = GatewaySessionAttributeKey("gate.channelActor")

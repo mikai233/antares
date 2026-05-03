@@ -9,8 +9,8 @@ import com.mikai233.player.service.loginService
 import com.mikai233.protocol.ProtoRpc.PlayerLoginReq
 import com.mikai233.protocol.ProtoRpc.PlayerLoginResp
 import com.mikai233.protocol.testNotify
-import io.github.mikai233.asteria.message.HandlerContext
-import io.github.mikai233.asteria.message.MessageHandler
+import io.github.realmlabs.asteria.message.HandlerContext
+import io.github.realmlabs.asteria.message.MessageHandler
 import kotlin.random.Random
 
 @AllOpen

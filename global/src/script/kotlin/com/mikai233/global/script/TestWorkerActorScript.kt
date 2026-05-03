@@ -1,9 +1,9 @@
 package com.mikai233.global.script
 
 import com.mikai233.global.actor.WorkerActor
-import io.github.mikai233.asteria.script.ActorScript
-import io.github.mikai233.asteria.script.ActorScriptContext
-import io.github.mikai233.asteria.script.ScriptExecutionResult
+import io.github.realmlabs.asteria.script.ActorScript
+import io.github.realmlabs.asteria.script.ActorScriptContext
+import io.github.realmlabs.asteria.script.ScriptExecutionResult
 
 class TestWorkerActorScript : ActorScript<WorkerActor>() {
     override fun executeActor(context: ActorScriptContext<WorkerActor>): ScriptExecutionResult? {

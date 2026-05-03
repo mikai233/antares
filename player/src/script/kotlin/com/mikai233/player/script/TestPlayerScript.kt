@@ -2,9 +2,9 @@ package com.mikai233.player.script
 
 import com.mikai233.common.extension.logger
 import com.mikai233.player.PlayerActor
-import io.github.mikai233.asteria.script.ActorScript
-import io.github.mikai233.asteria.script.ActorScriptContext
-import io.github.mikai233.asteria.script.ScriptExecutionResult
+import io.github.realmlabs.asteria.script.ActorScript
+import io.github.realmlabs.asteria.script.ActorScriptContext
+import io.github.realmlabs.asteria.script.ScriptExecutionResult
 
 class TestPlayerScript : ActorScript<PlayerActor>() {
     private val logger = logger()

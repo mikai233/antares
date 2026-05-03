@@ -1,6 +1,6 @@
 package com.mikai233.common.test.db
 
-import io.github.mikai233.asteria.persistence.Entity
+import io.github.realmlabs.asteria.persistence.Entity
 import org.springframework.data.annotation.Id
 
 class TraceDBTest {

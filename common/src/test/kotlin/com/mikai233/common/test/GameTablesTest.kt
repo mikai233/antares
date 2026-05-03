@@ -6,11 +6,11 @@ import com.mikai233.common.config.luban.GameConfigSnapshotLoader
 import com.mikai233.common.config.luban.GameTables
 import com.mikai233.common.config.luban.ItemConfig
 import com.mikai233.common.config.luban.ItemType
-import io.github.mikai233.asteria.config.ConfigTableName
-import io.github.mikai233.asteria.config.luban.LubanBinaryConfigLoader
-import io.github.mikai233.asteria.config.luban.MemoryLubanDataSource
-import io.github.mikai233.asteria.config.requireComponent
-import io.github.mikai233.asteria.config.requireTable
+import io.github.realmlabs.asteria.config.ConfigTableName
+import io.github.realmlabs.asteria.config.luban.LubanBinaryConfigLoader
+import io.github.realmlabs.asteria.config.luban.MemoryLubanDataSource
+import io.github.realmlabs.asteria.config.requireComponent
+import io.github.realmlabs.asteria.config.requireTable
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull

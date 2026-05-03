@@ -1,6 +1,6 @@
 package com.mikai233.common.config
 
-import io.github.mikai233.asteria.config.center.ConfigPath
+import io.github.realmlabs.asteria.config.center.ConfigPath
 
 const val SYSTEM_NAME = "antares"
 

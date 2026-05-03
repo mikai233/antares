@@ -9,10 +9,10 @@ import com.mikai233.common.core.*
 import com.mikai233.common.rpc.GameRpcProtocolDefinition
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import io.github.mikai233.asteria.core.AsteriaApplicationBuilder
-import io.github.mikai233.asteria.cluster.pekko.PekkoSingletonStartup
-import io.github.mikai233.asteria.cluster.pekko.extractor
-import io.github.mikai233.asteria.cluster.pekko.singletonStartup
+import io.github.realmlabs.asteria.core.AsteriaApplicationBuilder
+import io.github.realmlabs.asteria.cluster.pekko.PekkoSingletonStartup
+import io.github.realmlabs.asteria.cluster.pekko.extractor
+import io.github.realmlabs.asteria.cluster.pekko.singletonStartup
 import kotlinx.coroutines.runBlocking
 import org.apache.pekko.actor.ActorRef
 import java.net.InetSocketAddress

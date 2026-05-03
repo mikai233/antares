@@ -2,11 +2,11 @@ package com.mikai233.gate
 
 import com.mikai233.common.config.NettyConfig
 import com.mikai233.common.config.nettyConfigPath
-import io.github.mikai233.asteria.config.center.RuntimeConfigRepository
-import io.github.mikai233.asteria.core.AsteriaModule
-import io.github.mikai233.asteria.core.ModuleContext
-import io.github.mikai233.asteria.gateway.netty.NettyGatewayServerOptions
-import io.github.mikai233.asteria.gateway.netty.NettyTcpGatewayServerTransport
+import io.github.realmlabs.asteria.config.center.RuntimeConfigRepository
+import io.github.realmlabs.asteria.core.AsteriaModule
+import io.github.realmlabs.asteria.core.ModuleContext
+import io.github.realmlabs.asteria.gateway.netty.NettyGatewayServerOptions
+import io.github.realmlabs.asteria.gateway.netty.NettyTcpGatewayServerTransport
 import kotlinx.coroutines.CoroutineScope
 
 class GateGatewayTransportModule(

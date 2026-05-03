@@ -5,9 +5,9 @@ plugins {
 dependencies {
     testImplementation(platform(libTest.junit.bom))
     testImplementation(libTest.junit.jupiter)
-    implementation("io.github.mikai233:gateway-core:1.0-SNAPSHOT")
-    implementation("io.github.mikai233:gateway-pekko:1.0-SNAPSHOT")
-    implementation("io.github.mikai233:gateway-netty:1.0-SNAPSHOT")
+    implementation("io.github.realm-labs.asteria:gateway-core:1.0-SNAPSHOT")
+    implementation("io.github.realm-labs.asteria:gateway-pekko:1.0-SNAPSHOT")
+    implementation("io.github.realm-labs.asteria:gateway-netty:1.0-SNAPSHOT")
     implementation(libPekko.bundles.common)
     implementation(libKotlin.reflect)
     implementation(libKotlinx.core)

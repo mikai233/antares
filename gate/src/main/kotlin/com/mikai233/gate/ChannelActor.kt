@@ -20,9 +20,9 @@ import com.mikai233.protocol.ProtoRpc.SubscribeTopicReq
 import com.mikai233.protocol.ProtoRpc.UnsubscribeTopicReq
 import com.mikai233.protocol.ProtoSystem.GmReq
 import com.mikai233.protocol.connectionExpiredNotify
-import io.github.mikai233.asteria.gateway.GatewaySession
-import io.github.mikai233.asteria.gateway.GatewaySessionContext
-import io.github.mikai233.asteria.script.pekko.ScriptableAsteriaActor
+import io.github.realmlabs.asteria.gateway.GatewaySession
+import io.github.realmlabs.asteria.gateway.GatewaySessionContext
+import io.github.realmlabs.asteria.script.pekko.ScriptableAsteriaActor
 import kotlinx.coroutines.runBlocking
 import org.apache.pekko.actor.Props
 import org.apache.pekko.actor.ReceiveTimeout

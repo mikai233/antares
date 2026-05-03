@@ -3,9 +3,9 @@ package com.mikai233.player.script
 import com.mikai233.common.extension.logger
 import com.mikai233.player.PlayerNode
 import com.mikai233.player.service.loginService
-import io.github.mikai233.asteria.script.NodeScript
-import io.github.mikai233.asteria.script.NodeScriptContext
-import io.github.mikai233.asteria.script.ScriptExecutionResult
+import io.github.realmlabs.asteria.script.NodeScript
+import io.github.realmlabs.asteria.script.NodeScriptContext
+import io.github.realmlabs.asteria.script.ScriptExecutionResult
 
 class PlayerScriptFunction : NodeScript() {
     private val logger = logger()

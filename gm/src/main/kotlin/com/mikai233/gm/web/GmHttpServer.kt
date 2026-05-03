@@ -4,7 +4,7 @@ import com.mikai233.common.config.DATA_SOURCE_GAME
 import com.mikai233.common.config.DataSourceConfig
 import com.mikai233.gm.GmNode
 import com.typesafe.config.Config
-import io.github.mikai233.asteria.config.center.RuntimeConfigRepository
+import io.github.realmlabs.asteria.config.center.RuntimeConfigRepository
 import kotlinx.coroutines.runBlocking
 import org.springframework.boot.WebApplicationType
 import org.springframework.boot.builder.SpringApplicationBuilder

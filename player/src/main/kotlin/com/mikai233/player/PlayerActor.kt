@@ -11,8 +11,8 @@ import com.mikai233.protocol.ProtoRpc.PlayerChannelClosedReq
 import com.mikai233.common.event.GameConfigUpdatedEvent
 import com.mikai233.common.event.PlayerCreateEvent
 import com.mikai233.common.event.PlayerLoginEvent
-import io.github.mikai233.asteria.actor.ActorTimerSupport
-import io.github.mikai233.asteria.script.pekko.ScriptableAsteriaActor
+import io.github.realmlabs.asteria.actor.ActorTimerSupport
+import io.github.realmlabs.asteria.script.pekko.ScriptableAsteriaActor
 import org.apache.pekko.actor.Props
 import org.apache.pekko.actor.ReceiveTimeout
 import org.apache.pekko.cluster.sharding.ShardRegion

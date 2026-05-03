@@ -6,10 +6,10 @@ import com.mikai233.common.test.msg.HandlerCtx
 import com.mikai233.common.test.msg.MessageHandlerA
 import com.mikai233.common.test.msg.TestMessageA
 import com.mikai233.common.test.msg.TestMessageB
-import io.github.mikai233.asteria.core.NodeRuntime
-import io.github.mikai233.asteria.core.NodeState
-import io.github.mikai233.asteria.core.RoleKey
-import io.github.mikai233.asteria.core.ServiceRegistry
+import io.github.realmlabs.asteria.core.NodeRuntime
+import io.github.realmlabs.asteria.core.NodeState
+import io.github.realmlabs.asteria.core.RoleKey
+import io.github.realmlabs.asteria.core.ServiceRegistry
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

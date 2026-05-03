@@ -2,8 +2,8 @@ package com.mikai233.common.config.luban
 
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.mikai233.common.extension.Json
-import io.github.mikai233.asteria.config.ConfigTable
-import io.github.mikai233.asteria.config.ConfigTableName
+import io.github.realmlabs.asteria.config.ConfigTable
+import io.github.realmlabs.asteria.config.ConfigTableName
 import kotlin.reflect.KClass
 
 class GameTables(

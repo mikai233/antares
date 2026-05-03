@@ -7,8 +7,8 @@ import com.mikai233.player.PlayerActor
 import com.mikai233.player.service.loginService
 import com.mikai233.protocol.ProtoRpc.PlayerCreateReq
 import com.mikai233.protocol.ProtoRpc.PlayerCreateResp
-import io.github.mikai233.asteria.message.HandlerContext
-import io.github.mikai233.asteria.message.MessageHandler
+import io.github.realmlabs.asteria.message.HandlerContext
+import io.github.realmlabs.asteria.message.MessageHandler
 
 @AllOpen
 class PlayerCreateReqHandler : MessageHandler<PlayerCreateReq> {

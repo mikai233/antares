@@ -1,7 +1,7 @@
 package com.mikai233.common.config.luban
 
 import com.mikai233.common.extension.Json
-import io.github.mikai233.asteria.config.publisher.ConfigPublicationArtifact
+import io.github.realmlabs.asteria.config.publisher.ConfigPublicationArtifact
 
 object DemoGameConfigArtifacts {
     fun artifacts(): List<ConfigPublicationArtifact> {

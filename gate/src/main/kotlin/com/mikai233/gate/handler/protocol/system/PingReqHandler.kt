@@ -6,8 +6,8 @@ import com.mikai233.common.message.requireActor
 import com.mikai233.gate.ChannelActor
 import com.mikai233.protocol.ProtoSystem.PingReq
 import com.mikai233.protocol.pingResp
-import io.github.mikai233.asteria.message.HandlerContext
-import io.github.mikai233.asteria.message.MessageHandler
+import io.github.realmlabs.asteria.message.HandlerContext
+import io.github.realmlabs.asteria.message.MessageHandler
 
 @AllOpen
 class PingReqHandler : MessageHandler<PingReq> {

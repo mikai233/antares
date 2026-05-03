@@ -1,9 +1,9 @@
 package com.mikai233.common.config.luban
 
-import io.github.mikai233.asteria.config.ConfigLoader
-import io.github.mikai233.asteria.config.ConfigSnapshot
-import io.github.mikai233.asteria.config.ConfigTable
-import io.github.mikai233.asteria.config.DefaultConfigSnapshot
+import io.github.realmlabs.asteria.config.ConfigLoader
+import io.github.realmlabs.asteria.config.ConfigSnapshot
+import io.github.realmlabs.asteria.config.ConfigTable
+import io.github.realmlabs.asteria.config.DefaultConfigSnapshot
 
 class GameConfigSnapshotLoader(
     private val delegate: ConfigLoader,

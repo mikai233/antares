@@ -1,6 +1,6 @@
 package com.mikai233.common.test
 
-import io.github.mikai233.asteria.persistence.Entity
+import io.github.realmlabs.asteria.persistence.Entity
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.reflections.Reflections

@@ -13,17 +13,17 @@ import com.mikai233.common.config.luban.GameConfigSnapshotLoader
 import com.mikai233.common.config.luban.GameTables
 import com.mikai233.common.config.nettyConfigPath
 import com.mikai233.common.extension.asyncZookeeperClient
-import io.github.mikai233.asteria.cluster.config.ClusterConfigLayout
-import io.github.mikai233.asteria.cluster.config.ClusterTopology
-import io.github.mikai233.asteria.cluster.config.RuntimeNodeConfig
-import io.github.mikai233.asteria.config.center.JacksonConfigCodec
-import io.github.mikai233.asteria.config.center.RuntimeConfigRepository
-import io.github.mikai233.asteria.config.center.zookeeper.ZookeeperConfigStore
-import io.github.mikai233.asteria.config.luban.LubanBinaryConfigLoader
-import io.github.mikai233.asteria.config.luban.MemoryLubanDataSource
-import io.github.mikai233.asteria.config.publisher.ConfigArtifactSource
-import io.github.mikai233.asteria.config.publisher.ConfigPublicationLayout
-import io.github.mikai233.asteria.config.publisher.ConfigPublisher
+import io.github.realmlabs.asteria.cluster.config.ClusterConfigLayout
+import io.github.realmlabs.asteria.cluster.config.ClusterTopology
+import io.github.realmlabs.asteria.cluster.config.RuntimeNodeConfig
+import io.github.realmlabs.asteria.config.center.JacksonConfigCodec
+import io.github.realmlabs.asteria.config.center.RuntimeConfigRepository
+import io.github.realmlabs.asteria.config.center.zookeeper.ZookeeperConfigStore
+import io.github.realmlabs.asteria.config.luban.LubanBinaryConfigLoader
+import io.github.realmlabs.asteria.config.luban.MemoryLubanDataSource
+import io.github.realmlabs.asteria.config.publisher.ConfigArtifactSource
+import io.github.realmlabs.asteria.config.publisher.ConfigPublicationLayout
+import io.github.realmlabs.asteria.config.publisher.ConfigPublisher
 import kotlinx.coroutines.runBlocking
 
 /**

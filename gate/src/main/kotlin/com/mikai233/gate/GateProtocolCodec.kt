@@ -5,7 +5,7 @@ import com.mikai233.common.message.ClientProtobuf
 import com.mikai233.protocol.idForServerMessage
 import com.mikai233.protocol.parserForClientMessage
 import com.mikai233.protocol.parserForServerMessage
-import io.github.mikai233.asteria.gateway.GatewayFrame
+import io.github.realmlabs.asteria.gateway.GatewayFrame
 import java.nio.ByteBuffer
 
 /**

@@ -8,13 +8,13 @@ import com.mikai233.common.codec.LZ4Codec
 import com.mikai233.common.codec.PacketCodec
 import com.mikai233.common.codec.ProtobufCodec
 import com.mikai233.common.message.ClientProtobuf
-import io.github.mikai233.asteria.gateway.GatewayCloseReason
-import io.github.mikai233.asteria.gateway.GatewayFrame
-import io.github.mikai233.asteria.gateway.GatewaySession
-import io.github.mikai233.asteria.gateway.GatewaySessionAttributeKey
-import io.github.mikai233.asteria.gateway.netty.NettyGatewayPipelineContext
-import io.github.mikai233.asteria.gateway.netty.NettyGatewayPipelineInstaller
-import io.github.mikai233.asteria.gateway.netty.NettyGatewayFrameWriter
+import io.github.realmlabs.asteria.gateway.GatewayCloseReason
+import io.github.realmlabs.asteria.gateway.GatewayFrame
+import io.github.realmlabs.asteria.gateway.GatewaySession
+import io.github.realmlabs.asteria.gateway.GatewaySessionAttributeKey
+import io.github.realmlabs.asteria.gateway.netty.NettyGatewayPipelineContext
+import io.github.realmlabs.asteria.gateway.netty.NettyGatewayPipelineInstaller
+import io.github.realmlabs.asteria.gateway.netty.NettyGatewayFrameWriter
 import io.netty.channel.Channel
 import io.netty.channel.socket.SocketChannel
 

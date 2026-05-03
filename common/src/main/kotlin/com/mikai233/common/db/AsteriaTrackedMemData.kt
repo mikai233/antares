@@ -1,11 +1,11 @@
 package com.mikai233.common.db
 
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
-import io.github.mikai233.asteria.persistence.AutoFlushMemData
-import io.github.mikai233.asteria.persistence.Entity
-import io.github.mikai233.asteria.persistence.mongodb.MongoTrackContext
-import io.github.mikai233.asteria.persistence.mongodb.MongoTrackedDocument
-import io.github.mikai233.asteria.persistence.mongodb.MongoTrackedDocumentRuntime
+import io.github.realmlabs.asteria.persistence.AutoFlushMemData
+import io.github.realmlabs.asteria.persistence.Entity
+import io.github.realmlabs.asteria.persistence.mongodb.MongoTrackContext
+import io.github.realmlabs.asteria.persistence.mongodb.MongoTrackedDocument
+import io.github.realmlabs.asteria.persistence.mongodb.MongoTrackedDocumentRuntime
 
 abstract class AsteriaTrackedMemData<E, T>(
     private val collectionName: String,

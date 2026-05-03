@@ -11,9 +11,9 @@ import com.mikai233.common.rpc.GameRpcProtocolDefinition
 import com.mikai233.global.actor.WorkerActor
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import io.github.mikai233.asteria.core.AsteriaApplicationBuilder
-import io.github.mikai233.asteria.cluster.pekko.actor
-import io.github.mikai233.asteria.cluster.pekko.extractor
+import io.github.realmlabs.asteria.core.AsteriaApplicationBuilder
+import io.github.realmlabs.asteria.cluster.pekko.actor
+import io.github.realmlabs.asteria.cluster.pekko.extractor
 import org.apache.pekko.actor.ActorRef
 import java.net.InetSocketAddress
 

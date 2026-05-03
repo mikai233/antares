@@ -15,24 +15,24 @@ import com.mikai233.protocol.ProtoRpc.WorldWakeupReq
 import com.mikai233.protocol.ProtoRpc.WorldWakeupResp
 import com.mikai233.protocol.ProtoSystem.GmReq
 import com.mikai233.protocol.ProtoTest.TestReq
-import io.github.mikai233.asteria.core.EntityKind
-import io.github.mikai233.asteria.rpc.RpcProtocol
-import io.github.mikai233.asteria.rpc.protobuf.GeneratedProtobufRpcProtocol
-import io.github.mikai233.asteria.rpc.protobuf.ProtobufRpcProtocolBuilder
-import io.github.mikai233.asteria.rpc.RpcTarget
+import io.github.realmlabs.asteria.core.EntityKind
+import io.github.realmlabs.asteria.rpc.RpcProtocol
+import io.github.realmlabs.asteria.rpc.protobuf.GeneratedProtobufRpcProtocol
+import io.github.realmlabs.asteria.rpc.protobuf.ProtobufRpcProtocolBuilder
+import io.github.realmlabs.asteria.rpc.RpcTarget
 
 object GameRpcProtocolDefinition : GeneratedProtobufRpcProtocol() {
     val protocol: RpcProtocol by lazy { create() }
 
     val playerShardExtractor by lazy {
-        io.github.mikai233.asteria.cluster.pekko.PekkoRpcShardExtractors.byRpcEntityId(
+        io.github.realmlabs.asteria.cluster.pekko.PekkoRpcShardExtractors.byRpcEntityId(
             PLAYER_SHARD_NUM,
             protocol.entityIds,
         )
     }
 
     val worldShardExtractor by lazy {
-        io.github.mikai233.asteria.cluster.pekko.PekkoRpcShardExtractors.byRpcEntityId(
+        io.github.realmlabs.asteria.cluster.pekko.PekkoRpcShardExtractors.byRpcEntityId(
             WORLD_SHARD_NUM,
             protocol.entityIds,
         )

@@ -1,6 +1,6 @@
 package com.mikai233.common.entity
 
-import io.github.mikai233.asteria.persistence.Entity
+import io.github.realmlabs.asteria.persistence.Entity
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.PersistenceCreator
 import org.springframework.data.mongodb.core.mapping.Document

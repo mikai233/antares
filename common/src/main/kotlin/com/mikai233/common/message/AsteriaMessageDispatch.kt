@@ -1,10 +1,10 @@
 package com.mikai233.common.message
 
-import io.github.mikai233.asteria.core.NodeRuntime
-import io.github.mikai233.asteria.message.HandlerContext
-import io.github.mikai233.asteria.message.MessageDispatcher as AsteriaMessageDispatcher
-import io.github.mikai233.asteria.message.MessageHandler
-import io.github.mikai233.asteria.message.PatchableMessageHandlerRegistry
+import io.github.realmlabs.asteria.core.NodeRuntime
+import io.github.realmlabs.asteria.message.HandlerContext
+import io.github.realmlabs.asteria.message.MessageDispatcher as AsteriaMessageDispatcher
+import io.github.realmlabs.asteria.message.MessageHandler
+import io.github.realmlabs.asteria.message.PatchableMessageHandlerRegistry
 import kotlin.reflect.KClass
 
 data class ActorHandlerContext<A : Any>(

@@ -12,11 +12,11 @@ import com.mikai233.gm.GmNode
 import com.mikai233.player.PlayerNode
 import com.mikai233.world.WorldNode
 import com.typesafe.config.ConfigFactory
-import io.github.mikai233.asteria.cluster.config.ClusterConfigLayout
-import io.github.mikai233.asteria.cluster.config.RuntimeNodeConfig
-import io.github.mikai233.asteria.config.center.JacksonConfigCodec
-import io.github.mikai233.asteria.config.center.RuntimeConfigRepository
-import io.github.mikai233.asteria.config.center.zookeeper.ZookeeperConfigStore
+import io.github.realmlabs.asteria.cluster.config.ClusterConfigLayout
+import io.github.realmlabs.asteria.cluster.config.RuntimeNodeConfig
+import io.github.realmlabs.asteria.config.center.JacksonConfigCodec
+import io.github.realmlabs.asteria.config.center.RuntimeConfigRepository
+import io.github.realmlabs.asteria.config.center.zookeeper.ZookeeperConfigStore
 import kotlinx.coroutines.*
 import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
