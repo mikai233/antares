@@ -11,6 +11,7 @@ dependencies {
     implementation(libTool.bundles.asteria.script)
     implementation(libPekko.bundles.common)
     implementation(libKotlinx.core)
+    implementation(libKotlinx.reactor)
     runtimeOnly(libKotlinx.core.jvm)
     implementation(libKotlin.reflect)
     implementation(libKotlinx.datetime.jvm)
@@ -18,6 +19,7 @@ dependencies {
     implementation(libTool.protobuf.kotlin)
     implementation(libTool.jcommander)
     implementation(libTool.guava)
+    implementation(libTool.spring.data.mongodb)
     implementation(project(":common"))
     implementation(project(":proto"))
 }

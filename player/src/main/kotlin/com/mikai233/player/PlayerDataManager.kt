@@ -1,6 +1,7 @@
 package com.mikai233.player
 
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
+import com.mikai233.common.db.MongoDB
 import com.mikai233.common.core.GameEntityKinds
 import com.mikai233.common.core.mongoDB
 import com.mikai233.common.extension.logger
@@ -11,6 +12,7 @@ import io.github.realmlabs.asteria.persistence.DataManager
 import io.github.realmlabs.asteria.persistence.DataScope
 import io.github.realmlabs.asteria.persistence.MemData
 import kotlin.reflect.KClass
+import org.springframework.data.mongodb.core.ReactiveMongoTemplate
 
 class PlayerDataManager(private val player: PlayerActor) {
     private val logger = logger()
@@ -20,7 +22,9 @@ class PlayerDataManager(private val player: PlayerActor) {
             entityKind = EntityKind(GameEntityKinds.PlayerActor),
             entityId = player.playerId,
             services = ServiceRegistry().apply {
+                register(MongoDB::class, player.node.mongoDB)
                 register(MongoDatabase::class, player.node.mongoDB.database)
+                register(ReactiveMongoTemplate::class, player.node.mongoDB.reactiveTemplate)
             },
         ),
         PlayerDataModules,

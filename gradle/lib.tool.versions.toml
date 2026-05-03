@@ -11,6 +11,8 @@ org-apache-groovy = "5.0.5"
 prometheus = "0.16.0"
 protobuf = "4.34.1"
 spring-boot = "4.0.5"
+spring-data = "4.0.5"
+testcontainers = "1.21.4"
 
 ###############################
 # 📦 Libraries
@@ -82,6 +84,9 @@ simpleclient-httpserver = { module = "io.prometheus:simpleclient_httpserver", ve
 # Spring & Mongo
 spring-boot-dependencies = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+spring-data-commons = { module = "org.springframework.data:spring-data-commons", version.ref = "spring-data" }
+spring-data-mongodb = { module = "org.springframework.data:spring-data-mongodb", version.ref = "spring-data" }
+testcontainers-mongodb = { module = "org.testcontainers:mongodb", version.ref = "testcontainers" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
 spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
 spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }

@@ -1,6 +1,7 @@
 package com.mikai233.world
 
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
+import com.mikai233.common.db.MongoDB
 import com.mikai233.common.core.GameEntityKinds
 import com.mikai233.common.core.mongoDB
 import com.mikai233.common.extension.logger
@@ -11,6 +12,7 @@ import io.github.realmlabs.asteria.persistence.DataManager
 import io.github.realmlabs.asteria.persistence.DataScope
 import io.github.realmlabs.asteria.persistence.MemData
 import kotlin.reflect.KClass
+import org.springframework.data.mongodb.core.ReactiveMongoTemplate
 
 
 class WorldDataManager(private val world: WorldActor) {
@@ -21,7 +23,9 @@ class WorldDataManager(private val world: WorldActor) {
             entityKind = EntityKind(GameEntityKinds.WorldActor),
             entityId = world.worldId,
             services = ServiceRegistry().apply {
+                register(MongoDB::class, world.node.mongoDB)
                 register(MongoDatabase::class, world.node.mongoDB.database)
+                register(ReactiveMongoTemplate::class, world.node.mongoDB.reactiveTemplate)
             },
         ),
         WorldDataModules,

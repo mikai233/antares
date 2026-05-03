@@ -3,8 +3,12 @@ package com.mikai233.common.db
 import com.mikai233.common.config.DataSourceConfig
 import com.mongodb.MongoClientSettings
 import com.mongodb.WriteConcern
+import com.mongodb.reactivestreams.client.MongoClient as ReactiveMongoClient
+import com.mongodb.reactivestreams.client.MongoClients as ReactiveMongoClients
 import com.mongodb.kotlin.client.coroutine.MongoClient as CoroutineMongoClient
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
+import org.springframework.data.mongodb.core.ReactiveMongoTemplate
+import org.springframework.data.mongodb.core.SimpleReactiveMongoDatabaseFactory
 
 //TODO test db on start
 class MongoDB(
@@ -14,6 +18,12 @@ class MongoDB(
         private set
 
     lateinit var database: MongoDatabase
+        private set
+
+    lateinit var reactiveClient: ReactiveMongoClient
+        private set
+
+    lateinit var reactiveTemplate: ReactiveMongoTemplate
         private set
 
     init {
@@ -32,5 +42,9 @@ class MongoDB(
             .build()
         coroutineClient = CoroutineMongoClient.create(settings)
         database = coroutineClient.getDatabase(gameDataSourceConfig.databaseName)
+        reactiveClient = ReactiveMongoClients.create(settings)
+        reactiveTemplate = ReactiveMongoTemplate(
+            SimpleReactiveMongoDatabaseFactory(reactiveClient, gameDataSourceConfig.databaseName)
+        )
     }
 }
