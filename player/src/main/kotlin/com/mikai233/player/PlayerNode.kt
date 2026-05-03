@@ -21,6 +21,7 @@ import com.mikai233.player.handler.message.player.PlayerChannelClosedReqHandler
 import com.mikai233.player.handler.message.player.PlayerCreateReqHandler
 import com.mikai233.player.handler.message.player.PlayerLoginReqHandler
 import com.mikai233.player.handler.protocol.system.GmReqHandler
+import com.mikai233.player.service.LoginService
 import com.mikai233.player.handler.protocol.test.TestReqHandler
 import com.mikai233.protocol.ProtoRpc.PlayerChannelClosedReq
 import com.mikai233.protocol.ProtoRpc.PlayerCreateReq
@@ -38,6 +39,7 @@ import io.github.realmlabs.asteria.cluster.pekko.extractor
 import io.github.realmlabs.asteria.config.ConfigChangedEvent
 import io.github.realmlabs.asteria.id.IdGenerator
 import io.github.realmlabs.asteria.message.MessageDispatcher
+import io.github.realmlabs.asteria.patch.PatchableServiceRegistry
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.cluster.sharding.ShardCoordinator
 import java.net.InetSocketAddress
@@ -52,6 +54,9 @@ class PlayerNode(
 ) : LaunchableNode {
     override val roles: Set<RoleKey> = setOf(RoleKey(GameRoles.Player))
     override val services: ServiceRegistry = ServiceRegistry()
+
+    val loginService: LoginService
+        get() = patchableServices.require(LoginService::class)
 
     @Volatile
     private var currentState: NodeState = NodeState.Unstarted
@@ -100,6 +105,13 @@ class PlayerNode(
         register(PlayerCreateEvent::class, playerCreateEventHandler)
     }
     val internalDispatcher = MessageDispatcher(internalHandlers)
+
+    init {
+        val patchableServices = PatchableServiceRegistry().apply {
+            register(LoginService::class, LoginService())
+        }
+        services.register(PatchableServiceRegistry::class, patchableServices)
+    }
 
     override suspend fun launch() {
         clusterNode.launch(

@@ -28,6 +28,7 @@ import io.github.realmlabs.asteria.cluster.pekko.extractor
 import io.github.realmlabs.asteria.config.ConfigChangedEvent
 import io.github.realmlabs.asteria.id.IdGenerator
 import io.github.realmlabs.asteria.message.MessageDispatcher
+import io.github.realmlabs.asteria.patch.PatchableServiceRegistry
 import com.mikai233.world.handler.event.ConfigChangedEventHandler
 import com.mikai233.world.handler.event.WorldActiveEventHandler
 import com.mikai233.world.handler.gm.TestBroadcastHandler
@@ -36,6 +37,7 @@ import com.mikai233.world.handler.message.world.SubscribeTopicCrossWorldHandler
 import com.mikai233.world.handler.message.world.UnsubscribeTopicCrossWorldHandler
 import com.mikai233.world.handler.message.world.WakeupWorldReqHandler
 import com.mikai233.world.handler.protocol.system.GmReqHandler
+import com.mikai233.world.service.WorldService
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.cluster.sharding.ShardCoordinator
 import java.net.InetSocketAddress
@@ -50,6 +52,9 @@ class WorldNode(
 ) : LaunchableNode {
     override val roles: Set<RoleKey> = setOf(RoleKey(GameRoles.World))
     override val services: ServiceRegistry = ServiceRegistry()
+
+    val worldService: WorldService
+        get() = patchableServices.require(WorldService::class)
 
     @Volatile
     private var currentState: NodeState = NodeState.Unstarted
@@ -93,6 +98,13 @@ class WorldNode(
         register(ConfigChangedEvent::class, configChangedEventHandler)
     }
     val internalDispatcher = MessageDispatcher(internalHandlers)
+
+    init {
+        val patchableServices = PatchableServiceRegistry().apply {
+            register(WorldService::class, WorldService())
+        }
+        services.register(PatchableServiceRegistry::class, patchableServices)
+    }
 
     override suspend fun launch() {
         clusterNode.launch(

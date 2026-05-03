@@ -20,6 +20,7 @@ import io.github.realmlabs.asteria.id.WorkerIdModule
 import io.github.realmlabs.asteria.id.WorkerIdModuleOptions
 import io.github.realmlabs.asteria.id.WorkerIdOwner
 import io.github.realmlabs.asteria.id.zookeeper.ZookeeperWorkerIdRepository
+import io.github.realmlabs.asteria.patch.PatchableServiceRegistry
 import io.github.realmlabs.asteria.script.engine.groovy.GroovyScriptEngine
 import io.github.realmlabs.asteria.script.engine.jar.JarScriptEngine
 import io.github.realmlabs.asteria.script.pekko.ScriptModule
@@ -87,6 +88,9 @@ val NodeRuntime.broadcastRouter: ActorRef
 
 val NodeRuntime.playerBroadcastEventBus: PlayerBroadcastEventBus
     get() = services.get(PlayerBroadcastEventBus::class)
+
+val NodeRuntime.patchableServices: PatchableServiceRegistry
+    get() = services.get(PatchableServiceRegistry::class)
 
 fun NodeRuntime.entityShard(kind: String): ActorRef {
     return services.get(EntityShardRegistry::class)[EntityKind(kind)]
