@@ -2,10 +2,11 @@ package com.mikai233.player.handler.event
 
 import com.mikai233.common.annotation.AllOpen
 import com.mikai233.common.event.GameConfigUpdatedEvent
-import io.github.realmlabs.asteria.message.HandlerContext
+import com.mikai233.common.message.ActorHandlerContext
+import com.mikai233.player.PlayerActor
 import io.github.realmlabs.asteria.message.MessageHandler
 
 @AllOpen
-class GameConfigUpdatedEventHandler : MessageHandler<HandlerContext, GameConfigUpdatedEvent> {
-    override fun handle(context: HandlerContext, message: GameConfigUpdatedEvent) = Unit
+class GameConfigUpdatedEventHandler : MessageHandler<ActorHandlerContext<PlayerActor>, GameConfigUpdatedEvent> {
+    override fun handle(context: ActorHandlerContext<PlayerActor>, message: GameConfigUpdatedEvent) = Unit
 }

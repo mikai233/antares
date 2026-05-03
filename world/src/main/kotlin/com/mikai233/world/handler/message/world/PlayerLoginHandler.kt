@@ -4,7 +4,7 @@ import com.mikai233.common.annotation.AllOpen
 import com.mikai233.common.core.system
 import com.mikai233.common.entity.PlayerAbstract
 import com.mikai233.common.extension.unixTimestamp
-import com.mikai233.common.message.requireActor
+import com.mikai233.common.message.ActorHandlerContext
 import com.mikai233.protocol.ProtoLogin.LoginReq
 import com.mikai233.protocol.ProtoRpc.PlayerCreateReq
 import com.mikai233.protocol.ProtoRpc.PlayerCreateResp
@@ -12,13 +12,12 @@ import com.mikai233.protocol.ProtoRpc.PlayerLoginReq
 import com.mikai233.protocol.ProtoRpc.PlayerLoginResp
 import com.mikai233.world.WorldActor
 import com.mikai233.world.data.PlayerAbstractMem
-import io.github.realmlabs.asteria.message.HandlerContext
 import io.github.realmlabs.asteria.message.MessageHandler
 
 @AllOpen
-class PlayerLoginHandler : MessageHandler<HandlerContext, LoginReq> {
-    override fun handle(context: HandlerContext, message: LoginReq) {
-        val actor = context.requireActor<WorldActor>()
+class PlayerLoginHandler : MessageHandler<ActorHandlerContext<WorldActor>, LoginReq> {
+    override fun handle(context: ActorHandlerContext<WorldActor>, message: LoginReq) {
+        val actor = context.actor
         val channelActor = actor.sender
         val abstractMem = actor.manager.get<PlayerAbstractMem>()
         val playerAbstract = abstractMem.getByAccount(message.account)
