@@ -1,12 +1,11 @@
 package com.mikai233.common.test
 
 import io.github.realmlabs.asteria.persistence.Entity
+import io.github.realmlabs.asteria.persistence.mongodb.annotations.AsteriaMongoEntity
+import io.github.realmlabs.asteria.persistence.mongodb.annotations.AsteriaMongoId
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.reflections.Reflections
-import org.springframework.data.annotation.Id
-import org.springframework.data.annotation.PersistenceCreator
-import org.springframework.data.mongodb.core.mapping.Document
 import java.lang.reflect.Modifier
 import kotlin.reflect.full.companionObject
 import kotlin.reflect.full.declaredFunctions
@@ -33,30 +32,21 @@ class EntityTest {
             }
             .forEach { entityClass ->
                 val entityKClass = entityClass.kotlin
-                // 检查是否有 @Document 注解
-                val isDocumentAnnotationPresent = entityClass.isAnnotationPresent(Document::class.java)
-                assertTrue(
-                    isDocumentAnnotationPresent,
-                    "Class[${entityKClass.qualifiedName}] must have @Document annotation with snake_case collection name",
-                )
-                val documentAnnotation = entityClass.getAnnotation(Document::class.java)
-                assertNotNull(
-                    documentAnnotation,
-                    "Class[${entityKClass.qualifiedName}] must have @Document annotation with snake_case collection name",
-                )
-                assertTrue(
-                    documentAnnotation.collection.isNotBlank(),
-                    "Class[${entityKClass.qualifiedName}] must have @Document annotation with snake_case collection name",
-                )
-                // 检查是否有属性带 @Id 注解
-                val isIdAnnotationPresent =
-                    entityKClass.declaredMemberProperties.any {
-                        it.javaField?.isAnnotationPresent(Id::class.java) == true
-                    }
-                assertTrue(
-                    isIdAnnotationPresent,
-                    "Class[${entityKClass.qualifiedName}] must have a property with @Id annotation",
-                )
+                val asteriaMongoEntity = entityClass.getAnnotation(AsteriaMongoEntity::class.java)
+                if (asteriaMongoEntity != null) {
+                    assertTrue(
+                        asteriaMongoEntity.collection.isNotBlank(),
+                        "Class[${entityKClass.qualifiedName}] must declare a non-blank Asteria mongo collection",
+                    )
+                    val hasMongoId =
+                        entityKClass.declaredMemberProperties.any {
+                            it.name == "id" || it.javaField?.isAnnotationPresent(AsteriaMongoId::class.java) == true
+                        }
+                    assertTrue(
+                        hasMongoId,
+                        "Class[${entityKClass.qualifiedName}] must expose an id property or @AsteriaMongoId",
+                    )
+                }
 
                 // 检查是否有伴生对象
                 val companionObject = entityKClass.companionObject
@@ -67,10 +57,6 @@ class EntityTest {
                 assertNotNull(
                     createMethod,
                     "Class[${entityKClass.qualifiedName}] Companion object must have a create method",
-                )
-                assertTrue(
-                    createMethod?.javaMethod?.annotations?.any { it is PersistenceCreator } == true,
-                    "Class[${entityKClass.qualifiedName}] Create method must have @PersistenceCreator annotation",
                 )
                 assertTrue(
                     createMethod!!.hasAnnotation<JvmStatic>(),

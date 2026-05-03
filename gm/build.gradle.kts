@@ -17,8 +17,6 @@ dependencies {
     implementation(libKotlinx.reactor)
     runtimeOnly(libKotlinx.core.jvm)
     implementation(libTool.bundles.spring.boot.web)
-    implementation(libTool.spring.data.mongodb)
-    implementation(libTool.mongodb.driver.sync)
     implementation(libTool.jcommander)
     implementation(libTool.bundles.curator)
     implementation(project(":common"))

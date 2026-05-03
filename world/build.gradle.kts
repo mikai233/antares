@@ -16,8 +16,6 @@ dependencies {
     implementation(libKotlinx.datetime.jvm)
     implementation(libTool.protobuf.java.util)
     implementation(libTool.protobuf.kotlin)
-    implementation(libTool.spring.data.mongodb)
-    implementation(libTool.mongodb.driver.sync)
     implementation(libTool.jcommander)
     implementation(libTool.guava)
     implementation(project(":common"))

@@ -1,24 +1,24 @@
 package com.mikai233.player.data
 
+import com.mongodb.client.model.Filters.eq
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.mikai233.common.db.AsteriaTrackedMemData
 import com.mikai233.common.entity.Player
 import com.mikai233.common.entity.PlayerMongo
 import com.mikai233.common.entity.PlayerTracked
-import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.findById
+import kotlinx.coroutines.flow.firstOrNull
 
 class PlayerMem(
     private val playerId: Long,
-    private val mongoTemplate: () -> MongoTemplate,
-    mongoDatabase: () -> MongoDatabase,
-) : AsteriaTrackedMemData<Player, PlayerTracked>(PlayerMongo.COLLECTION, mongoDatabase, PlayerMongo::wrap) {
+    private val mongoDatabaseProvider: () -> MongoDatabase,
+) : AsteriaTrackedMemData<Player, PlayerTracked>(PlayerMongo.COLLECTION, mongoDatabaseProvider, PlayerMongo::wrap) {
     lateinit var player: PlayerTracked
         private set
 
     override suspend fun load() {
-        val template = mongoTemplate()
-        val player = template.findById<Player>(playerId)
+        val player = mongoDatabaseProvider().getCollection(PlayerMongo.COLLECTION, Player::class.java)
+            .find(eq("_id", playerId), Player::class.java)
+            .firstOrNull()
         if (player != null) {
             check(!this::player.isInitialized) { "player:$playerId already initialized" }
             this.player = attachLoaded(player)

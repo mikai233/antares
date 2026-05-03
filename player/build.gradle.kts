@@ -16,8 +16,6 @@ dependencies {
     runtimeOnly(libKotlinx.core.jvm)
     implementation(libTool.protobuf.kotlin)
     implementation(libTool.groovy.all)
-    implementation(libTool.spring.data.mongodb)
-    implementation(libTool.mongodb.driver.sync)
     implementation(libTool.jcommander)
     implementation(libTool.guava)
     implementation(project(":common"))

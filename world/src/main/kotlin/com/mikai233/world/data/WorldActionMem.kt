@@ -1,23 +1,20 @@
 package com.mikai233.world.data
 
+import com.mongodb.client.model.Filters.eq
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.mikai233.common.constants.WorldActionType
 import com.mikai233.common.db.AsteriaTrackedMemData
 import com.mikai233.common.entity.WorldAction
 import com.mikai233.common.entity.WorldActionMongo
 import com.mikai233.common.entity.WorldActionTracked
-import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.find
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.where
+import kotlinx.coroutines.flow.toList
 
 class WorldActionMem(
     private val worldId: Long,
-    private val mongoTemplate: () -> MongoTemplate,
-    mongoDatabase: () -> MongoDatabase,
+    private val mongoDatabaseProvider: () -> MongoDatabase,
 ) : AsteriaTrackedMemData<WorldAction, WorldActionTracked>(
     WorldActionMongo.COLLECTION,
-    mongoDatabase,
+    mongoDatabaseProvider,
     WorldActionMongo::wrap,
 ) {
     private var maxActionId: Long = 0
@@ -25,8 +22,9 @@ class WorldActionMem(
     private val worldActionById: MutableMap<Int, WorldActionTracked> = mutableMapOf()
 
     override suspend fun load() {
-        val template = mongoTemplate()
-        val actions = template.find<WorldAction>(Query.query(where(WorldAction::worldId).`is`(worldId)))
+        val actions = mongoDatabaseProvider().getCollection(WorldActionMongo.COLLECTION, WorldAction::class.java)
+            .find(eq("worldId", worldId), WorldAction::class.java)
+            .toList()
         actions.forEach {
             val id = it.id.split("_").last().toLong()
             if (id > maxActionId) {

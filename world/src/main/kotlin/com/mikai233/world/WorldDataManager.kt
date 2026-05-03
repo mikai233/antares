@@ -10,7 +10,6 @@ import io.github.realmlabs.asteria.core.ServiceRegistry
 import io.github.realmlabs.asteria.persistence.DataManager
 import io.github.realmlabs.asteria.persistence.DataScope
 import io.github.realmlabs.asteria.persistence.MemData
-import org.springframework.data.mongodb.core.MongoTemplate
 import kotlin.reflect.KClass
 
 
@@ -22,7 +21,6 @@ class WorldDataManager(private val world: WorldActor) {
             entityKind = EntityKind(GameEntityKinds.WorldActor),
             entityId = world.worldId,
             services = ServiceRegistry().apply {
-                register(MongoTemplate::class, world.node.mongoDB.mongoTemplate)
                 register(MongoDatabase::class, world.node.mongoDB.database)
             },
         ),

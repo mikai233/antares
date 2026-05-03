@@ -188,17 +188,8 @@ private fun buildType(className: ClassName, isEntity: Boolean, depth: Int) {
     }
     if (isEntity) {
         typeSpecBuilder.addSuperinterface(Entity::class.asClassName().parameterizedBy(Int::class.asClassName()))
-        // 导入的注解类
-        val documentAnnotation = ClassName("org.springframework.data.mongodb.core.mapping", "Document")
-        val idAnnotation = ClassName("org.springframework.data.annotation", "Id")
-        val persistenceCreatorAnnotation = ClassName("org.springframework.data.annotation", "PersistenceCreator")
         val jvmStaticAnnotation = ClassName("kotlin.jvm", "JvmStatic")
-        // @Document(collection = "xxx")
-        val documentAnnotationSpec = AnnotationSpec.Companion.builder(documentAnnotation)
-            .addMember("collection = %S", className.simpleName.upperCamelToSnakeCase())
-            .build()
         val idPropertySpec = PropertySpec.builder("id", Int::class)
-            .addAnnotation(idAnnotation)
             .addModifiers(KModifier.OVERRIDE)
             .initializer("id")
             .build()
@@ -206,7 +197,6 @@ private fun buildType(className: ClassName, isEntity: Boolean, depth: Int) {
 
         // 伴生对象中的 create 方法
         val createFunction = FunSpec.builder("create")
-            .addAnnotation(persistenceCreatorAnnotation)
             .addModifiers(KModifier.PUBLIC)
             .returns(className)
             .addCode("throw UnsupportedOperationException()")
@@ -218,7 +208,6 @@ private fun buildType(className: ClassName, isEntity: Boolean, depth: Int) {
             .addFunction(createFunction.toBuilder().addAnnotation(jvmStaticAnnotation).build())
             .build()
         typeSpecBuilder.addType(companionObject)
-        typeSpecBuilder.addAnnotation(documentAnnotationSpec)
     }
     // 类生成
     typeSpecBuilder

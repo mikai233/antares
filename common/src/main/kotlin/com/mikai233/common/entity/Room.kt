@@ -1,13 +1,8 @@
 package com.mikai233.common.entity
 
 import io.github.realmlabs.asteria.persistence.Entity
-import org.springframework.data.annotation.Id
-import org.springframework.data.annotation.PersistenceCreator
-import org.springframework.data.mongodb.core.mapping.Document
 
-@Document(collection = "room")
 data class Room(
-    @Id
     override val id: Int,
     val name: String,
     val createTime: Long,
@@ -22,7 +17,6 @@ data class Room(
 ) : Entity<Int> {
     companion object {
         @JvmStatic
-        @PersistenceCreator
         fun create(): Room {
             return Room(
                 0,

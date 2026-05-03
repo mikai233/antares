@@ -1,23 +1,20 @@
 package com.mikai233.world.data
 
+import com.mongodb.client.model.Filters.eq
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import com.mikai233.common.db.AsteriaTrackedMemData
 import com.mikai233.common.entity.PlayerAbstract
 import com.mikai233.common.entity.PlayerAbstractMongo
 import com.mikai233.common.entity.PlayerAbstractTracked
-import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.find
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.where
+import kotlinx.coroutines.flow.toList
 
 class PlayerAbstractMem(
     private val worldId: Long,
-    private val mongoTemplate: () -> MongoTemplate,
-    mongoDatabase: () -> MongoDatabase,
+    private val mongoDatabaseProvider: () -> MongoDatabase,
 ) :
     AsteriaTrackedMemData<PlayerAbstract, PlayerAbstractTracked>(
         PlayerAbstractMongo.COLLECTION,
-        mongoDatabase,
+        mongoDatabaseProvider,
         PlayerAbstractMongo::wrap,
     ),
     Map<Long, PlayerAbstractTracked> {
@@ -25,9 +22,9 @@ class PlayerAbstractMem(
     private val accountToAbstracts: MutableMap<String, PlayerAbstractTracked> = mutableMapOf()
 
     override suspend fun load() {
-        val template = mongoTemplate()
-        val playerAbstractList =
-            template.find<PlayerAbstract>(Query.query(where(PlayerAbstract::worldId).`is`(worldId)))
+        val playerAbstractList = mongoDatabaseProvider().getCollection(PlayerAbstractMongo.COLLECTION, PlayerAbstract::class.java)
+            .find(eq("worldId", worldId), PlayerAbstract::class.java)
+            .toList()
         playerAbstractList.forEach {
             val tracked = attachLoaded(it)
             playerAbstracts[it.id] = tracked
