@@ -11,7 +11,6 @@ import io.github.mikai233.asteria.message.HandlerContext
 import io.github.mikai233.asteria.message.MessageHandler
 
 @AllOpen
-@Suppress("unused")
 class GmReqHandler(
     private val testBroadcastHandler: TestBroadcastHandler,
 ) : MessageHandler<GmReq> {

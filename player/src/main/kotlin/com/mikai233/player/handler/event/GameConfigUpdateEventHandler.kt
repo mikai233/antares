@@ -9,7 +9,6 @@ import io.github.mikai233.asteria.message.HandlerContext
 import io.github.mikai233.asteria.message.MessageHandler
 
 @AllOpen
-@Suppress("unused")
 class GameConfigUpdateEventHandler : MessageHandler<GameConfigUpdateEvent> {
     override fun handle(context: HandlerContext, message: GameConfigUpdateEvent) {
         val actor = context.requireActor<PlayerActor>()

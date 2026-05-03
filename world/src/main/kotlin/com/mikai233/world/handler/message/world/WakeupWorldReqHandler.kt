@@ -10,7 +10,6 @@ import io.github.mikai233.asteria.message.HandlerContext
 import io.github.mikai233.asteria.message.MessageHandler
 
 @AllOpen
-@Suppress("unused")
 class WakeupWorldReqHandler : MessageHandler<WorldWakeupReq> {
     override fun handle(context: HandlerContext, message: WorldWakeupReq) {
         val actor = context.requireActor<WorldActor>()

@@ -76,7 +76,6 @@ A `MessageHandler` can contain any number of message handling functions, simply 
 
 ```kotlin
 @AllOpen
-@Suppress("unused")
 class TestHandler : MessageHandler {
     @Handle
     fun handleTestReq(player: PlayerActor, testReq: TestReq) {

@@ -6,7 +6,6 @@ import com.mikai233.player.PlayerActor
 import com.mikai233.protocol.gmResp
 
 @AllOpen
-@Suppress("unused")
 class TestGmHandler {
     private val logger = logger()
 

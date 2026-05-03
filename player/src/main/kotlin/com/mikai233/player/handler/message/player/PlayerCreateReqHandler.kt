@@ -11,7 +11,6 @@ import io.github.mikai233.asteria.message.HandlerContext
 import io.github.mikai233.asteria.message.MessageHandler
 
 @AllOpen
-@Suppress("unused")
 class PlayerCreateReqHandler : MessageHandler<PlayerCreateReq> {
     override fun handle(context: HandlerContext, message: PlayerCreateReq) {
         val actor = context.requireActor<PlayerActor>()

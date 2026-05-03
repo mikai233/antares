@@ -8,7 +8,6 @@ import io.github.mikai233.asteria.message.HandlerContext
 import io.github.mikai233.asteria.message.MessageHandler
 
 @AllOpen
-@Suppress("unused")
 class SubscribeTopicHandler : MessageHandler<SubscribeTopicReq> {
     override fun handle(context: HandlerContext, message: SubscribeTopicReq) {
         val actor = context.requireActor<ChannelActor>()

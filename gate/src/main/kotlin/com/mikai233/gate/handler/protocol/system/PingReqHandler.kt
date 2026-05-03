@@ -10,7 +10,6 @@ import io.github.mikai233.asteria.message.HandlerContext
 import io.github.mikai233.asteria.message.MessageHandler
 
 @AllOpen
-@Suppress("unused")
 class PingReqHandler : MessageHandler<PingReq> {
     override fun handle(context: HandlerContext, message: PingReq) {
         val actor = context.requireActor<ChannelActor>()

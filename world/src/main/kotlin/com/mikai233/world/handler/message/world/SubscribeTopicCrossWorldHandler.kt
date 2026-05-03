@@ -9,7 +9,6 @@ import io.github.mikai233.asteria.message.HandlerContext
 import io.github.mikai233.asteria.message.MessageHandler
 
 @AllOpen
-@Suppress("unused")
 class SubscribeTopicCrossWorldHandler : MessageHandler<CrossWorldSubscribeTopicReq> {
     override fun handle(context: HandlerContext, message: CrossWorldSubscribeTopicReq) {
         val actor = context.requireActor<WorldActor>()

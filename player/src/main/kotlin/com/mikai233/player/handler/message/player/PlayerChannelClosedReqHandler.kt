@@ -8,7 +8,6 @@ import io.github.mikai233.asteria.message.HandlerContext
 import io.github.mikai233.asteria.message.MessageHandler
 
 @AllOpen
-@Suppress("unused")
 class PlayerChannelClosedReqHandler : MessageHandler<PlayerChannelClosedReq> {
     override fun handle(context: HandlerContext, message: PlayerChannelClosedReq) {
         context.requireActor<PlayerActor>().clearChannelActorPath()

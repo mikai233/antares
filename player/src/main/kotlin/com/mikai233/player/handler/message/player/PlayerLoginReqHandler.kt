@@ -14,7 +14,6 @@ import io.github.mikai233.asteria.message.MessageHandler
 import kotlin.random.Random
 
 @AllOpen
-@Suppress("unused")
 class PlayerLoginReqHandler : MessageHandler<PlayerLoginReq> {
     override fun handle(context: HandlerContext, message: PlayerLoginReq) {
         val actor = context.requireActor<PlayerActor>()
