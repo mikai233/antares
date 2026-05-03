@@ -86,7 +86,7 @@ private suspend fun publishDemoGameConfig(store: ZookeeperConfigStore) {
                 dataSource = MemoryLubanDataSource(DemoGameConfigArtifacts.bytesByPath()),
             ),
         ),
-        artifactSource = ConfigArtifactSource { DemoGameConfigArtifacts.artifacts() },
+        artifactSource = { DemoGameConfigArtifacts.artifacts() },
         store = store,
         layout = layout,
     ).publish()

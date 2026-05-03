@@ -1,5 +1,6 @@
 package com.mikai233.gm.web.config
 
+import com.mikai233.common.annotation.AllOpen
 import com.mikai233.common.core.GameEntityKinds
 import com.mikai233.common.core.GameRoles
 import com.mikai233.common.core.GameSingletons
@@ -19,6 +20,7 @@ import org.apache.pekko.cluster.Cluster
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
+@AllOpen
 @Configuration
 class AsteriaGmScriptConfiguration {
     @Bean

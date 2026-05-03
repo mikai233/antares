@@ -68,7 +68,7 @@ jcommander = "org.jcommander:jcommander:3.0"
 kotlinpoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet" }
 kotlinpoet-ksp = { module = "com.squareup:kotlinpoet-ksp", version.ref = "kotlinpoet" }
 lz4 = "at.yawk.lz4:lz4-java:1.10.2"
-mongodb-driver-sync = "org.mongodb:mongodb-driver-sync:5.6.5"
+mongodb-driver-sync = "org.mongodb:mongodb-driver-sync:5.7.0"
 # Networking & compression
 netty = "io.netty:netty-all:4.2.12.Final"
 protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf" }

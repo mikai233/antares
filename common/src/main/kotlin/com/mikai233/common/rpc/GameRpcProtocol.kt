@@ -16,28 +16,12 @@ import com.mikai233.protocol.ProtoRpc.WorldWakeupResp
 import com.mikai233.protocol.ProtoSystem.GmReq
 import com.mikai233.protocol.ProtoTest.TestReq
 import io.github.realmlabs.asteria.core.EntityKind
-import io.github.realmlabs.asteria.rpc.RpcProtocol
 import io.github.realmlabs.asteria.rpc.protobuf.GeneratedProtobufRpcProtocol
 import io.github.realmlabs.asteria.rpc.protobuf.ProtobufRpcProtocolBuilder
+import io.github.realmlabs.asteria.rpc.RpcProtocol
 import io.github.realmlabs.asteria.rpc.RpcTarget
 
-object GameRpcProtocolDefinition : GeneratedProtobufRpcProtocol() {
-    val protocol: RpcProtocol by lazy { create() }
-
-    val playerShardExtractor by lazy {
-        io.github.realmlabs.asteria.cluster.pekko.PekkoRpcShardExtractors.byRpcEntityId(
-            PLAYER_SHARD_NUM,
-            protocol.entityIds,
-        )
-    }
-
-    val worldShardExtractor by lazy {
-        io.github.realmlabs.asteria.cluster.pekko.PekkoRpcShardExtractors.byRpcEntityId(
-            WORLD_SHARD_NUM,
-            protocol.entityIds,
-        )
-    }
-
+class GameRpcProtocolDefinition : GeneratedProtobufRpcProtocol() {
     override fun contribute(builder: ProtobufRpcProtocolBuilder) {
         val playerTarget = RpcTarget.Entity(EntityKind(GameEntityKinds.PlayerActor))
         val worldTarget = RpcTarget.Entity(EntityKind(GameEntityKinds.WorldActor))
@@ -110,6 +94,26 @@ object GameRpcProtocolDefinition : GeneratedProtobufRpcProtocol() {
                 it.worldId != 0L -> it.worldId.toString()
                 else -> error("gm req missing player_id/world_id")
             }
+        }
+    }
+
+    companion object {
+        private val provider = GameRpcProtocolDefinition()
+
+        val protocol: RpcProtocol by lazy { provider.create() }
+
+        val playerShardExtractor by lazy {
+            io.github.realmlabs.asteria.cluster.pekko.PekkoRpcShardExtractors.byRpcEntityId(
+                PLAYER_SHARD_NUM,
+                protocol.entityIds,
+            )
+        }
+
+        val worldShardExtractor by lazy {
+            io.github.realmlabs.asteria.cluster.pekko.PekkoRpcShardExtractors.byRpcEntityId(
+                WORLD_SHARD_NUM,
+                protocol.entityIds,
+            )
         }
     }
 }
