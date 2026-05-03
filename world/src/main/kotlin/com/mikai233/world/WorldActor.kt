@@ -95,7 +95,7 @@ class WorldActor(val node: WorldNode) : ScriptableAsteriaActor<WorldNode>(node) 
 
     private fun handleWorldMessage(message: Message) {
         try {
-            node.internalDispatcher.dispatch(message::class, message, this)
+            node.internalDispatcher.dispatch(this, message)
         } catch (e: Exception) {
             logger.error(e, "world:{} handle message:{} failed", worldId, message)
         }
@@ -109,7 +109,7 @@ class WorldActor(val node: WorldNode) : ScriptableAsteriaActor<WorldNode>(node) 
             return
         }
         try {
-            node.protobufDispatcher.dispatch(message::class, message, this, session)
+            node.protobufDispatcher.dispatch(this, session, message)
         } catch (e: Exception) {
             logger.error(e, "world:{} handle protobuf message:{} failed", worldId, message)
         }

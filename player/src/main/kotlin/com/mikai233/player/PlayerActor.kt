@@ -109,7 +109,7 @@ class PlayerActor(val node: PlayerNode) : ScriptableAsteriaActor<PlayerNode>(nod
     private fun handleProtobufEnvelope(envelope: PlayerProtobufEnvelope) {
         val message = envelope.message
         try {
-            node.protobufDispatcher.dispatch(message::class, message, this)
+            node.protobufDispatcher.dispatch(this, message)
         } catch (e: Exception) {
             logger.error(e, "player:{} handle protobuf message:{} failed", playerId, message)
         }
@@ -117,7 +117,7 @@ class PlayerActor(val node: PlayerNode) : ScriptableAsteriaActor<PlayerNode>(nod
 
     private fun handlePlayerMessage(message: Message) {
         try {
-            node.internalDispatcher.dispatch(message::class, message, this)
+            node.internalDispatcher.dispatch(this, message)
         } catch (e: Exception) {
             logger.error(e, "player:{} handle message:{} failed", playerId, message)
         }

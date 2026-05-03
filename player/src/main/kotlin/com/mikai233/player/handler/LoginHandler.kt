@@ -1,10 +1,8 @@
 package com.mikai233.player.handler
 
 import com.mikai233.common.annotation.AllOpen
-import com.mikai233.common.annotation.Handle
 import com.mikai233.common.event.PlayerLoginEvent
 import com.mikai233.common.extension.tell
-import com.mikai233.common.message.MessageHandler
 import com.mikai233.common.message.player.PlayerCreateReq
 import com.mikai233.common.message.player.PlayerCreateResp
 import com.mikai233.common.message.player.PlayerLoginReq
@@ -21,8 +19,7 @@ import kotlin.random.Random
  */
 @AllOpen
 @Suppress("unused")
-class LoginHandler : MessageHandler {
-    @Handle
+class LoginHandler {
     fun handlePlayerLoginReq(player: PlayerActor, playerLoginReq: PlayerLoginReq) {
         player.bindChannelActor(playerLoginReq.channelActor)
         val resp = loginService.loginSuccessResp(player)
@@ -38,7 +35,6 @@ class LoginHandler : MessageHandler {
         }
     }
 
-    @Handle
     fun handlePlayerCreateReq(player: PlayerActor, req: PlayerCreateReq) {
         player.bindChannelActor(req.channelActor)
         //event

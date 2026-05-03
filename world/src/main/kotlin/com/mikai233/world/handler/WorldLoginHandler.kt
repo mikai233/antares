@@ -1,10 +1,8 @@
 package com.mikai233.world.handler
 
 import com.mikai233.common.annotation.AllOpen
-import com.mikai233.common.annotation.Handle
 import com.mikai233.common.entity.PlayerAbstract
 import com.mikai233.common.extension.unixTimestamp
-import com.mikai233.common.message.MessageHandler
 import com.mikai233.common.message.player.PlayerCreateReq
 import com.mikai233.common.message.player.PlayerCreateResp
 import com.mikai233.common.message.player.PlayerLoginResp
@@ -13,8 +11,7 @@ import com.mikai233.world.WorldActor
 import com.mikai233.world.data.PlayerAbstractMem
 
 @AllOpen
-class WorldLoginHandler : MessageHandler {
-    @Handle
+class WorldLoginHandler {
     fun handlePlayerLogin(world: WorldActor, playerLogin: PlayerLogin) {
         val loginReq = playerLogin.req
         val channelActor = world.sender

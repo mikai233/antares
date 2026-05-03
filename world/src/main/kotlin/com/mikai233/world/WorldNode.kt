@@ -8,7 +8,15 @@ import com.mikai233.common.WORLD_SHARD_NUM
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.*
 import com.mikai233.common.message.*
+import com.mikai233.common.event.GameConfigUpdateEvent
+import com.mikai233.common.event.GameConfigUpdatedEvent
+import com.mikai233.common.event.WorldActiveEvent
 import com.mikai233.common.message.world.HandoffWorld
+import com.mikai233.common.message.world.PlayerLogin
+import com.mikai233.common.message.world.SubscribeTopicCrossWorld
+import com.mikai233.common.message.world.UnsubscribeTopicCrossWorld
+import com.mikai233.common.message.world.WakeupWorldReq
+import com.mikai233.protocol.ProtoSystem.GmReq
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import io.github.mikai233.asteria.core.AsteriaApplicationBuilder
@@ -16,6 +24,9 @@ import io.github.mikai233.asteria.cluster.pekko.actor
 import io.github.mikai233.asteria.cluster.pekko.allocationStrategy
 import io.github.mikai233.asteria.cluster.pekko.extractor
 import io.github.mikai233.asteria.id.IdGenerator
+import com.mikai233.world.handler.GameConfigHandler
+import com.mikai233.world.handler.WorldHandler
+import com.mikai233.world.handler.WorldLoginHandler
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.cluster.sharding.ShardCoordinator
 import java.net.InetSocketAddress
@@ -37,13 +48,29 @@ class WorldNode(
     val idGenerator: IdGenerator
         get() = services.get(IdGenerator::class)
 
-    private val handlerReflect = MessageHandlerReflect("com.mikai233.world.handler")
+    private val gameConfigHandler = GameConfigHandler()
+    private val worldHandler = WorldHandler()
+    private val worldLoginHandler = WorldLoginHandler()
 
-    val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, handlerReflect, 2)
+    val protobufDispatcher = ActorSessionMessageDispatcher<WorldActor, PlayerSession, GeneratedMessage>(this).apply {
+        register(GmReq::class, worldHandler::handleGmReq)
+    }
 
-    val internalDispatcher = MessageDispatcher(Message::class, handlerReflect, 1)
+    val internalDispatcher = ActorMessageDispatcher<WorldActor, Message>(this).apply {
+        register(WakeupWorldReq::class) { actor, _ -> worldHandler.handleWakeupWorld(actor) }
+        register(WorldActiveEvent::class) { actor, _ -> worldHandler.handleWorldActiveEvent(actor) }
+        register(SubscribeTopicCrossWorld::class, worldHandler::handleSubscribeTopicCrossWorld)
+        register(UnsubscribeTopicCrossWorld::class, worldHandler::handleUnsubscribeTopicCrossWorld)
+        register(GameConfigUpdateEvent::class) { actor, _ -> gameConfigHandler.handleGameConfigUpdateEvent(actor) }
+        register(GameConfigUpdatedEvent::class) { actor, _ -> gameConfigHandler.handleGameConfigUpdatedEvent(actor) }
+        register(PlayerLogin::class, worldLoginHandler::handlePlayerLogin)
+    }
 
-    val gmDispatcher = GmDispatcher(handlerReflect)
+    val gmDispatcher = ActorSessionCommandDispatcher<WorldActor, PlayerSession>().apply {
+        register("testBroadcast") { actor, session, _ ->
+            worldHandler.testBroadcast(actor, session)
+        }
+    }
 
     override fun modulesBeforeCluster() = listOf(EntitySerializationModule(), workerIdRuntimeModule())
 

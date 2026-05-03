@@ -8,12 +8,18 @@ import com.mikai233.common.WORLD_SHARD_NUM
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.*
 import com.mikai233.common.message.*
+import com.mikai233.common.broadcast.PlayerBroadcastEnvelope
+import com.mikai233.common.message.channel.SubscribeTopic
+import com.mikai233.common.message.channel.UnsubscribeTopic
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import io.github.mikai233.asteria.cluster.pekko.EntityShardRegistry
 import io.github.mikai233.asteria.cluster.pekko.SingletonActorRegistry
 import io.github.mikai233.asteria.core.AsteriaApplicationBuilder
 import io.github.mikai233.asteria.cluster.pekko.extractor
+import com.mikai233.gate.handler.BroadcastHandler
+import com.mikai233.gate.handler.PingHandler
+import com.mikai233.protocol.ProtoSystem.PingReq
 import org.apache.pekko.actor.ActorRef
 import java.net.InetSocketAddress
 
@@ -31,11 +37,18 @@ class GateNode(
     val worldSharding: ActorRef
         get() = entityShard(ShardEntityType.WorldActor)
 
-    private val handlerReflect = MessageHandlerReflect("com.mikai233.gate.handler")
+    private val pingHandler = PingHandler()
+    private val broadcastHandler = BroadcastHandler()
 
-    val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, handlerReflect, 1)
+    val protobufDispatcher = ActorMessageDispatcher<ChannelActor, GeneratedMessage>(this).apply {
+        register(PingReq::class) { actor, _ -> pingHandler.handlePingReq(actor) }
+    }
 
-    val internalDispatcher = MessageDispatcher(Message::class, handlerReflect, 1)
+    val internalDispatcher = ActorMessageDispatcher<ChannelActor, Message>(this).apply {
+        register(PlayerBroadcastEnvelope::class, broadcastHandler::handlePlayerBroadcastEnvelope)
+        register(SubscribeTopic::class, broadcastHandler::handleSubscribeTopic)
+        register(UnsubscribeTopic::class, broadcastHandler::handleUnsubscribeTopic)
+    }
 
     val protocolCodec = GateProtocolCodec()
 

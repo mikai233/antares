@@ -3,12 +3,24 @@ package com.mikai233.player
 import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
 import com.google.protobuf.GeneratedMessage
-import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.PLAYER_SHARD_NUM
 import com.mikai233.common.WORLD_SHARD_NUM
+import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.*
 import com.mikai233.common.message.*
+import com.mikai233.common.event.GameConfigUpdateEvent
+import com.mikai233.common.event.GameConfigUpdatedEvent
+import com.mikai233.common.event.PlayerCreateEvent
+import com.mikai233.common.event.PlayerLoginEvent
+import com.mikai233.common.message.player.PlayerCreateReq
+import com.mikai233.common.message.player.PlayerLoginReq
 import com.mikai233.common.message.player.HandoffPlayer
+import com.mikai233.player.handler.GameConfigHandler
+import com.mikai233.player.handler.LoginHandler
+import com.mikai233.player.handler.PlayerHandler
+import com.mikai233.player.handler.TestHandler
+import com.mikai233.protocol.ProtoSystem.GmReq
+import com.mikai233.protocol.ProtoTest.TestReq
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import io.github.mikai233.asteria.core.AsteriaApplicationBuilder
@@ -37,13 +49,28 @@ class PlayerNode(
     val idGenerator: IdGenerator
         get() = services.get(IdGenerator::class)
 
-    private val handlerReflect = MessageHandlerReflect("com.mikai233.player.handler")
+    private val gameConfigHandler = GameConfigHandler()
+    private val loginHandler = LoginHandler()
+    private val playerHandler = PlayerHandler()
+    private val testHandler = TestHandler()
 
-    val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, handlerReflect, 1)
+    val protobufDispatcher = ActorMessageDispatcher<PlayerActor, GeneratedMessage>(this).apply {
+        register(GmReq::class, playerHandler::handleGmReq)
+        register(TestReq::class, testHandler::handleTestReq)
+    }
 
-    val internalDispatcher = MessageDispatcher(Message::class, handlerReflect, 1)
+    val internalDispatcher = ActorMessageDispatcher<PlayerActor, Message>(this).apply {
+        register(GameConfigUpdateEvent::class) { actor, _ -> gameConfigHandler.handleGameConfigUpdate(actor) }
+        register(PlayerLoginReq::class, loginHandler::handlePlayerLoginReq)
+        register(PlayerCreateReq::class, loginHandler::handlePlayerCreateReq)
+        register(PlayerLoginEvent::class) { actor, _ -> playerHandler.handlePlayerLoginEvent(actor) }
+        register(PlayerCreateEvent::class) { actor, _ -> playerHandler.handlePlayerCreateEvent(actor) }
+        register(GameConfigUpdatedEvent::class) { actor, _ -> playerHandler.handleGameConfigUpdatedEvent(actor) }
+    }
 
-    val gmDispatcher = GmDispatcher(handlerReflect)
+    val gmDispatcher = ActorCommandDispatcher<PlayerActor>().apply {
+        register("testGm", playerHandler::handleTestGm)
+    }
 
     override fun modulesBeforeCluster() = listOf(EntitySerializationModule(), workerIdRuntimeModule())
 

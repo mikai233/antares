@@ -2,11 +2,7 @@
 
 package com.mikai233.common.test.msg
 
-import com.mikai233.common.annotation.AllOpen
-import com.mikai233.common.annotation.Handle
-import com.mikai233.common.extension.logger
 import com.mikai233.common.message.Message
-import com.mikai233.common.message.MessageHandler
 
 object HandlerCtx
 
@@ -14,20 +10,14 @@ data class TestMessageA(val name: String) : Message
 
 data class TestMessageB(val name: String, val age: Int) : Message
 
-@AllOpen
-class MessageHandlerA : MessageHandler {
-    private val logger = logger()
-
-    @Handle
-    fun handleTestMessageA(ctx: HandlerCtx, msg: TestMessageA) {
-        logger.info("handle msg:{}", msg)
+open class MessageHandlerA(
+    private val events: MutableList<String>,
+) {
+    open fun handleTestMessageA(ctx: HandlerCtx, msg: TestMessageA) {
+        events += "A:${msg.name}"
     }
 
-    @Handle
-    fun handleTestMessageB(ctx: HandlerCtx, msg: TestMessageB) {
-        logger.info("handle msg:{}", msg)
+    open fun handleTestMessageB(ctx: HandlerCtx, msg: TestMessageB) {
+        events += "B:${msg.name}:${msg.age}"
     }
 }
-
-@AllOpen
-class MessageHandlerB : MessageHandler

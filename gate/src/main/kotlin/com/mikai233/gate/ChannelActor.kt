@@ -219,7 +219,7 @@ class ChannelActor(val node: GateNode, private val session: GatewaySession) :
 
     private fun handleProtobuf(message: GeneratedMessage) {
         try {
-            node.protobufDispatcher.dispatch(message::class, message, this)
+            node.protobufDispatcher.dispatch(this, message)
         } catch (e: Exception) {
             logger.error(e, "channel:{} handle protobuf message:{} failed", self, message)
         }
@@ -227,7 +227,7 @@ class ChannelActor(val node: GateNode, private val session: GatewaySession) :
 
     private fun handleChannelMessage(message: Message) {
         try {
-            node.internalDispatcher.dispatch(message::class, message, this)
+            node.internalDispatcher.dispatch(this, message)
         } catch (e: Exception) {
             logger.error(e, "channel:{} handle message:{} failed", self, message)
         }

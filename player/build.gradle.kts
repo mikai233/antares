@@ -14,7 +14,6 @@ dependencies {
     implementation(libTool.groovy.all)
     implementation(libTool.spring.data.mongodb)
     implementation(libTool.mongodb.driver.sync)
-    implementation(libTool.reflections)
     implementation(libTool.jcommander)
     implementation(libTool.guava)
     implementation(project(":common"))

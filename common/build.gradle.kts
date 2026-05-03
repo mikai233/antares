@@ -30,7 +30,7 @@ dependencies {
     implementation(libLog.bundles.common)
     implementation(libTool.bundles.jackson)
     implementation(libTool.jackson.protobuf)
-    implementation(libTool.reflections)
+    testImplementation(libTool.reflections)
     implementation(libTool.protobuf.kotlin)
     implementation(libTool.protobuf.java.util)
     implementation(libTool.bcprov)
