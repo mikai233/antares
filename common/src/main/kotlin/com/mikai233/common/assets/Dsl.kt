@@ -1,8 +1,19 @@
 package com.mikai233.common.assets
 
+/**
+ * Entry point for asset package DSL construction.
+ *
+ * Example:
+ * ```kotlin
+ * val rewards = assetPackage {
+ *     item(1001, 3)
+ *     resource(2001, 500)
+ * }
+ * ```
+ */
 fun assetPackage(block: AssetPackageBuilder.() -> Unit): AssetPackage {
     val builder = AssetPackageBuilder()
-    block.invoke(builder)
+    block(builder)
     return builder.build()
 }
 
