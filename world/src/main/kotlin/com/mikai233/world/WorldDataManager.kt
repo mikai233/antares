@@ -6,11 +6,11 @@ import com.mikai233.common.extension.logger
 import com.mikai233.common.extension.tell
 import com.mikai233.common.extension.tryCatchSuspend
 import com.mikai233.common.message.world.WorldInitialized
-import io.github.mikai233.asteria.core.EntityKind
-import io.github.mikai233.asteria.core.ServiceRegistry
-import io.github.mikai233.asteria.persistence.DataManager
-import io.github.mikai233.asteria.persistence.DataScope
-import io.github.mikai233.asteria.persistence.MemData
+import io.github.realmlabs.asteria.core.EntityKind
+import io.github.realmlabs.asteria.core.ServiceRegistry
+import io.github.realmlabs.asteria.persistence.DataManager
+import io.github.realmlabs.asteria.persistence.DataScope
+import io.github.realmlabs.asteria.persistence.MemData
 import kotlinx.coroutines.CoroutineExceptionHandler
 import org.springframework.data.mongodb.core.MongoTemplate
 import kotlin.reflect.KClass

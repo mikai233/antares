@@ -7,8 +7,8 @@ import com.mikai233.common.message.requireActor
 import com.mikai233.protocol.ProtoSystem.GmReq
 import com.mikai233.world.WorldActor
 import com.mikai233.world.handler.gm.TestBroadcastHandler
-import io.github.mikai233.asteria.message.HandlerContext
-import io.github.mikai233.asteria.message.MessageHandler
+import io.github.realmlabs.asteria.message.HandlerContext
+import io.github.realmlabs.asteria.message.MessageHandler
 
 @AllOpen
 class GmReqHandler(

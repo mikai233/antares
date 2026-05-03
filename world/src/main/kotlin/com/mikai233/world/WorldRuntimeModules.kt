@@ -1,7 +1,7 @@
 package com.mikai233.world
 
-import io.github.mikai233.asteria.core.AsteriaModule
-import io.github.mikai233.asteria.core.ModuleContext
+import io.github.realmlabs.asteria.core.AsteriaModule
+import io.github.realmlabs.asteria.core.ModuleContext
 import org.apache.pekko.actor.ActorSystem
 
 class WorldWakerModule(

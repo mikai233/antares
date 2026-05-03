@@ -21,11 +21,11 @@ import com.mikai233.protocol.ProtoRpc.WorldWakeupReq
 import com.mikai233.protocol.ProtoSystem.GmReq
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import io.github.mikai233.asteria.core.AsteriaApplicationBuilder
-import io.github.mikai233.asteria.cluster.pekko.actor
-import io.github.mikai233.asteria.cluster.pekko.allocationStrategy
-import io.github.mikai233.asteria.cluster.pekko.extractor
-import io.github.mikai233.asteria.id.IdGenerator
+import io.github.realmlabs.asteria.core.AsteriaApplicationBuilder
+import io.github.realmlabs.asteria.cluster.pekko.actor
+import io.github.realmlabs.asteria.cluster.pekko.allocationStrategy
+import io.github.realmlabs.asteria.cluster.pekko.extractor
+import io.github.realmlabs.asteria.id.IdGenerator
 import com.mikai233.world.handler.event.GameConfigUpdateEventHandler
 import com.mikai233.world.handler.event.GameConfigUpdatedEventHandler
 import com.mikai233.world.handler.event.WorldActiveEventHandler
