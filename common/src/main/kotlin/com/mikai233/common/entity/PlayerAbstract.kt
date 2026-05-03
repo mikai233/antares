@@ -4,7 +4,9 @@ import io.github.realmlabs.asteria.persistence.Entity
 import io.github.realmlabs.asteria.persistence.mongodb.annotations.AsteriaMongoEntity
 import io.github.realmlabs.asteria.persistence.mongodb.annotations.AsteriaMongoIgnore
 import org.springframework.data.annotation.PersistenceCreator
+import org.springframework.data.mongodb.core.mapping.Document
 
+@Document(collection = "player_abstract")
 @AsteriaMongoEntity(
     collection = "player_abstract",
     wrapperName = "PlayerAbstractTracked",

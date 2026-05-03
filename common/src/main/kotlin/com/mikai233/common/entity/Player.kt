@@ -3,7 +3,9 @@ package com.mikai233.common.entity
 import io.github.realmlabs.asteria.persistence.Entity
 import io.github.realmlabs.asteria.persistence.mongodb.annotations.AsteriaMongoEntity
 import org.springframework.data.annotation.PersistenceCreator
+import org.springframework.data.mongodb.core.mapping.Document
 
+@Document(collection = "player")
 @AsteriaMongoEntity(collection = "player", wrapperName = "PlayerTracked", helperName = "PlayerMongo")
 data class Player(
     override val id: Long,

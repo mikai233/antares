@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.reflections.Reflections
 import org.springframework.data.annotation.PersistenceCreator
+import org.springframework.data.mongodb.core.mapping.Document
 import java.lang.reflect.Modifier
 import kotlin.reflect.KParameter
 import kotlin.reflect.KClass
@@ -47,9 +48,19 @@ class EntityTest {
     private fun assertMongoEntityContract(entityKClass: KClass<*>) {
         val entityName = entityKClass.qualifiedName
         val asteriaMongoEntity = entityKClass.java.getAnnotation(AsteriaMongoEntity::class.java) ?: return
+        val document = entityKClass.java.getAnnotation(Document::class.java)
+        assertNotNull(
+            document,
+            "Class[$entityName] must declare @Document when using @AsteriaMongoEntity",
+        )
         assertTrue(
             asteriaMongoEntity.collection.isNotBlank(),
             "Class[$entityName] must declare a non-blank Asteria mongo collection",
+        )
+        assertEquals(
+            asteriaMongoEntity.collection,
+            document!!.collection,
+            "Class[$entityName] @Document collection must match @AsteriaMongoEntity collection",
         )
         val hasMongoId =
             entityKClass.declaredMemberProperties.any {
