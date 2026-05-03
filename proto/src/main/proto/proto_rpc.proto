@@ -2,13 +2,14 @@ syntax = "proto3";
 
 package com.mikai233.protocol;
 
+import "proto_common.proto";
 import "proto_login.proto";
 
 message PlayerLoginReq{
   string account = 1;
   int64 player_id = 2;
   int64 world_id = 3;
-  string channel_actor_path = 4;
+  ActorRef channel_actor = 4;
 }
 
 message PlayerLoginResp{
@@ -20,7 +21,7 @@ message PlayerCreateReq{
   int64 player_id = 2;
   int64 world_id = 3;
   string nickname = 4;
-  string channel_actor_path = 5;
+  ActorRef channel_actor = 5;
 }
 
 message PlayerCreateResp{

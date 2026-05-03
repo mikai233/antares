@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package com.mikai233.protocol;
+
+message ActorRef {
+  string actor_path = 1;
+}

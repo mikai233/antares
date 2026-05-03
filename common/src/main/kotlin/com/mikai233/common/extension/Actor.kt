@@ -1,5 +1,6 @@
 package com.mikai233.common.extension
 
+import com.mikai233.protocol.ProtoCommon
 import kotlinx.coroutines.future.await
 import org.apache.pekko.actor.*
 import org.apache.pekko.event.Logging
@@ -12,6 +13,17 @@ import kotlin.time.toJavaDuration
 
 fun AbstractActor.actorLogger(): LoggingAdapter {
     return Logging.getLogger(context.system, javaClass)
+}
+
+fun ActorRef.encodeActorRef(system: ActorSystem): ProtoCommon.ActorRef {
+    return ProtoCommon.ActorRef.newBuilder()
+        .setActorPath(path().toStringWithAddress(system.provider().defaultAddress))
+        .build()
+}
+
+fun ProtoCommon.ActorRef.decodeActorRef(system: ActorSystem): ActorRef {
+    check(actorPath.isNotBlank()) { "actor_path is blank" }
+    return system.provider().resolveActorRef(actorPath)
 }
 
 infix fun ActorRef.tell(message: Any) {

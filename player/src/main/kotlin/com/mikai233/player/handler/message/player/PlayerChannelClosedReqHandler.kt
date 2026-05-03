@@ -8,6 +8,6 @@ import com.mikai233.protocol.ProtoRpc.PlayerChannelClosedReq
 @AllOpen
 class PlayerChannelClosedReqHandler : PlayerMessageHandler<PlayerChannelClosedReq> {
     override fun handle(context: PlayerHandlerContext, message: PlayerChannelClosedReq) {
-        context.actor.clearChannelActorPath()
+        context.actor.clearChannelActor()
     }
 }

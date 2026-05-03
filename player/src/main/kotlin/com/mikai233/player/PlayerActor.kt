@@ -16,6 +16,7 @@ import io.github.realmlabs.asteria.actor.ActorTimerSupport
 import io.github.realmlabs.asteria.actor.ActorLifecycleGate
 import io.github.realmlabs.asteria.message.dispatchActor
 import io.github.realmlabs.asteria.script.pekko.ScriptableAsteriaActor
+import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.actor.Props
 import org.apache.pekko.actor.ReceiveTimeout
 import org.apache.pekko.cluster.sharding.ShardRegion
@@ -32,7 +33,7 @@ class PlayerActor(val node: PlayerNode) : ScriptableAsteriaActor<PlayerNode>(nod
 
     val playerId: Long = self.path().name().toLong()
 
-    private var channelActorPath: String? = null
+    private var channelActor: ActorRef? = null
     private val timers = ActorTimerSupport(this)
     val manager = PlayerDataManager(this)
     private val lifecycle = ActorLifecycleGate(
@@ -96,12 +97,12 @@ class PlayerActor(val node: PlayerNode) : ScriptableAsteriaActor<PlayerNode>(nod
         }
     }
 
-    fun isOnline() = channelActorPath != null
+    fun isOnline() = channelActor != null
 
     fun send(message: GeneratedMessage) {
-        val path = channelActorPath
-        if (path != null) {
-            context.actorSelection(path).tell(message, self)
+        val boundChannelActor = channelActor
+        if (boundChannelActor != null) {
+            boundChannelActor.tell(message, self)
         } else {
             logger.warning("player:{} unable to send message to channel actor, because channel actor is null", playerId)
         }
@@ -111,24 +112,24 @@ class PlayerActor(val node: PlayerNode) : ScriptableAsteriaActor<PlayerNode>(nod
         context.parent.tell(ShardRegion.Passivate(HandoffPlayer), self)
     }
 
-    fun bindChannelActorPath(incomingChannelActorPath: String) {
-        if (incomingChannelActorPath != channelActorPath) {
-            channelActorPath?.let {
-                logger.info("player:{} unbind old channel actor path:{}", playerId, it)
-                context.actorSelection(it).tell(
+    fun bindChannelActor(incomingChannelActor: ActorRef) {
+        if (incomingChannelActor != channelActor) {
+            channelActor?.let {
+                logger.info("player:{} unbind old channel actor:{}", playerId, it)
+                it.tell(
                     ChannelExpiredReq.newBuilder()
                         .setReason(ProtoLogin.ConnectionExpiredNotify.Reason.MultiLogin_VALUE)
                         .build(),
                     self,
                 )
             }
-            channelActorPath = incomingChannelActorPath
-            logger.info("player:{} bind new channel actor path:{}", playerId, channelActorPath)
+            channelActor = incomingChannelActor
+            logger.info("player:{} bind new channel actor:{}", playerId, channelActor)
         }
     }
 
-    fun clearChannelActorPath() {
-        channelActorPath = null
+    fun clearChannelActor() {
+        channelActor = null
     }
 
     fun tellPlayer(message: GeneratedMessage) {

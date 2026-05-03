@@ -1,6 +1,7 @@
 package com.mikai233.world.handler.message.world
 
 import com.mikai233.common.annotation.AllOpen
+import com.mikai233.common.extension.encodeActorRef
 import com.mikai233.common.core.system
 import com.mikai233.common.entity.PlayerAbstract
 import com.mikai233.common.extension.unixTimestamp
@@ -30,7 +31,7 @@ class PlayerLoginHandler : WorldMessageHandler<LoginReq> {
                         .setPlayerId(playerId)
                         .setWorldId(actor.worldId)
                         .setNickname("")
-                        .setChannelActorPath(channelActor.path().toStringWithAddress(actor.node.system.provider().defaultAddress))
+                        .setChannelActor(channelActor.encodeActorRef(actor.node.system))
                         .build(),
                 ).getOrThrow()
                 channelActor.tell(response.response, actor.self)
@@ -45,7 +46,7 @@ class PlayerLoginHandler : WorldMessageHandler<LoginReq> {
                         .setAccount(message.account)
                         .setPlayerId(playerAbstract.id)
                         .setWorldId(playerAbstract.worldId)
-                        .setChannelActorPath(channelActor.path().toStringWithAddress(actor.node.system.provider().defaultAddress))
+                        .setChannelActor(channelActor.encodeActorRef(actor.node.system))
                         .build(),
                 ).getOrThrow()
                 channelActor.tell(response.response, actor.self)
