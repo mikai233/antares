@@ -11,11 +11,13 @@ import com.mikai233.common.extension.invokeOnTargetMode
 import com.mikai233.common.extension.tell
 import com.mikai233.common.formatMessage
 import com.mikai233.common.message.*
-import com.mikai233.common.message.world.PlayerLogin
 import com.mikai233.protocol.CSEnum
 import com.mikai233.protocol.ProtoLogin
 import com.mikai233.protocol.ProtoLogin.LoginReq
 import com.mikai233.protocol.ProtoLogin.LoginResp
+import com.mikai233.protocol.ProtoRpc.BroadcastEnvelope
+import com.mikai233.protocol.ProtoRpc.SubscribeTopicReq
+import com.mikai233.protocol.ProtoRpc.UnsubscribeTopicReq
 import com.mikai233.protocol.ProtoSystem.GmReq
 import com.mikai233.protocol.connectionExpiredNotify
 import io.github.mikai233.asteria.gateway.GatewaySession
@@ -63,11 +65,11 @@ class ChannelActor(val node: GateNode, private val session: GatewaySession) :
     override fun createReceive(): Receive {
         return receiveBuilder()
             .match(ClientProtobuf::class.java) { handleClientConnectMessage(it) }
-            .match(ServerProtobuf::class.java) {
+            .match(GeneratedMessage::class.java) {
                 logger.warning(
                     "{} receive unexpected server side message:{} when not authorized",
                     self,
-                    formatMessage(it.message),
+                    formatMessage(it),
                 )
             }
             .match(StopChannel::class.java) { stopChannel() }
@@ -85,7 +87,7 @@ class ChannelActor(val node: GateNode, private val session: GatewaySession) :
         return if (message is LoginReq) {
             clientPublicKey = message.clientPublicKey.toByteArray()
             worldId = message.worldId
-            node.worldSharding.tell(PlayerLogin(message.worldId, message), self)
+            node.worldSharding.tell(message, self)
             context.become(authenticating())
         } else {
             logger.warning(
@@ -159,7 +161,7 @@ class ChannelActor(val node: GateNode, private val session: GatewaySession) :
                 stopChannel()
             }
             .match(ChannelExpired::class.java) { handleChannelExpired(it) }
-            .match(ServerProtobuf::class.java) { tryJudgeAuthResult(it.message) }
+            .match(GeneratedMessage::class.java) { tryJudgeAuthResult(it) }
             .match(StopChannel::class.java) { stopChannel() }
             .match(ChannelAuthorized::class.java) {
                 subscribe(Topic.ofWorld(requireNotNull(worldId) { "worldId is null" }))
@@ -180,21 +182,9 @@ class ChannelActor(val node: GateNode, private val session: GatewaySession) :
             .match(ClientProtobuf::class.java) { forwardClientMessage(it) }
             .match(LocalClientProtobuf::class.java) { handleProtobuf(it.message) }
             .match(ChannelExpired::class.java) { handleChannelExpired(it) }
-            .match(ServerProtobuf::class.java) {
-                invokeOnTargetMode(ServerMode.DevMode) {
-                    logger.info(
-                        "{} playerId:{} worldId:{} receive server message:{}",
-                        remoteActorRefAddress(),
-                        playerId,
-                        worldId,
-                        formatMessage(it.message),
-                    )
-                }
-                write(it.message)
-            }
+            .match(GeneratedMessage::class.java) { handleAuthorizedGeneratedMessage(it) }
             .match(StopChannel::class.java) { stopChannel() }
             .match(ReceiveTimeout::class.java) { stopChannel() }
-            .match(Message::class.java) { handleChannelMessage(it) }
             .build()
     }
 
@@ -225,11 +215,21 @@ class ChannelActor(val node: GateNode, private val session: GatewaySession) :
         }
     }
 
-    private fun handleChannelMessage(message: Message) {
-        try {
-            node.internalDispatcher.dispatch(this, message)
-        } catch (e: Exception) {
-            logger.error(e, "channel:{} handle message:{} failed", self, message)
+    private fun handleAuthorizedGeneratedMessage(message: GeneratedMessage) {
+        when (message) {
+            is SubscribeTopicReq, is UnsubscribeTopicReq, is BroadcastEnvelope -> handleProtobuf(message)
+            else -> {
+                invokeOnTargetMode(ServerMode.DevMode) {
+                    logger.info(
+                        "{} playerId:{} worldId:{} receive server message:{}",
+                        remoteActorRefAddress(),
+                        playerId,
+                        worldId,
+                        formatMessage(message),
+                    )
+                }
+                write(message)
+            }
         }
     }
 

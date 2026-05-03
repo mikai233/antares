@@ -7,15 +7,17 @@ import com.mikai233.common.PLAYER_SHARD_NUM
 import com.mikai233.common.WORLD_SHARD_NUM
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.*
-import com.mikai233.common.message.*
 import com.mikai233.common.event.GameConfigUpdateEvent
 import com.mikai233.common.event.GameConfigUpdatedEvent
 import com.mikai233.common.event.WorldActiveEvent
+import com.mikai233.common.message.ActorMessageDispatcher
+import com.mikai233.common.message.Message
 import com.mikai233.common.message.world.HandoffWorld
-import com.mikai233.common.message.world.PlayerLogin
-import com.mikai233.common.message.world.SubscribeTopicCrossWorld
-import com.mikai233.common.message.world.UnsubscribeTopicCrossWorld
-import com.mikai233.common.message.world.WakeupWorldReq
+import com.mikai233.common.rpc.GameRpcProtocolDefinition
+import com.mikai233.protocol.ProtoLogin.LoginReq
+import com.mikai233.protocol.ProtoRpc.CrossWorldSubscribeTopicReq
+import com.mikai233.protocol.ProtoRpc.CrossWorldUnsubscribeTopicReq
+import com.mikai233.protocol.ProtoRpc.WorldWakeupReq
 import com.mikai233.protocol.ProtoSystem.GmReq
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
@@ -64,21 +66,21 @@ class WorldNode(
     private val wakeupWorldReqHandler = WakeupWorldReqHandler()
     private val gmReqHandler = GmReqHandler(testBroadcastHandler)
 
-    val protobufDispatcher = ActorSessionMessageDispatcher<WorldActor, PlayerSession, GeneratedMessage>(this).apply {
+    val protobufDispatcher = ActorMessageDispatcher<WorldActor, GeneratedMessage>(this).apply {
         register(GmReq::class, gmReqHandler)
+        register(LoginReq::class, playerLoginHandler)
+        register(WorldWakeupReq::class, wakeupWorldReqHandler)
+        register(CrossWorldSubscribeTopicReq::class, subscribeTopicCrossWorldHandler)
+        register(CrossWorldUnsubscribeTopicReq::class, unsubscribeTopicCrossWorldHandler)
     }
 
     val internalDispatcher = ActorMessageDispatcher<WorldActor, Message>(this).apply {
-        register(WakeupWorldReq::class, wakeupWorldReqHandler)
         register(WorldActiveEvent::class, worldActiveEventHandler)
-        register(SubscribeTopicCrossWorld::class, subscribeTopicCrossWorldHandler)
-        register(UnsubscribeTopicCrossWorld::class, unsubscribeTopicCrossWorldHandler)
         register(GameConfigUpdateEvent::class, gameConfigUpdateEventHandler)
         register(GameConfigUpdatedEvent::class, gameConfigUpdatedEventHandler)
-        register(PlayerLogin::class, playerLoginHandler)
     }
 
-    override fun modulesBeforeCluster() = listOf(EntitySerializationModule(), workerIdRuntimeModule())
+    override fun modulesBeforeCluster() = listOf(workerIdRuntimeModule())
 
     override fun modulesAfterCluster() = listOf(WorldWakerModule(this))
 
@@ -87,13 +89,13 @@ class WorldNode(
             entity<Long>(ShardEntityType.PlayerActor.name) {
                 role(Role.Player.name)
                 shardCount = PLAYER_SHARD_NUM
-                extractor(PlayerMessageExtractor)
+                extractor(GameRpcProtocolDefinition.playerShardExtractor)
             }
             entity<Long>(ShardEntityType.WorldActor.name) {
                 role(Role.World.name)
                 shardCount = WORLD_SHARD_NUM
                 handoffMessage = HandoffWorld
-                extractor(WorldMessageExtractor)
+                extractor(GameRpcProtocolDefinition.worldShardExtractor)
                 allocationStrategy(ShardCoordinator.LeastShardAllocationStrategy(1, 3))
                 actor { runtime, _ -> WorldActor.props(runtime as WorldNode) }
             }

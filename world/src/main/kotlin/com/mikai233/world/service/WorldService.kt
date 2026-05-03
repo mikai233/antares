@@ -4,10 +4,10 @@ import com.mikai233.common.annotation.AllOpen
 import com.mikai233.common.constants.WorldActionType
 import com.mikai233.common.event.GameConfigUpdatedEvent
 import com.mikai233.common.extension.tell
-import com.mikai233.common.message.channel.SubscribeTopic
-import com.mikai233.common.message.channel.UnsubscribeTopic
-import com.mikai233.common.message.world.SubscribeTopicCrossWorld
-import com.mikai233.common.message.world.UnsubscribeTopicCrossWorld
+import com.mikai233.protocol.ProtoRpc.CrossWorldSubscribeTopicReq
+import com.mikai233.protocol.ProtoRpc.CrossWorldUnsubscribeTopicReq
+import com.mikai233.protocol.ProtoRpc.SubscribeTopicReq
+import com.mikai233.protocol.ProtoRpc.UnsubscribeTopicReq
 import com.mikai233.world.WorldActor
 import com.mikai233.world.data.WorldActionMem
 
@@ -24,17 +24,39 @@ class WorldService {
 
     fun subscribe(world: WorldActor, playerId: Long, playerWorldId: Long, topic: String) {
         if (world.worldId == playerWorldId) {
-            world.sessionManager.sendRaw(playerId, SubscribeTopic(topic))
+            world.sessionManager.send(
+                playerId,
+                SubscribeTopicReq.newBuilder()
+                    .setTopic(topic)
+                    .build(),
+            )
         } else {
-            world.tellWorld(SubscribeTopicCrossWorld(playerWorldId, playerId, topic))
+            world.tellWorld(
+                CrossWorldSubscribeTopicReq.newBuilder()
+                    .setWorldId(playerWorldId)
+                    .setPlayerId(playerId)
+                    .setTopic(topic)
+                    .build(),
+            )
         }
     }
 
     fun unsubscribe(world: WorldActor, playerId: Long, playerWorldId: Long, topic: String) {
-        if (world.worldId == playerId) {
-            world.sessionManager.sendRaw(playerId, UnsubscribeTopic(topic))
+        if (world.worldId == playerWorldId) {
+            world.sessionManager.send(
+                playerId,
+                UnsubscribeTopicReq.newBuilder()
+                    .setTopic(topic)
+                    .build(),
+            )
         } else {
-            world.tellWorld(UnsubscribeTopicCrossWorld(playerWorldId, playerId, topic))
+            world.tellWorld(
+                CrossWorldUnsubscribeTopicReq.newBuilder()
+                    .setWorldId(playerWorldId)
+                    .setPlayerId(playerId)
+                    .setTopic(topic)
+                    .build(),
+            )
         }
     }
 }

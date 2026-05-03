@@ -41,13 +41,10 @@ jcommander = "org.jcommander:jcommander:3.0"
 # KotlinPoet & KSP
 kotlinpoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet" }
 kotlinpoet-ksp = { module = "com.squareup:kotlinpoet-ksp", version.ref = "kotlinpoet" }
-kryo = "com.esotericsoftware:kryo:5.6.2"
 lz4 = "at.yawk.lz4:lz4-java:1.10.2"
 mongodb-driver-sync = "org.mongodb:mongodb-driver-sync:5.6.5"
 # Networking & compression
 netty = "io.netty:netty-all:4.2.12.Final"
-# Pekko & serialization
-pekko-kryo = "io.altoo:pekko-kryo-serialization_2.13:1.5.1"
 protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf" }
 protobuf-kotlin = { module = "com.google.protobuf:protobuf-kotlin", version.ref = "protobuf" }
 protoc = { module = "com.google.protobuf:protoc", version.ref = "protobuf" }

@@ -6,8 +6,7 @@ import com.mikai233.common.PLAYER_SHARD_NUM
 import com.mikai233.common.WORLD_SHARD_NUM
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.*
-import com.mikai233.common.message.PlayerMessageExtractor
-import com.mikai233.common.message.WorldMessageExtractor
+import com.mikai233.common.rpc.GameRpcProtocolDefinition
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import io.github.mikai233.asteria.core.AsteriaApplicationBuilder
@@ -43,12 +42,12 @@ class GmNode(
             entity<Long>(ShardEntityType.PlayerActor.name) {
                 role(Role.Player.name)
                 shardCount = PLAYER_SHARD_NUM
-                extractor(PlayerMessageExtractor)
+                extractor(GameRpcProtocolDefinition.playerShardExtractor)
             }
             entity<Long>(ShardEntityType.WorldActor.name) {
                 role(Role.World.name)
                 shardCount = WORLD_SHARD_NUM
-                extractor(WorldMessageExtractor)
+                extractor(GameRpcProtocolDefinition.worldShardExtractor)
             }
             singleton(Singleton.Worker.actorName) {
                 role(Role.Global.name)

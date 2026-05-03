@@ -4,19 +4,17 @@ import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.event.GameConfigUpdateEvent
 import com.mikai233.common.extension.ask
 import com.mikai233.common.extension.tell
-import com.mikai233.common.message.ChannelExpired
-import com.mikai233.common.message.Message
-import com.mikai233.common.message.PlayerProtobufEnvelope
-import com.mikai233.common.message.ServerProtobuf
 import com.mikai233.common.message.player.*
-import com.mikai233.common.message.world.WorldMessage
 import com.mikai233.protocol.ProtoLogin
+import com.mikai233.protocol.ProtoRpc.ChannelExpiredReq
+import com.mikai233.protocol.ProtoRpc.PlayerChannelClosedReq
+import com.mikai233.common.event.GameConfigUpdatedEvent
+import com.mikai233.common.event.PlayerCreateEvent
+import com.mikai233.common.event.PlayerLoginEvent
 import io.github.mikai233.asteria.actor.ActorTimerSupport
 import io.github.mikai233.asteria.script.pekko.ScriptableAsteriaActor
-import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.actor.Props
 import org.apache.pekko.actor.ReceiveTimeout
-import org.apache.pekko.actor.Terminated
 import org.apache.pekko.cluster.sharding.ShardRegion
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -31,7 +29,7 @@ class PlayerActor(val node: PlayerNode) : ScriptableAsteriaActor<PlayerNode>(nod
 
     val playerId: Long = self.path().name().toLong()
 
-    private var channelActor: ActorRef? = null
+    private var channelActorPath: String? = null
     private val timers = ActorTimerSupport(this)
     val manager = PlayerDataManager(this)
 
@@ -78,24 +76,18 @@ class PlayerActor(val node: PlayerNode) : ScriptableAsteriaActor<PlayerNode>(nod
                 context.become(stopping())
             }
             .match(PlayerTick::class.java) { manager.tick() }
-            .match(PlayerProtobufEnvelope::class.java) { handleProtobufEnvelope(it) }
-            .match(Terminated::class.java) { handleTerminated(it) }
+            .match(GeneratedMessage::class.java) { handleProtobufMessage(it) }
             .match(ReceiveTimeout::class.java) { if (!isOnline()) passivate() }
-            .match(Message::class.java) { handlePlayerMessage(it) }
+            .match(GameConfigUpdateEvent::class.java) { handlePlayerMessage(it) }
+            .match(PlayerLoginEvent::class.java) { handlePlayerMessage(it) }
+            .match(PlayerCreateEvent::class.java) { handlePlayerMessage(it) }
+            .match(GameConfigUpdatedEvent::class.java) { handlePlayerMessage(it) }
             .build()
-    }
-
-    private fun handleTerminated(it: Terminated) {
-        if (it.actor == channelActor) {
-            logger.info("player:{} channel actor:{} terminated", playerId, channelActor)
-            channelActor = null
-        }
     }
 
     private fun stopping(): Receive {
         return receiveBuilder()
             .match(PlayerUnloaded::class.java) { context.stop(self) }
-            .match(Terminated::class.java) { handleTerminated(it) }
             .match(PlayerTick::class.java) {
                 manager.flush { flushed ->
                     if (flushed) {
@@ -106,8 +98,7 @@ class PlayerActor(val node: PlayerNode) : ScriptableAsteriaActor<PlayerNode>(nod
             .build()
     }
 
-    private fun handleProtobufEnvelope(envelope: PlayerProtobufEnvelope) {
-        val message = envelope.message
+    private fun handleProtobufMessage(message: GeneratedMessage) {
         try {
             node.protobufDispatcher.dispatch(this, message)
         } catch (e: Exception) {
@@ -115,7 +106,7 @@ class PlayerActor(val node: PlayerNode) : ScriptableAsteriaActor<PlayerNode>(nod
         }
     }
 
-    private fun handlePlayerMessage(message: Message) {
+    private fun handlePlayerMessage(message: Any) {
         try {
             node.internalDispatcher.dispatch(this, message)
         } catch (e: Exception) {
@@ -123,13 +114,12 @@ class PlayerActor(val node: PlayerNode) : ScriptableAsteriaActor<PlayerNode>(nod
         }
     }
 
-    fun isOnline() = channelActor != null
+    fun isOnline() = channelActorPath != null
 
     fun send(message: GeneratedMessage) {
-        val channel = channelActor
-        if (channel != null) {
-            val envelope = ServerProtobuf(message)
-            channel tell envelope
+        val path = channelActorPath
+        if (path != null) {
+            context.actorSelection(path).tell(message, self)
         } else {
             logger.warning("player:{} unable to send message to channel actor, because channel actor is null", playerId)
         }
@@ -139,40 +129,47 @@ class PlayerActor(val node: PlayerNode) : ScriptableAsteriaActor<PlayerNode>(nod
         context.parent.tell(ShardRegion.Passivate(HandoffPlayer), self)
     }
 
-    fun bindChannelActor(incomingChannelActor: ActorRef) {
-        if (incomingChannelActor != channelActor) {
-            channelActor?.let {
-                context.unwatch(it)
-                logger.info("player:{} unbind old channel actor:{}", playerId, it)
-                it tell ChannelExpired(ProtoLogin.ConnectionExpiredNotify.Reason.MultiLogin_VALUE)
+    fun bindChannelActorPath(incomingChannelActorPath: String) {
+        if (incomingChannelActorPath != channelActorPath) {
+            channelActorPath?.let {
+                logger.info("player:{} unbind old channel actor path:{}", playerId, it)
+                context.actorSelection(it).tell(
+                    ChannelExpiredReq.newBuilder()
+                        .setReason(ProtoLogin.ConnectionExpiredNotify.Reason.MultiLogin_VALUE)
+                        .build(),
+                    self,
+                )
             }
-            channelActor = incomingChannelActor
-            context.watch(channelActor)
-            logger.info("player:{} bind new channel actor:{}", playerId, channelActor)
+            channelActorPath = incomingChannelActorPath
+            logger.info("player:{} bind new channel actor path:{}", playerId, channelActorPath)
         }
     }
 
-    fun tellPlayer(message: PlayerMessage) {
+    fun clearChannelActorPath() {
+        channelActorPath = null
+    }
+
+    fun tellPlayer(message: GeneratedMessage) {
         node.playerSharding.tell(message, self)
     }
 
-    fun forwardPlayer(message: PlayerMessage) {
+    fun forwardPlayer(message: GeneratedMessage) {
         node.playerSharding.forward(message, context)
     }
 
-    suspend fun <R> askPlayer(message: PlayerMessage): Result<R> where  R : Message {
+    suspend fun <R> askPlayer(message: GeneratedMessage): Result<R> {
         return node.playerSharding.ask(message)
     }
 
-    fun tellWorld(message: WorldMessage) {
+    fun tellWorld(message: GeneratedMessage) {
         node.worldSharding.tell(message, self)
     }
 
-    fun forwardWorld(message: WorldMessage) {
+    fun forwardWorld(message: GeneratedMessage) {
         node.worldSharding.forward(message, context)
     }
 
-    suspend fun <R> askWorld(message: WorldMessage): Result<R> where R : Message {
+    suspend fun <R> askWorld(message: GeneratedMessage): Result<R> {
         return node.worldSharding.ask(message)
     }
 

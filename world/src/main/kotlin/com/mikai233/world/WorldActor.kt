@@ -7,9 +7,9 @@ import com.mikai233.common.event.WorldActiveEvent
 import com.mikai233.common.extension.ask
 import com.mikai233.common.extension.tell
 import com.mikai233.common.message.Message
-import com.mikai233.common.message.WorldProtobufEnvelope
-import com.mikai233.common.message.player.PlayerMessage
 import com.mikai233.common.message.world.*
+import com.mikai233.protocol.ProtoSystem.GmReq
+import com.mikai233.protocol.idForServerMessage
 import io.github.mikai233.asteria.actor.ActorTimerSupport
 import io.github.mikai233.asteria.script.pekko.ScriptableAsteriaActor
 import org.apache.pekko.actor.ActorRef
@@ -75,7 +75,7 @@ class WorldActor(val node: WorldNode) : ScriptableAsteriaActor<WorldNode>(node) 
         return receiveBuilder()
             .match(HandoffWorld::class.java) { context.become(stopping()) }
             .match(WorldTick::class.java) { manager.tick() }
-            .match(WorldProtobufEnvelope::class.java) { handleProtobufEnvelope(it) }
+            .match(GeneratedMessage::class.java) { handleProtobufMessage(it) }
             .match(Message::class.java) { handleWorldMessage(it) }
             .build()
     }
@@ -101,15 +101,13 @@ class WorldActor(val node: WorldNode) : ScriptableAsteriaActor<WorldNode>(node) 
         }
     }
 
-    private fun handleProtobufEnvelope(envelope: WorldProtobufEnvelope) {
-        val message = envelope.message
-        val session = sessionManager[envelope.playerId]
-        if (session == null) {
-            logger.warning("Session[{}] not found", envelope.playerId)
+    private fun handleProtobufMessage(message: GeneratedMessage) {
+        if (message is GmReq && sessionManager[message.playerId] == null) {
+            logger.warning("Session[{}] not found", message.playerId)
             return
         }
         try {
-            node.protobufDispatcher.dispatch(this, session, message)
+            node.protobufDispatcher.dispatch(this, message)
         } catch (e: Exception) {
             logger.error(e, "world:{} handle protobuf message:{} failed", worldId, message)
         }
@@ -119,27 +117,27 @@ class WorldActor(val node: WorldNode) : ScriptableAsteriaActor<WorldNode>(node) 
         context.parent.tell(ShardRegion.Passivate(HandoffWorld), self)
     }
 
-    fun tellPlayer(message: PlayerMessage, sender: ActorRef = self) {
+    fun tellPlayer(message: GeneratedMessage, sender: ActorRef = self) {
         node.playerSharding.tell(message, sender)
     }
 
-    fun forwardPlayer(message: PlayerMessage) {
+    fun forwardPlayer(message: GeneratedMessage) {
         node.playerSharding.forward(message, context)
     }
 
-    suspend fun <R> askPlayer(message: PlayerMessage): Result<R> where R : Message {
+    suspend fun <R> askPlayer(message: GeneratedMessage): Result<R> {
         return node.playerSharding.ask(message)
     }
 
-    fun tellWorld(message: WorldMessage, sender: ActorRef = self) {
+    fun tellWorld(message: GeneratedMessage, sender: ActorRef = self) {
         node.worldSharding.tell(message, sender)
     }
 
-    fun forwardWorld(message: WorldMessage) {
+    fun forwardWorld(message: GeneratedMessage) {
         node.worldSharding.forward(message, context)
     }
 
-    suspend fun <R> askWorld(message: WorldMessage): Result<R> where R : Message {
+    suspend fun <R> askWorld(message: GeneratedMessage): Result<R> {
         return node.worldSharding.ask(message)
     }
 
@@ -150,6 +148,14 @@ class WorldActor(val node: WorldNode) : ScriptableAsteriaActor<WorldNode>(node) 
     }
 
     fun broadcast(message: GeneratedMessage, topic: String, include: Set<Long>, exclude: Set<Long>) {
-        node.broadcastRouter.tell(PlayerBroadcastEnvelope(topic, include, exclude, message))
+        node.broadcastRouter.tell(
+            PlayerBroadcastEnvelope.newBuilder()
+                .setTopic(topic)
+                .addAllInclude(include)
+                .addAllExclude(exclude)
+                .setMessageId(idForServerMessage(message.javaClass))
+                .setPayload(message.toByteString())
+                .build(),
+        )
     }
 }

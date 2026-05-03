@@ -1,6 +1,5 @@
 package com.mikai233.common.extension
 
-import com.mikai233.common.message.Message
 import kotlinx.coroutines.future.await
 import org.apache.pekko.actor.*
 import org.apache.pekko.event.Logging
@@ -23,7 +22,7 @@ infix fun ActorRef.tell(message: Any) {
 suspend fun <R> ActorRef.ask(
     message: Any,
     timeout: Duration = 3.minutes,
-): Result<R> where  R : Message {
+): Result<R> {
     return runCatching { Patterns.ask(this, message, timeout.toJavaDuration()).await() as R }
 }
 
@@ -31,7 +30,7 @@ suspend fun <R> ActorRef.ask(
 fun <R> ActorRef.blockingAsk(
     message: Any,
     timeout: Duration = 3.minutes,
-): Result<R> where  R : Message {
+): Result<R> {
     return runCatching {
         Patterns.ask(this, message, timeout.toJavaDuration()).toCompletableFuture()
             .get(timeout.inWholeMilliseconds, TimeUnit.MILLISECONDS) as R

@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package com.mikai233.protocol;
+
+import "proto_login.proto";
+
+message PlayerLoginReq{
+  string account = 1;
+  int64 player_id = 2;
+  int64 world_id = 3;
+  string channel_actor_path = 4;
+}
+
+message PlayerLoginResp{
+  LoginResp response = 1;
+}
+
+message PlayerCreateReq{
+  string account = 1;
+  int64 player_id = 2;
+  int64 world_id = 3;
+  string nickname = 4;
+  string channel_actor_path = 5;
+}
+
+message PlayerCreateResp{
+  LoginResp response = 1;
+}
+
+message PlayerChannelClosedReq{
+  int64 player_id = 1;
+}
+
+message WorldWakeupReq{
+  int64 world_id = 1;
+}
+
+message WorldWakeupResp{
+}
+
+message CrossWorldSubscribeTopicReq{
+  int64 world_id = 1;
+  int64 player_id = 2;
+  string topic = 3;
+}
+
+message CrossWorldUnsubscribeTopicReq{
+  int64 world_id = 1;
+  int64 player_id = 2;
+  string topic = 3;
+}
+
+message SubscribeTopicReq{
+  string topic = 1;
+}
+
+message UnsubscribeTopicReq{
+  string topic = 1;
+}
+
+message ChannelExpiredReq{
+  int32 reason = 1;
+}
+
+message BroadcastEnvelope{
+  string topic = 1;
+  repeated int64 include = 2;
+  repeated int64 exclude = 3;
+  int32 message_id = 4;
+  bytes payload = 5;
+}

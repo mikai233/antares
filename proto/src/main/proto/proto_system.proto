@@ -13,6 +13,8 @@ message PingResp{
 message GmReq{
   string cmd = 1;
   repeated string params = 2;
+  int64 player_id = 3;
+  int64 world_id = 4;
 }
 
 message GmResp{

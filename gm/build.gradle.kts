@@ -17,7 +17,6 @@ dependencies {
     implementation(libTool.spring.data.mongodb)
     implementation(libTool.mongodb.driver.sync)
     implementation(libTool.jcommander)
-    implementation(libTool.kryo)
     implementation(libTool.bundles.curator)
     implementation(project(":common"))
 }

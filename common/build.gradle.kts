@@ -12,6 +12,7 @@ dependencies {
     api("io.github.mikai233:cluster-config:1.0-SNAPSHOT")
     api("io.github.mikai233:cluster-pekko:1.0-SNAPSHOT")
     api("io.github.mikai233:starter-game-server-pekko:1.0-SNAPSHOT")
+    api("io.github.mikai233:rpc-protobuf:1.0-SNAPSHOT")
     api("io.github.mikai233:persistence-core:1.0-SNAPSHOT")
     api("io.github.mikai233:persistence-mongodb:1.0-SNAPSHOT")
     api("io.github.mikai233:config-core:1.0-SNAPSHOT")
@@ -41,14 +42,11 @@ dependencies {
     implementation(libTool.spring.data.mongodb)
     implementation(libTool.spring.retry)
     implementation(libTool.mongodb.driver.sync)
-    implementation(libTool.pekko.kryo)
     implementation(libTool.caffeine)
-    implementation(libTool.kryo)
     implementation(libTool.lz4)
     implementation(libTool.netty)
     implementation(libTool.bundles.prometheus)
     implementation(project(":proto"))
-    ksp(project(":processor"))
     ksp("io.github.mikai233:persistence-mongodb-ksp:1.0-SNAPSHOT")
 }
 

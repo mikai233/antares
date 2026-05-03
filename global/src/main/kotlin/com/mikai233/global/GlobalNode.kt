@@ -6,9 +6,8 @@ import com.mikai233.common.PLAYER_SHARD_NUM
 import com.mikai233.common.WORLD_SHARD_NUM
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.*
-import com.mikai233.common.message.PlayerMessageExtractor
 import com.mikai233.common.message.global.worker.HandoffWorker
-import com.mikai233.common.message.WorldMessageExtractor
+import com.mikai233.common.rpc.GameRpcProtocolDefinition
 import com.mikai233.global.actor.WorkerActor
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
@@ -36,19 +35,17 @@ class GlobalNode(
     val workerActor: ActorRef
         get() = singletonActor(Singleton.Worker)
 
-    override fun modulesBeforeCluster() = listOf(EntitySerializationModule())
-
     override fun configureRuntime(builder: AsteriaApplicationBuilder) {
         builder.apply {
             entity<Long>(ShardEntityType.PlayerActor.name) {
                 role(Role.Player.name)
                 shardCount = PLAYER_SHARD_NUM
-                extractor(PlayerMessageExtractor)
+                extractor(GameRpcProtocolDefinition.playerShardExtractor)
             }
             entity<Long>(ShardEntityType.WorldActor.name) {
                 role(Role.World.name)
                 shardCount = WORLD_SHARD_NUM
-                extractor(WorldMessageExtractor)
+                extractor(GameRpcProtocolDefinition.worldShardExtractor)
             }
             singleton(Singleton.Worker.actorName) {
                 role(Role.Global.name)

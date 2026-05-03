@@ -1,23 +1,25 @@
 package com.mikai233.gate.handler.message.broadcast
 
 import com.mikai233.common.annotation.AllOpen
-import com.mikai233.common.broadcast.PlayerBroadcastEnvelope
 import com.mikai233.common.message.requireActor
 import com.mikai233.gate.ChannelActor
+import com.mikai233.protocol.ProtoRpc.BroadcastEnvelope
+import com.mikai233.protocol.parserForServerMessage
 import io.github.mikai233.asteria.message.HandlerContext
 import io.github.mikai233.asteria.message.MessageHandler
 
 @AllOpen
 @Suppress("unused")
-class PlayerBroadcastEnvelopeHandler : MessageHandler<PlayerBroadcastEnvelope> {
-    override fun handle(context: HandlerContext, message: PlayerBroadcastEnvelope) {
+class PlayerBroadcastEnvelopeHandler : MessageHandler<BroadcastEnvelope> {
+    override fun handle(context: HandlerContext, message: BroadcastEnvelope) {
         val actor = context.requireActor<ChannelActor>()
-        if (message.include.isNotEmpty() && !message.include.contains(actor.playerId)) {
+        val playerId = actor.playerId
+        if (message.includeCount > 0 && playerId !in message.includeList) {
             return
         }
-        if (message.exclude.contains(actor.playerId)) {
+        if (playerId != null && message.excludeList.contains(playerId)) {
             return
         }
-        actor.write(message.message)
+        actor.write(parserForServerMessage(message.messageId).parseFrom(message.payload))
     }
 }

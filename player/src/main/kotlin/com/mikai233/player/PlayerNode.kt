@@ -12,18 +12,21 @@ import com.mikai233.common.event.GameConfigUpdateEvent
 import com.mikai233.common.event.GameConfigUpdatedEvent
 import com.mikai233.common.event.PlayerCreateEvent
 import com.mikai233.common.event.PlayerLoginEvent
-import com.mikai233.common.message.player.PlayerCreateReq
-import com.mikai233.common.message.player.PlayerLoginReq
 import com.mikai233.common.message.player.HandoffPlayer
+import com.mikai233.common.rpc.GameRpcProtocolDefinition
 import com.mikai233.player.handler.event.GameConfigUpdateEventHandler
 import com.mikai233.player.handler.event.GameConfigUpdatedEventHandler
 import com.mikai233.player.handler.event.PlayerCreateEventHandler
 import com.mikai233.player.handler.event.PlayerLoginEventHandler
 import com.mikai233.player.handler.gm.TestGmHandler
+import com.mikai233.player.handler.message.player.PlayerChannelClosedReqHandler
 import com.mikai233.player.handler.message.player.PlayerCreateReqHandler
 import com.mikai233.player.handler.message.player.PlayerLoginReqHandler
 import com.mikai233.player.handler.protocol.system.GmReqHandler
 import com.mikai233.player.handler.protocol.test.TestReqHandler
+import com.mikai233.protocol.ProtoRpc.PlayerChannelClosedReq
+import com.mikai233.protocol.ProtoRpc.PlayerCreateReq
+import com.mikai233.protocol.ProtoRpc.PlayerLoginReq
 import com.mikai233.protocol.ProtoSystem.GmReq
 import com.mikai233.protocol.ProtoTest.TestReq
 import com.typesafe.config.Config
@@ -59,6 +62,7 @@ class PlayerNode(
     private val playerCreateEventHandler = PlayerCreateEventHandler()
     private val playerLoginEventHandler = PlayerLoginEventHandler()
     private val testGmHandler = TestGmHandler()
+    private val playerChannelClosedReqHandler = PlayerChannelClosedReqHandler()
     private val playerCreateReqHandler = PlayerCreateReqHandler()
     private val playerLoginReqHandler = PlayerLoginReqHandler()
     private val gmReqHandler = GmReqHandler(testGmHandler)
@@ -67,18 +71,19 @@ class PlayerNode(
     val protobufDispatcher = ActorMessageDispatcher<PlayerActor, GeneratedMessage>(this).apply {
         register(GmReq::class, gmReqHandler)
         register(TestReq::class, testReqHandler)
-    }
-
-    val internalDispatcher = ActorMessageDispatcher<PlayerActor, Message>(this).apply {
-        register(GameConfigUpdateEvent::class, gameConfigUpdateEventHandler)
         register(PlayerLoginReq::class, playerLoginReqHandler)
         register(PlayerCreateReq::class, playerCreateReqHandler)
+        register(PlayerChannelClosedReq::class, playerChannelClosedReqHandler)
+    }
+
+    val internalDispatcher = ActorMessageDispatcher<PlayerActor, Any>(this).apply {
+        register(GameConfigUpdateEvent::class, gameConfigUpdateEventHandler)
         register(PlayerLoginEvent::class, playerLoginEventHandler)
         register(PlayerCreateEvent::class, playerCreateEventHandler)
         register(GameConfigUpdatedEvent::class, gameConfigUpdatedEventHandler)
     }
 
-    override fun modulesBeforeCluster() = listOf(EntitySerializationModule(), workerIdRuntimeModule())
+    override fun modulesBeforeCluster() = listOf(workerIdRuntimeModule())
 
     override fun configureRuntime(builder: AsteriaApplicationBuilder) {
         builder.apply {
@@ -86,14 +91,14 @@ class PlayerNode(
                 role(Role.Player.name)
                 shardCount = PLAYER_SHARD_NUM
                 handoffMessage = HandoffPlayer
-                extractor(PlayerMessageExtractor)
+                extractor(GameRpcProtocolDefinition.playerShardExtractor)
                 allocationStrategy(ShardCoordinator.LeastShardAllocationStrategy(1, 3))
                 actor { runtime, _ -> PlayerActor.props(runtime as PlayerNode) }
             }
             entity<Long>(ShardEntityType.WorldActor.name) {
                 role(Role.World.name)
                 shardCount = WORLD_SHARD_NUM
-                extractor(WorldMessageExtractor)
+                extractor(GameRpcProtocolDefinition.worldShardExtractor)
             }
         }
     }

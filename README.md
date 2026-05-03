@@ -145,11 +145,15 @@ simply inherit from `MemData`.
 class PlayerAbstractMem(
     private val worldId: Long,
     private val mongoTemplate: () -> MongoTemplate,
-    coroutineScope: TrackingCoroutineScope,
+    mongoDatabase: () -> MongoDatabase,
 ) :
-    TraceableMemData<Long, PlayerAbstract>(PlayerAbstract::class, EntityKryoPool, coroutineScope, mongoTemplate) {
-    private val playerAbstracts: MutableMap<Long, PlayerAbstract> = mutableMapOf()
-    private val accountToAbstracts: MutableMap<String, PlayerAbstract> = mutableMapOf()
+    AsteriaTrackedMemData<PlayerAbstract, PlayerAbstractTracked>(
+        PlayerAbstractMongo.COLLECTION,
+        mongoDatabase,
+        PlayerAbstractMongo::wrap,
+    ) {
+    private val playerAbstracts: MutableMap<Long, PlayerAbstractTracked> = mutableMapOf()
+    private val accountToAbstracts: MutableMap<String, PlayerAbstractTracked> = mutableMapOf()
 
     override fun init() {
         val template = mongoTemplate()

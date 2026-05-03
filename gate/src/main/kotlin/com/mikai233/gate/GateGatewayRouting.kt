@@ -2,8 +2,6 @@ package com.mikai233.gate
 
 import com.mikai233.common.core.ShardEntityType
 import com.mikai233.common.message.ClientProtobuf
-import com.mikai233.common.message.PlayerProtobufEnvelope
-import com.mikai233.common.message.WorldProtobufEnvelope
 import com.mikai233.protocol.ProtoSystem.GmReq
 import com.mikai233.protocol.ProtoSystem.PingReq
 import com.mikai233.protocol.ProtoTest.TestReq
@@ -87,15 +85,29 @@ private class GateGatewayMessageFactory : PekkoGatewayMessageFactory<ClientProto
             ?: error("expected entity route target but got ${route.target}")
         return when (target.kind) {
             EntityKind(ShardEntityType.PlayerActor.name) -> {
-                PlayerProtobufEnvelope(route.entityId as Long, packet.message)
+                when (val message = packet.message) {
+                    is GmReq -> message.toBuilder()
+                        .setPlayerId(route.entityId as Long)
+                        .clearWorldId()
+                        .build()
+
+                    is TestReq -> message.toBuilder()
+                        .setPlayerId(route.entityId as Long)
+                        .build()
+
+                    else -> error("unsupported player gateway message ${packet.message::class.qualifiedName}")
+                }
             }
 
             EntityKind(ShardEntityType.WorldActor.name) -> {
-                WorldProtobufEnvelope(
-                    playerId = requirePlayerId(context.session),
-                    worldId = route.entityId as Long,
-                    message = packet.message,
-                )
+                when (val message = packet.message) {
+                    is GmReq -> message.toBuilder()
+                        .setPlayerId(requirePlayerId(context.session))
+                        .setWorldId(route.entityId as Long)
+                        .build()
+
+                    else -> error("unsupported world gateway message ${packet.message::class.qualifiedName}")
+                }
             }
 
             else -> error("unsupported gateway entity target ${target.kind.value}")

@@ -6,8 +6,8 @@ import com.mikai233.common.core.Role
 import com.mikai233.common.extension.actorLogger
 import com.mikai233.common.extension.ask
 import com.mikai233.common.extension.tell
-import com.mikai233.common.message.world.WakeupWorldReq
-import com.mikai233.common.message.world.WakeupWorldResp
+import com.mikai233.protocol.ProtoRpc.WorldWakeupReq
+import com.mikai233.protocol.ProtoRpc.WorldWakeupResp
 import kotlinx.coroutines.*
 import org.apache.pekko.actor.AbstractActor
 import org.apache.pekko.actor.ActorRef
@@ -135,7 +135,12 @@ class WorldWaker(private val node: WorldNode) : AbstractActor() {
             val (successWorlds, failedWorlds) = coroutineScope {
                 currentBatch.map { worldId ->
                     async {
-                        val result = node.worldSharding.ask<WakeupWorldResp>(WakeupWorldReq(worldId), timeout)
+                        val result = node.worldSharding.ask<WorldWakeupResp>(
+                            WorldWakeupReq.newBuilder()
+                                .setWorldId(worldId)
+                                .build(),
+                            timeout,
+                        )
                         worldId to result.isSuccess
                     }
                 }.awaitAll().partition { it.second }

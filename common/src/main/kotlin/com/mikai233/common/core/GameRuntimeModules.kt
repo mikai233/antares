@@ -9,7 +9,6 @@ import com.mikai233.common.config.GAME_WORLDS
 import com.mikai233.common.config.luban.GameConfigSnapshotLoader
 import com.mikai233.common.config.luban.GameTables
 import com.mikai233.common.db.MongoDB
-import com.mikai233.common.entity.EntityKryoPool
 import com.mikai233.common.event.GameConfigUpdateEvent
 import io.github.mikai233.asteria.config.ConfigModule
 import io.github.mikai233.asteria.config.center.ConfigCenterReloadTrigger
@@ -23,7 +22,6 @@ import io.github.mikai233.asteria.core.ModuleContext
 import io.prometheus.client.exporter.HTTPServer
 import io.prometheus.client.hotspot.DefaultExports
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.concurrent.thread
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -44,14 +42,6 @@ class PekkoCoroutineScopeModule : AsteriaModule {
 
     override suspend fun stop(context: ModuleContext) {
         context.services.find(CoroutineScope::class)?.cancel()
-    }
-}
-
-class EntitySerializationModule : AsteriaModule {
-    override val name: String = "entity-serialization"
-
-    override suspend fun start(context: ModuleContext) {
-        thread { EntityKryoPool }
     }
 }
 

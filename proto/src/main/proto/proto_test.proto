@@ -3,7 +3,7 @@ syntax = "proto3";
 package com.mikai233.protocol;
 
 message TestReq{
-
+  int64 player_id = 1;
 }
 
 message TestResp{

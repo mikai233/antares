@@ -5,20 +5,24 @@ import com.beust.jcommander.Parameter
 import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.PLAYER_SHARD_NUM
 import com.mikai233.common.WORLD_SHARD_NUM
+import com.mikai233.common.broadcast.PlayerBroadcastEnvelope
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.*
-import com.mikai233.common.message.*
-import com.mikai233.common.broadcast.PlayerBroadcastEnvelope
-import com.mikai233.common.message.channel.SubscribeTopic
-import com.mikai233.common.message.channel.UnsubscribeTopic
+import com.mikai233.common.message.ActorMessageDispatcher
+import com.mikai233.common.message.ClientProtobuf
+import com.mikai233.common.message.StopChannel
+import com.mikai233.common.message.ChannelExpired
+import com.mikai233.common.message.ChannelAuthorized
+import com.mikai233.common.rpc.GameRpcProtocolDefinition
 import com.mikai233.gate.handler.message.broadcast.PlayerBroadcastEnvelopeHandler
 import com.mikai233.gate.handler.message.channel.SubscribeTopicHandler
 import com.mikai233.gate.handler.message.channel.UnsubscribeTopicHandler
 import com.mikai233.gate.handler.protocol.system.PingReqHandler
+import com.mikai233.protocol.ProtoRpc.BroadcastEnvelope
+import com.mikai233.protocol.ProtoRpc.SubscribeTopicReq
+import com.mikai233.protocol.ProtoRpc.UnsubscribeTopicReq
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import io.github.mikai233.asteria.cluster.pekko.EntityShardRegistry
-import io.github.mikai233.asteria.cluster.pekko.SingletonActorRegistry
 import io.github.mikai233.asteria.core.AsteriaApplicationBuilder
 import io.github.mikai233.asteria.cluster.pekko.extractor
 import com.mikai233.protocol.ProtoSystem.PingReq
@@ -46,12 +50,9 @@ class GateNode(
 
     val protobufDispatcher = ActorMessageDispatcher<ChannelActor, GeneratedMessage>(this).apply {
         register(PingReq::class, pingReqHandler)
-    }
-
-    val internalDispatcher = ActorMessageDispatcher<ChannelActor, Message>(this).apply {
         register(PlayerBroadcastEnvelope::class, playerBroadcastEnvelopeHandler)
-        register(SubscribeTopic::class, subscribeTopicHandler)
-        register(UnsubscribeTopic::class, unsubscribeTopicHandler)
+        register(SubscribeTopicReq::class, subscribeTopicHandler)
+        register(UnsubscribeTopicReq::class, unsubscribeTopicHandler)
     }
 
     val protocolCodec = GateProtocolCodec()
@@ -65,12 +66,12 @@ class GateNode(
             entity<Long>(ShardEntityType.PlayerActor.name) {
                 role(Role.Player.name)
                 shardCount = PLAYER_SHARD_NUM
-                extractor(PlayerMessageExtractor)
+                extractor(GameRpcProtocolDefinition.playerShardExtractor)
             }
             entity<Long>(ShardEntityType.WorldActor.name) {
                 role(Role.World.name)
                 shardCount = WORLD_SHARD_NUM
-                extractor(WorldMessageExtractor)
+                extractor(GameRpcProtocolDefinition.worldShardExtractor)
             }
         }
     }

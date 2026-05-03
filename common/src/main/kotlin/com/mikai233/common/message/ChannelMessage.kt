@@ -2,9 +2,7 @@ package com.mikai233.common.message
 
 import com.google.protobuf.GeneratedMessage
 
-sealed interface ChannelMessage : Message
-
-data class ServerProtobuf(val message: GeneratedMessage) : ChannelMessage
+sealed interface ChannelMessage
 
 /**
  * @param id protobuf message id
