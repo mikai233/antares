@@ -13,6 +13,7 @@ import com.mikai233.common.extension.invokeOnTargetMode
 import com.mikai233.common.extension.tell
 import com.mikai233.common.formatMessage
 import com.mikai233.common.message.*
+import com.mikai233.common.message.dispatchActor
 import com.mikai233.protocol.CSEnum
 import com.mikai233.protocol.ProtoLogin
 import com.mikai233.protocol.ProtoLogin.LoginReq
@@ -211,7 +212,7 @@ class ChannelActor(val node: GateNode, private val session: GatewaySession) :
 
     private fun handleProtobuf(message: GeneratedMessage) {
         try {
-            node.protobufDispatcher.dispatch(this, message)
+            node.protobufDispatcher.dispatchActor(node, this, message)
         } catch (e: Exception) {
             logger.error(e, "channel:{} handle protobuf message:{} failed", self, message)
         }

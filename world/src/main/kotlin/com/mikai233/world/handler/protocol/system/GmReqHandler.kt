@@ -13,7 +13,7 @@ import io.github.realmlabs.asteria.message.MessageHandler
 @AllOpen
 class GmReqHandler(
     private val testBroadcastHandler: TestBroadcastHandler,
-) : MessageHandler<GmReq> {
+) : MessageHandler<HandlerContext, GmReq> {
     override fun handle(context: HandlerContext, message: GmReq) {
         val actor = context.requireActor<WorldActor>()
         val session = actor.sessionManager[message.playerId]

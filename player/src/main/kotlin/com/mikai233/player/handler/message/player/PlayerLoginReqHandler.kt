@@ -14,7 +14,7 @@ import io.github.realmlabs.asteria.message.MessageHandler
 import kotlin.random.Random
 
 @AllOpen
-class PlayerLoginReqHandler : MessageHandler<PlayerLoginReq> {
+class PlayerLoginReqHandler : MessageHandler<HandlerContext, PlayerLoginReq> {
     override fun handle(context: HandlerContext, message: PlayerLoginReq) {
         val actor = context.requireActor<PlayerActor>()
         actor.bindChannelActorPath(message.channelActorPath)

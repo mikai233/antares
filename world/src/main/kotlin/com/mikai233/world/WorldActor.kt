@@ -9,6 +9,7 @@ import com.mikai233.common.event.GameConfigUpdateEvent
 import com.mikai233.common.event.WorldActiveEvent
 import com.mikai233.common.extension.ask
 import com.mikai233.common.extension.tell
+import com.mikai233.common.message.dispatchActor
 import com.mikai233.common.message.Message
 import com.mikai233.common.message.world.*
 import com.mikai233.protocol.ProtoSystem.GmReq
@@ -98,7 +99,7 @@ class WorldActor(val node: WorldNode) : ScriptableAsteriaActor<WorldNode>(node) 
 
     private fun handleWorldMessage(message: Message) {
         try {
-            node.internalDispatcher.dispatch(this, message)
+            node.internalDispatcher.dispatchActor(node, this, message)
         } catch (e: Exception) {
             logger.error(e, "world:{} handle message:{} failed", worldId, message)
         }
@@ -110,7 +111,7 @@ class WorldActor(val node: WorldNode) : ScriptableAsteriaActor<WorldNode>(node) 
             return
         }
         try {
-            node.protobufDispatcher.dispatch(this, message)
+            node.protobufDispatcher.dispatchActor(node, this, message)
         } catch (e: Exception) {
             logger.error(e, "world:{} handle protobuf message:{} failed", worldId, message)
         }

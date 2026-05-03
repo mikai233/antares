@@ -1,7 +1,8 @@
 package com.mikai233.common.test
 
-import com.mikai233.common.message.ActorMessageDispatcher
 import com.mikai233.common.message.Message
+import com.mikai233.common.message.ActorHandlerContext
+import com.mikai233.common.message.dispatchActor
 import com.mikai233.common.test.msg.HandlerCtx
 import com.mikai233.common.test.msg.MessageHandlerA
 import com.mikai233.common.test.msg.TestMessageA
@@ -10,6 +11,8 @@ import io.github.realmlabs.asteria.core.NodeRuntime
 import io.github.realmlabs.asteria.core.NodeState
 import io.github.realmlabs.asteria.core.RoleKey
 import io.github.realmlabs.asteria.core.ServiceRegistry
+import io.github.realmlabs.asteria.message.MessageDispatcher
+import io.github.realmlabs.asteria.message.PatchableMessageHandlerRegistry
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -19,17 +22,18 @@ class TestMessageDispatcher {
     fun testDispatchMessage() {
         val events = mutableListOf<String>()
         val handler = MessageHandlerA(events)
-        val dispatcher = ActorMessageDispatcher<HandlerCtx, Message>(TestRuntime).apply {
+        val handlers = PatchableMessageHandlerRegistry<ActorHandlerContext<HandlerCtx>, Message>().apply {
             register(TestMessageA::class, handler::handleTestMessageA)
             register(TestMessageB::class, handler::handleTestMessageB)
         }
+        val dispatcher = MessageDispatcher(handlers)
 
-        dispatcher.dispatch(HandlerCtx, TestMessageA("hello"))
-        dispatcher.dispatch(HandlerCtx, TestMessageB("world", 18))
+        dispatcher.dispatchActor(TestRuntime, HandlerCtx, TestMessageA("hello"))
+        dispatcher.dispatchActor(TestRuntime, HandlerCtx, TestMessageB("world", 18))
 
         assertEquals(listOf("A:hello", "B:world:18"), events)
         assertThrows<ClassCastException> {
-            dispatcher.dispatch(HandlerCtx, TestMessageB::class, TestMessageA("hello"))
+            dispatcher.dispatchActor(TestRuntime, HandlerCtx, TestMessageB::class, TestMessageA("hello"))
         }
     }
 

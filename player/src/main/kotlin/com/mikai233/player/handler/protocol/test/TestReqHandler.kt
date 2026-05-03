@@ -9,7 +9,7 @@ import io.github.realmlabs.asteria.message.HandlerContext
 import io.github.realmlabs.asteria.message.MessageHandler
 
 @AllOpen
-class TestReqHandler : MessageHandler<TestReq> {
+class TestReqHandler : MessageHandler<HandlerContext, TestReq> {
     override fun handle(context: HandlerContext, message: TestReq) {
         val actor = context.requireActor<PlayerActor>()
         actor.send(testResp { })

@@ -9,7 +9,7 @@ import io.github.realmlabs.asteria.message.HandlerContext
 import io.github.realmlabs.asteria.message.MessageHandler
 
 @AllOpen
-class UnsubscribeTopicCrossWorldHandler : MessageHandler<CrossWorldUnsubscribeTopicReq> {
+class UnsubscribeTopicCrossWorldHandler : MessageHandler<HandlerContext, CrossWorldUnsubscribeTopicReq> {
     override fun handle(context: HandlerContext, message: CrossWorldUnsubscribeTopicReq) {
         val actor = context.requireActor<WorldActor>()
         actor.sessionManager.send(

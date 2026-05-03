@@ -11,7 +11,7 @@ import io.github.realmlabs.asteria.message.HandlerContext
 import io.github.realmlabs.asteria.message.MessageHandler
 
 @AllOpen
-class WorldActiveEventHandler : MessageHandler<WorldActiveEvent> {
+class WorldActiveEventHandler : MessageHandler<HandlerContext, WorldActiveEvent> {
     private val logger = logger()
 
     override fun handle(context: HandlerContext, message: WorldActiveEvent) {

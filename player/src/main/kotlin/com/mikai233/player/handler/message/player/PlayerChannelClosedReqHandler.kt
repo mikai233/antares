@@ -8,7 +8,7 @@ import io.github.realmlabs.asteria.message.HandlerContext
 import io.github.realmlabs.asteria.message.MessageHandler
 
 @AllOpen
-class PlayerChannelClosedReqHandler : MessageHandler<PlayerChannelClosedReq> {
+class PlayerChannelClosedReqHandler : MessageHandler<HandlerContext, PlayerChannelClosedReq> {
     override fun handle(context: HandlerContext, message: PlayerChannelClosedReq) {
         context.requireActor<PlayerActor>().clearChannelActorPath()
     }

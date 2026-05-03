@@ -7,11 +7,11 @@ import com.mikai233.common.PLAYER_SHARD_NUM
 import com.mikai233.common.WORLD_SHARD_NUM
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.*
-import com.mikai233.common.message.*
 import com.mikai233.common.event.GameConfigUpdateEvent
 import com.mikai233.common.event.GameConfigUpdatedEvent
 import com.mikai233.common.event.PlayerCreateEvent
 import com.mikai233.common.event.PlayerLoginEvent
+import com.mikai233.common.message.ActorHandlerContext
 import com.mikai233.common.message.player.HandoffPlayer
 import com.mikai233.common.rpc.GameRpcProtocolDefinition
 import com.mikai233.player.handler.event.GameConfigUpdateEventHandler
@@ -38,6 +38,8 @@ import io.github.realmlabs.asteria.cluster.pekko.actor
 import io.github.realmlabs.asteria.cluster.pekko.allocationStrategy
 import io.github.realmlabs.asteria.cluster.pekko.extractor
 import io.github.realmlabs.asteria.id.IdGenerator
+import io.github.realmlabs.asteria.message.MessageDispatcher
+import io.github.realmlabs.asteria.message.PatchableMessageHandlerRegistry
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.cluster.sharding.ShardCoordinator
 import java.net.InetSocketAddress
@@ -81,20 +83,22 @@ class PlayerNode(
     private val gmReqHandler = GmReqHandler(testGmHandler)
     private val testReqHandler = TestReqHandler()
 
-    val protobufDispatcher = ActorMessageDispatcher<PlayerActor, GeneratedMessage>(this).apply {
+    private val protobufHandlers = PatchableMessageHandlerRegistry<ActorHandlerContext<PlayerActor>, GeneratedMessage>().apply {
         register(GmReq::class, gmReqHandler)
         register(TestReq::class, testReqHandler)
         register(PlayerLoginReq::class, playerLoginReqHandler)
         register(PlayerCreateReq::class, playerCreateReqHandler)
         register(PlayerChannelClosedReq::class, playerChannelClosedReqHandler)
     }
+    val protobufDispatcher = MessageDispatcher(protobufHandlers)
 
-    val internalDispatcher = ActorMessageDispatcher<PlayerActor, Any>(this).apply {
+    private val internalHandlers = PatchableMessageHandlerRegistry<ActorHandlerContext<PlayerActor>, Any>().apply {
         register(GameConfigUpdateEvent::class, gameConfigUpdateEventHandler)
         register(PlayerLoginEvent::class, playerLoginEventHandler)
         register(PlayerCreateEvent::class, playerCreateEventHandler)
         register(GameConfigUpdatedEvent::class, gameConfigUpdatedEventHandler)
     }
+    val internalDispatcher = MessageDispatcher(internalHandlers)
 
     override suspend fun launch() {
         clusterNode.launch(

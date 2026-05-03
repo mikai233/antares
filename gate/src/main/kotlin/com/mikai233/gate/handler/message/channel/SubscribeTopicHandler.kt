@@ -8,7 +8,7 @@ import io.github.realmlabs.asteria.message.HandlerContext
 import io.github.realmlabs.asteria.message.MessageHandler
 
 @AllOpen
-class SubscribeTopicHandler : MessageHandler<SubscribeTopicReq> {
+class SubscribeTopicHandler : MessageHandler<HandlerContext, SubscribeTopicReq> {
     override fun handle(context: HandlerContext, message: SubscribeTopicReq) {
         val actor = context.requireActor<ChannelActor>()
         actor.subscribe(message.topic)

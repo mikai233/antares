@@ -8,7 +8,7 @@ import io.github.realmlabs.asteria.message.HandlerContext
 import io.github.realmlabs.asteria.message.MessageHandler
 
 @AllOpen
-class UnsubscribeTopicHandler : MessageHandler<UnsubscribeTopicReq> {
+class UnsubscribeTopicHandler : MessageHandler<HandlerContext, UnsubscribeTopicReq> {
     override fun handle(context: HandlerContext, message: UnsubscribeTopicReq) {
         val actor = context.requireActor<ChannelActor>()
         actor.unsubscribe(message.topic)

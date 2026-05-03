@@ -9,7 +9,7 @@ import io.github.realmlabs.asteria.message.HandlerContext
 import io.github.realmlabs.asteria.message.MessageHandler
 
 @AllOpen
-class SubscribeTopicCrossWorldHandler : MessageHandler<CrossWorldSubscribeTopicReq> {
+class SubscribeTopicCrossWorldHandler : MessageHandler<HandlerContext, CrossWorldSubscribeTopicReq> {
     override fun handle(context: HandlerContext, message: CrossWorldSubscribeTopicReq) {
         val actor = context.requireActor<WorldActor>()
         actor.sessionManager.send(

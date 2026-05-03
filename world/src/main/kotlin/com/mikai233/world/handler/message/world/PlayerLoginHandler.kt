@@ -16,7 +16,7 @@ import io.github.realmlabs.asteria.message.HandlerContext
 import io.github.realmlabs.asteria.message.MessageHandler
 
 @AllOpen
-class PlayerLoginHandler : MessageHandler<LoginReq> {
+class PlayerLoginHandler : MessageHandler<HandlerContext, LoginReq> {
     override fun handle(context: HandlerContext, message: LoginReq) {
         val actor = context.requireActor<WorldActor>()
         val channelActor = actor.sender

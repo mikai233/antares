@@ -9,7 +9,7 @@ import io.github.realmlabs.asteria.message.HandlerContext
 import io.github.realmlabs.asteria.message.MessageHandler
 
 @AllOpen
-class PlayerBroadcastEnvelopeHandler : MessageHandler<BroadcastEnvelope> {
+class PlayerBroadcastEnvelopeHandler : MessageHandler<HandlerContext, BroadcastEnvelope> {
     override fun handle(context: HandlerContext, message: BroadcastEnvelope) {
         val actor = context.requireActor<ChannelActor>()
         val playerId = actor.playerId

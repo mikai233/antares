@@ -8,7 +8,7 @@ import com.mikai233.common.WORLD_SHARD_NUM
 import com.mikai233.common.broadcast.PlayerBroadcastEnvelope
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.*
-import com.mikai233.common.message.ActorMessageDispatcher
+import com.mikai233.common.message.ActorHandlerContext
 import com.mikai233.common.message.ClientProtobuf
 import com.mikai233.common.message.StopChannel
 import com.mikai233.common.message.ChannelExpired
@@ -27,6 +27,8 @@ import io.github.realmlabs.asteria.core.NodeState
 import io.github.realmlabs.asteria.core.RoleKey
 import io.github.realmlabs.asteria.core.ServiceRegistry
 import io.github.realmlabs.asteria.cluster.pekko.extractor
+import io.github.realmlabs.asteria.message.MessageDispatcher
+import io.github.realmlabs.asteria.message.PatchableMessageHandlerRegistry
 import com.mikai233.protocol.ProtoSystem.PingReq
 import org.apache.pekko.actor.ActorRef
 import java.net.InetSocketAddress
@@ -61,12 +63,13 @@ class GateNode(
     private val subscribeTopicHandler = SubscribeTopicHandler()
     private val unsubscribeTopicHandler = UnsubscribeTopicHandler()
 
-    val protobufDispatcher = ActorMessageDispatcher<ChannelActor, GeneratedMessage>(this).apply {
+    private val protobufHandlers = PatchableMessageHandlerRegistry<ActorHandlerContext<ChannelActor>, GeneratedMessage>().apply {
         register(PingReq::class, pingReqHandler)
         register(PlayerBroadcastEnvelope::class, playerBroadcastEnvelopeHandler)
         register(SubscribeTopicReq::class, subscribeTopicHandler)
         register(UnsubscribeTopicReq::class, unsubscribeTopicHandler)
     }
+    val protobufDispatcher = MessageDispatcher(protobufHandlers)
 
     val protocolCodec = GateProtocolCodec()
 

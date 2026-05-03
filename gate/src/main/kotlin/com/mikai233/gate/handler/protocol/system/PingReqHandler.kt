@@ -10,7 +10,7 @@ import io.github.realmlabs.asteria.message.HandlerContext
 import io.github.realmlabs.asteria.message.MessageHandler
 
 @AllOpen
-class PingReqHandler : MessageHandler<PingReq> {
+class PingReqHandler : MessageHandler<HandlerContext, PingReq> {
     override fun handle(context: HandlerContext, message: PingReq) {
         val actor = context.requireActor<ChannelActor>()
         actor.write(pingResp { serverTimestamp = unixTimestamp() })

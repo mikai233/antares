@@ -10,7 +10,7 @@ import io.github.realmlabs.asteria.message.HandlerContext
 import io.github.realmlabs.asteria.message.MessageHandler
 
 @AllOpen
-class PlayerCreateEventHandler : MessageHandler<PlayerCreateEvent> {
+class PlayerCreateEventHandler : MessageHandler<HandlerContext, PlayerCreateEvent> {
     override fun handle(context: HandlerContext, message: PlayerCreateEvent) {
         val actor = context.requireActor<PlayerActor>()
         actor.self tell PlayerLoginEvent

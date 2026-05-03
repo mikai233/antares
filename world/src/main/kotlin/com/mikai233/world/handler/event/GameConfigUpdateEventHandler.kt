@@ -11,7 +11,7 @@ import io.github.realmlabs.asteria.message.HandlerContext
 import io.github.realmlabs.asteria.message.MessageHandler
 
 @AllOpen
-class GameConfigUpdateEventHandler : MessageHandler<GameConfigUpdateEvent> {
+class GameConfigUpdateEventHandler : MessageHandler<HandlerContext, GameConfigUpdateEvent> {
     private val logger = logger()
 
     override fun handle(context: HandlerContext, message: GameConfigUpdateEvent) {

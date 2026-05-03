@@ -5,6 +5,7 @@ import com.mikai233.common.core.system
 import com.mikai233.common.event.GameConfigUpdateEvent
 import com.mikai233.common.extension.ask
 import com.mikai233.common.extension.tell
+import com.mikai233.common.message.dispatchActor
 import com.mikai233.common.message.player.*
 import com.mikai233.protocol.ProtoLogin
 import com.mikai233.protocol.ProtoRpc.ChannelExpiredReq
@@ -101,7 +102,7 @@ class PlayerActor(val node: PlayerNode) : ScriptableAsteriaActor<PlayerNode>(nod
 
     private fun handleProtobufMessage(message: GeneratedMessage) {
         try {
-            node.protobufDispatcher.dispatch(this, message)
+            node.protobufDispatcher.dispatchActor(node, this, message)
         } catch (e: Exception) {
             logger.error(e, "player:{} handle protobuf message:{} failed", playerId, message)
         }
@@ -109,7 +110,7 @@ class PlayerActor(val node: PlayerNode) : ScriptableAsteriaActor<PlayerNode>(nod
 
     private fun handlePlayerMessage(message: Any) {
         try {
-            node.internalDispatcher.dispatch(this, message)
+            node.internalDispatcher.dispatchActor(node, this, message)
         } catch (e: Exception) {
             logger.error(e, "player:{} handle message:{} failed", playerId, message)
         }

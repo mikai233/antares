@@ -11,7 +11,7 @@ import io.github.realmlabs.asteria.message.HandlerContext
 import io.github.realmlabs.asteria.message.MessageHandler
 
 @AllOpen
-class PlayerCreateReqHandler : MessageHandler<PlayerCreateReq> {
+class PlayerCreateReqHandler : MessageHandler<HandlerContext, PlayerCreateReq> {
     override fun handle(context: HandlerContext, message: PlayerCreateReq) {
         val actor = context.requireActor<PlayerActor>()
         actor.bindChannelActorPath(message.channelActorPath)

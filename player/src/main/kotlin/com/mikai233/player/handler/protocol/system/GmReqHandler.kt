@@ -13,7 +13,7 @@ import io.github.realmlabs.asteria.message.MessageHandler
 @AllOpen
 class GmReqHandler(
     private val testGmHandler: TestGmHandler,
-) : MessageHandler<GmReq> {
+) : MessageHandler<HandlerContext, GmReq> {
     override fun handle(context: HandlerContext, message: GmReq) {
         val actor = context.requireActor<PlayerActor>()
         invokeOnTargetMode(ServerMode.DevMode) {

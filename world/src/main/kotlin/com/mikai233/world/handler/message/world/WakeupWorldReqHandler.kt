@@ -10,7 +10,7 @@ import io.github.realmlabs.asteria.message.HandlerContext
 import io.github.realmlabs.asteria.message.MessageHandler
 
 @AllOpen
-class WakeupWorldReqHandler : MessageHandler<WorldWakeupReq> {
+class WakeupWorldReqHandler : MessageHandler<HandlerContext, WorldWakeupReq> {
     override fun handle(context: HandlerContext, message: WorldWakeupReq) {
         val actor = context.requireActor<WorldActor>()
         actor.sender tell WorldWakeupResp.newBuilder().build()

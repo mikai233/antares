@@ -6,6 +6,6 @@ import io.github.realmlabs.asteria.message.HandlerContext
 import io.github.realmlabs.asteria.message.MessageHandler
 
 @AllOpen
-class GameConfigUpdatedEventHandler : MessageHandler<GameConfigUpdatedEvent> {
+class GameConfigUpdatedEventHandler : MessageHandler<HandlerContext, GameConfigUpdatedEvent> {
     override fun handle(context: HandlerContext, message: GameConfigUpdatedEvent) = Unit
 }
