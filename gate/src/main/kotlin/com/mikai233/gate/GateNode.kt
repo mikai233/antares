@@ -10,6 +10,8 @@ import com.mikai233.common.core.*
 import com.mikai233.common.message.*
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import io.github.mikai233.asteria.cluster.pekko.EntityShardRegistry
+import io.github.mikai233.asteria.cluster.pekko.SingletonActorRegistry
 import io.github.mikai233.asteria.core.AsteriaApplicationBuilder
 import io.github.mikai233.asteria.cluster.pekko.extractor
 import org.apache.pekko.actor.ActorRef
@@ -37,7 +39,7 @@ class GateNode(
 
     val protocolCodec = GateProtocolCodec()
 
-    override fun modulesBeforeCluster() = listOf(GateMessageForwardModule())
+    val gatewayRouter: GateGatewayRouter by lazy { GateGatewayRouter(this) }
 
     override fun modulesAfterCluster() = listOf(GateGatewayTransportModule(this))
 

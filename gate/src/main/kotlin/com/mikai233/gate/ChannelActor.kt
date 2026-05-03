@@ -19,7 +19,9 @@ import com.mikai233.protocol.ProtoLogin.LoginResp
 import com.mikai233.protocol.ProtoSystem.GmReq
 import com.mikai233.protocol.connectionExpiredNotify
 import io.github.mikai233.asteria.gateway.GatewaySession
+import io.github.mikai233.asteria.gateway.GatewaySessionContext
 import io.github.mikai233.asteria.script.pekko.ScriptableAsteriaActor
+import kotlinx.coroutines.runBlocking
 import org.apache.pekko.actor.Props
 import org.apache.pekko.actor.ReceiveTimeout
 import org.apache.pekko.cluster.pubsub.DistributedPubSub
@@ -124,6 +126,8 @@ class ChannelActor(val node: GateNode, private val session: GatewaySession) :
         context.cancelReceiveTimeout()
         val playerData = resp.data
         playerId = playerData.playerId
+        session.set(GatePlayerIdKey, playerData.playerId)
+        session.set(GateWorldIdKey, requireNotNull(worldId) { "worldId is null" })
         val serverKeyPair = ECDH.genKeyPair()
         val keyResp = resp.toBuilder().setServerPublicKey(serverKeyPair.publicKey.toByteString()).build()
         runCatching {
@@ -174,6 +178,7 @@ class ChannelActor(val node: GateNode, private val session: GatewaySession) :
     private fun authorized(): Receive {
         return receiveBuilder()
             .match(ClientProtobuf::class.java) { forwardClientMessage(it) }
+            .match(LocalClientProtobuf::class.java) { handleProtobuf(it.message) }
             .match(ChannelExpired::class.java) { handleChannelExpired(it) }
             .match(ServerProtobuf::class.java) {
                 invokeOnTargetMode(ServerMode.DevMode) {
@@ -202,32 +207,13 @@ class ChannelActor(val node: GateNode, private val session: GatewaySession) :
     }
 
     private fun forwardClientMessage(clientProtobuf: ClientProtobuf) {
-        val (id, message) = clientProtobuf
-        val actor = if (id == CSEnum.GmReq.id) {
-            val req = message as GmReq
-            MessageForward.whichCommand(req.cmd)
-        } else {
-            MessageForward.whichActor(id)
-        }
-        logger.debug("forward message:{} to target:{}", formatMessage(message), actor)
-        if (actor == null) {
-            logger.warning("proto: {} has no target to forward", clientProtobuf.id)
-        } else {
-            val playerId = requireNotNull(playerId) { "playerId is null" }
-            val worldId = requireNotNull(worldId) { "worldId is null" }
-            when (actor) {
-                Forward.PlayerActor -> {
-                    node.playerSharding.tell(PlayerProtobufEnvelope(playerId, message), self)
-                }
-
-                Forward.WorldActor -> {
-                    node.worldSharding.tell(WorldProtobufEnvelope(playerId, worldId, message), self)
-                }
-
-                Forward.ChannelActor -> {
-                    handleProtobuf(message)
-                }
+        logger.debug("forward message:{}", formatMessage(clientProtobuf.message))
+        try {
+            runBlocking {
+                node.gatewayRouter.dispatch(session, clientProtobuf)
             }
+        } catch (e: Exception) {
+            logger.error(e, "channel:{} forward client message:{} failed", self, clientProtobuf.message)
         }
     }
 

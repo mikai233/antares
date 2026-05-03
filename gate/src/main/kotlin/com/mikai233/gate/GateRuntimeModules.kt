@@ -7,16 +7,7 @@ import io.github.mikai233.asteria.core.AsteriaModule
 import io.github.mikai233.asteria.core.ModuleContext
 import io.github.mikai233.asteria.gateway.netty.NettyGatewayServerOptions
 import io.github.mikai233.asteria.gateway.netty.NettyTcpGatewayServerTransport
-import kotlin.concurrent.thread
 import kotlinx.coroutines.CoroutineScope
-
-class GateMessageForwardModule : AsteriaModule {
-    override val name: String = "gate-message-forward"
-
-    override suspend fun start(context: ModuleContext) {
-        thread { MessageForward }
-    }
-}
 
 class GateGatewayTransportModule(
     private val node: GateNode,

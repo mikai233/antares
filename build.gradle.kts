@@ -99,30 +99,6 @@ subprojects {
             }
         }
     }
-    val actor = Forward[project.name]
-    if (actor != null) {
-        tasks.register<JavaExec>("generateProtoForwardMap") {
-            group = "other"
-            description = "Generates protobuf forward map for gate"
-            mainClass = "com.mikai233.common.message.MessageForwardGeneratorKt"
-            val sourceSetsMain = sourceSets.main.get()
-            classpath = sourceSetsMain.runtimeClasspath
-            val gateResourcesPath =
-                project(":gate").extensions.getByType<SourceSetContainer>().main.get().resources.srcDirs.first().path
-            args =
-                listOf(
-                    "-p",
-                    "com.mikai233.${project.name}.handler",
-                    "-o",
-                    gateResourcesPath,
-                    "-f",
-                    actor,
-                )
-        }
-        tasks.named("compileKotlin") {
-            finalizedBy("generateProtoForwardMap")
-        }
-    }
     tasks.register("generateVersionFile") {
         val resourcesDir = file("${layout.buildDirectory.get()}/generated/resources/")
         val versionFile = File(resourcesDir, "version")
