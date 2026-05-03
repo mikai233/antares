@@ -1,5 +1,6 @@
 plugins {
     groovy
+    alias(libTool.plugins.ksp)
 }
 
 dependencies {
@@ -21,6 +22,7 @@ dependencies {
     implementation(libTool.guava)
     implementation(libTool.spring.data.mongodb)
     implementation(project(":common"))
+    ksp(project(":message-ksp"))
     implementation(project(":proto"))
 }
 

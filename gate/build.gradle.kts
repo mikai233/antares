@@ -1,5 +1,22 @@
 plugins {
     groovy
+    alias(libTool.plugins.ksp)
+}
+
+val generateGatewayRoutingTable by tasks.registering(GenerateGatewayRoutingTask::class) {
+    dependsOn(":gate:kspKotlin", ":player:kspKotlin", ":world:kspKotlin")
+    metadataFiles.from(
+        project(":gate").layout.buildDirectory.file("generated/ksp/main/resources/META-INF/antares/gateway-route-hints/gate.json"),
+        project(":player").layout.buildDirectory.file("generated/ksp/main/resources/META-INF/antares/gateway-route-hints/player.json"),
+        project(":world").layout.buildDirectory.file("generated/ksp/main/resources/META-INF/antares/gateway-route-hints/world.json"),
+    )
+    outputDir.set(layout.buildDirectory.dir("generated/source/gateway/main/kotlin"))
+}
+
+kotlin {
+    sourceSets.main {
+        kotlin.srcDir(layout.buildDirectory.dir("generated/source/gateway/main/kotlin"))
+    }
 }
 
 dependencies {
@@ -22,7 +39,12 @@ dependencies {
     implementation(libTool.bundles.curator)
     implementation(libTool.jcommander)
     implementation(project(":common"))
+    ksp(project(":message-ksp"))
     implementation(project(":proto"))
+}
+
+tasks.compileKotlin {
+    dependsOn(generateGatewayRoutingTable)
 }
 
 tasks.test {

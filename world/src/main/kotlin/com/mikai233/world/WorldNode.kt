@@ -2,7 +2,6 @@ package com.mikai233.world
 
 import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
-import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.PLAYER_SHARD_NUM
 import com.mikai233.common.WORLD_SHARD_NUM
 import com.mikai233.common.config.ConfigChangeDispatcher
@@ -10,13 +9,11 @@ import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.*
 import com.mikai233.common.event.WorldActiveEvent
 import com.mikai233.common.message.Message
+import com.mikai233.common.message.catalog.MessageCatalog
 import com.mikai233.common.message.world.HandoffWorld
 import com.mikai233.common.rpc.GameRpcProtocol
-import com.mikai233.protocol.ProtoLogin.LoginReq
-import com.mikai233.protocol.ProtoRpcWorld.CrossWorldSubscribeTopicReq
-import com.mikai233.protocol.ProtoRpcWorld.CrossWorldUnsubscribeTopicReq
-import com.mikai233.protocol.ProtoRpcWorld.WorldWakeupReq
-import com.mikai233.protocol.ProtoSystem.GmReq
+import com.mikai233.world.generated.GeneratedWorldMessageCatalog
+import com.mikai233.world.generated.GeneratedWorldNodeDispatchers
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import io.github.realmlabs.asteria.core.NodeState
@@ -25,18 +22,8 @@ import io.github.realmlabs.asteria.core.ServiceRegistry
 import io.github.realmlabs.asteria.cluster.pekko.actor
 import io.github.realmlabs.asteria.cluster.pekko.allocationStrategy
 import io.github.realmlabs.asteria.cluster.pekko.extractor
-import io.github.realmlabs.asteria.config.ConfigChangedEvent
 import io.github.realmlabs.asteria.id.IdGenerator
-import io.github.realmlabs.asteria.message.MessageDispatcher
 import io.github.realmlabs.asteria.patch.PatchableServiceRegistry
-import com.mikai233.world.handler.event.ConfigChangedEventHandler
-import com.mikai233.world.handler.event.WorldActiveEventHandler
-import com.mikai233.world.handler.gm.TestBroadcastHandler
-import com.mikai233.world.handler.message.world.PlayerLoginHandler
-import com.mikai233.world.handler.message.world.SubscribeTopicCrossWorldHandler
-import com.mikai233.world.handler.message.world.UnsubscribeTopicCrossWorldHandler
-import com.mikai233.world.handler.message.world.WakeupWorldReqHandler
-import com.mikai233.world.handler.protocol.system.GmReqHandler
 import com.mikai233.world.service.WorldService
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.cluster.sharding.ShardCoordinator
@@ -73,31 +60,13 @@ class WorldNode(
     val idGenerator: IdGenerator
         get() = services.get(IdGenerator::class)
 
-    private val configChangedEventHandler = ConfigChangedEventHandler()
-    private val worldActiveEventHandler = WorldActiveEventHandler()
-    private val testBroadcastHandler = TestBroadcastHandler()
-    private val playerLoginHandler = PlayerLoginHandler()
-    private val subscribeTopicCrossWorldHandler = SubscribeTopicCrossWorldHandler()
-    private val unsubscribeTopicCrossWorldHandler = UnsubscribeTopicCrossWorldHandler()
-    private val wakeupWorldReqHandler = WakeupWorldReqHandler()
-    private val gmReqHandler = GmReqHandler(testBroadcastHandler)
-
-    private val protobufHandlers = WorldMessageHandlerRegistry<GeneratedMessage>().apply {
-        register(GmReq::class, gmReqHandler)
-        register(LoginReq::class, playerLoginHandler)
-        register(WorldWakeupReq::class, wakeupWorldReqHandler)
-        register(CrossWorldSubscribeTopicReq::class, subscribeTopicCrossWorldHandler)
-        register(CrossWorldUnsubscribeTopicReq::class, unsubscribeTopicCrossWorldHandler)
-    }
-    val protobufDispatcher = MessageDispatcher(protobufHandlers)
+    val protobufDispatcher = GeneratedWorldNodeDispatchers.PROTOBUF
 
     val configChangeDispatcher = ConfigChangeDispatcher<WorldActor>()
 
-    private val internalHandlers = WorldMessageHandlerRegistry<Any>().apply {
-        register(WorldActiveEvent::class, worldActiveEventHandler)
-        register(ConfigChangedEvent::class, configChangedEventHandler)
-    }
-    val internalDispatcher = MessageDispatcher(internalHandlers)
+    val messageCatalog: MessageCatalog
+        get() = GeneratedWorldMessageCatalog
+    val internalDispatcher = GeneratedWorldNodeDispatchers.INTERNAL
 
     init {
         val patchableServices = PatchableServiceRegistry().apply {

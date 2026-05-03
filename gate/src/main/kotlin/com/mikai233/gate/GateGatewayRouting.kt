@@ -3,9 +3,8 @@ package com.mikai233.gate
 import com.mikai233.common.core.GameEntityKinds
 import com.mikai233.common.core.system
 import com.mikai233.common.message.ClientProtobuf
+import com.mikai233.gate.generated.GeneratedGatewayRouting
 import com.mikai233.protocol.ProtoSystem.GmReq
-import com.mikai233.protocol.ProtoSystem.PingReq
-import com.mikai233.protocol.ProtoTest.TestReq
 import io.github.realmlabs.asteria.cluster.pekko.EntityShardRegistry
 import io.github.realmlabs.asteria.cluster.pekko.SingletonActorRegistry
 import io.github.realmlabs.asteria.core.EntityKind
@@ -62,9 +61,8 @@ class GateGatewayRouter(
 
 private class GateGatewayRouteResolver : GatewayRouteResolver<ClientProtobuf> {
     override fun resolve(context: GatewaySessionContext, packet: ClientProtobuf): GatewayRoute {
+        GeneratedGatewayRouting.resolve(context, packet)?.let { return it }
         return when (val message = packet.message) {
-            is PingReq -> GatewayRoute(RouteTarget.GatewayLocal)
-            is TestReq -> GatewayRoute(PlayerRouteTarget, requirePlayerId(context.session))
             is GmReq -> resolveGmRoute(context.session, message)
             else -> error("no gateway route for packet id=${packet.id}, type=${packet.message::class.qualifiedName}")
         }
@@ -82,6 +80,7 @@ private class GateGatewayRouteResolver : GatewayRouteResolver<ClientProtobuf> {
 
 private class GateGatewayMessageFactory : PekkoGatewayMessageFactory<ClientProtobuf> {
     override fun entityMessage(context: GatewaySessionContext, route: GatewayRoute, packet: ClientProtobuf): Any {
+        GeneratedGatewayRouting.entityMessage(context, route, packet)?.let { return it }
         val target = route.target as? RouteTarget.Entity
             ?: error("expected entity route target but got ${route.target}")
         return when (target.kind) {
@@ -90,10 +89,6 @@ private class GateGatewayMessageFactory : PekkoGatewayMessageFactory<ClientProto
                     is GmReq -> message.toBuilder()
                         .setPlayerId(route.entityId as Long)
                         .clearWorldId()
-                        .build()
-
-                    is TestReq -> message.toBuilder()
-                        .setPlayerId(route.entityId as Long)
                         .build()
 
                     else -> error("unsupported player gateway message ${packet.message::class.qualifiedName}")

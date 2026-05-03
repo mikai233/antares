@@ -66,10 +66,12 @@ subprojects {
         }
     }
 
-    if (project.name == "common") {
+    if (project.name in setOf("common", "gate", "player", "world")) {
         sourceSets.main {
             kotlin.srcDir("build/generated/ksp/main/kotlin")
         }
+    }
+    if (project.name == "common") {
         sourceSets.test {
             kotlin.srcDir("build/generated/ksp/test/kotlin")
         }

@@ -2,7 +2,6 @@ package com.mikai233.player
 
 import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
-import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.PLAYER_SHARD_NUM
 import com.mikai233.common.WORLD_SHARD_NUM
 import com.mikai233.common.config.ConfigChangeDispatcher
@@ -11,23 +10,12 @@ import com.mikai233.common.core.*
 import com.mikai233.common.event.PlayerCreateEvent
 import com.mikai233.common.event.PlayerLoginEvent
 import com.mikai233.common.message.player.HandoffPlayer
+import com.mikai233.common.message.catalog.MessageCatalog
 import com.mikai233.common.rpc.GameRpcProtocol
+import com.mikai233.player.generated.GeneratedPlayerMessageCatalog
+import com.mikai233.player.generated.GeneratedPlayerNodeDispatchers
 import com.mikai233.player.config.PlayerActivityConfigChangeHandler
-import com.mikai233.player.handler.event.ConfigChangedEventHandler
-import com.mikai233.player.handler.event.PlayerCreateEventHandler
-import com.mikai233.player.handler.event.PlayerLoginEventHandler
-import com.mikai233.player.handler.gm.TestGmHandler
-import com.mikai233.player.handler.message.player.PlayerChannelClosedReqHandler
-import com.mikai233.player.handler.message.player.PlayerCreateReqHandler
-import com.mikai233.player.handler.message.player.PlayerLoginReqHandler
-import com.mikai233.player.handler.protocol.system.GmReqHandler
 import com.mikai233.player.service.LoginService
-import com.mikai233.player.handler.protocol.test.TestReqHandler
-import com.mikai233.protocol.ProtoRpcPlayer.PlayerChannelClosedReq
-import com.mikai233.protocol.ProtoRpcPlayer.PlayerCreateReq
-import com.mikai233.protocol.ProtoRpcPlayer.PlayerLoginReq
-import com.mikai233.protocol.ProtoSystem.GmReq
-import com.mikai233.protocol.ProtoTest.TestReq
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import io.github.realmlabs.asteria.core.NodeState
@@ -36,9 +24,7 @@ import io.github.realmlabs.asteria.core.ServiceRegistry
 import io.github.realmlabs.asteria.cluster.pekko.actor
 import io.github.realmlabs.asteria.cluster.pekko.allocationStrategy
 import io.github.realmlabs.asteria.cluster.pekko.extractor
-import io.github.realmlabs.asteria.config.ConfigChangedEvent
 import io.github.realmlabs.asteria.id.IdGenerator
-import io.github.realmlabs.asteria.message.MessageDispatcher
 import io.github.realmlabs.asteria.patch.PatchableServiceRegistry
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.cluster.sharding.ShardCoordinator
@@ -75,36 +61,16 @@ class PlayerNode(
     val idGenerator: IdGenerator
         get() = services.get(IdGenerator::class)
 
-    private val configChangedEventHandler = ConfigChangedEventHandler()
     private val playerActivityConfigChangeHandler = PlayerActivityConfigChangeHandler()
-    private val playerCreateEventHandler = PlayerCreateEventHandler()
-    private val playerLoginEventHandler = PlayerLoginEventHandler()
-    private val testGmHandler = TestGmHandler()
-    private val playerChannelClosedReqHandler = PlayerChannelClosedReqHandler()
-    private val playerCreateReqHandler = PlayerCreateReqHandler()
-    private val playerLoginReqHandler = PlayerLoginReqHandler()
-    private val gmReqHandler = GmReqHandler(testGmHandler)
-    private val testReqHandler = TestReqHandler()
-
-    private val protobufHandlers = PlayerMessageHandlerRegistry<GeneratedMessage>().apply {
-        register(GmReq::class, gmReqHandler)
-        register(TestReq::class, testReqHandler)
-        register(PlayerLoginReq::class, playerLoginReqHandler)
-        register(PlayerCreateReq::class, playerCreateReqHandler)
-        register(PlayerChannelClosedReq::class, playerChannelClosedReqHandler)
-    }
-    val protobufDispatcher = MessageDispatcher(protobufHandlers)
+    val protobufDispatcher = GeneratedPlayerNodeDispatchers.PROTOBUF
 
     val configChangeDispatcher = ConfigChangeDispatcher<PlayerActor>(
         listOf(playerActivityConfigChangeHandler),
     )
 
-    private val internalHandlers = PlayerMessageHandlerRegistry<Any>().apply {
-        register(ConfigChangedEvent::class, configChangedEventHandler)
-        register(PlayerLoginEvent::class, playerLoginEventHandler)
-        register(PlayerCreateEvent::class, playerCreateEventHandler)
-    }
-    val internalDispatcher = MessageDispatcher(internalHandlers)
+    val messageCatalog: MessageCatalog
+        get() = GeneratedPlayerMessageCatalog
+    val internalDispatcher = GeneratedPlayerNodeDispatchers.INTERNAL
 
     init {
         val patchableServices = PatchableServiceRegistry().apply {

@@ -12,11 +12,10 @@ import com.mikai233.common.message.ClientProtobuf
 import com.mikai233.common.message.StopChannel
 import com.mikai233.common.message.ChannelExpired
 import com.mikai233.common.message.ChannelAuthorized
+import com.mikai233.common.message.catalog.MessageCatalog
 import com.mikai233.common.rpc.GameRpcProtocol
-import com.mikai233.gate.handler.message.broadcast.PlayerBroadcastEnvelopeHandler
-import com.mikai233.gate.handler.message.channel.SubscribeTopicHandler
-import com.mikai233.gate.handler.message.channel.UnsubscribeTopicHandler
-import com.mikai233.gate.handler.protocol.system.PingReqHandler
+import com.mikai233.gate.generated.GeneratedGateMessageCatalog
+import com.mikai233.gate.generated.GeneratedGateNodeDispatchers
 import com.mikai233.protocol.ProtoRpcBroadcast.BroadcastEnvelope
 import com.mikai233.protocol.ProtoRpcWorld.SubscribeTopicReq
 import com.mikai233.protocol.ProtoRpcWorld.UnsubscribeTopicReq
@@ -26,7 +25,6 @@ import io.github.realmlabs.asteria.core.NodeState
 import io.github.realmlabs.asteria.core.RoleKey
 import io.github.realmlabs.asteria.core.ServiceRegistry
 import io.github.realmlabs.asteria.cluster.pekko.extractor
-import io.github.realmlabs.asteria.message.MessageDispatcher
 import com.mikai233.protocol.ProtoSystem.PingReq
 import org.apache.pekko.actor.ActorRef
 import java.net.InetSocketAddress
@@ -56,22 +54,14 @@ class GateNode(
     val worldSharding: ActorRef
         get() = entityShard(GameEntityKinds.WorldActor)
 
-    private val pingReqHandler = PingReqHandler()
-    private val playerBroadcastEnvelopeHandler = PlayerBroadcastEnvelopeHandler()
-    private val subscribeTopicHandler = SubscribeTopicHandler()
-    private val unsubscribeTopicHandler = UnsubscribeTopicHandler()
-
-    private val protobufHandlers = ChannelMessageHandlerRegistry<GeneratedMessage>().apply {
-        register(PingReq::class, pingReqHandler)
-        register(PlayerBroadcastEnvelope::class, playerBroadcastEnvelopeHandler)
-        register(SubscribeTopicReq::class, subscribeTopicHandler)
-        register(UnsubscribeTopicReq::class, unsubscribeTopicHandler)
-    }
-    val protobufDispatcher = MessageDispatcher(protobufHandlers)
+    val protobufDispatcher = GeneratedGateNodeDispatchers.PROTOBUF
 
     val protocolCodec = GateProtocolCodec()
 
     val gatewayRouter: GateGatewayRouter by lazy { GateGatewayRouter(this) }
+
+    val messageCatalog: MessageCatalog
+        get() = GeneratedGateMessageCatalog
 
     override suspend fun launch() {
         clusterNode.launch(
