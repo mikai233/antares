@@ -1,8 +1,6 @@
 package com.mikai233.common.test
 
 import com.mikai233.common.message.Message
-import com.mikai233.common.message.ActorHandlerContext
-import com.mikai233.common.message.dispatchActor
 import com.mikai233.common.test.msg.HandlerCtx
 import com.mikai233.common.test.msg.MessageHandlerA
 import com.mikai233.common.test.msg.TestMessageA
@@ -11,8 +9,10 @@ import io.github.realmlabs.asteria.core.NodeRuntime
 import io.github.realmlabs.asteria.core.NodeState
 import io.github.realmlabs.asteria.core.RoleKey
 import io.github.realmlabs.asteria.core.ServiceRegistry
+import io.github.realmlabs.asteria.message.ActorHandlerContext
 import io.github.realmlabs.asteria.message.MessageDispatcher
 import io.github.realmlabs.asteria.message.PatchableMessageHandlerRegistry
+import io.github.realmlabs.asteria.message.dispatchActor
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

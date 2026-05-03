@@ -4,16 +4,15 @@ import com.mikai233.common.annotation.AllOpen
 import com.mikai233.common.event.PlayerLoginEvent
 import com.mikai233.common.extension.logger
 import com.mikai233.common.extension.tryCatch
-import com.mikai233.common.message.ActorHandlerContext
-import com.mikai233.player.PlayerActor
+import com.mikai233.player.PlayerHandlerContext
+import com.mikai233.player.PlayerMessageHandler
 import com.mikai233.player.service.playerService
-import io.github.realmlabs.asteria.message.MessageHandler
 
 @AllOpen
-class PlayerLoginEventHandler : MessageHandler<ActorHandlerContext<PlayerActor>, PlayerLoginEvent> {
+class PlayerLoginEventHandler : PlayerMessageHandler<PlayerLoginEvent> {
     private val logger = logger()
 
-    override fun handle(context: ActorHandlerContext<PlayerActor>, message: PlayerLoginEvent) {
+    override fun handle(context: PlayerHandlerContext, message: PlayerLoginEvent) {
         val actor = context.actor
         tryCatch(logger) { playerService.onGameConfigUpdated(actor) }
     }

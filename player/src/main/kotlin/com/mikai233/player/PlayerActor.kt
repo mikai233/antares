@@ -5,7 +5,6 @@ import com.mikai233.common.core.system
 import com.mikai233.common.event.GameConfigUpdateEvent
 import com.mikai233.common.extension.ask
 import com.mikai233.common.extension.tell
-import com.mikai233.common.message.dispatchActor
 import com.mikai233.common.message.player.*
 import com.mikai233.protocol.ProtoLogin
 import com.mikai233.protocol.ProtoRpc.ChannelExpiredReq
@@ -14,6 +13,7 @@ import com.mikai233.common.event.GameConfigUpdatedEvent
 import com.mikai233.common.event.PlayerCreateEvent
 import com.mikai233.common.event.PlayerLoginEvent
 import io.github.realmlabs.asteria.actor.ActorTimerSupport
+import io.github.realmlabs.asteria.message.dispatchActor
 import io.github.realmlabs.asteria.script.pekko.ScriptableAsteriaActor
 import org.apache.pekko.actor.Props
 import org.apache.pekko.actor.ReceiveTimeout

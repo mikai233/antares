@@ -10,7 +10,6 @@ import com.mikai233.common.core.*
 import com.mikai233.common.event.GameConfigUpdateEvent
 import com.mikai233.common.event.GameConfigUpdatedEvent
 import com.mikai233.common.event.WorldActiveEvent
-import com.mikai233.common.message.ActorHandlerContext
 import com.mikai233.common.message.Message
 import com.mikai233.common.message.world.HandoffWorld
 import com.mikai233.common.rpc.GameRpcProtocolDefinition
@@ -29,7 +28,6 @@ import io.github.realmlabs.asteria.cluster.pekko.allocationStrategy
 import io.github.realmlabs.asteria.cluster.pekko.extractor
 import io.github.realmlabs.asteria.id.IdGenerator
 import io.github.realmlabs.asteria.message.MessageDispatcher
-import io.github.realmlabs.asteria.message.PatchableMessageHandlerRegistry
 import com.mikai233.world.handler.event.GameConfigUpdateEventHandler
 import com.mikai233.world.handler.event.GameConfigUpdatedEventHandler
 import com.mikai233.world.handler.event.WorldActiveEventHandler
@@ -81,7 +79,7 @@ class WorldNode(
     private val wakeupWorldReqHandler = WakeupWorldReqHandler()
     private val gmReqHandler = GmReqHandler(testBroadcastHandler)
 
-    private val protobufHandlers = PatchableMessageHandlerRegistry<ActorHandlerContext<WorldActor>, GeneratedMessage>().apply {
+    private val protobufHandlers = WorldMessageHandlerRegistry<GeneratedMessage>().apply {
         register(GmReq::class, gmReqHandler)
         register(LoginReq::class, playerLoginHandler)
         register(WorldWakeupReq::class, wakeupWorldReqHandler)
@@ -90,7 +88,7 @@ class WorldNode(
     }
     val protobufDispatcher = MessageDispatcher(protobufHandlers)
 
-    private val internalHandlers = PatchableMessageHandlerRegistry<ActorHandlerContext<WorldActor>, Message>().apply {
+    private val internalHandlers = WorldMessageHandlerRegistry<Message>().apply {
         register(WorldActiveEvent::class, worldActiveEventHandler)
         register(GameConfigUpdateEvent::class, gameConfigUpdateEventHandler)
         register(GameConfigUpdatedEvent::class, gameConfigUpdatedEventHandler)

@@ -13,7 +13,6 @@ import com.mikai233.common.extension.invokeOnTargetMode
 import com.mikai233.common.extension.tell
 import com.mikai233.common.formatMessage
 import com.mikai233.common.message.*
-import com.mikai233.common.message.dispatchActor
 import com.mikai233.protocol.CSEnum
 import com.mikai233.protocol.ProtoLogin
 import com.mikai233.protocol.ProtoLogin.LoginReq
@@ -25,6 +24,7 @@ import com.mikai233.protocol.ProtoSystem.GmReq
 import com.mikai233.protocol.connectionExpiredNotify
 import io.github.realmlabs.asteria.gateway.GatewaySession
 import io.github.realmlabs.asteria.gateway.GatewaySessionContext
+import io.github.realmlabs.asteria.message.dispatchActor
 import io.github.realmlabs.asteria.script.pekko.ScriptableAsteriaActor
 import org.apache.pekko.actor.Props
 import org.apache.pekko.actor.ReceiveTimeout
