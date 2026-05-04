@@ -22,8 +22,9 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
         val dataDir = generatedDataDir.get().asFile
         val outDir = outputDir.get().asFile.apply { mkdirs() }
 
-        val gameTablesGen = File(javaDir, "GameTablesGen.java")
-        require(gameTablesGen.isFile) { "generated Luban tables entry not found: $gameTablesGen" }
+        val gameTablesGen = javaDir.walkTopDown()
+            .firstOrNull { it.isFile && it.name == "GameTablesGen.java" }
+            ?: error("generated Luban tables entry not found under $javaDir")
 
         val tableEntries = parseTableEntries(gameTablesGen.readText())
         require(tableEntries.isNotEmpty()) { "no tables found in $gameTablesGen" }
@@ -51,7 +52,7 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
             val fieldName = match.groupValues[1]
             val tableClassFqcn = match.groupValues[2]
             val delegateGetterName = "get${fieldName.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString() }}"
-            val tableFile = File(generatedJavaDir.get().asFile, tableClassFqcn.removePrefix("com.mikai233.common.config.luban.gen.").replace('.', '/') + ".java")
+            val tableFile = File(generatedJavaDir.get().asFile, tableClassFqcn.replace('.', '/') + ".java")
             require(tableFile.isFile) { "generated Luban table source not found: $tableFile" }
             val tableSource = tableFile.readText()
             val mapRegex = Regex("""HashMap<([^,>]+),\s*([^>]+)>\s+_dataMap""")

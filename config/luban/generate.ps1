@@ -44,6 +44,22 @@ $OutputCorelibDir = Join-Path $OutputCodeDir "luban"
 New-Item -ItemType Directory -Force -Path $OutputCorelibDir | Out-Null
 Copy-Item (Join-Path $JavaCorelib "*.java") $OutputCorelibDir -Force
 
+Get-ChildItem -Path $OutputCodeDir -Recurse -Filter *.java |
+    Where-Object { $_.FullName -notlike "$OutputCorelibDir*" } |
+    ForEach-Object {
+        $packageLine = Select-String -Path $_.FullName -Pattern '^package\s+(.+);' | Select-Object -First 1
+        if (-not $packageLine) {
+            return
+        }
+        $packageName = $packageLine.Matches[0].Groups[1].Value
+        $targetDir = Join-Path $OutputCodeDir ($packageName -replace '\.', '\')
+        New-Item -ItemType Directory -Force -Path $targetDir | Out-Null
+        $targetFile = Join-Path $targetDir $_.Name
+        if ($_.FullName -ne $targetFile) {
+            Move-Item $_.FullName $targetFile -Force
+        }
+    }
+
 Write-Host "Generated Luban Java code into $OutputCodeDir"
 Write-Host "Generated Luban binary data into $OutputDataDir"
 Write-Host "Using Luban Excel data dir $DataDir"

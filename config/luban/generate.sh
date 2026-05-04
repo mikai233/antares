@@ -41,6 +41,21 @@ dotnet "$LUBAN_DLL" \
 mkdir -p "$OUTPUT_CODE_DIR/luban"
 cp "$JAVA_CORELIB"/*.java "$OUTPUT_CODE_DIR/luban/"
 
+while IFS= read -r -d '' file; do
+  package_line="$(grep -m1 '^package ' "$file" || true)"
+  if [ -z "$package_line" ]; then
+    continue
+  fi
+  package_name="${package_line#package }"
+  package_name="${package_name%;}"
+  target_dir="$OUTPUT_CODE_DIR/${package_name//./\/}"
+  mkdir -p "$target_dir"
+  target_file="$target_dir/$(basename "$file")"
+  if [ "$file" != "$target_file" ]; then
+    mv "$file" "$target_file"
+  fi
+done < <(find "$OUTPUT_CODE_DIR" -type f -name '*.java' ! -path "$OUTPUT_CODE_DIR/luban/*" -print0)
+
 echo "Generated Luban Java code into $OUTPUT_CODE_DIR"
 echo "Generated Luban binary data into $OUTPUT_DATA_DIR"
 echo "Using Luban Excel data dir $DATA_DIR"
