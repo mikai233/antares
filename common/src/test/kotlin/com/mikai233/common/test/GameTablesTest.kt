@@ -1,6 +1,7 @@
 package com.mikai233.common.test
 
 import com.mikai233.common.config.luban.GameConfigSnapshotLoader
+import com.mikai233.common.config.luban.GameConfigQueries
 import com.mikai233.common.config.luban.GameTables
 import com.mikai233.common.config.luban.ActivityRow
 import com.mikai233.common.config.luban.DroppoolRow
@@ -29,6 +30,7 @@ class GameTablesTest {
             ),
         ).load()
         val tables = snapshot.requireComponent<GameTables>()
+        val queries = snapshot.requireComponent<GameConfigQueries>()
 
         val itemTable = snapshot.requireTable<Int, ItemRow>(ConfigTableName("items"))
         val monsterTable = snapshot.requireTable<Int, MonsterRow>(ConfigTableName("monsters"))
@@ -55,6 +57,8 @@ class GameTablesTest {
         assertEquals("killCount=10,monsterId=101", activity.conditionSummary)
         assertEquals("1001x500,3001x1", activity.rewardSummary)
         assertEquals(1, tables.getTbItem().byType(com.mikai233.common.config.luban.gen.item.ItemType.Equipment).size)
+        assertEquals(1, queries.itemsByType[com.mikai233.common.config.luban.gen.item.ItemType.Equipment]?.size)
+        assertEquals(1, queries.monstersBySceneId[1]?.size)
         assertNotNull(tables.getTbActivity().get("daily_login"))
     }
 }

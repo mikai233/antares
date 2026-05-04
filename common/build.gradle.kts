@@ -60,6 +60,10 @@ tasks.test {
     systemProperty("common.buildDir", layout.buildDirectory.get().asFile.absolutePath)
 }
 
+tasks.matching { it.name in setOf("kspKotlin", "compileKotlin", "classes") }.configureEach {
+    mustRunAfter(exportLubanConfig, generateLubanBridge)
+}
+
 val exportLubanConfig by tasks.registering(Exec::class) {
     group = "luban"
     description = "Export Luban Java code and binary data from Excel workbooks."
@@ -99,6 +103,26 @@ tasks.register("refreshLubanConfig") {
     description = "Regenerate Luban exports and project-side table adapters."
     // Keep Luban export/bridge generation off the normal compile path; config schema changes are infrequent.
     dependsOn(generateLubanBridge)
+}
+
+tasks.register<JavaExec>("validateLubanConfigTables") {
+    group = "luban"
+    description = "Validate exported Luban binary tables and custom config rules."
+    dependsOn(exportLubanConfig, "classes")
+    mainClass = "com.mikai233.common.config.luban.GameConfigValidationCliKt"
+    classpath = sourceSets["main"].runtimeClasspath
+    args("tables", layout.buildDirectory.dir("generated/luban/resources/luban").get().asFile.absolutePath)
+    systemProperty("common.buildDir", layout.buildDirectory.get().asFile.absolutePath)
+}
+
+tasks.register<JavaExec>("validateLubanConfigQueries") {
+    group = "luban"
+    description = "Load exported Luban binaries and verify derived GameConfigQueries can be built."
+    dependsOn("refreshLubanConfig", "classes")
+    mainClass = "com.mikai233.common.config.luban.GameConfigValidationCliKt"
+    classpath = sourceSets["main"].runtimeClasspath
+    args("queries", layout.buildDirectory.dir("generated/luban/resources/luban").get().asFile.absolutePath)
+    systemProperty("common.buildDir", layout.buildDirectory.get().asFile.absolutePath)
 }
 
 tasks.register<Zip>("packageLubanConfigBundle") {
