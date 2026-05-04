@@ -22,7 +22,11 @@ class ActorConfigSyncMem(
 
     override suspend fun load() {
         val loaded: ActorConfigSyncState? = mongoDbProvider().reactiveTemplate
-            .findOne(query(where("_id").`is`(documentId())), ActorConfigSyncState::class.java, ActorConfigSyncStateMongo.COLLECTION)
+            .findOne(
+                query(where("_id").`is`(documentId())),
+                ActorConfigSyncState::class.java,
+                ActorConfigSyncStateMongo.COLLECTION,
+            )
             .awaitSingleOrNull()
         if (loaded != null) {
             state = attachLoaded(loaded)

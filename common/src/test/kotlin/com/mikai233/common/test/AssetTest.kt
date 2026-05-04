@@ -75,13 +75,17 @@ class AssetTest {
         assertEquals(ResourceAsset(10, 20), selectedIds.reduce<ResourceAsset>(10))
         assertNull(selectedIds.reduce<ItemAsset>(2))
 
-        val (resources, nonResources) = base.partition { it.type == com.mikai233.common.assets.AssetType.Resource }
+        val (resources, nonResources) = base.partition {
+            it.type == com.mikai233.common.assets.AssetType.Resource
+        }
         assertEquals(ResourceAsset(10, 20), resources.reduce<ResourceAsset>(10))
         assertNull(resources.reduce<ItemAsset>(1))
         assertEquals(ItemAsset(1, 3), nonResources.reduce<ItemAsset>(1))
         assertEquals(ItemAsset(2, 7), nonResources.reduce<ItemAsset>(2))
 
-        val scaledItems = base.scaleWhere(2.0, RoundingStrategy.Floor) { it.type == com.mikai233.common.assets.AssetType.Item }
+        val scaledItems = base.scaleWhere(2.0, RoundingStrategy.Floor) {
+            it.type == com.mikai233.common.assets.AssetType.Item
+        }
         assertEquals(ItemAsset(1, 6), scaledItems.reduce<ItemAsset>(1))
         assertEquals(ItemAsset(2, 14), scaledItems.reduce<ItemAsset>(2))
         assertEquals(ResourceAsset(10, 20), scaledItems.reduce<ResourceAsset>(10))

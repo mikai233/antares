@@ -64,17 +64,20 @@ class ConfigChangeHandlerProcessor(
             }
             val zeroArgCtor = declaration.primaryConstructor?.parameters?.isEmpty() ?: true
             check(zeroArgCtor) {
-                "config change handler must have a zero-arg primary constructor: ${declaration.qualifiedName?.asString()}"
+                "config change handler must have a zero-arg primary constructor: " +
+                    declaration.qualifiedName?.asString()
             }
             val implemented = declaration.superTypes
                 .map { it.resolve() }
                 .firstOrNull { it.declaration.qualifiedName?.asString() == targetInterface.qualifiedName?.asString() }
             checkNotNull(implemented) {
-                "@GameConfigChangeHandler class must implement ConfigChangeHandler: ${declaration.qualifiedName?.asString()}"
+                "@GameConfigChangeHandler class must implement ConfigChangeHandler: " +
+                    declaration.qualifiedName?.asString()
             }
             val typeArg = implemented.arguments.singleOrNull()?.type?.resolve()
             check(typeArg?.declaration?.qualifiedName?.asString() == actorType.qualifiedName?.asString()) {
-                "config change handler ${declaration.qualifiedName?.asString()} must implement ConfigChangeHandler<$actorTypeName>"
+                "config change handler ${declaration.qualifiedName?.asString()} must " +
+                    "implement ConfigChangeHandler<$actorTypeName>"
             }
         }
     }

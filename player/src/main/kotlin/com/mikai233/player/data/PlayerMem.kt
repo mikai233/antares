@@ -12,7 +12,11 @@ import org.springframework.data.mongodb.core.query.Query.query
 class PlayerMem(
     private val playerId: Long,
     private val mongoDbProvider: () -> MongoDB,
-) : AsteriaTrackedMemData<Player, PlayerTracked>(PlayerMongo.COLLECTION, { mongoDbProvider().database }, PlayerMongo::wrap) {
+) : AsteriaTrackedMemData<Player, PlayerTracked>(
+    PlayerMongo.COLLECTION,
+    { mongoDbProvider().database },
+    PlayerMongo::wrap,
+) {
     lateinit var player: PlayerTracked
         private set
 

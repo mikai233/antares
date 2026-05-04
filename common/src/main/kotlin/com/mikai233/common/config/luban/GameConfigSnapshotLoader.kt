@@ -9,7 +9,8 @@ import io.github.realmlabs.asteria.config.DefaultConfigSnapshot
 
 class GameConfigSnapshotLoader(
     private val delegate: ConfigLoader,
-    private val componentBuilders: List<GameConfigDerivedComponentBuilder> = GameConfigDerivedComponents.defaultBuilders,
+    private val componentBuilders: List<GameConfigDerivedComponentBuilder> =
+        GameConfigDerivedComponents.defaultBuilders,
     private val validators: List<GameConfigValidator> = GameConfigValidators.defaultValidators,
 ) : ConfigLoader {
     override suspend fun load(): ConfigSnapshot {

@@ -8,7 +8,11 @@ import com.mikai233.world.WorldActor
 
 @AllOpen
 class TestBroadcastHandler {
-    fun handle(actor: WorldActor, session: PlayerSession, params: List<String>) {
+    fun handle(
+        actor: WorldActor,
+        @Suppress("UNUSED_PARAMETER") session: PlayerSession,
+        @Suppress("UNUSED_PARAMETER") params: List<String>,
+    ) {
         actor.broadcast(TestResp.getDefaultInstance(), Topic.ofWorld(actor.worldId), emptySet(), emptySet())
     }
 }

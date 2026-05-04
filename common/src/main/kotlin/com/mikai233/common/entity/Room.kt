@@ -36,6 +36,7 @@ data class Room(
 
         @JvmStatic
         @PersistenceCreator
+        @Suppress("LongParameterList")
         fun create(
             id: Int?,
             name: String?,

@@ -131,7 +131,8 @@ class EntityTest {
             assertEquals(
                 constructorParameter.type.withNullability(true),
                 factoryParameter.type,
-                "Class[$entityName] @PersistenceCreator parameter[${factoryParameter.name}] must be the nullable version of constructor parameter type",
+                "Class[$entityName] @PersistenceCreator parameter[${factoryParameter.name}] " +
+                    "must be the nullable version of constructor parameter type",
             )
         }
     }
