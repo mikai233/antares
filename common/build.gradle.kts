@@ -10,12 +10,20 @@ val lubanBundleOutputDirProvider = providers.gradleProperty("lubanBundleOutputDi
     .map { layout.projectDirectory.dir(it) }
     .orElse(layout.buildDirectory.dir("generated/luban/bundles"))
 
-sourceSets.main {
-    java.srcDir("src/generated/luban/java")
-    kotlin.srcDir("src/generated/luban/kotlin")
-    // Keep Luban binary exports out of the runtime classpath; runtime loads config through the
-    // project's configured publication/fetch flow rather than source-tree artifacts.
+kotlin {
+    sourceSets.main {
+        kotlin.srcDir("src/generated/luban/kotlin")
+    }
 }
+
+java {
+    sourceSets.main {
+        java.srcDir("src/generated/luban/java")
+    }
+}
+
+// Keep Luban binary exports out of the runtime classpath; runtime loads config through the
+// project's configured publication/fetch flow rather than source-tree artifacts.
 
 dependencies {
     testImplementation(platform(libTest.junit.bom))
@@ -53,6 +61,7 @@ dependencies {
 }
 
 tasks.test {
+    dependsOn(exportLubanConfig)
     useJUnitPlatform()
     systemProperty("common.buildDir", layout.buildDirectory.get().asFile.absolutePath)
 }

@@ -62,9 +62,7 @@ class ServerCodecRoundTripTest {
         inboundChannel.attr(CIPHER_KEY).set(cipher)
 
         val messages = listOf(
-            testNotify {
-                data = "round-trip"
-            },
+            ProtoTest.TestResp.getDefaultInstance(),
             loginResp {
                 result = ProtoLogin.LoginResult.Success
                 data = playerData {
