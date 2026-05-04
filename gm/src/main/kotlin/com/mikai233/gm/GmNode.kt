@@ -55,12 +55,12 @@ class GmNode(
             entity<Long>(GameEntityKinds.PlayerActor) {
                 role(GameRoles.Player)
                 shardCount = PLAYER_SHARD_NUM
-                extractor(GameRpcProtocol.playerShardExtractor)
+                extractor(GameRpcProtocol.playerShardExtractor(this@GmNode))
             }
             entity<Long>(GameEntityKinds.WorldActor) {
                 role(GameRoles.World)
                 shardCount = WORLD_SHARD_NUM
-                extractor(GameRpcProtocol.worldShardExtractor)
+                extractor(GameRpcProtocol.worldShardExtractor(this@GmNode))
             }
             singleton(GameSingletons.Worker) {
                 role(GameRoles.Global)
