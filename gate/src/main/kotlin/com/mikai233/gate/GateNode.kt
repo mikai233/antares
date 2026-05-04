@@ -12,7 +12,6 @@ import com.mikai233.common.message.ClientProtobuf
 import com.mikai233.common.message.StopChannel
 import com.mikai233.common.message.ChannelExpired
 import com.mikai233.common.message.ChannelAuthorized
-import com.mikai233.common.message.catalog.MessageCatalog
 import com.mikai233.common.rpc.GameRpcProtocol
 import com.mikai233.gate.generated.GeneratedGateMessageCatalog
 import com.mikai233.gate.generated.GeneratedGateNodeDispatchers
@@ -25,6 +24,7 @@ import io.github.realmlabs.asteria.core.NodeState
 import io.github.realmlabs.asteria.core.RoleKey
 import io.github.realmlabs.asteria.core.ServiceRegistry
 import io.github.realmlabs.asteria.cluster.pekko.extractor
+import io.github.realmlabs.asteria.message.MessageCatalog
 import com.mikai233.protocol.ProtoSystem.PingReq
 import org.apache.pekko.actor.ActorRef
 import java.net.InetSocketAddress

@@ -1,15 +1,15 @@
 package com.mikai233.world.handler.message.world
 
 import com.mikai233.common.annotation.AllOpen
-import com.mikai233.common.annotation.AsteriaMessageHandler
-import com.mikai233.common.message.catalog.CatalogDispatcherKind
+import com.mikai233.common.message.DispatcherKeys
 import com.mikai233.protocol.ProtoRpcWorld.CrossWorldUnsubscribeTopicReq
 import com.mikai233.protocol.ProtoRpcWorld.UnsubscribeTopicReq
 import com.mikai233.world.WorldHandlerContext
 import com.mikai233.world.WorldMessageHandler
+import io.github.realmlabs.asteria.message.AsteriaMessageHandler
 
 @AllOpen
-@AsteriaMessageHandler(CatalogDispatcherKind.PROTOBUF)
+@AsteriaMessageHandler(dispatcher = DispatcherKeys.PROTOBUF)
 class UnsubscribeTopicCrossWorldHandler : WorldMessageHandler<CrossWorldUnsubscribeTopicReq> {
     override fun handle(context: WorldHandlerContext, message: CrossWorldUnsubscribeTopicReq) {
         val actor = context.actor

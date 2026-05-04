@@ -1,6 +1,11 @@
 plugins {
     groovy
-    alias(libTool.plugins.ksp)
+    id("io.github.realm-labs.asteria.message-codegen")
+}
+
+asteriaMessageCodegen {
+    dispatcherSuperType("PROTOBUF", "com.google.protobuf.GeneratedMessage")
+    dispatcherSuperType("INTERNAL", "com.mikai233.common.message.Message")
 }
 
 dependencies {
@@ -22,8 +27,8 @@ dependencies {
     implementation(libTool.guava)
     implementation(libTool.spring.data.mongodb)
     implementation(project(":common"))
-    ksp(project(":message-ksp"))
     implementation(project(":proto"))
+    ksp(project(":message-ksp"))
 }
 
 tasks.test {

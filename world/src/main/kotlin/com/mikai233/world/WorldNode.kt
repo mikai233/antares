@@ -8,8 +8,6 @@ import com.mikai233.common.config.ConfigChangeDispatcher
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.*
 import com.mikai233.common.event.WorldActiveEvent
-import com.mikai233.common.message.Message
-import com.mikai233.common.message.catalog.MessageCatalog
 import com.mikai233.common.message.world.HandoffWorld
 import com.mikai233.common.rpc.GameRpcProtocol
 import com.mikai233.world.generated.GeneratedWorldMessageCatalog
@@ -23,6 +21,7 @@ import io.github.realmlabs.asteria.cluster.pekko.actor
 import io.github.realmlabs.asteria.cluster.pekko.allocationStrategy
 import io.github.realmlabs.asteria.cluster.pekko.extractor
 import io.github.realmlabs.asteria.id.IdGenerator
+import io.github.realmlabs.asteria.message.MessageCatalog
 import io.github.realmlabs.asteria.patch.PatchableServiceRegistry
 import com.mikai233.world.service.WorldService
 import org.apache.pekko.actor.ActorRef

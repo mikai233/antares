@@ -1,6 +1,6 @@
 plugins {
     groovy
-    alias(libTool.plugins.ksp)
+    id("io.github.realm-labs.asteria.message-codegen")
 }
 
 val generateGatewayRoutingTable by tasks.registering(GenerateGatewayRoutingTask::class) {
@@ -17,6 +17,10 @@ kotlin {
     sourceSets.main {
         kotlin.srcDir(layout.buildDirectory.dir("generated/source/gateway/main/kotlin"))
     }
+}
+
+asteriaMessageCodegen {
+    dispatcherSuperType("PROTOBUF", "com.google.protobuf.GeneratedMessage")
 }
 
 dependencies {
@@ -39,8 +43,8 @@ dependencies {
     implementation(libTool.bundles.curator)
     implementation(libTool.jcommander)
     implementation(project(":common"))
-    ksp(project(":message-ksp"))
     implementation(project(":proto"))
+    ksp(project(":message-ksp"))
 }
 
 tasks.compileKotlin {

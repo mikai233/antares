@@ -1,10 +1,11 @@
 package com.mikai233.player
 
 import com.google.protobuf.GeneratedMessage
-import io.github.realmlabs.asteria.config.ConfigChangedEvent
 import com.mikai233.common.core.system
+import com.mikai233.common.event.GameConfigChangedEvent
 import com.mikai233.common.extension.ask
 import com.mikai233.common.extension.tell
+import com.mikai233.common.message.Message
 import com.mikai233.common.message.player.*
 import com.mikai233.protocol.ProtoLogin
 import com.mikai233.protocol.ProtoRpcGate.ChannelExpiredReq
@@ -44,7 +45,7 @@ class PlayerActor(val node: PlayerNode) : ScriptableAsteriaActor<PlayerNode>(nod
     override fun preStart() {
         super.preStart()
         timers.start()
-        node.system.eventStream.subscribe(self, ConfigChangedEvent::class.java)
+        node.system.eventStream.subscribe(self, GameConfigChangedEvent::class.java)
         lifecycle.startLoading()
         logger.info("{} started", self)
     }
@@ -73,7 +74,7 @@ class PlayerActor(val node: PlayerNode) : ScriptableAsteriaActor<PlayerNode>(nod
             .match(PlayerTick::class.java) { manager.tick() }
             .match(GeneratedMessage::class.java) { handleProtobufMessage(it) }
             .match(ReceiveTimeout::class.java) { if (!isOnline()) passivate() }
-            .match(ConfigChangedEvent::class.java) { handlePlayerMessage(it) }
+            .match(GameConfigChangedEvent::class.java) { handlePlayerMessage(it) }
             .match(PlayerLoginEvent::class.java) { handlePlayerMessage(it) }
             .match(PlayerCreateEvent::class.java) { handlePlayerMessage(it) }
             .build()
@@ -87,7 +88,7 @@ class PlayerActor(val node: PlayerNode) : ScriptableAsteriaActor<PlayerNode>(nod
         }
     }
 
-    private fun handlePlayerMessage(message: Any) {
+    private fun handlePlayerMessage(message: Message) {
         try {
             node.internalDispatcher.dispatchActor(node, this, message)
         } catch (e: Exception) {

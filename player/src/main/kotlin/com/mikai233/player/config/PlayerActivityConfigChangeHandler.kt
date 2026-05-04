@@ -3,12 +3,12 @@ package com.mikai233.player.config
 import com.mikai233.common.config.ConfigChangeHandler
 import com.mikai233.common.config.configTables
 import com.mikai233.common.config.luban.GameTables
+import com.mikai233.common.event.GameConfigChangedEvent
 import com.mikai233.common.extension.logger
 import com.mikai233.common.extension.tryCatch
 import com.mikai233.player.PlayerActor
 import com.mikai233.player.data.PlayerActivityMem
 import com.mikai233.player.data.PlayerMem
-import io.github.realmlabs.asteria.config.ConfigChangedEvent
 import io.github.realmlabs.asteria.config.ConfigSnapshot
 import io.github.realmlabs.asteria.config.ConfigTableName
 import io.github.realmlabs.asteria.config.requireComponent
@@ -18,7 +18,7 @@ class PlayerActivityConfigChangeHandler : ConfigChangeHandler<PlayerActor> {
 
     private val logger = logger()
 
-    override fun handle(actor: PlayerActor, event: ConfigChangedEvent) {
+    override fun handle(actor: PlayerActor, event: GameConfigChangedEvent) {
         tryCatch(logger) {
             reconcile(actor, event.current.requireComponent())
         }

@@ -10,7 +10,6 @@ import com.mikai233.common.core.*
 import com.mikai233.common.event.PlayerCreateEvent
 import com.mikai233.common.event.PlayerLoginEvent
 import com.mikai233.common.message.player.HandoffPlayer
-import com.mikai233.common.message.catalog.MessageCatalog
 import com.mikai233.common.rpc.GameRpcProtocol
 import com.mikai233.player.generated.GeneratedPlayerMessageCatalog
 import com.mikai233.player.generated.GeneratedPlayerNodeDispatchers
@@ -25,6 +24,7 @@ import io.github.realmlabs.asteria.cluster.pekko.actor
 import io.github.realmlabs.asteria.cluster.pekko.allocationStrategy
 import io.github.realmlabs.asteria.cluster.pekko.extractor
 import io.github.realmlabs.asteria.id.IdGenerator
+import io.github.realmlabs.asteria.message.MessageCatalog
 import io.github.realmlabs.asteria.patch.PatchableServiceRegistry
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.cluster.sharding.ShardCoordinator

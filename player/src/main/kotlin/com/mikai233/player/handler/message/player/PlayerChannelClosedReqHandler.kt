@@ -1,14 +1,14 @@
 package com.mikai233.player.handler.message.player
 
 import com.mikai233.common.annotation.AllOpen
-import com.mikai233.common.annotation.AsteriaMessageHandler
-import com.mikai233.common.message.catalog.CatalogDispatcherKind
+import com.mikai233.common.message.DispatcherKeys
 import com.mikai233.player.PlayerHandlerContext
 import com.mikai233.player.PlayerMessageHandler
 import com.mikai233.protocol.ProtoRpcPlayer.PlayerChannelClosedReq
+import io.github.realmlabs.asteria.message.AsteriaMessageHandler
 
 @AllOpen
-@AsteriaMessageHandler(CatalogDispatcherKind.PROTOBUF)
+@AsteriaMessageHandler(dispatcher = DispatcherKeys.PROTOBUF)
 class PlayerChannelClosedReqHandler : PlayerMessageHandler<PlayerChannelClosedReq> {
     override fun handle(context: PlayerHandlerContext, message: PlayerChannelClosedReq) {
         context.actor.clearChannelActor()
