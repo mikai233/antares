@@ -8,8 +8,9 @@ The flow is:
 2. Run `config/luban/generate.sh`.
 3. Luban generates:
    - Java model/table code into `common/src/generated/luban/java`
-   - binary table files into `common/src/generated/luban/resources/luban`
-4. The project loads those generated `.bytes` files at runtime and during config publication.
+   - binary table files into `common/build/generated/luban/resources/luban`
+4. The project checks in the generated Java/Kotlin bridge sources. The generated `.bytes`
+   files are local build artifacts used by tests and publication tooling, not runtime source files.
 
 The generator script expects an existing Luban examples checkout because it reuses the official tool and Java corelib:
 

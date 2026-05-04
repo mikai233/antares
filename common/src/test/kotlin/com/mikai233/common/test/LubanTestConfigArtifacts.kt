@@ -59,10 +59,10 @@ object LubanTestConfigArtifacts {
     }
 
     private fun requireGeneratedDataDir(): Path {
-        val commonProjectDir = checkNotNull(System.getProperty("common.projectDir")) {
-            "Missing test system property: common.projectDir"
+        val commonBuildDir = checkNotNull(System.getProperty("common.buildDir")) {
+            "Missing test system property: common.buildDir"
         }
-        val dir = Path.of(commonProjectDir, "src", "generated", "luban", "resources", "luban")
+        val dir = Path.of(commonBuildDir, "generated", "luban", "resources", "luban")
         check(dir.exists()) {
             "Generated Luban data directory not found: $dir. Run :common:refreshLubanConfig first."
         }

@@ -57,7 +57,7 @@ object LubanPublishBundleArtifacts {
     private fun requireGeneratedDataDir(): Path {
         val dir = requireProjectRoot()
             .resolve("common")
-            .resolve("src")
+            .resolve("build")
             .resolve("generated")
             .resolve("luban")
             .resolve("resources")

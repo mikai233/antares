@@ -49,7 +49,7 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
-    systemProperty("common.projectDir", projectDir.absolutePath)
+    systemProperty("common.buildDir", layout.buildDirectory.get().asFile.absolutePath)
 }
 
 val exportLubanConfig by tasks.registering(Exec::class) {
@@ -62,7 +62,7 @@ val exportLubanConfig by tasks.registering(Exec::class) {
     inputs.file(rootDir.resolve("config/luban/generate.sh"))
     inputs.file(rootDir.resolve("config/luban/scripts/generate_demo_excels.py"))
     outputs.dir(layout.projectDirectory.dir("src/generated/luban/java"))
-    outputs.dir(layout.projectDirectory.dir("src/generated/luban/resources/luban"))
+    outputs.dir(layout.buildDirectory.dir("generated/luban/resources/luban"))
 }
 
 val generateLubanBridge by tasks.registering(GenerateLubanBridgeTask::class) {
@@ -70,7 +70,7 @@ val generateLubanBridge by tasks.registering(GenerateLubanBridgeTask::class) {
     description = "Generate Kotlin table adapters and Luban artifact metadata from Luban Java outputs."
     dependsOn(exportLubanConfig)
     generatedJavaDir.set(layout.projectDirectory.dir("src/generated/luban/java"))
-    generatedDataDir.set(layout.projectDirectory.dir("src/generated/luban/resources/luban"))
+    generatedDataDir.set(layout.buildDirectory.dir("generated/luban/resources/luban"))
     outputDir.set(layout.projectDirectory.dir("src/generated/luban/kotlin/com/mikai233/common/config/luban"))
 }
 
