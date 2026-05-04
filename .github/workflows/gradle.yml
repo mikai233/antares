@@ -28,6 +28,15 @@ jobs:
           java-version: 21
           cache: gradle
 
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Prepare Luban examples
+        run: |
+          git clone --depth 1 https://github.com/focus-creative-games/luban_examples /tmp/luban_examples
+
       # 🧰 Grant execution permission for Gradle Wrapper
       - name: Make Gradle wrapper executable
         run: chmod +x gradlew
