@@ -1,15 +1,13 @@
 package com.mikai233.common.config.luban
 
 import com.mikai233.common.config.luban.gen.GameTablesGen
-import java.io.IOException
 import luban.ByteBuf
+import java.io.IOException
 
 class GameTables(
     loader: IByteBufLoader,
 ) {
-    private val delegate = GameTablesGen(
-        GameTablesGen.IByteBufLoader { file -> loader.load(file) },
-    )
+    private val delegate = GameTablesGen { file -> loader.load(file) }
 
     private val activityTable by lazy { TbActivity(delegate.getTbactivity()) }
     private val droppoolTable by lazy { TbDroppool(delegate.getTbdroppool()) }
