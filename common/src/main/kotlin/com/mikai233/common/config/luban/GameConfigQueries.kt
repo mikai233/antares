@@ -1,8 +1,6 @@
 package com.mikai233.common.config.luban
 
 import io.github.realmlabs.asteria.config.ConfigSnapshot
-import io.github.realmlabs.asteria.config.requireComponent
-
 class GameConfigQueries(
     val itemsByType: Map<Int, List<ItemRow>>,
     val monstersBySceneId: Map<Int, List<MonsterRow>>,
@@ -10,20 +8,16 @@ class GameConfigQueries(
     val dropEntriesByItemId: Map<Int, List<com.mikai233.common.config.luban.gen.game.DropEntry>>,
 ) {
     companion object {
-        fun from(tables: GameTables): GameConfigQueries {
+        fun from(snapshot: ConfigSnapshot): GameConfigQueries {
             return GameConfigQueries(
-                itemsByType = tables.getTbItem().all().groupBy { it.type },
-                monstersBySceneId = tables.getTbMonster().all().groupBy { it.sceneId },
-                activitiesByUnlockLevel = tables.getTbActivity().all().groupBy { it.unlockLevel },
-                dropEntriesByItemId = tables.getTbDroppool()
+                itemsByType = snapshot.tbItem.all().groupBy { it.type },
+                monstersBySceneId = snapshot.tbMonster.all().groupBy { it.sceneId },
+                activitiesByUnlockLevel = snapshot.tbActivity.all().groupBy { it.unlockLevel },
+                dropEntriesByItemId = snapshot.tbDroppool
                     .all()
                     .flatMap { it.entries }
                     .groupBy { it.itemId },
             )
-        }
-
-        fun from(snapshot: ConfigSnapshot): GameConfigQueries {
-            return from(snapshot.requireComponent<GameTables>())
         }
     }
 }

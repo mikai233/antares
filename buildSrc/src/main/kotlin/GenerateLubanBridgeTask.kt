@@ -51,28 +51,30 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
         return lineRegex.findAll(source).map { match ->
             val fieldName = match.groupValues[1]
             val tableClassFqcn = match.groupValues[2]
-            val delegateGetterName = "get${fieldName.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString() }}"
             val tableFile = File(generatedJavaDir.get().asFile, tableClassFqcn.replace('.', '/') + ".java")
             require(tableFile.isFile) { "generated Luban table source not found: $tableFile" }
             val tableSource = tableFile.readText()
             val mapRegex = Regex("""HashMap<([^,>]+),\s*([^>]+)>\s+_dataMap""")
             val mapMatch = requireNotNull(mapRegex.find(tableSource)) { "unable to parse data map in $tableFile" }
+            val keyFieldRegex = Regex("""_dataMap\.put\(_v\.([A-Za-z0-9_]+),\s*_v\);""")
+            val keyFieldMatch = requireNotNull(keyFieldRegex.find(tableSource)) {
+                "unable to parse key field in $tableFile"
+            }
             val keyType = mapMatch.groupValues[1].trim()
             val rowFqcn = mapMatch.groupValues[2].trim()
+            val keyField = keyFieldMatch.groupValues[1]
             val rowSimple = rowFqcn.substringAfterLast('.')
             val baseName = snakeToCamel(rowSimple)
             TableEntry(
-                delegateGetterName = delegateGetterName,
-                publicGetterName = "getTb$baseName",
+                delegatePropertyName = fieldName,
                 tableClassFqcn = tableClassFqcn,
                 rowFqcn = rowFqcn,
                 rowAlias = "${baseName}Row",
                 adapterClass = "Tb$baseName",
                 tableName = pluralize(camelToSnake(baseName)),
                 keyType = toKotlinType(keyType),
-                rowSimple = rowSimple,
-                tableField = baseName.replaceFirstChar { it.lowercase(Locale.US) } + "Table",
-                helperByType = rowSimple == "item",
+                keyField = keyField,
+                tableProperty = "tb$baseName",
             )
         }.toList()
     }
@@ -81,27 +83,17 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
         val typeAliases = entries.joinToString("\n") {
             "typealias ${it.rowAlias} = ${it.rowFqcn}"
         }
-        val fields = entries.joinToString("\n") {
-            "    private val ${it.tableField} by lazy { ${it.adapterClass}(delegate.${it.delegateGetterName}()) }"
-        }
-        val getters = entries.joinToString("\n\n") {
-            "    fun ${it.publicGetterName}(): ${it.adapterClass} = ${it.tableField}"
+        val properties = entries.joinToString("\n\n") {
+            "    val ${it.tableProperty} by lazy { ${it.adapterClass}(delegate.${it.delegatePropertyName}) }"
         }
         val adapters = entries.joinToString("\n\n") {
             buildString {
-                append("class ${it.adapterClass}(delegate: ${it.tableClassFqcn}) : GameMapConfigTable<${it.keyType}, ${it.rowAlias}>(\n")
-                append("    name = \"${it.tableName}\",\n")
+                append("class ${it.adapterClass}(delegate: ${it.tableClassFqcn}) : OrderedMapConfigTable<${it.keyType}, ${it.rowAlias}>(\n")
+                append("    name = ConfigTableName(\"${it.tableName}\"),\n")
                 append("    keyType = ${kclassLiteral(it.keyType)},\n")
                 append("    rowType = ${it.rowAlias}::class,\n")
-                append("    rows = delegate.getDataMap(),\n")
+                append("    rows = delegate.dataList.map { row -> row.${it.keyField} to row },\n")
                 append(")")
-                if (it.helperByType) {
-                    append(" {\n")
-                    append("    fun byType(type: Int): List<${it.rowAlias}> {\n")
-                    append("        return all().filter { row -> row.type == type }\n")
-                    append("    }\n")
-                    append("}")
-                }
             }
         }
 
@@ -109,6 +101,10 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
             |package com.mikai233.common.config.luban
             |
             |import com.mikai233.common.config.luban.gen.GameTablesGen
+            |import io.github.realmlabs.asteria.config.ConfigSnapshot
+            |import io.github.realmlabs.asteria.config.ConfigTableName
+            |import io.github.realmlabs.asteria.config.OrderedMapConfigTable
+            |import io.github.realmlabs.asteria.config.table
             |import luban.ByteBuf
             |import java.io.IOException
             |
@@ -117,9 +113,7 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
             |) {
             |    private val delegate = GameTablesGen { file -> loader.load(file) }
             |
-            |$fields
-            |
-            |$getters
+            |$properties
             |
             |    fun interface IByteBufLoader {
             |        @Throws(IOException::class)
@@ -130,7 +124,18 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
             |$typeAliases
             |
             |$adapters
+            |
+            |${renderSnapshotAccessors(entries)}
             |""".trimMargin()
+    }
+
+    private fun renderSnapshotAccessors(entries: List<TableEntry>): String {
+        return entries.joinToString("\n\n") { entry ->
+            """
+            |val ConfigSnapshot.${entry.tableProperty}: ${entry.adapterClass}
+            |    get() = table()
+            """.trimMargin()
+        }
     }
 
     private fun renderGeneratedLubanMetadata(files: List<String>): String {
@@ -188,16 +193,14 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
     }
 
     private data class TableEntry(
-        val delegateGetterName: String,
-        val publicGetterName: String,
+        val delegatePropertyName: String,
         val tableClassFqcn: String,
         val rowFqcn: String,
         val rowAlias: String,
         val adapterClass: String,
         val tableName: String,
         val keyType: String,
-        val rowSimple: String,
-        val tableField: String,
-        val helperByType: Boolean,
+        val keyField: String,
+        val tableProperty: String,
     )
 }

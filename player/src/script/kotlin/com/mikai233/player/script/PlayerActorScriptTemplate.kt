@@ -1,5 +1,6 @@
 package com.mikai233.player.script
 
+import com.mikai233.common.config.luban.tbItem
 import com.mikai233.common.extension.logger
 import com.mikai233.player.PlayerActor
 import io.github.realmlabs.asteria.script.ActorScript
@@ -15,7 +16,7 @@ class PlayerActorScriptTemplate : ActorScript<PlayerActor>() {
         player.node.gameWorldConfigs.forEach { (id, config) ->
             logger.info("id:{} config:{}", id, config)
         }
-        val item = player.node.gameTables.getTbItem().get(1001)
+        val item = player.node.gameConfigSnapshot.tbItem.get(1001)
         logger.info("demo item config:{}", item)
         return null
     }

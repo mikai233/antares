@@ -1,9 +1,9 @@
 package com.mikai233.common.config.luban
 
 import io.github.realmlabs.asteria.config.ConfigSnapshot
+import io.github.realmlabs.asteria.config.component
 import io.github.realmlabs.asteria.config.luban.LubanBinaryConfigLoader
 import io.github.realmlabs.asteria.config.luban.MemoryLubanDataSource
-import io.github.realmlabs.asteria.config.requireComponent
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.exists
@@ -22,7 +22,7 @@ fun main(args: Array<String>) = runBlocking {
     val generatedDataDir = args.getOrNull(1)?.let(Path::of) ?: defaultGeneratedDataDir()
     val snapshot = loadSnapshot(generatedDataDir, includeQueries = mode == ValidationMode.QUERIES)
     if (mode == ValidationMode.QUERIES) {
-        snapshot.requireComponent<GameConfigQueries>()
+        snapshot.component<GameConfigQueries>()
     }
 }
 

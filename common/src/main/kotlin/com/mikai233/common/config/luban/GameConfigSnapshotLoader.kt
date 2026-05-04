@@ -16,16 +16,20 @@ class GameConfigSnapshotLoader(
     override suspend fun load(): ConfigSnapshot {
         val snapshot = delegate.load()
         val baseComponents = snapshot.components()
+        val baseTables = baseComponents.filterIsInstance<ConfigTable<*>>()
+        val runtimeComponents = baseComponents.filterNot { component ->
+            component is ConfigTable<*> || component is GameTables
+        }
         val baseSnapshot = DefaultConfigSnapshot(
             revision = snapshot.revision,
-            tables = baseComponents.filterIsInstance<ConfigTable<*, *>>(),
-            components = baseComponents,
+            tables = baseTables,
+            components = runtimeComponents,
         )
         val derivedComponents = componentBuilders.map { it.build(baseSnapshot) }
-        val components = baseComponents + derivedComponents
+        val components = runtimeComponents + derivedComponents
         return DefaultConfigSnapshot(
             revision = snapshot.revision,
-            tables = components.filterIsInstance<ConfigTable<*, *>>(),
+            tables = baseTables,
             components = components,
         ).also { validated ->
             validators.forEach { it.validate(validated) }

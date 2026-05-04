@@ -1,6 +1,10 @@
 package com.mikai233.common.config.luban
 
 import com.mikai233.common.config.luban.gen.GameTablesGen
+import io.github.realmlabs.asteria.config.ConfigSnapshot
+import io.github.realmlabs.asteria.config.ConfigTableName
+import io.github.realmlabs.asteria.config.OrderedMapConfigTable
+import io.github.realmlabs.asteria.config.table
 import luban.ByteBuf
 import java.io.IOException
 
@@ -9,21 +13,15 @@ class GameTables(
 ) {
     private val delegate = GameTablesGen { file -> loader.load(file) }
 
-    private val activityTable by lazy { TbActivity(delegate.getTbactivity()) }
-    private val droppoolTable by lazy { TbDroppool(delegate.getTbdroppool()) }
-    private val monsterTable by lazy { TbMonster(delegate.getTbmonster()) }
-    private val itemTable by lazy { TbItem(delegate.getTbitem()) }
-    private val sceneTable by lazy { TbScene(delegate.getTbscene()) }
+    val tbActivity by lazy { TbActivity(delegate.tbactivity) }
 
-    fun getTbActivity(): TbActivity = activityTable
+    val tbDroppool by lazy { TbDroppool(delegate.tbdroppool) }
 
-    fun getTbDroppool(): TbDroppool = droppoolTable
+    val tbMonster by lazy { TbMonster(delegate.tbmonster) }
 
-    fun getTbMonster(): TbMonster = monsterTable
+    val tbItem by lazy { TbItem(delegate.tbitem) }
 
-    fun getTbItem(): TbItem = itemTable
-
-    fun getTbScene(): TbScene = sceneTable
+    val tbScene by lazy { TbScene(delegate.tbscene) }
 
     fun interface IByteBufLoader {
         @Throws(IOException::class)
@@ -37,42 +35,53 @@ typealias MonsterRow = com.mikai233.common.config.luban.gen.game.monster
 typealias ItemRow = com.mikai233.common.config.luban.gen.game.item
 typealias SceneRow = com.mikai233.common.config.luban.gen.game.scene
 
-class TbActivity(delegate: com.mikai233.common.config.luban.gen.game.Tbactivity) : GameMapConfigTable<String, ActivityRow>(
-    name = "activities",
+class TbActivity(delegate: com.mikai233.common.config.luban.gen.game.Tbactivity) : OrderedMapConfigTable<String, ActivityRow>(
+    name = ConfigTableName("activities"),
     keyType = String::class,
     rowType = ActivityRow::class,
-    rows = delegate.getDataMap(),
+    rows = delegate.dataList.map { row -> row.id to row },
 )
 
-class TbDroppool(delegate: com.mikai233.common.config.luban.gen.game.Tbdroppool) : GameMapConfigTable<Int, DroppoolRow>(
-    name = "droppools",
+class TbDroppool(delegate: com.mikai233.common.config.luban.gen.game.Tbdroppool) : OrderedMapConfigTable<Int, DroppoolRow>(
+    name = ConfigTableName("droppools"),
     keyType = Int::class,
     rowType = DroppoolRow::class,
-    rows = delegate.getDataMap(),
+    rows = delegate.dataList.map { row -> row.id to row },
 )
 
-class TbMonster(delegate: com.mikai233.common.config.luban.gen.game.Tbmonster) : GameMapConfigTable<Int, MonsterRow>(
-    name = "monsters",
+class TbMonster(delegate: com.mikai233.common.config.luban.gen.game.Tbmonster) : OrderedMapConfigTable<Int, MonsterRow>(
+    name = ConfigTableName("monsters"),
     keyType = Int::class,
     rowType = MonsterRow::class,
-    rows = delegate.getDataMap(),
+    rows = delegate.dataList.map { row -> row.id to row },
 )
 
-class TbItem(delegate: com.mikai233.common.config.luban.gen.game.Tbitem) : GameMapConfigTable<Int, ItemRow>(
-    name = "items",
+class TbItem(delegate: com.mikai233.common.config.luban.gen.game.Tbitem) : OrderedMapConfigTable<Int, ItemRow>(
+    name = ConfigTableName("items"),
     keyType = Int::class,
     rowType = ItemRow::class,
-    rows = delegate.getDataMap(),
-) {
-    fun byType(type: Int): List<ItemRow> {
-        return all().filter { row -> row.type == type }
-    }
-}
+    rows = delegate.dataList.map { row -> row.id to row },
+)
 
-class TbScene(delegate: com.mikai233.common.config.luban.gen.game.Tbscene) : GameMapConfigTable<Int, SceneRow>(
-    name = "scenes",
+class TbScene(delegate: com.mikai233.common.config.luban.gen.game.Tbscene) : OrderedMapConfigTable<Int, SceneRow>(
+    name = ConfigTableName("scenes"),
     keyType = Int::class,
     rowType = SceneRow::class,
-    rows = delegate.getDataMap(),
+    rows = delegate.dataList.map { row -> row.id to row },
 )
+
+val ConfigSnapshot.tbActivity: TbActivity
+    get() = table()
+
+val ConfigSnapshot.tbDroppool: TbDroppool
+    get() = table()
+
+val ConfigSnapshot.tbMonster: TbMonster
+    get() = table()
+
+val ConfigSnapshot.tbItem: TbItem
+    get() = table()
+
+val ConfigSnapshot.tbScene: TbScene
+    get() = table()
 

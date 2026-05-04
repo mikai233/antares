@@ -2,7 +2,7 @@
 # 🧩 Version Catalog (Gradle)
 ###############################
 [versions]
-asteria = "0.1.12"
+asteria = "0.1.13"
 curator = "5.9.0"
 jackson = "2.21.2"
 kotlinpoet = "2.3.0"

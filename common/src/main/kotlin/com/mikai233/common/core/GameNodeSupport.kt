@@ -4,7 +4,6 @@ import com.google.common.io.Resources
 import com.mikai233.common.broadcast.PlayerBroadcastEventBus
 import com.mikai233.common.config.GameWorldConfig
 import com.mikai233.common.config.WORKER_IDS
-import com.mikai233.common.config.luban.GameTables
 import com.mikai233.common.db.MongoDB
 import com.mikai233.common.extension.asyncZookeeperClient
 import com.typesafe.config.Config
@@ -12,9 +11,9 @@ import com.typesafe.config.ConfigFactory
 import io.github.realmlabs.asteria.cluster.pekko.EntityShardRegistry
 import io.github.realmlabs.asteria.cluster.pekko.SingletonActorRegistry
 import io.github.realmlabs.asteria.cluster.pekko.addSuspendTask
+import io.github.realmlabs.asteria.config.ConfigSnapshot
 import io.github.realmlabs.asteria.config.ConfigService
 import io.github.realmlabs.asteria.config.center.zookeeper.ZookeeperConfigCenterModule
-import io.github.realmlabs.asteria.config.requireComponent
 import io.github.realmlabs.asteria.core.*
 import io.github.realmlabs.asteria.id.WorkerIdModule
 import io.github.realmlabs.asteria.id.WorkerIdModuleOptions
@@ -85,8 +84,8 @@ val NodeRuntime.gameWorldIds: Set<Long>
 val NodeRuntime.gameWorldConfigs: Map<Long, GameWorldConfig>
     get() = gameWorldConfigService.worldsById
 
-val NodeRuntime.gameTables: GameTables
-    get() = services.get(ConfigService::class).current().requireComponent()
+val NodeRuntime.gameConfigSnapshot: ConfigSnapshot
+    get() = services.get(ConfigService::class).current()
 
 val NodeRuntime.broadcastRouter: ActorRef
     get() = services.get(PlayerBroadcastRuntime::class).router
