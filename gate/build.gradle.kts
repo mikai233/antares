@@ -40,7 +40,6 @@ dependencies {
     implementation(libLog.bundles.common)
     implementation(libTool.netty)
     implementation(libTool.protobuf.kotlin)
-    implementation(libTool.protobuf.java.util)
     implementation(libTool.bundles.curator)
     implementation(libTool.jcommander)
     implementation(project(":common"))

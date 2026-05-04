@@ -27,10 +27,6 @@ enum LoginResult{
   AccountBan = 4;
 }
 
-message TestNotify{
-  string data = 1;
-}
-
 message ConnectionExpiredNotify{
   enum Reason{
     Idle = 0;

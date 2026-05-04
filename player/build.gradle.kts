@@ -31,7 +31,6 @@ dependencies {
     implementation(libTool.protobuf.kotlin)
     implementation(libTool.groovy.all)
     implementation(libTool.jcommander)
-    implementation(libTool.guava)
     implementation(libTool.spring.data.mongodb)
     implementation(project(":common"))
     implementation(project(":proto"))

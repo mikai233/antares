@@ -4,7 +4,6 @@
 
 [versions]
 coroutines = "1.10.2"
-atomicfu = "0.32.1"
 datetime = "0.7.1"
 
 ###############################
@@ -16,10 +15,6 @@ datetime = "0.7.1"
 core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 core-jvm = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm", version.ref = "coroutines" }
 reactor = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactor", version.ref = "coroutines" }
-
-# --- AtomicFu ---
-atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "atomicfu" }
-atomicfu-jvm = { module = "org.jetbrains.kotlinx:atomicfu-jvm", version.ref = "atomicfu" }
 
 # --- DateTime ---
 datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }

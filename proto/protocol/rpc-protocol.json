@@ -24,9 +24,6 @@
     "id" : 100008,
     "type" : "com.mikai233.protocol.ProtoLogin.LoginResp"
   }, {
-    "id" : 100009,
-    "type" : "com.mikai233.protocol.ProtoLogin.TestNotify"
-  }, {
     "id" : 110001,
     "type" : "com.mikai233.protocol.ProtoRpcPlayer.PlayerCreateReq"
   }, {

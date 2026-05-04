@@ -19,7 +19,6 @@ testcontainers = "1.21.4"
 ###############################
 [libraries]
 # Utilities
-agrona = "org.agrona:agrona:2.4.0"
 asteria-cluster-config = { module = "io.github.realm-labs.asteria:cluster-config", version.ref = "asteria" }
 asteria-cluster-pekko = { module = "io.github.realm-labs.asteria:cluster-pekko", version.ref = "asteria" }
 asteria-config-center-zookeeper = { module = "io.github.realm-labs.asteria:config-center-zookeeper", version.ref = "asteria" }
@@ -49,16 +48,12 @@ asteria-script-pekko = { module = "io.github.realm-labs.asteria:script-pekko", v
 asteria-starter-game-server-pekko = { module = "io.github.realm-labs.asteria:starter-game-server-pekko", version.ref = "asteria" }
 bcprov = "org.bouncycastle:bcprov-jdk15on:1.70"
 # Other utilities
-caffeine = "com.github.ben-manes.caffeine:caffeine:3.2.3"
 curator-async = { module = "org.apache.curator:curator-x-async", version.ref = "curator" }
 # Curator
 curator-framework = { module = "org.apache.curator:curator-framework", version.ref = "curator" }
 curator-recipes = { module = "org.apache.curator:curator-recipes", version.ref = "curator" }
-easyexcel = "com.alibaba:easyexcel:4.0.3"
-groovy = { module = "org.apache.groovy:groovy", version.ref = "org-apache-groovy" }
 groovy-all = { module = "org.apache.groovy:groovy-all", version.ref = "org-apache-groovy" }
 guava = "com.google.guava:guava:33.5.0-jre"
-jackson-cbor = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor", version.ref = "jackson" }
 # Jackson
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
 jackson-guava = { module = "com.fasterxml.jackson.datatype:jackson-datatype-guava", version.ref = "jackson" }
@@ -66,7 +61,6 @@ jackson-jdk8 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jdk8"
 jackson-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310", version.ref = "jackson" }
 jackson-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
 jackson-protobuf = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-protobuf", version.ref = "jackson" }
-jackson-yaml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml", version.ref = "jackson" }
 jcommander = "org.jcommander:jcommander:3.0"
 # KotlinPoet & KSP
 kotlinpoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet" }
@@ -76,7 +70,6 @@ lz4 = "at.yawk.lz4:lz4-java:1.10.2"
 netty = "io.netty:netty-all:4.2.12.Final"
 protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf" }
 protobuf-kotlin = { module = "com.google.protobuf:protobuf-kotlin", version.ref = "protobuf" }
-protoc = { module = "com.google.protobuf:protoc", version.ref = "protobuf" }
 # Misc core libs
 reflections = "org.reflections:reflections:0.10.2"
 # Monitoring
@@ -92,7 +85,6 @@ testcontainers-mongodb = { module = "org.testcontainers:mongodb", version.ref = 
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
 spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
 spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
-spring-retry = "org.springframework.retry:spring-retry:2.0.12"
 symbol-processing-api = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "ksp" }
 
 ###############################

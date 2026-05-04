@@ -16,9 +16,6 @@ dependencyResolutionManagement {
         create("libKotlin") {
             from(files("gradle/lib.kotlin.versions.toml"))
         }
-        create("libKtor") {
-            from(files("gradle/lib.ktor.versions.toml"))
-        }
         create("libKotlinx") {
             from(files("gradle/lib.kotlinx.versions.toml"))
         }

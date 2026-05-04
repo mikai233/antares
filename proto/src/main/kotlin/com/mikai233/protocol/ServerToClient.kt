@@ -16,7 +16,6 @@ public enum class SCEnum(
   GmResp(2),
   TestResp(3),
   LoginResp(10001),
-  TestNotify(99999),
   ;
 
   public companion object {
@@ -34,7 +33,6 @@ private fun registerServerToClientMessageIdsChunk0(target: MutableMap<Class<out 
   target[ProtoSystem.GmResp::class.java] = 2
   target[ProtoTest.TestResp::class.java] = 3
   target[ProtoLogin.LoginResp::class.java] = 10_001
-  target[ProtoLogin.TestNotify::class.java] = 99_999
 }
 
 /**
@@ -45,7 +43,6 @@ private fun registerServerToClientParsersByIdChunk0(target: MutableMap<Int, Pars
   target[2] = ProtoSystem.GmResp.parser()
   target[3] = ProtoTest.TestResp.parser()
   target[10_001] = ProtoLogin.LoginResp.parser()
-  target[99_999] = ProtoLogin.TestNotify.parser()
 }
 
 /**
@@ -56,14 +53,13 @@ private fun registerServerToClientParsersByTypeChunk0(target: MutableMap<Class<o
   target[ProtoSystem.GmResp::class.java] = ProtoSystem.GmResp.parser()
   target[ProtoTest.TestResp::class.java] = ProtoTest.TestResp.parser()
   target[ProtoLogin.LoginResp::class.java] = ProtoLogin.LoginResp.parser()
-  target[ProtoLogin.TestNotify::class.java] = ProtoLogin.TestNotify.parser()
 }
 
 /**
  * Automatically generated field, do not modify
  */
 private val ServerToClientMessageIdByClass: Map<Class<out GeneratedMessage>, Int> =
-    HashMap<Class<out GeneratedMessage>, Int>(5).apply {
+    HashMap<Class<out GeneratedMessage>, Int>(4).apply {
   registerServerToClientMessageIdsChunk0(this)
 }
 
@@ -71,7 +67,7 @@ private val ServerToClientMessageIdByClass: Map<Class<out GeneratedMessage>, Int
  * Automatically generated field, do not modify
  */
 private val ServerToClientParserById: Map<Int, Parser<out GeneratedMessage>> =
-    HashMap<Int, Parser<out GeneratedMessage>>(5).apply {
+    HashMap<Int, Parser<out GeneratedMessage>>(4).apply {
   registerServerToClientParsersByIdChunk0(this)
 }
 

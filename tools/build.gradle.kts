@@ -11,8 +11,6 @@ dependencies {
     runtimeOnly(libKotlinx.core.jvm)
     implementation(libKotlin.reflect)
     implementation(libTool.bundles.curator)
-    implementation(libTool.guava)
-    implementation(libTool.jcommander)
     implementation(project(":common"))
     implementation(project(":gate"))
     implementation(project(":global"))
