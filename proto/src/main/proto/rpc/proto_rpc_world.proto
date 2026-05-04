@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package com.mikai233.protocol;
+
+import "asteria_rpc_options.proto";
+
+message WorldWakeupReq{
+  option (asteria.rpc.entity_id) = "world_id";
+  int64 world_id = 1;
+}
+
+message WorldWakeupResp{
+}
+
+message CrossWorldSubscribeTopicReq{
+  option (asteria.rpc.entity_id) = "world_id";
+  int64 world_id = 1;
+  int64 player_id = 2;
+  string topic = 3;
+}
+
+message CrossWorldUnsubscribeTopicReq{
+  option (asteria.rpc.entity_id) = "world_id";
+  int64 world_id = 1;
+  int64 player_id = 2;
+  string topic = 3;
+}
+
+message SubscribeTopicReq{
+  string topic = 1;
+}
+
+message UnsubscribeTopicReq{
+  string topic = 1;
+}

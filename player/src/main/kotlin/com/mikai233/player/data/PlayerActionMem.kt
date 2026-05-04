@@ -1,31 +1,32 @@
 package com.mikai233.player.data
 
 import com.mikai233.common.constants.PlayerActionType
-import com.mikai233.common.db.tracked.TrackedMemData
+import com.mikai233.common.db.AsteriaTrackedMemData
+import com.mikai233.common.db.MongoDB
 import com.mikai233.common.entity.PlayerAction
-import com.mikai233.common.entity.tracked.PlayerActionTracked
-import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.find
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.where
+import com.mikai233.common.entity.PlayerActionMongo
+import com.mikai233.common.entity.PlayerActionTracked
+import kotlinx.coroutines.reactor.awaitSingle
+import org.springframework.data.mongodb.core.query.Criteria.where
+import org.springframework.data.mongodb.core.query.Query.query
 
 class PlayerActionMem(
     private val playerId: Long,
-    private val mongoTemplate: () -> MongoTemplate,
-) : TrackedMemData<PlayerAction, PlayerActionTracked>(
-    "player_action",
-    0,
-    mongoTemplate,
-    id = { it.id },
-    factory = ::PlayerActionTracked,
+    private val mongoDbProvider: () -> MongoDB,
+) : AsteriaTrackedMemData<PlayerAction, PlayerActionTracked>(
+    PlayerActionMongo.COLLECTION,
+    { mongoDbProvider().database },
+    PlayerActionMongo::wrap,
 ) {
     private var maxActionId: Int = 0
     private val playerAction: MutableMap<String, PlayerActionTracked> = mutableMapOf()
     private val playerActionById: MutableMap<Int, PlayerActionTracked> = mutableMapOf()
 
-    override fun init() {
-        val template = mongoTemplate()
-        val actions = template.find<PlayerAction>(Query.query(where(PlayerAction::playerId).`is`(playerId)))
+    override suspend fun load() {
+        val actions = mongoDbProvider().reactiveTemplate
+            .find(query(where("playerId").`is`(playerId)), PlayerAction::class.java, PlayerActionMongo.COLLECTION)
+            .collectList()
+            .awaitSingle()
         actions.forEach {
             val id = it.id.split("_").last().toInt()
             if (id > maxActionId) {

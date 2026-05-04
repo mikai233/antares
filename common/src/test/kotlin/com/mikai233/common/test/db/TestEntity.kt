@@ -1,10 +1,9 @@
 package com.mikai233.common.test.db
 
-import com.mikai233.common.db.Entity
-import org.springframework.data.annotation.Id
+import io.github.realmlabs.asteria.persistence.Entity
 
 data class TestEntity(
-    @Id val id: Int,
+    override val id: Int,
     var name: String,
     var age: Int,
-) : Entity
+) : Entity<Int>

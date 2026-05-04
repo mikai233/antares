@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package com.mikai233.protocol;
+
+message PingReq{
+  int64 client_timestamp = 1;
+}
+
+message PingResp{
+  int64 server_timestamp = 1;
+}
+
+message GmReq{
+  string cmd = 1;
+  repeated string params = 2;
+  int64 player_id = 3;
+  int64 world_id = 4;
+}
+
+message GmResp{
+  string data = 2;
+  bool success = 3;
+}

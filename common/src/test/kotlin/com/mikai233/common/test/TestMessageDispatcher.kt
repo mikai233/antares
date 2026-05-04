@@ -1,48 +1,46 @@
 package com.mikai233.common.test
 
-import com.mikai233.common.annotation.AllOpen
 import com.mikai233.common.message.Message
-import com.mikai233.common.message.MessageDispatcher
-import com.mikai233.common.message.MessageHandlerReflect
 import com.mikai233.common.test.msg.HandlerCtx
 import com.mikai233.common.test.msg.MessageHandlerA
 import com.mikai233.common.test.msg.TestMessageA
 import com.mikai233.common.test.msg.TestMessageB
+import io.github.realmlabs.asteria.core.NodeRuntime
+import io.github.realmlabs.asteria.core.NodeState
+import io.github.realmlabs.asteria.core.RoleKey
+import io.github.realmlabs.asteria.core.ServiceRegistry
+import io.github.realmlabs.asteria.message.ActorHandlerContext
+import io.github.realmlabs.asteria.message.MessageDispatcher
+import io.github.realmlabs.asteria.message.PatchableMessageHandlerRegistry
+import io.github.realmlabs.asteria.message.dispatchActor
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
 class TestMessageDispatcher {
-
-    private val handlerReflect = MessageHandlerReflect("com.mikai233.common.test.msg")
-
-    @AllOpen
-    class MessageHandlerAFix : MessageHandlerA() {
-        override fun handleTestMessageA(ctx: HandlerCtx, msg: TestMessageA) {
-            throw Exception("fix logic")
-        }
-    }
-
     @Test
     fun testDispatchMessage() {
-        val dispatcher = MessageDispatcher(Message::class, handlerReflect, 1)
-        with(dispatcher) {
-            dispatch(TestMessageA::class, TestMessageA("hello"), HandlerCtx)
-            dispatch(TestMessageB::class, TestMessageB("world", 18), HandlerCtx)
-            assertThrows<IllegalArgumentException> {
-                dispatch(TestMessageB::class, TestMessageA("hello"), HandlerCtx)
-            }
+        val events = mutableListOf<String>()
+        val handler = MessageHandlerA(events)
+        val handlers = PatchableMessageHandlerRegistry<ActorHandlerContext<HandlerCtx>, Message>().apply {
+            register(TestMessageA::class, handler::handleTestMessageA)
+            register(TestMessageB::class, handler::handleTestMessageB)
+        }
+        val dispatcher = MessageDispatcher(handlers)
+
+        dispatcher.dispatchActor(TestRuntime, HandlerCtx, TestMessageA("hello"))
+        dispatcher.dispatchActor(TestRuntime, HandlerCtx, TestMessageB("world", 18))
+
+        assertEquals(listOf("A:hello", "B:world:18"), events)
+        assertThrows<ClassCastException> {
+            dispatcher.dispatchActor(TestRuntime, HandlerCtx, TestMessageB::class, TestMessageA("hello"))
         }
     }
 
-    @Test
-    fun testReplaceHandler() {
-        val dispatcher = MessageDispatcher(Message::class, handlerReflect, 1)
-        with(dispatcher) {
-            dispatch(TestMessageA::class, TestMessageA("hello"), HandlerCtx)
-            handlerReflect.replace<MessageHandlerA>(MessageHandlerAFix())
-            assertThrows<Exception> {
-                dispatch(TestMessageA::class, TestMessageA("hello"), HandlerCtx)
-            }
-        }
+    private object TestRuntime : NodeRuntime {
+        override val name: String = "test"
+        override val roles: Set<RoleKey> = emptySet()
+        override val state: NodeState = NodeState.Started
+        override val services: ServiceRegistry = ServiceRegistry()
     }
 }

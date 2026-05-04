@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package com.mikai233.protocol;
+
+message ChannelExpiredReq{
+  int32 reason = 1;
+}

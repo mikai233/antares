@@ -1,3 +1,10 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
 rootProject.name = "antares"
 
 dependencyResolutionManagement {
@@ -8,9 +15,6 @@ dependencyResolutionManagement {
     versionCatalogs {
         create("libKotlin") {
             from(files("gradle/lib.kotlin.versions.toml"))
-        }
-        create("libKtor") {
-            from(files("gradle/lib.ktor.versions.toml"))
         }
         create("libKotlinx") {
             from(files("gradle/lib.kotlinx.versions.toml"))
@@ -37,6 +41,5 @@ include("player")
 include("proto")
 include("global")
 include("world")
-include("stardust")
 include("gm")
-include("processor")
+include("message-ksp")

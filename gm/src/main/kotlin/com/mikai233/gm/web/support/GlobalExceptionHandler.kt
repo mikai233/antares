@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 import org.springframework.web.multipart.support.MissingServletRequestPartException
+import org.springframework.web.server.ResponseStatusException
 
 @AllOpen
 @RestControllerAdvice
@@ -20,7 +21,6 @@ class GlobalExceptionHandler {
         MethodArgumentTypeMismatchException::class,
         MissingServletRequestParameterException::class,
         MissingServletRequestPartException::class,
-        ValidateException::class,
     )
     fun handleBadRequest(ex: Exception): ResponseEntity<ApiErrorResponse> {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -29,6 +29,19 @@ class GlobalExceptionHandler {
                     HttpStatus.BAD_REQUEST.value(),
                     HttpStatus.BAD_REQUEST.reasonPhrase,
                     ex.localizedMessage,
+                ),
+            )
+    }
+
+    @ExceptionHandler(ResponseStatusException::class)
+    fun handleResponseStatus(ex: ResponseStatusException): ResponseEntity<ApiErrorResponse> {
+        val status = ex.statusCode
+        return ResponseEntity.status(status)
+            .body(
+                ApiErrorResponse(
+                    status.value(),
+                    ex.reason ?: status.toString(),
+                    ex.reason ?: ex.localizedMessage,
                 ),
             )
     }

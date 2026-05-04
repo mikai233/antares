@@ -1,20 +1,18 @@
 package com.mikai233.common.test.db
 
-import com.mikai233.common.db.Entity
-import org.springframework.data.annotation.Id
+import io.github.realmlabs.asteria.persistence.Entity
 
 class TraceDBTest {
     data class ChildData(val field1: String, var field2: Long)
     data class RootEntity(
-        @Id
-        val id: Long,
+        override val id: Long,
         val field1: String,
         val field2: HashMap<Int, Int>,
         var field3: HashMap<Int, Int>,
         val field4: MutableList<String>,
         var field5: HashMap<Int, String?>,
         var field6: ChildData?,
-    ) : Entity
+    ) : Entity<Long>
 
     data class TraceFieldEntity(
         val id: Long,

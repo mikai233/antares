@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package com.mikai233.protocol;
+
+message BroadcastEnvelope{
+  string topic = 1;
+  repeated int64 include = 2;
+  repeated int64 exclude = 3;
+  int32 message_id = 4;
+  bytes payload = 5;
+}

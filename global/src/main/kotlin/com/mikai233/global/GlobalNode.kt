@@ -2,71 +2,86 @@ package com.mikai233.global
 
 import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
-import com.google.protobuf.GeneratedMessage
+import com.mikai233.common.PLAYER_SHARD_NUM
+import com.mikai233.common.WORLD_SHARD_NUM
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.*
-import com.mikai233.common.entity.EntityKryoPool
-import com.mikai233.common.extension.startShardingProxy
-import com.mikai233.common.extension.startSingleton
-import com.mikai233.common.message.*
 import com.mikai233.common.message.global.worker.HandoffWorker
+import com.mikai233.common.rpc.DefaultRpcEntityIdResolver
+import com.mikai233.common.rpc.GameRpcProtocol
+import com.mikai233.common.rpc.RpcEntityIdResolver
 import com.mikai233.global.actor.WorkerActor
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import io.github.realmlabs.asteria.cluster.pekko.actor
+import io.github.realmlabs.asteria.cluster.pekko.extractor
+import io.github.realmlabs.asteria.core.NodeState
+import io.github.realmlabs.asteria.core.RoleKey
+import io.github.realmlabs.asteria.core.ServiceRegistry
+import io.github.realmlabs.asteria.patch.PatchableServiceRegistry
 import org.apache.pekko.actor.ActorRef
 import java.net.InetSocketAddress
-import kotlin.concurrent.thread
 
 class GlobalNode(
-    addr: InetSocketAddress,
-    name: String,
-    config: Config,
+    val addr: InetSocketAddress,
+    override val name: String,
+    val nodeId: String = "global-${addr.port}",
+    val config: Config,
     zookeeperConnectString: String,
     sameJvm: Boolean = false,
-) : Launcher, Node(addr, listOf(Role.Global), name, config, zookeeperConnectString, sameJvm) {
+) : LaunchableNode {
+    override val roles: Set<RoleKey> = setOf(RoleKey(GameRoles.Global))
+    override val services: ServiceRegistry = ServiceRegistry()
 
-    lateinit var playerSharding: ActorRef
-        private set
+    @Volatile
+    private var currentState: NodeState = NodeState.Unstarted
 
-    lateinit var worldSharding: ActorRef
-        private set
+    override val state: NodeState
+        get() = currentState
 
-    lateinit var workerActor: ActorRef
-        private set
+    private val clusterNode = ClusterNodeBootstrap(this, addr, nodeId, config, zookeeperConnectString, sameJvm)
 
-    private val handlerReflect = MessageHandlerReflect("com.mikai233.global.handler")
+    val playerSharding: ActorRef
+        get() = entityShard(GameEntityKinds.PlayerActor)
 
-    val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, handlerReflect, 1)
+    val worldSharding: ActorRef
+        get() = entityShard(GameEntityKinds.WorldActor)
 
-    val internalDispatcher = MessageDispatcher(Message::class, handlerReflect, 1)
+    val workerActor: ActorRef
+        get() = singletonActor(GameSingletons.Worker)
 
-    override suspend fun launch() = start()
-
-    override suspend fun beforeStart() {
-        super.beforeStart()
-        thread { EntityKryoPool }
+    init {
+        val patchableServices = PatchableServiceRegistry().apply {
+            register(RpcEntityIdResolver::class, DefaultRpcEntityIdResolver(GameRpcProtocol.protocol))
+        }
+        services.register(PatchableServiceRegistry::class, patchableServices)
     }
 
-    override suspend fun afterStart() {
-        startWorkerSingleton()
-        startPlayerSharding()
-        startWorldSharding()
-        super.afterStart()
+    override suspend fun launch() {
+        clusterNode.launch(onStateChange = ::updateState) {
+            role(GameRoles.Global)
+            entity<Long>(GameEntityKinds.PlayerActor) {
+                role(GameRoles.Player)
+                shardCount = PLAYER_SHARD_NUM
+                extractor(GameRpcProtocol.playerShardExtractor(this@GlobalNode))
+            }
+            entity<Long>(GameEntityKinds.WorldActor) {
+                role(GameRoles.World)
+                shardCount = WORLD_SHARD_NUM
+                extractor(GameRpcProtocol.worldShardExtractor(this@GlobalNode))
+            }
+            singleton(GameSingletons.Worker) {
+                role(GameRoles.Global)
+                handoffMessage = HandoffWorker
+                actor { runtime, _ -> WorkerActor.props(runtime as GlobalNode) }
+            }
+        }
     }
 
-    private fun startPlayerSharding() {
-        playerSharding =
-            system.startShardingProxy(ShardEntityType.PlayerActor.name, Role.Player, PlayerMessageExtractor)
+    private fun updateState(newState: NodeState) {
+        currentState = newState
     }
 
-    private fun startWorldSharding() {
-        worldSharding = system.startShardingProxy(ShardEntityType.WorldActor.name, Role.World, WorldMessageExtractor)
-    }
-
-    private fun startWorkerSingleton() {
-        workerActor =
-            system.startSingleton(Singleton.Worker.actorName, Role.Global, WorkerActor.props(this), HandoffWorker)
-    }
 }
 
 private class Cli {
@@ -84,6 +99,9 @@ private class Cli {
 
     @Parameter(names = ["-n", "--name"], description = "system name")
     var name: String = GlobalEnv.SYSTEM_NAME
+
+    @Parameter(names = ["-i", "--node-id"], description = "runtime node id")
+    var nodeId: String? = null
 }
 
 suspend fun main(args: Array<String>) {
@@ -95,5 +113,8 @@ suspend fun main(args: Array<String>) {
         .parse(*args)
     val addr = InetSocketAddress(cli.host, cli.port)
     val config = ConfigFactory.load(cli.conf)
-    GlobalNode(addr, cli.name, config, cli.zookeeper).launch()
+    GlobalNode(addr, cli.name, cli.nodeId ?: "global-${cli.port}", config, cli.zookeeper).also {
+        it.launch()
+        it.awaitTermination()
+    }
 }

@@ -1,9 +1,9 @@
 package com.mikai233.gm
 
-import com.mikai233.common.core.actor.StatefulActor
+import io.github.realmlabs.asteria.script.pekko.ScriptableAsteriaActor
 import org.apache.pekko.actor.Props
 
-class MonitorActor(node: GmNode) : StatefulActor<GmNode>(node) {
+class MonitorActor(val node: GmNode) : ScriptableAsteriaActor<GmNode>(node) {
     companion object {
         fun props(node: GmNode): Props = Props.create(MonitorActor::class.java, node)
     }

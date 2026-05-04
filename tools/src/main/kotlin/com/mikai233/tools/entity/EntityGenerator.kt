@@ -1,7 +1,7 @@
 package com.mikai233.tools.entity
 
-import com.mikai233.common.db.Entity
 import com.mikai233.common.extension.upperCamelToSnakeCase
+import io.github.realmlabs.asteria.persistence.Entity
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import kotlin.io.path.Path
@@ -187,25 +187,16 @@ private fun buildType(className: ClassName, isEntity: Boolean, depth: Int) {
         properties.add(propertySpec)
     }
     if (isEntity) {
-        typeSpecBuilder.addSuperinterface(Entity::class)
-        // 导入的注解类
-        val documentAnnotation = ClassName("org.springframework.data.mongodb.core.mapping", "Document")
-        val idAnnotation = ClassName("org.springframework.data.annotation", "Id")
-        val persistenceCreatorAnnotation = ClassName("org.springframework.data.annotation", "PersistenceCreator")
+        typeSpecBuilder.addSuperinterface(Entity::class.asClassName().parameterizedBy(Int::class.asClassName()))
         val jvmStaticAnnotation = ClassName("kotlin.jvm", "JvmStatic")
-        // @Document(collection = "xxx")
-        val documentAnnotationSpec = AnnotationSpec.Companion.builder(documentAnnotation)
-            .addMember("collection = %S", className.simpleName.upperCamelToSnakeCase())
-            .build()
         val idPropertySpec = PropertySpec.builder("id", Int::class)
-            .addAnnotation(idAnnotation)
+            .addModifiers(KModifier.OVERRIDE)
             .initializer("id")
             .build()
         properties.add(0, idPropertySpec)
 
         // 伴生对象中的 create 方法
         val createFunction = FunSpec.builder("create")
-            .addAnnotation(persistenceCreatorAnnotation)
             .addModifiers(KModifier.PUBLIC)
             .returns(className)
             .addCode("throw UnsupportedOperationException()")
@@ -217,7 +208,6 @@ private fun buildType(className: ClassName, isEntity: Boolean, depth: Int) {
             .addFunction(createFunction.toBuilder().addAnnotation(jvmStaticAnnotation).build())
             .build()
         typeSpecBuilder.addType(companionObject)
-        typeSpecBuilder.addAnnotation(documentAnnotationSpec)
     }
     // 类生成
     typeSpecBuilder

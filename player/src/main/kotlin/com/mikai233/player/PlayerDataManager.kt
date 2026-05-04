@@ -1,57 +1,58 @@
 package com.mikai233.player
 
-import com.mikai233.common.db.AutoFlushMemData
-import com.mikai233.common.db.DataManager
+import com.mongodb.kotlin.client.coroutine.MongoDatabase
+import com.mikai233.common.db.MongoDB
+import com.mikai233.common.core.GameEntityKinds
+import com.mikai233.common.core.mongoDB
 import com.mikai233.common.extension.logger
-import com.mikai233.common.extension.tell
-import com.mikai233.common.extension.tryCatch
-import com.mikai233.common.message.player.PlayerInitialized
-import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlin.reflect.full.primaryConstructor
+import com.mikai233.common.extension.tryCatchSuspend
+import io.github.realmlabs.asteria.core.EntityKind
+import io.github.realmlabs.asteria.core.ServiceRegistry
+import io.github.realmlabs.asteria.persistence.DataManager
+import io.github.realmlabs.asteria.persistence.DataScope
+import io.github.realmlabs.asteria.persistence.MemData
+import kotlin.reflect.KClass
+import org.springframework.data.mongodb.core.ReactiveMongoTemplate
 
-class PlayerDataManager(private val player: PlayerActor) : DataManager<PlayerActor>() {
+class PlayerDataManager(private val player: PlayerActor) {
     private val logger = logger()
 
-    private val autoFlushMemData: MutableList<AutoFlushMemData> = mutableListOf()
-
-    override fun init() {
-        MemImpl.forEach {
-            val primaryConstructor =
-                requireNotNull(it.primaryConstructor) { "${it.qualifiedName} primary constructor not found" }
-            val mem = primaryConstructor.call(player.playerId, { player.node.mongoDB.mongoTemplate })
-            managers[it] = mem
-        }
-        logger.info("{} start loading data", player.playerId)
-        player.launch(
-            CoroutineExceptionHandler { _, throwable ->
-                logger.error("{} loading data failed, player will stop", player.playerId, throwable)
-                player.passivate()
+    private val dataManager = DataManager(
+        DataScope(
+            entityKind = EntityKind(GameEntityKinds.PlayerActor),
+            entityId = player.playerId,
+            services = ServiceRegistry().apply {
+                register(MongoDB::class, player.node.mongoDB)
+                register(MongoDatabase::class, player.node.mongoDB.database)
+                register(ReactiveMongoTemplate::class, player.node.mongoDB.reactiveTemplate)
             },
-        ) {
-            managers.map { (manager, mem) ->
-                async(Dispatchers.IO) {
-                    mem.init()
-                    logger.info("player:{} load {} complete", player.playerId, manager.simpleName)
-                }
-            }.awaitAll()
-            managers.values.filterIsInstance<AutoFlushMemData>().forEach { autoFlushMemData.add(it) }
-            logger.info("player:{} data load complete", player.playerId)
-            player.self tell PlayerInitialized
-        }
+        ),
+        PlayerDataModules,
+    )
+
+    suspend fun load() {
+        logger.info("{} start loading data", player.playerId)
+        dataManager.loadEager()
+        logger.info("player:{} data load complete", player.playerId)
+    }
+
+    fun <T : MemData> get(type: KClass<T>): T {
+        return dataManager.requireLoaded(type)
+    }
+
+    inline fun <reified T : MemData> get(): T {
+        return get(T::class)
     }
 
     fun tick() {
-        autoFlushMemData.forEach {
-            tryCatch(logger) {
-                it.tick()
+        player.launch(timeout = null) {
+            tryCatchSuspend(logger) {
+                dataManager.tick()
             }
         }
     }
 
-    fun flush(): Boolean {
-        return autoFlushMemData.all { it.flush() }
+    suspend fun flush(): Boolean {
+        return dataManager.flush()
     }
 }

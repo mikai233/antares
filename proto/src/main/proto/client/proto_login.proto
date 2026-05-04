@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package com.mikai233.protocol;
+
+import "client/proto_player.proto";
+
+message LoginReq{
+  string account = 1;
+  int64 world_id = 2;
+  bytes client_public_key = 3;
+  string client_zone = 4;
+  string client_ip = 5;
+}
+
+message LoginResp{
+  LoginResult result = 1;
+  PlayerData data = 2;
+  bytes server_public_key = 3;
+  string server_zone = 4;
+}
+
+enum LoginResult{
+  Success = 0;
+  RegisterLimit = 1;
+  WorldNotExists = 2;
+  WorldClosed = 3;
+  AccountBan = 4;
+}
+
+message ConnectionExpiredNotify{
+  enum Reason{
+    Idle = 0;
+    MultiLogin = 1;
+  }
+  Reason reason = 1;
+}

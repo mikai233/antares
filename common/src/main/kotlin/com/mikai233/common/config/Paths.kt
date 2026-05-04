@@ -1,23 +1,19 @@
 package com.mikai233.common.config
 
+import io.github.realmlabs.asteria.config.center.ConfigPath
+
 const val SYSTEM_NAME = "antares"
 
-const val ROOT = "/$SYSTEM_NAME"
+val ROOT: ConfigPath = ConfigPath.Root / SYSTEM_NAME
 
-const val SERVER_HOSTS = "$ROOT/server_hosts"
+val DATA_SOURCE_GAME: ConfigPath = ROOT / "data-source" / "game"
 
-const val DATA_SOURCE_GAME = "$ROOT/data_source/game"
+val GAME_WORLDS: ConfigPath = ROOT / "game-worlds"
 
-const val GAME_WORLDS = "$ROOT/game_worlds"
+val GAME_CONFIG_PUBLICATION: ConfigPath = ROOT / "game-config"
 
-const val GAME_CONFIG = "$ROOT/game_config"
+const val WORKER_IDS = "/$SYSTEM_NAME/worker-ids"
 
-const val PATCH = "$ROOT/patch"
+val NETTY_CONFIGS: ConfigPath = ROOT / "netty"
 
-fun serverHostsPath(hostname: String) = "$SERVER_HOSTS/$hostname"
-
-fun nodePath(hostname: String, nodeName: String) = "${serverHostsPath(hostname)}/$nodeName"
-
-fun nettyConfigPath(hostname: String, port: Int) = "$ROOT/netty/$hostname:$port"
-
-fun patchByVersion(version: String) = "$PATCH/$version"
+fun nettyConfigPath(nodeId: String): ConfigPath = NETTY_CONFIGS / nodeId

@@ -1,14 +1,10 @@
 package com.mikai233.common.entity
 
-import com.mikai233.common.db.Entity
-import org.springframework.data.annotation.Id
+import io.github.realmlabs.asteria.persistence.Entity
 import org.springframework.data.annotation.PersistenceCreator
-import org.springframework.data.mongodb.core.mapping.Document
 
-@Document(collection = "room")
 data class Room(
-    @Id
-    val id: Int,
+    override val id: Int,
     val name: String,
     val createTime: Long,
     var changeableBoolean: Boolean,
@@ -19,11 +15,10 @@ data class Room(
     val trackChild: TrackChild,
     var animals: MutableList<Animal>,
     var directInterface: Animal,
-) : Entity {
+) : Entity<Int> {
     companion object {
         @JvmStatic
-        @PersistenceCreator
-        fun create(): Room {
+        fun defaults(): Room {
             return Room(
                 0,
                 "",
@@ -36,6 +31,37 @@ data class Room(
                 TrackChild("", "cc"),
                 mutableListOf(),
                 Cat("", 0),
+            )
+        }
+
+        @JvmStatic
+        @PersistenceCreator
+        fun create(
+            id: Int?,
+            name: String?,
+            createTime: Long?,
+            changeableBoolean: Boolean?,
+            changeableString: String?,
+            players: HashMap<Int, TPlayer>?,
+            directObj: DirectObj?,
+            listObj: MutableList<String>?,
+            trackChild: TrackChild?,
+            animals: MutableList<Animal>?,
+            directInterface: Animal?,
+        ): Room {
+            val defaults = defaults()
+            return Room(
+                id = id ?: defaults.id,
+                name = name ?: defaults.name,
+                createTime = createTime ?: defaults.createTime,
+                changeableBoolean = changeableBoolean ?: defaults.changeableBoolean,
+                changeableString = changeableString ?: defaults.changeableString,
+                players = players ?: defaults.players,
+                directObj = directObj ?: defaults.directObj,
+                listObj = listObj ?: defaults.listObj,
+                trackChild = trackChild ?: defaults.trackChild,
+                animals = animals ?: defaults.animals,
+                directInterface = directInterface ?: defaults.directInterface,
             )
         }
     }

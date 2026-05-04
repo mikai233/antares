@@ -66,15 +66,11 @@ subprojects {
         }
     }
 
-    if (project.name == "common") {
+    if (project.name in setOf("common", "gate", "player", "world")) {
         sourceSets.main {
             kotlin.srcDir("build/generated/ksp/main/kotlin")
         }
-        sourceSets.test {
-            kotlin.srcDir("build/generated/ksp/test/kotlin")
-        }
     }
-
     if (Boot.contains(project.name) || project.name == "common") {
         sourceSets {
             create("script") {
@@ -97,30 +93,6 @@ subprojects {
                     include("com/mikai233/${project.name}/script/*")
                 }
             }
-        }
-    }
-    val actor = Forward[project.name]
-    if (actor != null) {
-        tasks.register<JavaExec>("generateProtoForwardMap") {
-            group = "other"
-            description = "Generates protobuf forward map for gate"
-            mainClass = "com.mikai233.common.message.MessageForwardGeneratorKt"
-            val sourceSetsMain = sourceSets.main.get()
-            classpath = sourceSetsMain.runtimeClasspath
-            val gateResourcesPath =
-                project(":gate").extensions.getByType<SourceSetContainer>().main.get().resources.srcDirs.first().path
-            args =
-                listOf(
-                    "-p",
-                    "com.mikai233.${project.name}.handler",
-                    "-o",
-                    gateResourcesPath,
-                    "-f",
-                    actor,
-                )
-        }
-        tasks.named("compileKotlin") {
-            finalizedBy("generateProtoForwardMap")
         }
     }
     tasks.register("generateVersionFile") {
@@ -155,19 +127,32 @@ kotlin {
 }
 
 fun Project.configureJvmTarget() {
-    tasks.withType<JavaCompile> {
+    tasks.withType<JavaCompile>().configureEach {
+        javaCompiler.set(
+            javaToolchains.compilerFor {
+                languageVersion.set(JavaLanguageVersion.of(21))
+            },
+        )
         sourceCompatibility = "21"
         targetCompatibility = "21"
+        options.release.set(21)
         with(options) {
             encoding = "UTF-8"
             isFork = true
         }
     }
-    tasks.withType<KotlinCompile> {
+    tasks.withType<KotlinCompile>().configureEach {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_21)
             javaParameters.set(true)
         }
+    }
+    tasks.withType<JavaExec>().configureEach {
+        javaLauncher.set(
+            javaToolchains.launcherFor {
+                languageVersion.set(JavaLanguageVersion.of(21))
+            },
+        )
     }
 }
 
@@ -192,7 +177,7 @@ tasks.getByName<Delete>("clean") {
     delete.add(releaseDir)
 }
 
-val versionFileName = listOf("pekko", "kotlinx", "ktor", "log", "test", "tool")
+val versionFileName = listOf("pekko", "kotlinx", "log", "test", "tool")
 
 versionCatalogUpdate {
     catalogFile = file("gradle/lib.kotlin.versions.toml")

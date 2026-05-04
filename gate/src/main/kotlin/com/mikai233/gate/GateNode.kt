@@ -2,71 +2,90 @@ package com.mikai233.gate
 
 import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
-import com.google.protobuf.GeneratedMessage
+import com.mikai233.common.PLAYER_SHARD_NUM
+import com.mikai233.common.WORLD_SHARD_NUM
 import com.mikai233.common.conf.GlobalEnv
-import com.mikai233.common.config.ConfigCache
-import com.mikai233.common.config.NettyConfig
-import com.mikai233.common.config.nettyConfigPath
 import com.mikai233.common.core.*
-import com.mikai233.common.extension.startShardingProxy
-import com.mikai233.common.message.*
-import com.mikai233.gate.server.NettyServer
+import com.mikai233.common.rpc.DefaultRpcEntityIdResolver
+import com.mikai233.common.rpc.GameRpcProtocol
+import com.mikai233.common.rpc.RpcEntityIdResolver
+import com.mikai233.gate.generated.GeneratedGateMessageCatalog
+import com.mikai233.gate.generated.GeneratedGateNodeDispatchers
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import io.github.realmlabs.asteria.cluster.pekko.extractor
+import io.github.realmlabs.asteria.core.NodeState
+import io.github.realmlabs.asteria.core.RoleKey
+import io.github.realmlabs.asteria.core.ServiceRegistry
+import io.github.realmlabs.asteria.message.MessageCatalog
+import io.github.realmlabs.asteria.patch.PatchableServiceRegistry
 import org.apache.pekko.actor.ActorRef
 import java.net.InetSocketAddress
-import kotlin.concurrent.thread
-
 
 class GateNode(
-    addr: InetSocketAddress,
-    name: String,
-    config: Config,
+    val addr: InetSocketAddress,
+    override val name: String,
+    val nodeId: String = "gate-${addr.port}",
+    val config: Config,
     zookeeperConnectString: String,
     sameJvm: Boolean = false,
-) : Launcher, Node(addr, listOf(Role.Gate), name, config, zookeeperConnectString, sameJvm) {
-    lateinit var playerSharding: ActorRef
-        private set
+) : LaunchableNode {
+    override val roles: Set<RoleKey> = setOf(RoleKey(GameRoles.Gate))
+    override val services: ServiceRegistry = ServiceRegistry()
 
-    lateinit var worldSharding: ActorRef
-        private set
+    @Volatile
+    private var currentState: NodeState = NodeState.Unstarted
 
-    private val handlerReflect = MessageHandlerReflect("com.mikai233.gate.handler")
+    override val state: NodeState
+        get() = currentState
 
-    val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, handlerReflect, 1)
+    private val clusterNode = ClusterNodeBootstrap(this, addr, nodeId, config, zookeeperConnectString, sameJvm)
 
-    val internalDispatcher = MessageDispatcher(Message::class, handlerReflect, 1)
+    val playerSharding: ActorRef
+        get() = entityShard(GameEntityKinds.PlayerActor)
 
-    private val nettyServer = NettyServer(this)
+    val worldSharding: ActorRef
+        get() = entityShard(GameEntityKinds.WorldActor)
 
-    private val nettyConfigsCache =
-        ConfigCache(zookeeper, nettyConfigPath(addr.hostString, addr.port), NettyConfig::class)
+    val protobufDispatcher = GeneratedGateNodeDispatchers.PROTOBUF
 
-    val nettyConfig get() = nettyConfigsCache.config
+    val protocolCodec = GateProtocolCodec()
 
-    override suspend fun launch() = start()
+    val gatewayRouter: GateGatewayRouter by lazy { GateGatewayRouter(this) }
 
-    override suspend fun beforeStart() {
-        thread { MessageForward }
-        nettyServer.start()
-        super.beforeStart()
-        addStateListener(State.Stopping) { nettyServer.close() }
+    val messageCatalog: MessageCatalog
+        get() = GeneratedGateMessageCatalog
+
+    init {
+        val patchableServices = PatchableServiceRegistry().apply {
+            register(RpcEntityIdResolver::class, DefaultRpcEntityIdResolver(GameRpcProtocol.protocol))
+        }
+        services.register(PatchableServiceRegistry::class, patchableServices)
     }
 
-    override suspend fun afterStart() {
-        startPlayerSharding()
-        startWorldSharding()
-        super.afterStart()
+    override suspend fun launch() {
+        clusterNode.launch(
+            afterClusterModules = listOf(GateGatewayTransportModule(this)),
+            onStateChange = ::updateState,
+        ) {
+            role(GameRoles.Gate)
+            entity<Long>(GameEntityKinds.PlayerActor) {
+                role(GameRoles.Player)
+                shardCount = PLAYER_SHARD_NUM
+                extractor(GameRpcProtocol.playerShardExtractor(this@GateNode))
+            }
+            entity<Long>(GameEntityKinds.WorldActor) {
+                role(GameRoles.World)
+                shardCount = WORLD_SHARD_NUM
+                extractor(GameRpcProtocol.worldShardExtractor(this@GateNode))
+            }
+        }
     }
 
-    private fun startPlayerSharding() {
-        playerSharding =
-            system.startShardingProxy(ShardEntityType.PlayerActor.name, Role.Player, PlayerMessageExtractor)
+    private fun updateState(newState: NodeState) {
+        currentState = newState
     }
 
-    private fun startWorldSharding() {
-        worldSharding = system.startShardingProxy(ShardEntityType.WorldActor.name, Role.World, WorldMessageExtractor)
-    }
 }
 
 private class Cli {
@@ -84,6 +103,9 @@ private class Cli {
 
     @Parameter(names = ["-n", "--name"], description = "system name")
     var name: String = GlobalEnv.SYSTEM_NAME
+
+    @Parameter(names = ["-i", "--node-id"], description = "runtime node id")
+    var nodeId: String? = null
 }
 
 suspend fun main(args: Array<String>) {
@@ -95,5 +117,8 @@ suspend fun main(args: Array<String>) {
         .parse(*args)
     val addr = InetSocketAddress(cli.host, cli.port)
     val config = ConfigFactory.load(cli.conf)
-    GateNode(addr, cli.name, config, cli.zookeeper).launch()
+    GateNode(addr, cli.name, cli.nodeId ?: "gate-${cli.port}", config, cli.zookeeper).also {
+        it.launch()
+        it.awaitTermination()
+    }
 }

@@ -1,81 +1,275 @@
 import {http} from './http'
 
-export interface ScriptExecutionResponse {
-    id: string
-    scriptName: string
-    scriptType: string
-    targetType: string
-    status: string
-    totalTargets: number
-    successCount: number
-    failureCount: number
-    timeoutCount: number
-    createdAt: string
-    finishedAt?: string | null
-    targets: ScriptExecutionTargetResponse[]
+export interface GmScriptMetadata {
+    engines: string[]
+    targetTypes: string[]
+    roles: string[]
+    entityKinds: string[]
+    singletons: string[]
+    nodeAddresses: string[]
+    templates: Array<{
+        id: string
+        name: string
+        engine: string
+    }>
 }
 
-export interface ScriptExecutionTargetResponse {
-    target: string
+export interface ScriptArtifact {
+    name: string
+    engine: string
+}
+
+export interface GmScriptJobCommand {
+    executionId: string
+    target: unknown
+    artifact: ScriptArtifact
+    metadata: {
+        requester?: string | null
+        reason?: string | null
+        attributes: Record<string, string>
+    }
+}
+
+export interface ScriptJob {
+    id: string
+    command: GmScriptJobCommand
     status: string
-    success?: boolean | null
+    attempt: number
+    totalItems: number
+    completedItems: number
+    failedItems: number
+    cancelledItems: number
+    createdAtMillis: number
+    updatedAtMillis: number
+}
+
+export interface ScriptJobResultEntry {
+    executionId: string
+    success: boolean
+    target?: string | null
     error?: string | null
     nodeAddress?: string | null
     actorPath?: string | null
-    startedAt: string
-    finishedAt?: string | null
 }
 
-export interface ScriptUploadPayload {
-    script: File
-    extra?: File
+export interface ScriptJobItemAttempt {
+    attempt: number
+    command: GmScriptJobCommand
+    status: string
+    results: ScriptJobResultEntry[]
+    error?: string | null
+    startedAtMillis: number
+    finishedAtMillis?: number | null
 }
 
-export type ScriptExecutionTargetType =
-    | 'PlayerActor'
-    | 'WorldActor'
-    | 'GlobalActor'
-    | 'ActorPath'
-    | 'Node'
-    | 'NodeRole'
+export interface ScriptJobItem {
+    id: string
+    jobId: string
+    target: unknown
+    status: string
+    results: ScriptJobResultEntry[]
+    attempts: ScriptJobItemAttempt[]
+    leaseOwner?: string | null
+    leaseUntilMillis?: number | null
+    createdAtMillis: number
+    updatedAtMillis: number
+}
 
-export interface CreateScriptExecutionRequest {
-    targetType: ScriptExecutionTargetType
-    targets?: string[]
+export interface ScriptJobPage {
+    jobs: ScriptJob[]
+    offset: number
+    limit: number
+    total: number
+    nextOffset?: number | null
+}
+
+export interface ScriptJobItemPage {
+    items: ScriptJobItem[]
+    offset: number
+    limit: number
+    total: number
+    nextOffset?: number | null
+}
+
+export interface ScriptJobResultSummary {
+    jobId: string
+    totalItems: number
+    completedItems: number
+    failedItems: number
+    cancelledItems: number
+    errorTypes: Array<{
+        error: string
+        count: number
+        sampleTargets: string[]
+    }>
+}
+
+export type GmScriptTargetType =
+    | 'all-nodes'
+    | 'role'
+    | 'nodes'
+    | 'actor-paths'
+    | 'entity'
+    | 'singleton'
+
+export interface GmScriptTargetRequest {
+    type: GmScriptTargetType
     role?: string
     addresses?: string[]
-    patch?: boolean
+    paths?: string[]
+    kind?: string
+    ids?: string[]
+    name?: string
 }
 
-export interface CreateScriptExecutionPayload extends ScriptUploadPayload {
-    request: CreateScriptExecutionRequest
+export interface CreateScriptJobPayload {
+    script: File
+    extra?: File
+    target: GmScriptTargetRequest
+    reason?: string
+    maxConcurrentItems?: number
 }
 
-function formData(payload: CreateScriptExecutionPayload) {
-    const data = new FormData()
-    data.append('script', payload.script)
-    if (payload.extra) {
-        data.append('extra', payload.extra)
+export async function getScriptMetadata() {
+    const response = await http.get<GmScriptMetadata>('/gm/api/scripts/metadata')
+    return response.data
+}
+
+export async function createScriptJob(payload: CreateScriptJobPayload) {
+    const jobId = crypto.randomUUID()
+    const response = await http.post<ScriptJob>('/gm/api/scripts/jobs', {
+        executionId: jobId,
+        target: payload.target,
+        artifact: {
+            name: fileNameWithoutExtension(payload.script.name),
+            engine: inferScriptEngine(payload.script.name),
+            bodyBase64: await fileToBase64(payload.script),
+            extraBase64: payload.extra ? await fileToBase64(payload.extra) : undefined,
+        },
+        metadata: {
+            reason: payload.reason,
+        },
+        options: {
+            maxConcurrentItems: payload.maxConcurrentItems,
+        },
+        timeoutMillis: 180_000,
+    })
+    return response.data
+}
+
+export async function listScriptJobs() {
+    const response = await http.get<ScriptJobPage>('/gm/api/scripts/jobs')
+    return response.data
+}
+
+export async function getScriptJob(id: string) {
+    const response = await http.get<ScriptJob>(`/gm/api/scripts/jobs/${id}`)
+    return response.data
+}
+
+export async function listScriptJobItems(id: string) {
+    const response = await http.get<ScriptJobItemPage>(`/gm/api/scripts/jobs/${id}/items`)
+    return response.data
+}
+
+export async function getScriptJobSummary(id: string) {
+    const response = await http.get<ScriptJobResultSummary>(`/gm/api/scripts/jobs/${id}/summary`)
+    return response.data
+}
+
+export function describeScriptTarget(target: unknown): string {
+    const value = target as Record<string, unknown> | null
+    if (!value) {
+        return 'unknown'
     }
-    data.append(
-        'request',
-        new Blob([JSON.stringify(payload.request)], {type: 'application/json'}),
-    )
-    return data
+    if ('addresses' in value && Array.isArray(value.addresses)) {
+        return (value.addresses as string[]).join(', ')
+    }
+    if ('paths' in value && Array.isArray(value.paths)) {
+        return (value.paths as string[]).join(', ')
+    }
+    if ('ids' in value && Array.isArray(value.ids)) {
+        const kind = nestedValue(value.kind)
+        return `${kind ?? 'entity'}: ${(value.ids as string[]).join(', ')}`
+    }
+    if ('name' in value) {
+        return nestedValue(value.name) ?? 'singleton'
+    }
+    if ('role' in value) {
+        return nestedValue(value.role) ?? 'role'
+    }
+    return 'all-nodes'
 }
 
-export async function createScriptExecution(payload: CreateScriptExecutionPayload) {
-    const data = formData(payload)
-    const response = await http.post<ScriptExecutionResponse>('/script/executions', data)
-    return response.data
+export function targetTypeLabel(target: unknown): string {
+    const value = target as Record<string, unknown> | null
+    if (!value) {
+        return 'Unknown'
+    }
+    if ('addresses' in value && Array.isArray(value.addresses)) {
+        return 'Nodes'
+    }
+    if ('paths' in value && Array.isArray(value.paths)) {
+        return 'Actor Paths'
+    }
+    if ('ids' in value && Array.isArray(value.ids)) {
+        return 'Entity'
+    }
+    if ('name' in value) {
+        return 'Singleton'
+    }
+    if ('role' in value) {
+        return 'Role'
+    }
+    return 'All Nodes'
 }
 
-export async function listScriptExecutions() {
-    const response = await http.get<ScriptExecutionResponse[]>('/script/executions')
-    return response.data
+export function itemError(item: ScriptJobItem): string | undefined {
+    const failedAttempt = [...item.attempts].reverse().find(attempt => attempt.error)
+    return failedAttempt?.error ?? item.results.find(entry => entry.error)?.error ?? undefined
 }
 
-export async function getScriptExecution(id: string) {
-    const response = await http.get<ScriptExecutionResponse>(`/script/executions/${id}`)
-    return response.data
+function nestedValue(value: unknown): string | undefined {
+    if (typeof value === 'string') {
+        return value
+    }
+    if (value && typeof value === 'object' && 'value' in value) {
+        const nested = (value as { value?: unknown }).value
+        return typeof nested === 'string' ? nested : undefined
+    }
+    return undefined
+}
+
+function inferScriptEngine(fileName: string): string {
+    const extension = fileName.split('.').pop()?.toLowerCase()
+    if (extension === 'jar' || extension === 'groovy') {
+        return extension
+    }
+    throw new Error('脚本文件扩展名必须是 jar 或 groovy')
+}
+
+function fileNameWithoutExtension(fileName: string): string {
+    const index = fileName.lastIndexOf('.')
+    return index > 0 ? fileName.slice(0, index) : fileName
+}
+
+function fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => {
+            const dataUrl = reader.result
+            if (typeof dataUrl !== 'string') {
+                reject(new Error(`文件 ${file.name} 读取失败`))
+                return
+            }
+            const content = dataUrl.split(',', 2)[1]
+            if (!content) {
+                reject(new Error(`文件 ${file.name} 编码失败`))
+                return
+            }
+            resolve(content)
+        }
+        reader.onerror = () => reject(reader.error ?? new Error(`文件 ${file.name} 读取失败`))
+        reader.readAsDataURL(file)
+    })
 }

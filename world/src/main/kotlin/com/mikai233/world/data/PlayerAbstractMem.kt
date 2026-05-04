@@ -1,35 +1,35 @@
 package com.mikai233.world.data
 
-import com.mikai233.common.db.tracked.TrackedMemData
+import com.mikai233.common.db.AsteriaTrackedMemData
+import com.mikai233.common.db.MongoDB
 import com.mikai233.common.entity.PlayerAbstract
-import com.mikai233.common.entity.tracked.PlayerAbstractTracked
-import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.find
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.where
+import com.mikai233.common.entity.PlayerAbstractMongo
+import com.mikai233.common.entity.PlayerAbstractTracked
+import kotlinx.coroutines.reactor.awaitSingle
+import org.springframework.data.mongodb.core.query.Criteria.where
+import org.springframework.data.mongodb.core.query.Query.query
 
 class PlayerAbstractMem(
     private val worldId: Long,
-    private val mongoTemplate: () -> MongoTemplate,
+    private val mongoDbProvider: () -> MongoDB,
 ) :
-    TrackedMemData<PlayerAbstract, PlayerAbstractTracked>(
-        "player_abstract",
-        0,
-        mongoTemplate,
-        id = { it.playerId },
-        factory = ::PlayerAbstractTracked,
+    AsteriaTrackedMemData<PlayerAbstract, PlayerAbstractTracked>(
+        PlayerAbstractMongo.COLLECTION,
+        { mongoDbProvider().database },
+        PlayerAbstractMongo::wrap,
     ),
     Map<Long, PlayerAbstractTracked> {
     private val playerAbstracts: MutableMap<Long, PlayerAbstractTracked> = mutableMapOf()
     private val accountToAbstracts: MutableMap<String, PlayerAbstractTracked> = mutableMapOf()
 
-    override fun init() {
-        val template = mongoTemplate()
-        val playerAbstractList =
-            template.find<PlayerAbstract>(Query.query(where(PlayerAbstract::worldId).`is`(worldId)))
+    override suspend fun load() {
+        val playerAbstractList = mongoDbProvider().reactiveTemplate
+            .find(query(where("worldId").`is`(worldId)), PlayerAbstract::class.java, PlayerAbstractMongo.COLLECTION)
+            .collectList()
+            .awaitSingle()
         playerAbstractList.forEach {
             val tracked = attachLoaded(it)
-            playerAbstracts[it.playerId] = tracked
+            playerAbstracts[it.id] = tracked
             accountToAbstracts[it.account] = tracked
         }
     }
@@ -39,15 +39,16 @@ class PlayerAbstractMem(
     }
 
     fun addAbstract(abstract: PlayerAbstract) {
-        check(playerAbstracts.containsKey(abstract.playerId).not()) { "abstract:${abstract.playerId} already exists" }
+        check(playerAbstracts.containsKey(abstract.id).not()) { "abstract:${abstract.id} already exists" }
         val tracked = createTracked(abstract)
-        playerAbstracts[abstract.playerId] = tracked
+        playerAbstracts[abstract.id] = tracked
         accountToAbstracts[abstract.account] = tracked
     }
 
     fun delAbstract(playerAbstract: PlayerAbstractTracked) {
         accountToAbstracts.remove(playerAbstract.account)
-        playerAbstracts.remove(playerAbstract.playerId)
+        playerAbstracts.remove(playerAbstract.id)
+        removeTracked(playerAbstract.id)
     }
 
     fun getByAccount(account: String) = accountToAbstracts[account]

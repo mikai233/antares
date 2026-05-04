@@ -1,34 +1,34 @@
 package com.mikai233.common.db
 
-import com.mikai233.common.config.ConfigCache
-import com.mikai233.common.config.DATA_SOURCE_GAME
 import com.mikai233.common.config.DataSourceConfig
 import com.mongodb.MongoClientSettings
 import com.mongodb.WriteConcern
-import com.mongodb.client.MongoClient
-import com.mongodb.client.MongoClients
-import org.apache.curator.x.async.AsyncCuratorFramework
-import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.SimpleMongoClientDatabaseFactory
-import org.springframework.data.mongodb.core.convert.DefaultDbRefResolver
-import org.springframework.data.mongodb.core.convert.MappingMongoConverter
-import org.springframework.data.mongodb.core.convert.MongoCustomConversions
-import org.springframework.data.mongodb.core.mapping.MongoMappingContext
+import com.mongodb.reactivestreams.client.MongoClient as ReactiveMongoClient
+import com.mongodb.reactivestreams.client.MongoClients as ReactiveMongoClients
+import com.mongodb.kotlin.client.coroutine.MongoClient as CoroutineMongoClient
+import com.mongodb.kotlin.client.coroutine.MongoDatabase
+import org.springframework.data.mongodb.core.ReactiveMongoTemplate
+import org.springframework.data.mongodb.core.SimpleReactiveMongoDatabaseFactory
 
 //TODO test db on start
-class MongoDB(zookeeper: AsyncCuratorFramework) {
+class MongoDB(
+    private val gameDataSourceConfig: DataSourceConfig,
+) {
+    lateinit var coroutineClient: CoroutineMongoClient
+        private set
 
-    private val gameDataSourceCache = ConfigCache(zookeeper, DATA_SOURCE_GAME, DataSourceConfig::class) {
+    lateinit var database: MongoDatabase
+        private set
+
+    lateinit var reactiveClient: ReactiveMongoClient
+        private set
+
+    lateinit var reactiveTemplate: ReactiveMongoTemplate
+        private set
+
+    init {
         buildClient()
     }
-
-    private val gameDataSourceConfig get() = gameDataSourceCache.config
-
-    lateinit var mongoTemplate: MongoTemplate
-        private set
-
-    lateinit var client: MongoClient
-        private set
 
     private fun buildClient() {
         val settings = MongoClientSettings.builder()
@@ -40,17 +40,11 @@ class MongoDB(zookeeper: AsyncCuratorFramework) {
                 builder.hosts(hosts)
             }
             .build()
-        client = MongoClients.create(settings)
-        val conversions = MongoCustomConversions.create {}
-        val mappingContext = MongoMappingContext()
-        mappingContext.setSimpleTypeHolder(conversions.simpleTypeHolder)
-        mappingContext.afterPropertiesSet()
-        val factory = SimpleMongoClientDatabaseFactory(client, gameDataSourceConfig.databaseName)
-        val defaultResolver = DefaultDbRefResolver(factory)
-        val converter = MappingMongoConverter(defaultResolver, mappingContext)
-        converter.setCustomConversions(conversions)
-        converter.setMapKeyDotReplacement("#DOT#")
-        converter.afterPropertiesSet()
-        mongoTemplate = MongoTemplate(factory, converter)
+        coroutineClient = CoroutineMongoClient.create(settings)
+        database = coroutineClient.getDatabase(gameDataSourceConfig.databaseName)
+        reactiveClient = ReactiveMongoClients.create(settings)
+        reactiveTemplate = ReactiveMongoTemplate(
+            SimpleReactiveMongoDatabaseFactory(reactiveClient, gameDataSourceConfig.databaseName)
+        )
     }
 }

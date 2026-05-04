@@ -1,26 +1,42 @@
 package com.mikai233.common.entity
 
-import com.mikai233.common.db.Entity
-import com.mikai233.common.db.tracked.TrackEntity
-import org.springframework.data.annotation.Id
+import io.github.realmlabs.asteria.persistence.Entity
+import io.github.realmlabs.asteria.persistence.mongodb.annotations.AsteriaMongoEntity
 import org.springframework.data.annotation.PersistenceCreator
 import org.springframework.data.mongodb.core.mapping.Document
 
-@TrackEntity
 @Document(collection = "player_action")
+@AsteriaMongoEntity(collection = "player_action", wrapperName = "PlayerActionTracked", helperName = "PlayerActionMongo")
 data class PlayerAction(
-    @Id
-    val id: String,
+    override val id: String,
     val playerId: Long,
     val actionId: Int,
     var latestActionMills: Long,
     var actionParam: Long,
-) : Entity {
+) : Entity<String> {
     companion object {
         @JvmStatic
-        @PersistenceCreator
-        fun create(): PlayerAction {
+        fun defaults(): PlayerAction {
             return PlayerAction("", 0, 0, 0, 0)
+        }
+
+        @JvmStatic
+        @PersistenceCreator
+        fun create(
+            id: String?,
+            playerId: Long?,
+            actionId: Int?,
+            latestActionMills: Long?,
+            actionParam: Long?,
+        ): PlayerAction {
+            val defaults = defaults()
+            return PlayerAction(
+                id = id ?: defaults.id,
+                playerId = playerId ?: defaults.playerId,
+                actionId = actionId ?: defaults.actionId,
+                latestActionMills = latestActionMills ?: defaults.latestActionMills,
+                actionParam = actionParam ?: defaults.actionParam,
+            )
         }
     }
 }

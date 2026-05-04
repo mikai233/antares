@@ -1,93 +1,110 @@
 package com.mikai233.player
 
-import SnowflakeGenerator
 import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
-import com.google.protobuf.GeneratedMessage
+import com.mikai233.common.PLAYER_SHARD_NUM
+import com.mikai233.common.WORLD_SHARD_NUM
 import com.mikai233.common.conf.GlobalEnv
+import com.mikai233.common.config.ConfigChangeDispatcher
 import com.mikai233.common.core.*
-import com.mikai233.common.entity.EntityKryoPool
-import com.mikai233.common.extension.ask
-import com.mikai233.common.extension.startSharding
-import com.mikai233.common.extension.startShardingProxy
-import com.mikai233.common.extension.startSingletonProxy
-import com.mikai233.common.message.*
-import com.mikai233.common.message.global.worker.WorkerIdReq
-import com.mikai233.common.message.global.worker.WorkerIdResp
 import com.mikai233.common.message.player.HandoffPlayer
+import com.mikai233.common.rpc.DefaultRpcEntityIdResolver
+import com.mikai233.common.rpc.GameRpcProtocol
+import com.mikai233.common.rpc.RpcEntityIdResolver
+import com.mikai233.player.generated.GeneratedPlayerConfigChangeHandlers
+import com.mikai233.player.generated.GeneratedPlayerMessageCatalog
+import com.mikai233.player.generated.GeneratedPlayerNodeDispatchers
+import com.mikai233.player.service.LoginService
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import io.github.realmlabs.asteria.cluster.pekko.actor
+import io.github.realmlabs.asteria.cluster.pekko.allocationStrategy
+import io.github.realmlabs.asteria.cluster.pekko.extractor
+import io.github.realmlabs.asteria.core.NodeState
+import io.github.realmlabs.asteria.core.RoleKey
+import io.github.realmlabs.asteria.core.ServiceRegistry
+import io.github.realmlabs.asteria.id.IdGenerator
+import io.github.realmlabs.asteria.message.MessageCatalog
+import io.github.realmlabs.asteria.patch.PatchableServiceRegistry
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.cluster.sharding.ShardCoordinator
 import java.net.InetSocketAddress
-import kotlin.concurrent.thread
 
 class PlayerNode(
-    addr: InetSocketAddress,
-    name: String,
-    config: Config,
+    val addr: InetSocketAddress,
+    override val name: String,
+    val nodeId: String = "player-${addr.port}",
+    val config: Config,
     zookeeperConnectString: String,
     sameJvm: Boolean = false,
-) : Launcher, Node(addr, listOf(Role.Player), name, config, zookeeperConnectString, sameJvm) {
-    lateinit var playerSharding: ActorRef
-        private set
+) : LaunchableNode {
+    override val roles: Set<RoleKey> = setOf(RoleKey(GameRoles.Player))
+    override val services: ServiceRegistry = ServiceRegistry()
 
-    lateinit var worldSharding: ActorRef
-        private set
+    val loginService: LoginService
+        get() = patchableServices.require(LoginService::class)
 
-    lateinit var workerSingletonProxy: ActorRef
-        private set
+    @Volatile
+    private var currentState: NodeState = NodeState.Unstarted
 
-    lateinit var snowflakeGenerator: SnowflakeGenerator
-        private set
+    override val state: NodeState
+        get() = currentState
 
-    private val handlerReflect = MessageHandlerReflect("com.mikai233.player.handler")
+    private val clusterNode = ClusterNodeBootstrap(this, addr, nodeId, config, zookeeperConnectString, sameJvm)
 
-    val protobufDispatcher = MessageDispatcher(GeneratedMessage::class, handlerReflect, 1)
+    val playerSharding: ActorRef
+        get() = entityShard(GameEntityKinds.PlayerActor)
 
-    val internalDispatcher = MessageDispatcher(Message::class, handlerReflect, 1)
+    val worldSharding: ActorRef
+        get() = entityShard(GameEntityKinds.WorldActor)
 
-    val gmDispatcher = GmDispatcher(handlerReflect)
+    val idGenerator: IdGenerator
+        get() = services.get(IdGenerator::class)
 
-    override suspend fun launch() = start()
+    val protobufDispatcher = GeneratedPlayerNodeDispatchers.PROTOBUF
 
-    override suspend fun beforeStart() {
-        super.beforeStart()
-        thread { EntityKryoPool }
+    val configChangeDispatcher = ConfigChangeDispatcher(
+        GeneratedPlayerConfigChangeHandlers.ALL,
+    )
+
+    val messageCatalog: MessageCatalog
+        get() = GeneratedPlayerMessageCatalog
+    val internalDispatcher = GeneratedPlayerNodeDispatchers.INTERNAL
+
+    init {
+        val patchableServices = PatchableServiceRegistry().apply {
+            register(LoginService::class, LoginService())
+            register(RpcEntityIdResolver::class, DefaultRpcEntityIdResolver(GameRpcProtocol.protocol))
+        }
+        services.register(PatchableServiceRegistry::class, patchableServices)
     }
 
-    override suspend fun afterStart() {
-        startWorkerSingletonProxy()
-        startSnowflakeGenerator()
-        startPlayerSharding()
-        startWorldSharding()
-        super.afterStart()
+    override suspend fun launch() {
+        clusterNode.launch(
+            beforeClusterModules = listOf(clusterNode.workerIdModule()),
+            onStateChange = ::updateState,
+        ) {
+            role(GameRoles.Player)
+            entity<Long>(GameEntityKinds.PlayerActor) {
+                role(GameRoles.Player)
+                shardCount = PLAYER_SHARD_NUM
+                handoffMessage = HandoffPlayer
+                extractor(GameRpcProtocol.playerShardExtractor(this@PlayerNode))
+                allocationStrategy(ShardCoordinator.LeastShardAllocationStrategy(1, 3))
+                actor { runtime, _ -> PlayerActor.props(runtime as PlayerNode) }
+            }
+            entity<Long>(GameEntityKinds.WorldActor) {
+                role(GameRoles.World)
+                shardCount = WORLD_SHARD_NUM
+                extractor(GameRpcProtocol.worldShardExtractor(this@PlayerNode))
+            }
+        }
     }
 
-    private fun startPlayerSharding() {
-        playerSharding = system.startSharding(
-            ShardEntityType.PlayerActor.name,
-            Role.Player,
-            PlayerActor.props(this),
-            HandoffPlayer,
-            PlayerMessageExtractor,
-            ShardCoordinator.LeastShardAllocationStrategy(1, 3),
-        )
+    private fun updateState(newState: NodeState) {
+        currentState = newState
     }
 
-    private fun startWorldSharding() {
-        worldSharding = system.startShardingProxy(ShardEntityType.WorldActor.name, Role.World, WorldMessageExtractor)
-    }
-
-    private fun startWorkerSingletonProxy() {
-        workerSingletonProxy = system.startSingletonProxy(Singleton.Worker.actorName, Role.Global)
-    }
-
-    private suspend fun startSnowflakeGenerator() {
-        val resp = workerSingletonProxy.ask<WorkerIdResp>(WorkerIdReq(addr.toString())).getOrThrow()
-        snowflakeGenerator = SnowflakeGenerator(resp.id.toLong())
-        logger.info("apply worker id: {} for addr: {}", resp.id, addr)
-    }
 }
 
 private class Cli {
@@ -105,6 +122,9 @@ private class Cli {
 
     @Parameter(names = ["-n", "--name"], description = "system name")
     var name: String = GlobalEnv.SYSTEM_NAME
+
+    @Parameter(names = ["-i", "--node-id"], description = "runtime node id")
+    var nodeId: String? = null
 }
 
 suspend fun main(args: Array<String>) {
@@ -116,5 +136,8 @@ suspend fun main(args: Array<String>) {
         .parse(*args)
     val addr = InetSocketAddress(cli.host, cli.port)
     val config = ConfigFactory.load(cli.conf)
-    PlayerNode(addr, cli.name, config, cli.zookeeper).launch()
+    PlayerNode(addr, cli.name, cli.nodeId ?: "player-${cli.port}", config, cli.zookeeper).also {
+        it.launch()
+        it.awaitTermination()
+    }
 }

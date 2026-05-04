@@ -16,6 +16,8 @@ interface Asset {
 
     fun new(num: Long): Asset
 
+    fun key(): AssetKey = AssetKey(type, id)
+
     operator fun plus(other: Asset): Asset {
         operableCheck(other)
         return new(LongMath.checkedAdd(num, other.num))

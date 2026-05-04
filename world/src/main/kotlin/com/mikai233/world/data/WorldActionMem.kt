@@ -1,31 +1,32 @@
 package com.mikai233.world.data
 
 import com.mikai233.common.constants.WorldActionType
-import com.mikai233.common.db.tracked.TrackedMemData
+import com.mikai233.common.db.AsteriaTrackedMemData
+import com.mikai233.common.db.MongoDB
 import com.mikai233.common.entity.WorldAction
-import com.mikai233.common.entity.tracked.WorldActionTracked
-import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.find
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.where
+import com.mikai233.common.entity.WorldActionMongo
+import com.mikai233.common.entity.WorldActionTracked
+import kotlinx.coroutines.reactor.awaitSingle
+import org.springframework.data.mongodb.core.query.Criteria.where
+import org.springframework.data.mongodb.core.query.Query.query
 
 class WorldActionMem(
     private val worldId: Long,
-    private val mongoTemplate: () -> MongoTemplate,
-) : TrackedMemData<WorldAction, WorldActionTracked>(
-    "world_action",
-    0,
-    mongoTemplate,
-    id = { it.id },
-    factory = ::WorldActionTracked,
+    private val mongoDbProvider: () -> MongoDB,
+) : AsteriaTrackedMemData<WorldAction, WorldActionTracked>(
+    WorldActionMongo.COLLECTION,
+    { mongoDbProvider().database },
+    WorldActionMongo::wrap,
 ) {
     private var maxActionId: Long = 0
     private val worldAction: MutableMap<String, WorldActionTracked> = mutableMapOf()
     private val worldActionById: MutableMap<Int, WorldActionTracked> = mutableMapOf()
 
-    override fun init() {
-        val template = mongoTemplate()
-        val actions = template.find<WorldAction>(Query.query(where(WorldAction::worldId).`is`(worldId)))
+    override suspend fun load() {
+        val actions = mongoDbProvider().reactiveTemplate
+            .find(query(where("worldId").`is`(worldId)), WorldAction::class.java, WorldActionMongo.COLLECTION)
+            .collectList()
+            .awaitSingle()
         actions.forEach {
             val id = it.id.split("_").last().toLong()
             if (id > maxActionId) {
@@ -58,6 +59,7 @@ class WorldActionMem(
     fun delAction(actionId: Int) {
         worldActionById.remove(actionId)?.also {
             worldAction.remove(it.id)
+            removeTracked(it.id)
         }
     }
 

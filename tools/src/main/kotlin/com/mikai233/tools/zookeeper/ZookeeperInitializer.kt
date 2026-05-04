@@ -1,48 +1,70 @@
 package com.mikai233.tools.zookeeper
 
-import com.google.common.io.Resources
 import com.mikai233.common.conf.GlobalEnv
+import com.mikai233.common.config.DATA_SOURCE_GAME
+import com.mikai233.common.config.DataSource
+import com.mikai233.common.config.DataSourceConfig
+import com.mikai233.common.config.GAME_CONFIG_PUBLICATION
+import com.mikai233.common.config.GAME_WORLDS
 import com.mikai233.common.config.GameWorldConfig
-import com.mikai233.common.config.GameWorldMeta
-import com.mikai233.common.extension.Json
+import com.mikai233.common.config.NettyConfig
+import com.mikai233.common.config.luban.GameConfigSnapshotLoader
+import com.mikai233.common.config.luban.GameTables
+import com.mikai233.common.config.nettyConfigPath
 import com.mikai233.common.extension.asyncZookeeperClient
-import kotlinx.coroutines.future.await
-import org.apache.curator.x.async.AsyncCuratorFramework
-import org.apache.curator.x.async.api.CreateOption
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-import java.io.File
+import com.mikai233.tools.config.LubanPublishBundleArtifacts
+import io.github.realmlabs.asteria.cluster.config.ClusterConfigLayout
+import io.github.realmlabs.asteria.cluster.config.ClusterTopology
+import io.github.realmlabs.asteria.cluster.config.RuntimeNodeConfig
+import io.github.realmlabs.asteria.config.center.JacksonConfigCodec
+import io.github.realmlabs.asteria.config.center.RuntimeConfigRepository
+import io.github.realmlabs.asteria.config.center.zookeeper.ZookeeperConfigStore
+import io.github.realmlabs.asteria.config.luban.LubanBinaryConfigLoader
+import io.github.realmlabs.asteria.config.luban.MemoryLubanDataSource
+import io.github.realmlabs.asteria.config.publisher.ConfigArtifactSource
+import io.github.realmlabs.asteria.config.publisher.ConfigPublicationLayout
+import io.github.realmlabs.asteria.config.publisher.ConfigPublisher
+import kotlinx.coroutines.runBlocking
 
 /**
- * @author mikai233
- * @email dreamfever2017@yahoo.com
- * @date 2025/1/9
+ * Initializes the local development config center using Asteria's runtime config model.
  */
-suspend fun main() {
-    val logger = LoggerFactory.getLogger("ZookeeperInitializerKt")
+fun main() = runBlocking {
     val client = asyncZookeeperClient(GlobalEnv.zkConnect)
-    val data = Json.fromBytes<NodeData>(File(Resources.getResource("zookeeper.json").file).readBytes())
-    with(client) {
-        setData(null, data, logger)
-    }
-    val gameWorldConfigs = mutableListOf<GameWorldConfig>()
-    repeat(1000) {
-        gameWorldConfigs.add(generateGameWorld(16800L + it))
-    }
-    val nodeData = NodeData(
-        "game_worlds",
-        GameWorldMeta(gameWorldConfigs.map { it.id }.toSet()),
-        gameWorldConfigs.map {
-            NodeData(
-                "${it.id}",
-                it,
-                null,
-            )
-        },
+    val store = ZookeeperConfigStore(client)
+    val codec = JacksonConfigCodec()
+    val repository = RuntimeConfigRepository(store, codec)
+
+    val topology = ClusterTopology(
+        listOf(
+            RuntimeNodeConfig("player-2333", "127.0.0.1", 2333, setOf("Player")),
+            RuntimeNodeConfig("player-2334", "127.0.0.1", 2334, setOf("Player")),
+            RuntimeNodeConfig("world-2335", "127.0.0.1", 2335, setOf("World")),
+            RuntimeNodeConfig("global-2336", "127.0.0.1", 2336, setOf("Global"), seed = true),
+            RuntimeNodeConfig("gate-2337", "127.0.0.1", 2337, setOf("Gate")),
+            RuntimeNodeConfig("gm-2338", "127.0.0.1", 2338, setOf("Gm"), seed = true),
+        ),
     )
-    with(client) {
-        setData("/${data.name}", nodeData, logger)
+    val clusterLayout = ClusterConfigLayout.default(GlobalEnv.SYSTEM_NAME)
+    topology.nodes.forEach { node ->
+        repository.put(clusterLayout.node(node.nodeId), node)
     }
+
+    repository.put(
+        DATA_SOURCE_GAME,
+        DataSourceConfig(
+            databaseName = "asteria_example",
+            sources = listOf(DataSource("127.0.0.1", 27017)),
+        ),
+    )
+    repository.put(nettyConfigPath("gate-2337"), NettyConfig(host = "0.0.0.0", port = 6666))
+
+    repeat(1000) {
+        val world = generateGameWorld(16800L + it)
+        repository.put(GAME_WORLDS / world.id.toString(), world)
+    }
+
+    publishDemoGameConfig(store)
 }
 
 private fun generateGameWorld(worldId: Long): GameWorldConfig {
@@ -55,16 +77,19 @@ private fun generateGameWorld(worldId: Long): GameWorldConfig {
     )
 }
 
-private suspend fun AsyncCuratorFramework.setData(parent: String?, nodeData: NodeData, logger: Logger) {
-    val path = "${parent ?: ""}/${nodeData.name}"
-    val data = nodeData.data
-    if (data == null) {
-        create().withOptions(setOf(CreateOption.setDataIfExists)).forPath(path).await()
-    } else {
-        create().withOptions(setOf(CreateOption.setDataIfExists)).forPath(path, Json.toBytes(data)).await()
-        logger.info("set {} {}", path, data)
-    }
-    nodeData.children?.forEach { childData ->
-        setData(path, childData, logger)
-    }
+private suspend fun publishDemoGameConfig(store: ZookeeperConfigStore) {
+    val layout = ConfigPublicationLayout(GAME_CONFIG_PUBLICATION)
+    ConfigPublisher(
+        loader = GameConfigSnapshotLoader(
+            LubanBinaryConfigLoader(
+                tablesType = GameTables::class,
+                dataSource = MemoryLubanDataSource(
+                    LubanPublishBundleArtifacts.unpackBundle(LubanPublishBundleArtifacts.bundleBytes()),
+                ),
+            ),
+        ),
+        artifactSource = { listOf(LubanPublishBundleArtifacts.bundleArtifact()) },
+        store = store,
+        layout = layout,
+    ).publish()
 }

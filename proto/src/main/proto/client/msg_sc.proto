@@ -1,0 +1,13 @@
+syntax = "proto3";
+import "client/proto_system.proto";
+import "client/proto_login.proto";
+import "client/proto_test.proto";
+
+package com.mikai233.protocol;
+
+message MessageServerToClient{
+  PingResp ping_resp = 1;
+  GmResp gm_resp = 2;
+  TestResp test_resp = 3;
+  LoginResp login_resp = 10001;
+}

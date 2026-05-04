@@ -6,8 +6,6 @@ import com.mikai233.common.extension.invokeOnTargetMode
 import com.mikai233.common.extension.logger
 import com.mikai233.common.extension.tell
 import com.mikai233.common.formatMessage
-import com.mikai233.common.message.Message
-import com.mikai233.common.message.ServerProtobuf
 import org.apache.pekko.actor.ActorRef
 
 typealias PlayerSession = WorldSessionManager.WorldSession
@@ -18,16 +16,12 @@ class WorldSessionManager(val world: WorldActor) : Map<Long, WorldSessionManager
     inner class WorldSession(private val playerId: Long, private val channelActor: ActorRef) {
         private val logger = logger()
 
-        fun sendChannel(message: Message) {
+        fun send(message: GeneratedMessage) {
             channelActor.tell(message)
             invokeOnTargetMode(ServerMode.DevMode) {
                 val formattedMessage = formatMessage(message)
                 logger.debug("send message:{} to playerId:{} worldId:{}", formattedMessage, playerId, world.worldId)
             }
-        }
-
-        fun send(message: GeneratedMessage) {
-            sendChannel(ServerProtobuf(message))
         }
     }
 
@@ -39,10 +33,6 @@ class WorldSessionManager(val world: WorldActor) : Map<Long, WorldSessionManager
 
     fun send(playerId: Long, message: GeneratedMessage) {
         get(playerId)?.send(message)
-    }
-
-    fun <M : Message> sendRaw(playerId: Long, message: M) {
-        get(playerId)?.sendChannel(message)
     }
 
     override val size: Int

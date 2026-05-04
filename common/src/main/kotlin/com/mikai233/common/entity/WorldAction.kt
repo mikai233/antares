@@ -1,26 +1,42 @@
 package com.mikai233.common.entity
 
-import com.mikai233.common.db.Entity
-import com.mikai233.common.db.tracked.TrackEntity
-import org.springframework.data.annotation.Id
+import io.github.realmlabs.asteria.persistence.Entity
+import io.github.realmlabs.asteria.persistence.mongodb.annotations.AsteriaMongoEntity
 import org.springframework.data.annotation.PersistenceCreator
 import org.springframework.data.mongodb.core.mapping.Document
 
-@TrackEntity
 @Document(collection = "world_action")
+@AsteriaMongoEntity(collection = "world_action", wrapperName = "WorldActionTracked", helperName = "WorldActionMongo")
 data class WorldAction(
-    @Id
-    val id: String,
+    override val id: String,
     val worldId: Long,
     val actionId: Int,
     var latestActionMills: Long,
     var actionParam: Long,
-) : Entity {
+) : Entity<String> {
     companion object {
         @JvmStatic
-        @PersistenceCreator
-        fun create(): WorldAction {
+        fun defaults(): WorldAction {
             return WorldAction("", 0, 0, 0, 0)
+        }
+
+        @JvmStatic
+        @PersistenceCreator
+        fun create(
+            id: String?,
+            worldId: Long?,
+            actionId: Int?,
+            latestActionMills: Long?,
+            actionParam: Long?,
+        ): WorldAction {
+            val defaults = defaults()
+            return WorldAction(
+                id = id ?: defaults.id,
+                worldId = worldId ?: defaults.worldId,
+                actionId = actionId ?: defaults.actionId,
+                latestActionMills = latestActionMills ?: defaults.latestActionMills,
+                actionParam = actionParam ?: defaults.actionParam,
+            )
         }
     }
 }
