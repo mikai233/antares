@@ -4,6 +4,7 @@ import com.mikai233.common.entity.PlayerActivity
 import com.mikai233.common.entity.PlayerActivityMongo
 import com.mikai233.common.entity.WorldAction
 import com.mikai233.common.entity.WorldActionMongo
+import com.mongodb.reactivestreams.client.MongoClients
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.runBlocking
@@ -18,7 +19,6 @@ import org.springframework.data.mongodb.core.query.Criteria.where
 import org.springframework.data.mongodb.core.query.Query.query
 import org.testcontainers.containers.MongoDBContainer
 import org.testcontainers.utility.DockerImageName
-import com.mongodb.reactivestreams.client.MongoClients
 
 class SpringDataMongoCompatibilityTest {
     companion object {
@@ -61,7 +61,7 @@ class SpringDataMongoCompatibilityTest {
                     "actionId" to 7,
                     "latestActionMills" to 99L,
                     "actionParam" to 123L,
-                )
+                ),
             ),
             WorldActionMongo.COLLECTION,
         ).awaitSingle()
@@ -87,7 +87,7 @@ class SpringDataMongoCompatibilityTest {
                     "_id" to "1_2",
                     "worldId" to 1L,
                     "actionId" to 8,
-                )
+                ),
             ),
             WorldActionMongo.COLLECTION,
         ).awaitSingle()
@@ -115,7 +115,7 @@ class SpringDataMongoCompatibilityTest {
                     "actionId" to 9,
                     "latestActionMills" to null,
                     "actionParam" to null,
-                )
+                ),
             ),
             WorldActionMongo.COLLECTION,
         ).awaitSingle()
@@ -146,7 +146,7 @@ class SpringDataMongoCompatibilityTest {
                     "legacyField" to "legacy",
                     "debugFlag" to true,
                     "nestedExtra" to Document(mapOf("a" to 1, "b" to "x")),
-                )
+                ),
             ),
             WorldActionMongo.COLLECTION,
         ).awaitSingle()
@@ -172,7 +172,7 @@ class SpringDataMongoCompatibilityTest {
                     "_id" to "7_daily_login",
                     "playerId" to 7L,
                     "activityId" to "daily_login",
-                )
+                ),
             ),
             PlayerActivityMongo.COLLECTION,
         ).awaitSingle()

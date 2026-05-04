@@ -1,5 +1,8 @@
 package com.mikai233.common.assets
 
+import com.mikai233.common.assets.AssetPackage.Companion.builder
+
+
 /**
  * Canonical asset package value object.
  *

@@ -11,8 +11,8 @@ import com.typesafe.config.ConfigFactory
 import io.github.realmlabs.asteria.cluster.pekko.EntityShardRegistry
 import io.github.realmlabs.asteria.cluster.pekko.SingletonActorRegistry
 import io.github.realmlabs.asteria.cluster.pekko.addSuspendTask
-import io.github.realmlabs.asteria.config.ConfigSnapshot
 import io.github.realmlabs.asteria.config.ConfigService
+import io.github.realmlabs.asteria.config.ConfigSnapshot
 import io.github.realmlabs.asteria.config.center.zookeeper.ZookeeperConfigCenterModule
 import io.github.realmlabs.asteria.core.*
 import io.github.realmlabs.asteria.id.WorkerIdModule
@@ -201,13 +201,13 @@ class ClusterNodeBootstrap(
                 CoordinatedShutdown.PhaseBeforeServiceUnbind(),
                 "change_state_stopping",
             ) {
-                    onStateChange(NodeState.Stopping)
+                onStateChange(NodeState.Stopping)
             }
             addSuspendTask(
                 CoordinatedShutdown.PhaseActorSystemTerminate(),
                 "change_state_stopped",
             ) {
-                    onStateChange(NodeState.Stopped)
+                onStateChange(NodeState.Stopped)
             }
         }
     }

@@ -18,7 +18,7 @@ object GameTablesSnapshotBridge : LubanSnapshotBridge<GameTables, GameTables.IBy
             SnapshotEntry.Table(TbDroppool(tables.delegate.tbdroppool), TbDroppool::class),
             SnapshotEntry.Table(TbMonster(tables.delegate.tbmonster), TbMonster::class),
             SnapshotEntry.Table(TbItem(tables.delegate.tbitem), TbItem::class),
-            SnapshotEntry.Table(TbScene(tables.delegate.tbscene), TbScene::class)
+            SnapshotEntry.Table(TbScene(tables.delegate.tbscene), TbScene::class),
         )
     }
 }

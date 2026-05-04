@@ -1,6 +1,7 @@
 package com.mikai233.common.config.luban
 
 import io.github.realmlabs.asteria.config.ConfigSnapshot
+
 class GameConfigQueries(
     val itemsByType: Map<Int, List<ItemRow>>,
     val monstersBySceneId: Map<Int, List<MonsterRow>>,

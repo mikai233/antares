@@ -1,16 +1,7 @@
 package com.mikai233.common.test
 
-import com.mikai233.common.assets.Asset
-import com.mikai233.common.assets.AssetPackage
-import com.mikai233.common.assets.ItemAsset
-import com.mikai233.common.assets.ResourceAsset
-import com.mikai233.common.assets.RoundingStrategy
-import com.mikai233.common.assets.assetPackage
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertThrows
-import org.junit.jupiter.api.Assertions.assertTrue
+import com.mikai233.common.assets.*
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class AssetTest {

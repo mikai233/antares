@@ -1,66 +1,88 @@
 {
-  "messages" : [ {
-    "id" : 100001,
-    "type" : "com.mikai233.protocol.ProtoSystem.PingReq"
-  }, {
-    "id" : 100002,
-    "type" : "com.mikai233.protocol.ProtoSystem.PingResp"
-  }, {
-    "id" : 100003,
-    "type" : "com.mikai233.protocol.ProtoSystem.GmReq"
-  }, {
-    "id" : 100004,
-    "type" : "com.mikai233.protocol.ProtoSystem.GmResp"
-  }, {
-    "id" : 100005,
-    "type" : "com.mikai233.protocol.ProtoTest.TestReq"
-  }, {
-    "id" : 100006,
-    "type" : "com.mikai233.protocol.ProtoTest.TestResp"
-  }, {
-    "id" : 100007,
-    "type" : "com.mikai233.protocol.ProtoLogin.LoginReq"
-  }, {
-    "id" : 100008,
-    "type" : "com.mikai233.protocol.ProtoLogin.LoginResp"
-  }, {
-    "id" : 110001,
-    "type" : "com.mikai233.protocol.ProtoRpcPlayer.PlayerCreateReq"
-  }, {
-    "id" : 110002,
-    "type" : "com.mikai233.protocol.ProtoRpcPlayer.PlayerCreateResp"
-  }, {
-    "id" : 110003,
-    "type" : "com.mikai233.protocol.ProtoRpcPlayer.PlayerLoginReq"
-  }, {
-    "id" : 110004,
-    "type" : "com.mikai233.protocol.ProtoRpcPlayer.PlayerLoginResp"
-  }, {
-    "id" : 110005,
-    "type" : "com.mikai233.protocol.ProtoRpcPlayer.PlayerChannelClosedReq"
-  }, {
-    "id" : 110006,
-    "type" : "com.mikai233.protocol.ProtoRpcWorld.WorldWakeupReq"
-  }, {
-    "id" : 110007,
-    "type" : "com.mikai233.protocol.ProtoRpcWorld.WorldWakeupResp"
-  }, {
-    "id" : 110008,
-    "type" : "com.mikai233.protocol.ProtoRpcWorld.CrossWorldSubscribeTopicReq"
-  }, {
-    "id" : 110009,
-    "type" : "com.mikai233.protocol.ProtoRpcWorld.CrossWorldUnsubscribeTopicReq"
-  }, {
-    "id" : 110010,
-    "type" : "com.mikai233.protocol.ProtoRpcWorld.SubscribeTopicReq"
-  }, {
-    "id" : 110011,
-    "type" : "com.mikai233.protocol.ProtoRpcWorld.UnsubscribeTopicReq"
-  }, {
-    "id" : 110012,
-    "type" : "com.mikai233.protocol.ProtoRpcGate.ChannelExpiredReq"
-  }, {
-    "id" : 110013,
-    "type" : "com.mikai233.protocol.ProtoRpcBroadcast.BroadcastEnvelope"
-  } ]
+  "messages": [
+    {
+      "id": 100001,
+      "type": "com.mikai233.protocol.ProtoSystem.PingReq"
+    },
+    {
+      "id": 100002,
+      "type": "com.mikai233.protocol.ProtoSystem.PingResp"
+    },
+    {
+      "id": 100003,
+      "type": "com.mikai233.protocol.ProtoSystem.GmReq"
+    },
+    {
+      "id": 100004,
+      "type": "com.mikai233.protocol.ProtoSystem.GmResp"
+    },
+    {
+      "id": 100005,
+      "type": "com.mikai233.protocol.ProtoTest.TestReq"
+    },
+    {
+      "id": 100006,
+      "type": "com.mikai233.protocol.ProtoTest.TestResp"
+    },
+    {
+      "id": 100007,
+      "type": "com.mikai233.protocol.ProtoLogin.LoginReq"
+    },
+    {
+      "id": 100008,
+      "type": "com.mikai233.protocol.ProtoLogin.LoginResp"
+    },
+    {
+      "id": 110001,
+      "type": "com.mikai233.protocol.ProtoRpcPlayer.PlayerCreateReq"
+    },
+    {
+      "id": 110002,
+      "type": "com.mikai233.protocol.ProtoRpcPlayer.PlayerCreateResp"
+    },
+    {
+      "id": 110003,
+      "type": "com.mikai233.protocol.ProtoRpcPlayer.PlayerLoginReq"
+    },
+    {
+      "id": 110004,
+      "type": "com.mikai233.protocol.ProtoRpcPlayer.PlayerLoginResp"
+    },
+    {
+      "id": 110005,
+      "type": "com.mikai233.protocol.ProtoRpcPlayer.PlayerChannelClosedReq"
+    },
+    {
+      "id": 110006,
+      "type": "com.mikai233.protocol.ProtoRpcWorld.WorldWakeupReq"
+    },
+    {
+      "id": 110007,
+      "type": "com.mikai233.protocol.ProtoRpcWorld.WorldWakeupResp"
+    },
+    {
+      "id": 110008,
+      "type": "com.mikai233.protocol.ProtoRpcWorld.CrossWorldSubscribeTopicReq"
+    },
+    {
+      "id": 110009,
+      "type": "com.mikai233.protocol.ProtoRpcWorld.CrossWorldUnsubscribeTopicReq"
+    },
+    {
+      "id": 110010,
+      "type": "com.mikai233.protocol.ProtoRpcWorld.SubscribeTopicReq"
+    },
+    {
+      "id": 110011,
+      "type": "com.mikai233.protocol.ProtoRpcWorld.UnsubscribeTopicReq"
+    },
+    {
+      "id": 110012,
+      "type": "com.mikai233.protocol.ProtoRpcGate.ChannelExpiredReq"
+    },
+    {
+      "id": 110013,
+      "type": "com.mikai233.protocol.ProtoRpcBroadcast.BroadcastEnvelope"
+    }
+  ]
 }

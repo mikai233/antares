@@ -2,7 +2,10 @@ package com.mikai233.common.extension
 
 import com.mikai233.protocol.ProtoCommon
 import kotlinx.coroutines.future.await
-import org.apache.pekko.actor.*
+import org.apache.pekko.actor.AbstractActor
+import org.apache.pekko.actor.ActorRef
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.actor.TimerScheduler
 import org.apache.pekko.event.Logging
 import org.apache.pekko.event.LoggingAdapter
 import org.apache.pekko.pattern.Patterns

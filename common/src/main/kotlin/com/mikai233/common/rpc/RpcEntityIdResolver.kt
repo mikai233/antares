@@ -1,8 +1,8 @@
 package com.mikai233.common.rpc
 
 import com.google.protobuf.GeneratedMessage
-import com.mikai233.common.core.replacePatchableService
 import com.mikai233.common.core.patchableServices
+import com.mikai233.common.core.replacePatchableService
 import com.mikai233.protocol.ProtoLogin.LoginReq
 import com.mikai233.protocol.ProtoSystem.GmReq
 import com.mikai233.protocol.ProtoTest.TestReq

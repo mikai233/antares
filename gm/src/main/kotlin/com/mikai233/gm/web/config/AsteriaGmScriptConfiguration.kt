@@ -1,11 +1,7 @@
 package com.mikai233.gm.web.config
 
 import com.mikai233.common.annotation.AllOpen
-import com.mikai233.common.core.GameEntityKinds
-import com.mikai233.common.core.GameRoles
-import com.mikai233.common.core.GameSingletons
-import com.mikai233.common.core.gameWorldIds
-import com.mikai233.common.core.system
+import com.mikai233.common.core.*
 import com.mikai233.gm.GmNode
 import io.github.realmlabs.asteria.core.EntityKind
 import io.github.realmlabs.asteria.core.RoleKey

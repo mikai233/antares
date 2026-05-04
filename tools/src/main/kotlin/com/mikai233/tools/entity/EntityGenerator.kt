@@ -1,9 +1,8 @@
 package com.mikai233.tools.entity
 
-import com.mikai233.common.extension.upperCamelToSnakeCase
-import io.github.realmlabs.asteria.persistence.Entity
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import io.github.realmlabs.asteria.persistence.Entity
 import kotlin.io.path.Path
 import kotlin.random.Random
 

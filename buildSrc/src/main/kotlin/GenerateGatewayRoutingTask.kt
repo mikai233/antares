@@ -1,12 +1,6 @@
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.CodeBlock
-import com.squareup.kotlinpoet.FileSpec
-import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.PropertySpec
-import com.squareup.kotlinpoet.TypeSpec
-import com.squareup.kotlinpoet.asClassName
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
@@ -59,7 +53,8 @@ abstract class GenerateGatewayRoutingTask : DefaultTask() {
 
     private fun buildFiles(routes: List<GatewayRouteSpec>): List<FileSpec> {
         val files = mutableListOf<FileSpec>()
-        val routeSpecType = ClassName("com.mikai233.gate.generated", "GeneratedGatewayRouting", "GeneratedGatewayRouteSpec")
+        val routeSpecType =
+            ClassName("com.mikai233.gate.generated", "GeneratedGatewayRouting", "GeneratedGatewayRouteSpec")
         val mapType = Map::class.asClassName().parameterizedBy(Int::class.asClassName(), routeSpecType)
         val gatewaySessionContext = ClassName("io.github.realmlabs.asteria.gateway", "GatewaySessionContext")
         val gatewayRoute = ClassName("io.github.realmlabs.asteria.gateway", "GatewayRoute")
@@ -147,7 +142,10 @@ abstract class GenerateGatewayRoutingTask : DefaultTask() {
         val builder = CodeBlock.builder()
         builder.add("buildMap {\n")
         repeat(chunkCount) { index ->
-            builder.add("  putAll(%T.routesById)\n", ClassName("com.mikai233.gate.generated", "GeneratedGatewayRoutingChunk$index"))
+            builder.add(
+                "  putAll(%T.routesById)\n",
+                ClassName("com.mikai233.gate.generated", "GeneratedGatewayRoutingChunk$index"),
+            )
         }
         builder.add("}")
         return builder.build()
@@ -211,7 +209,10 @@ abstract class GenerateGatewayRoutingTask : DefaultTask() {
         val builder = CodeBlock.builder()
         builder.addStatement("val spec = routesById[packet.id] ?: return null")
         builder.addStatement("val target = resolveTarget(spec.route)")
-        builder.addStatement("val entityId = if (spec.route == %S) null else resolveEntityId(spec, context, packet)", "gateway-local")
+        builder.addStatement(
+            "val entityId = if (spec.route == %S) null else resolveEntityId(spec, context, packet)",
+            "gateway-local",
+        )
         builder.addStatement("return %T(target, entityId)", gatewayRoute)
         return builder.build()
     }
@@ -257,7 +258,8 @@ abstract class GenerateGatewayRoutingTask : DefaultTask() {
     }
 
     private fun buildResolveEntityIdHelper(): FunSpec {
-        val routeSpecType = ClassName("com.mikai233.gate.generated", "GeneratedGatewayRouting", "GeneratedGatewayRouteSpec")
+        val routeSpecType =
+            ClassName("com.mikai233.gate.generated", "GeneratedGatewayRouting", "GeneratedGatewayRouteSpec")
         val gatewaySessionContext = ClassName("io.github.realmlabs.asteria.gateway", "GatewaySessionContext")
         val clientProtobuf = ClassName("com.mikai233.common.message", "ClientProtobuf")
         val gatewayRoute = ClassName("io.github.realmlabs.asteria.gateway", "GatewayRoute")
@@ -284,9 +286,19 @@ abstract class GenerateGatewayRoutingTask : DefaultTask() {
             .addParameter("packet", clientProtobuf)
             .returns(Long::class)
             .beginControlFlow("return when")
-            .addStatement("source.startsWith(%S) -> readMessageLongField(packet.message, source.removePrefix(%S))", "message:", "message:")
-            .addStatement("source == %S -> requireNotNull(context.session.get(com.mikai233.gate.GatePlayerIdKey))", "session:player_id")
-            .addStatement("source == %S -> requireNotNull(context.session.get(com.mikai233.gate.GateWorldIdKey))", "session:world_id")
+            .addStatement(
+                "source.startsWith(%S) -> readMessageLongField(packet.message, source.removePrefix(%S))",
+                "message:",
+                "message:",
+            )
+            .addStatement(
+                "source == %S -> requireNotNull(context.session.get(com.mikai233.gate.GatePlayerIdKey))",
+                "session:player_id",
+            )
+            .addStatement(
+                "source == %S -> requireNotNull(context.session.get(com.mikai233.gate.GateWorldIdKey))",
+                "session:world_id",
+            )
             .addStatement("source == %S -> route.entityId as Long", "route.entity_id")
             .addStatement("source.isBlank() -> error(%P)", "route spec has no source")
             .addStatement("else -> error(%P + source)", "unsupported gateway source: ")

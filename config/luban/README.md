@@ -7,8 +7,8 @@ The flow is:
 1. Edit the Excel files under `Datas/`.
 2. Run `config/luban/generate.sh` / `config/luban/generate.ps1` or the Gradle tasks below.
 3. Luban generates:
-   - Java model/table code into `common/src/generated/luban/java`
-   - binary table files into `common/build/generated/luban/resources/luban`
+    - Java model/table code into `common/src/generated/luban/java`
+    - binary table files into `common/build/generated/luban/resources/luban`
 4. The project checks in the generated Java/Kotlin bridge sources. The generated `.bytes`
    files are local build artifacts used by tests and publication tooling, not runtime source files.
 

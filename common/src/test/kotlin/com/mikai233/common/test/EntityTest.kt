@@ -9,16 +9,10 @@ import org.reflections.Reflections
 import org.springframework.data.annotation.PersistenceCreator
 import org.springframework.data.mongodb.core.mapping.Document
 import java.lang.reflect.Modifier
-import kotlin.reflect.KParameter
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
-import kotlin.reflect.full.companionObject
-import kotlin.reflect.full.declaredFunctions
-import kotlin.reflect.full.declaredMemberProperties
-import kotlin.reflect.full.hasAnnotation
-import kotlin.reflect.full.primaryConstructor
-import kotlin.reflect.full.valueParameters
-import kotlin.reflect.full.withNullability
+import kotlin.reflect.KParameter
+import kotlin.reflect.full.*
 import kotlin.reflect.jvm.javaField
 import kotlin.reflect.jvm.jvmErasure
 
@@ -34,8 +28,8 @@ class EntityTest {
         Reflections("com.mikai233.common.entity").getSubTypesOf(Entity::class.java)
             .filter { entityClass ->
                 entityClass.`package`.name == "com.mikai233.common.entity" &&
-                    !entityClass.isInterface &&
-                    !Modifier.isAbstract(entityClass.modifiers)
+                        !entityClass.isInterface &&
+                        !Modifier.isAbstract(entityClass.modifiers)
             }
             .sortedBy { it.name }
             .forEach { entityClass ->
@@ -132,7 +126,7 @@ class EntityTest {
                 constructorParameter.type.withNullability(true),
                 factoryParameter.type,
                 "Class[$entityName] @PersistenceCreator parameter[${factoryParameter.name}] " +
-                    "must be the nullable version of constructor parameter type",
+                        "must be the nullable version of constructor parameter type",
             )
         }
     }

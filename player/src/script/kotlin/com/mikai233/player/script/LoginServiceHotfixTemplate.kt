@@ -1,7 +1,7 @@
 package com.mikai233.player.script
 
-import com.mikai233.common.extension.logger
 import com.mikai233.common.core.replacePatchableService
+import com.mikai233.common.extension.logger
 import com.mikai233.player.PlayerNode
 import com.mikai233.player.service.LoginService
 import io.github.realmlabs.asteria.script.NodeScript

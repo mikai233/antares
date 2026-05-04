@@ -1,16 +1,6 @@
 package com.mikai233.common.test
 
-import com.mikai233.common.config.luban.GameConfigSnapshotLoader
-import com.mikai233.common.config.luban.GameConfigQueries
-import com.mikai233.common.config.luban.GameTables
-import com.mikai233.common.config.luban.GameTablesSnapshotBridge
-import com.mikai233.common.config.luban.tbActivity
-import com.mikai233.common.config.luban.tbDroppool
-import com.mikai233.common.config.luban.tbGameGlobal
-import com.mikai233.common.config.luban.tbItem
-import com.mikai233.common.config.luban.tbMonster
-import com.mikai233.common.config.luban.tbRotationMessage
-import com.mikai233.common.config.luban.tbScene
+import com.mikai233.common.config.luban.*
 import io.github.realmlabs.asteria.config.component
 import io.github.realmlabs.asteria.config.luban.LubanBinaryConfigLoader
 import io.github.realmlabs.asteria.config.luban.MemoryLubanDataSource

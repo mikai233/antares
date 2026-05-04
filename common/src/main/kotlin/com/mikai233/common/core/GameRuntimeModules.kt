@@ -3,9 +3,9 @@ package com.mikai233.common.core
 import com.mikai233.common.broadcast.PlayerBroadcastActor
 import com.mikai233.common.broadcast.PlayerBroadcastEventBus
 import com.mikai233.common.config.DATA_SOURCE_GAME
-import com.mikai233.common.config.GameWorldConfig
 import com.mikai233.common.config.GAME_CONFIG_PUBLICATION
 import com.mikai233.common.config.GAME_WORLDS
+import com.mikai233.common.config.GameWorldConfig
 import com.mikai233.common.config.luban.GameConfigSnapshotLoader
 import com.mikai233.common.config.luban.GameTables
 import com.mikai233.common.config.luban.GameTablesSnapshotBridge
@@ -22,7 +22,6 @@ import io.github.realmlabs.asteria.core.AsteriaModule
 import io.github.realmlabs.asteria.core.ModuleContext
 import io.prometheus.client.exporter.HTTPServer
 import io.prometheus.client.hotspot.DefaultExports
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -31,6 +30,7 @@ import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.routing.FromConfig
 import org.slf4j.LoggerFactory
+import java.util.concurrent.atomic.AtomicBoolean
 
 class PekkoCoroutineScopeModule : AsteriaModule {
     override val name: String = "pekko-coroutine-scope"

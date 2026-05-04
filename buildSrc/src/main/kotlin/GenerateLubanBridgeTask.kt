@@ -4,7 +4,7 @@ import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import java.io.File
-import java.util.Locale
+import java.util.*
 
 abstract class GenerateLubanBridgeTask : DefaultTask() {
     @get:InputDirectory

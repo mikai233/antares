@@ -8,7 +8,7 @@ object GeneratedLubanMetadata {
         "game_tbitem.bytes",
         "game_tbmonster.bytes",
         "game_tbrotationmessage.bytes",
-        "game_tbscene.bytes"
+        "game_tbscene.bytes",
     )
 }
 

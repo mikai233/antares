@@ -9,12 +9,12 @@ import com.mikai233.common.core.*
 import com.mikai233.common.rpc.GameRpcProtocol
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import io.github.realmlabs.asteria.core.NodeState
-import io.github.realmlabs.asteria.core.RoleKey
-import io.github.realmlabs.asteria.core.ServiceRegistry
 import io.github.realmlabs.asteria.cluster.pekko.PekkoSingletonStartup
 import io.github.realmlabs.asteria.cluster.pekko.extractor
 import io.github.realmlabs.asteria.cluster.pekko.singletonStartup
+import io.github.realmlabs.asteria.core.NodeState
+import io.github.realmlabs.asteria.core.RoleKey
+import io.github.realmlabs.asteria.core.ServiceRegistry
 import org.apache.pekko.actor.ActorRef
 import java.net.InetSocketAddress
 
