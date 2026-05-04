@@ -2,6 +2,7 @@ plugins {
     alias(libTool.plugins.ksp)
 }
 
+val isWindows = System.getProperty("os.name").startsWith("Windows", ignoreCase = true)
 val lubanDataDirProvider = providers.gradleProperty("lubanDataDir")
     .map { rootDir.resolve(it) }
     .orElse(rootDir.resolve("config/luban/Datas"))
@@ -63,11 +64,22 @@ val exportLubanConfig by tasks.registering(Exec::class) {
     group = "luban"
     description = "Export Luban Java code and binary data from Excel workbooks."
     workingDir(rootDir)
-    commandLine("bash", "${rootDir}/config/luban/generate.sh")
+    if (isWindows) {
+        commandLine(
+            "powershell",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            "${rootDir}/config/luban/generate.ps1",
+        )
+    } else {
+        commandLine("bash", "${rootDir}/config/luban/generate.sh")
+    }
     environment("LUBAN_DATA_DIR", lubanDataDirProvider.get().absolutePath)
     inputs.dir(lubanDataDirProvider)
     inputs.file(rootDir.resolve("config/luban/luban.conf"))
     inputs.file(rootDir.resolve("config/luban/generate.sh"))
+    inputs.file(rootDir.resolve("config/luban/generate.ps1"))
     inputs.file(rootDir.resolve("config/luban/scripts/generate_demo_excels.py"))
     outputs.dir(layout.projectDirectory.dir("src/generated/luban/java"))
     outputs.dir(layout.buildDirectory.dir("generated/luban/resources/luban"))

@@ -5,7 +5,7 @@ This directory contains the Excel source-of-truth for the project's demo game co
 The flow is:
 
 1. Edit the Excel files under `Datas/`.
-2. Run `config/luban/generate.sh` or the Gradle tasks below.
+2. Run `config/luban/generate.sh` / `config/luban/generate.ps1` or the Gradle tasks below.
 3. Luban generates:
    - Java model/table code into `common/src/generated/luban/java`
    - binary table files into `common/build/generated/luban/resources/luban`
@@ -56,4 +56,10 @@ Then regenerate:
 
 ```bash
 ./config/luban/generate.sh
+```
+
+On Windows PowerShell:
+
+```powershell
+./config/luban/generate.ps1
 ```
