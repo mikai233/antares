@@ -104,5 +104,8 @@ suspend fun main(args: Array<String>) {
         .parse(*args)
     val addr = InetSocketAddress(cli.host, cli.port)
     val config = ConfigFactory.load(cli.conf)
-    GmNode(addr, cli.name, cli.nodeId ?: "gm-${cli.port}", config, cli.zookeeper).launch()
+    GmNode(addr, cli.name, cli.nodeId ?: "gm-${cli.port}", config, cli.zookeeper).also {
+        it.launch()
+        it.awaitTermination()
+    }
 }

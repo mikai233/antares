@@ -1,6 +1,7 @@
 plugins {
     groovy
-    id("io.github.realm-labs.asteria.message-codegen")
+    alias(libTool.plugins.ksp)
+    alias(libTool.plugins.asteria.message.codegen)
 }
 
 asteriaMessageCodegen {

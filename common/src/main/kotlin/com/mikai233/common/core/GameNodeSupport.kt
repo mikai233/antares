@@ -27,6 +27,7 @@ import io.github.realmlabs.asteria.script.pekko.ScriptModule
 import io.github.realmlabs.asteria.starter.clusterGameApplication
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.future.await
 import org.apache.curator.x.async.AsyncCuratorFramework
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.actor.ActorSystem
@@ -67,6 +68,10 @@ interface LaunchableNode : NodeRuntime {
 
 val NodeRuntime.system: ActorSystem
     get() = services.get(ActorSystem::class)
+
+suspend fun NodeRuntime.awaitTermination() {
+    system.getWhenTerminated().await()
+}
 
 val NodeRuntime.coroutineScope: CoroutineScope
     get() = services.get(CoroutineScope::class)

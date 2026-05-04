@@ -57,9 +57,6 @@ val generateRpcProtocolRegistry = tasks.register<RpcProtocolRegistryTask>("gener
 }
 
 asteriaProtobufProtocol {
-    // FIXME(mikai): Remove after Asteria protobuf-protocol-codegen fixes the
-    // wrong auto-added Maven coordinates for protocol-protobuf/rpc-protobuf in 0.1.7.
-    addDependencies.set(false)
     packageName.set("com.mikai233.protocol")
     rpc {
         enabled.set(true)
@@ -79,10 +76,7 @@ tasks.named("generateProto") {
     finalizedBy("generateProtoMeta")
 }
 
-// FIXME(mikai): Remove after Asteria protobuf-protocol-codegen declares the
-// proper task dependency from generateAsteriaRpcProtocol to generateProto.
 tasks.named("generateAsteriaRpcProtocol") {
-    dependsOn("generateProto")
     dependsOn(generateRpcProtocolRegistry)
 }
 

@@ -19,8 +19,12 @@ import io.github.realmlabs.asteria.config.center.JacksonConfigCodec
 import io.github.realmlabs.asteria.config.center.RuntimeConfigRepository
 import io.github.realmlabs.asteria.config.center.zookeeper.ZookeeperConfigStore
 import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.future.await
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
+import org.apache.pekko.actor.ActorSystem
 import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
 import kotlin.system.exitProcess
@@ -65,6 +69,9 @@ object DevClusterLauncher {
             .values
             .map { it.value }
             .sortedByDescending { it.seed }
+        check(nodeConfigs.isNotEmpty()) {
+            "no runtime node configs found under ${layout.nodes}; run tools.zookeeper.ZookeeperInitializer first"
+        }
 
         val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
             logger.error("failed to launch development cluster", throwable)
@@ -72,9 +79,9 @@ object DevClusterLauncher {
             exitProcess(-1)
         }
 
-        supervisorScope {
-            nodeConfigs.forEach { nodeConfig ->
-                launch(exceptionHandler) {
+        val nodes: List<LaunchableNode> = supervisorScope {
+            nodeConfigs.map { nodeConfig ->
+                async(exceptionHandler) {
                     logger.info("launch development node: {}", nodeConfig)
                     val role = requireNotNull(nodeConfig.roles.firstOrNull(nodeByRole::containsKey)) {
                         "node ${nodeConfig.nodeId} has no known game role: ${nodeConfig.roles}"
@@ -89,7 +96,14 @@ object DevClusterLauncher {
                         config,
                         GlobalEnv.zkConnect,
                         true,
-                    ).launch()
+                    ).also { it.launch() }
+                }
+            }.awaitAll()
+        }
+        supervisorScope {
+            nodes.forEach { node ->
+                launch(exceptionHandler) {
+                    node.services.get(ActorSystem::class).getWhenTerminated().await()
                 }
             }
         }

@@ -2,7 +2,7 @@
 # 🧩 Version Catalog (Gradle)
 ###############################
 [versions]
-asteria = "0.1.7"
+asteria = "0.1.12"
 curator = "5.9.0"
 jackson = "2.21.2"
 kotlinpoet = "2.3.0"
@@ -161,6 +161,7 @@ detekt = "io.gitlab.arturbosch.detekt:1.23.8"
 dokka = "org.jetbrains.dokka:2.2.0"
 foojay-resolver-convention = "org.gradle.toolchains.foojay-resolver-convention:1.0.0"
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+asteria-message-codegen = { id = "io.github.realm-labs.asteria.message-codegen", version.ref = "asteria" }
 asteria-protobuf-protocol-codegen = { id = "io.github.realm-labs.asteria.protobuf-protocol-codegen", version.ref = "asteria" }
 protobuf = "com.google.protobuf:0.9.6"
 version-catalog-update = "nl.littlerobots.version-catalog-update:1.1.0"
