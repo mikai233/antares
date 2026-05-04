@@ -5,29 +5,17 @@ import io.github.realmlabs.asteria.config.ConfigSnapshot
 import io.github.realmlabs.asteria.config.ConfigTableName
 import io.github.realmlabs.asteria.config.ListConfigTable
 import io.github.realmlabs.asteria.config.OrderedMapConfigTable
+import io.github.realmlabs.asteria.config.SnapshotEntry
 import io.github.realmlabs.asteria.config.SingleConfigTable
 import io.github.realmlabs.asteria.config.table
+import io.github.realmlabs.asteria.config.luban.LubanSnapshotBridge
 import luban.ByteBuf
 import java.io.IOException
 
 class GameTables(
     loader: IByteBufLoader,
 ) {
-    private val delegate = GameTablesGen { file -> loader.load(file) }
-
-    val tbRotationMessage by lazy { TbRotationMessage(delegate.tbRotationMessage) }
-
-    val tbGameGlobal by lazy { TbGameGlobal(delegate.tbGameGlobal) }
-
-    val tbActivity by lazy { TbActivity(delegate.tbactivity) }
-
-    val tbDroppool by lazy { TbDroppool(delegate.tbdroppool) }
-
-    val tbMonster by lazy { TbMonster(delegate.tbmonster) }
-
-    val tbItem by lazy { TbItem(delegate.tbitem) }
-
-    val tbScene by lazy { TbScene(delegate.tbscene) }
+    internal val delegate = GameTablesGen { file -> loader.load(file) }
 
     fun interface IByteBufLoader {
         @Throws(IOException::class)
@@ -89,6 +77,26 @@ class TbScene(delegate: com.mikai233.common.config.luban.gen.game.Tbscene) : Ord
     rowType = SceneRow::class,
     rows = delegate.dataList.map { row -> row.id to row },
 )
+
+object GameTablesSnapshotBridge : LubanSnapshotBridge<GameTables, GameTables.IByteBufLoader> {
+    override val loaderType = GameTables.IByteBufLoader::class
+
+    override fun createTables(loader: GameTables.IByteBufLoader): GameTables {
+        return GameTables(loader)
+    }
+
+    override fun buildEntries(tables: GameTables): List<SnapshotEntry> {
+        return listOf(
+            SnapshotEntry.Table(TbRotationMessage(tables.delegate.tbRotationMessage), TbRotationMessage::class),
+            SnapshotEntry.Table(TbGameGlobal(tables.delegate.tbGameGlobal), TbGameGlobal::class),
+            SnapshotEntry.Table(TbActivity(tables.delegate.tbactivity), TbActivity::class),
+            SnapshotEntry.Table(TbDroppool(tables.delegate.tbdroppool), TbDroppool::class),
+            SnapshotEntry.Table(TbMonster(tables.delegate.tbmonster), TbMonster::class),
+            SnapshotEntry.Table(TbItem(tables.delegate.tbitem), TbItem::class),
+            SnapshotEntry.Table(TbScene(tables.delegate.tbscene), TbScene::class)
+        )
+    }
+}
 
 val ConfigSnapshot.tbRotationMessage: TbRotationMessage
     get() = table()

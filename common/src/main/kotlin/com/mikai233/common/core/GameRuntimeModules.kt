@@ -8,6 +8,7 @@ import com.mikai233.common.config.GAME_CONFIG_PUBLICATION
 import com.mikai233.common.config.GAME_WORLDS
 import com.mikai233.common.config.luban.GameConfigSnapshotLoader
 import com.mikai233.common.config.luban.GameTables
+import com.mikai233.common.config.luban.GameTablesSnapshotBridge
 import com.mikai233.common.db.MongoDB
 import com.mikai233.common.event.GameConfigChangedEvent
 import io.github.realmlabs.asteria.config.ConfigModule
@@ -118,6 +119,7 @@ class GameConfigModule : AsteriaModule {
                     ConfigPublicationLubanBinaryLoader(
                         tablesType = GameTables::class,
                         store = store,
+                        bridge = GameTablesSnapshotBridge,
                         layout = ConfigPublicationLayout(GAME_CONFIG_PUBLICATION),
                     ),
                 ),

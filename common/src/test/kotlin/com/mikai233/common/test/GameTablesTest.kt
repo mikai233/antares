@@ -3,6 +3,7 @@ package com.mikai233.common.test
 import com.mikai233.common.config.luban.GameConfigSnapshotLoader
 import com.mikai233.common.config.luban.GameConfigQueries
 import com.mikai233.common.config.luban.GameTables
+import com.mikai233.common.config.luban.GameTablesSnapshotBridge
 import com.mikai233.common.config.luban.tbActivity
 import com.mikai233.common.config.luban.tbDroppool
 import com.mikai233.common.config.luban.tbGameGlobal
@@ -27,6 +28,7 @@ class GameTablesTest {
                 dataSource = MemoryLubanDataSource(
                     LubanTestConfigArtifacts.unpackBundle(LubanTestConfigArtifacts.bundleBytes()),
                 ),
+                bridge = GameTablesSnapshotBridge,
             ),
         ).load()
         val queries = snapshot.component<GameConfigQueries>()

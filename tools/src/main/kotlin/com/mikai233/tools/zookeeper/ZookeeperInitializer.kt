@@ -10,6 +10,7 @@ import com.mikai233.common.config.GameWorldConfig
 import com.mikai233.common.config.NettyConfig
 import com.mikai233.common.config.luban.GameConfigSnapshotLoader
 import com.mikai233.common.config.luban.GameTables
+import com.mikai233.common.config.luban.GameTablesSnapshotBridge
 import com.mikai233.common.config.nettyConfigPath
 import com.mikai233.common.extension.asyncZookeeperClient
 import com.mikai233.tools.config.LubanPublishBundleArtifacts
@@ -86,6 +87,7 @@ private suspend fun publishDemoGameConfig(store: ZookeeperConfigStore) {
                 dataSource = MemoryLubanDataSource(
                     LubanPublishBundleArtifacts.unpackBundle(LubanPublishBundleArtifacts.bundleBytes()),
                 ),
+                bridge = GameTablesSnapshotBridge,
             ),
         ),
         artifactSource = { listOf(LubanPublishBundleArtifacts.bundleArtifact()) },

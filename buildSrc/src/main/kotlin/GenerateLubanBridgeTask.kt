@@ -109,9 +109,6 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
         val typeAliases = entries.joinToString("\n") {
             "typealias ${it.rowAlias} = ${it.rowFqcn}"
         }
-        val properties = entries.joinToString("\n\n") {
-            "    val ${it.tableProperty} by lazy { ${it.adapterClass}(delegate.${it.delegatePropertyName}) }"
-        }
         val adapters = entries.joinToString("\n\n") {
             buildString {
                 when (val shape = it.shape) {
@@ -151,17 +148,17 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
             |import io.github.realmlabs.asteria.config.ConfigTableName
             |import io.github.realmlabs.asteria.config.ListConfigTable
             |import io.github.realmlabs.asteria.config.OrderedMapConfigTable
+            |import io.github.realmlabs.asteria.config.SnapshotEntry
             |import io.github.realmlabs.asteria.config.SingleConfigTable
             |import io.github.realmlabs.asteria.config.table
+            |import io.github.realmlabs.asteria.config.luban.LubanSnapshotBridge
             |import luban.ByteBuf
             |import java.io.IOException
             |
             |class GameTables(
             |    loader: IByteBufLoader,
             |) {
-            |    private val delegate = GameTablesGen { file -> loader.load(file) }
-            |
-            |$properties
+            |    internal val delegate = GameTablesGen { file -> loader.load(file) }
             |
             |    fun interface IByteBufLoader {
             |        @Throws(IOException::class)
@@ -173,8 +170,28 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
             |
             |$adapters
             |
+            |object GameTablesSnapshotBridge : LubanSnapshotBridge<GameTables, GameTables.IByteBufLoader> {
+            |    override val loaderType = GameTables.IByteBufLoader::class
+            |
+            |    override fun createTables(loader: GameTables.IByteBufLoader): GameTables {
+            |        return GameTables(loader)
+            |    }
+            |
+            |    override fun buildEntries(tables: GameTables): List<SnapshotEntry> {
+            |        return listOf(
+            |${renderBridgeEntries(entries)}
+            |        )
+            |    }
+            |}
+            |
             |${renderSnapshotAccessors(entries)}
             |""".trimMargin()
+    }
+
+    private fun renderBridgeEntries(entries: List<TableEntry>): String {
+        return entries.joinToString(",\n") { entry ->
+            "            SnapshotEntry.Table(${entry.adapterClass}(tables.delegate.${entry.delegatePropertyName}), ${entry.adapterClass}::class)"
+        }
     }
 
     private fun renderSnapshotAccessors(entries: List<TableEntry>): String {

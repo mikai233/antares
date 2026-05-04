@@ -42,6 +42,7 @@ private suspend fun loadSnapshot(generatedDataDir: Path, includeQueries: Boolean
         delegate = LubanBinaryConfigLoader(
             tablesType = GameTables::class,
             dataSource = MemoryLubanDataSource(bytesByPath),
+            bridge = GameTablesSnapshotBridge,
         ),
         componentBuilders = builders,
     ).load()
