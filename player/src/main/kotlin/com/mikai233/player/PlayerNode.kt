@@ -11,7 +11,7 @@ import com.mikai233.common.message.player.HandoffPlayer
 import com.mikai233.common.rpc.DefaultRpcEntityIdResolver
 import com.mikai233.common.rpc.GameRpcProtocol
 import com.mikai233.common.rpc.RpcEntityIdResolver
-import com.mikai233.player.config.PlayerActivityConfigChangeHandler
+import com.mikai233.player.generated.GeneratedPlayerConfigChangeHandlers
 import com.mikai233.player.generated.GeneratedPlayerMessageCatalog
 import com.mikai233.player.generated.GeneratedPlayerNodeDispatchers
 import com.mikai233.player.service.LoginService
@@ -61,11 +61,10 @@ class PlayerNode(
     val idGenerator: IdGenerator
         get() = services.get(IdGenerator::class)
 
-    private val playerActivityConfigChangeHandler = PlayerActivityConfigChangeHandler()
     val protobufDispatcher = GeneratedPlayerNodeDispatchers.PROTOBUF
 
-    val configChangeDispatcher = ConfigChangeDispatcher<PlayerActor>(
-        listOf(playerActivityConfigChangeHandler),
+    val configChangeDispatcher = ConfigChangeDispatcher(
+        GeneratedPlayerConfigChangeHandlers.ALL,
     )
 
     val messageCatalog: MessageCatalog

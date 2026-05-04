@@ -4,28 +4,28 @@ import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
 import com.mikai233.common.PLAYER_SHARD_NUM
 import com.mikai233.common.WORLD_SHARD_NUM
-import com.mikai233.common.config.ConfigChangeDispatcher
 import com.mikai233.common.conf.GlobalEnv
+import com.mikai233.common.config.ConfigChangeDispatcher
 import com.mikai233.common.core.*
-import com.mikai233.common.event.WorldActiveEvent
 import com.mikai233.common.message.world.HandoffWorld
 import com.mikai233.common.rpc.DefaultRpcEntityIdResolver
 import com.mikai233.common.rpc.GameRpcProtocol
 import com.mikai233.common.rpc.RpcEntityIdResolver
+import com.mikai233.world.generated.GeneratedWorldConfigChangeHandlers
 import com.mikai233.world.generated.GeneratedWorldMessageCatalog
 import com.mikai233.world.generated.GeneratedWorldNodeDispatchers
+import com.mikai233.world.service.WorldService
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import io.github.realmlabs.asteria.core.NodeState
-import io.github.realmlabs.asteria.core.RoleKey
-import io.github.realmlabs.asteria.core.ServiceRegistry
 import io.github.realmlabs.asteria.cluster.pekko.actor
 import io.github.realmlabs.asteria.cluster.pekko.allocationStrategy
 import io.github.realmlabs.asteria.cluster.pekko.extractor
+import io.github.realmlabs.asteria.core.NodeState
+import io.github.realmlabs.asteria.core.RoleKey
+import io.github.realmlabs.asteria.core.ServiceRegistry
 import io.github.realmlabs.asteria.id.IdGenerator
 import io.github.realmlabs.asteria.message.MessageCatalog
 import io.github.realmlabs.asteria.patch.PatchableServiceRegistry
-import com.mikai233.world.service.WorldService
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.cluster.sharding.ShardCoordinator
 import java.net.InetSocketAddress
@@ -63,7 +63,9 @@ class WorldNode(
 
     val protobufDispatcher = GeneratedWorldNodeDispatchers.PROTOBUF
 
-    val configChangeDispatcher = ConfigChangeDispatcher<WorldActor>()
+    val configChangeDispatcher = ConfigChangeDispatcher(
+        GeneratedWorldConfigChangeHandlers.ALL,
+    )
 
     val messageCatalog: MessageCatalog
         get() = GeneratedWorldMessageCatalog

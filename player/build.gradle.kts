@@ -9,6 +9,12 @@ asteriaMessageCodegen {
     dispatcherSuperType("INTERNAL", "com.mikai233.common.message.Message")
 }
 
+ksp {
+    arg("antares.config.package", "com.mikai233.player.generated")
+    arg("antares.config.class", "GeneratedPlayerConfigChangeHandlers")
+    arg("antares.config.actorType", "com.mikai233.player.PlayerActor")
+}
+
 dependencies {
     testImplementation(platform(libTest.junit.bom))
     testImplementation(libTest.junit.jupiter)
@@ -29,6 +35,7 @@ dependencies {
     implementation(libTool.spring.data.mongodb)
     implementation(project(":common"))
     implementation(project(":proto"))
+    ksp(project(":message-ksp"))
 }
 
 tasks.test {

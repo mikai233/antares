@@ -1,5 +1,6 @@
 package com.mikai233.player.config
 
+import com.mikai233.common.annotation.GameConfigChangeHandler
 import com.mikai233.common.config.ConfigChangeHandler
 import com.mikai233.common.config.configTables
 import com.mikai233.common.config.luban.GameTables
@@ -13,6 +14,7 @@ import io.github.realmlabs.asteria.config.ConfigSnapshot
 import io.github.realmlabs.asteria.config.ConfigTableName
 import io.github.realmlabs.asteria.config.requireComponent
 
+@GameConfigChangeHandler
 class PlayerActivityConfigChangeHandler : ConfigChangeHandler<PlayerActor> {
     override val watchedTables: Set<ConfigTableName> = configTables("activities")
 
