@@ -38,7 +38,23 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
 
         writeGeneratedFile(
             File(outDir, "GeneratedGameTables.kt"),
-            renderGeneratedGameTables(tableEntries),
+            renderGeneratedGameTables(),
+        )
+        writeGeneratedFile(
+            File(outDir, "GeneratedGameTableTypes.kt"),
+            renderGeneratedGameTableTypes(tableEntries),
+        )
+        writeGeneratedFile(
+            File(outDir, "GeneratedGameTableAdapters.kt"),
+            renderGeneratedGameTableAdapters(tableEntries),
+        )
+        writeGeneratedFile(
+            File(outDir, "GeneratedGameTablesSnapshotBridge.kt"),
+            renderGeneratedGameTablesSnapshotBridge(tableEntries),
+        )
+        writeGeneratedFile(
+            File(outDir, "GeneratedGameTableAccessors.kt"),
+            renderGeneratedGameTableAccessors(tableEntries),
         )
         writeGeneratedFile(
             File(outDir, "GeneratedLubanMetadata.kt"),
@@ -105,10 +121,39 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
         error("unsupported Luban table shape in $tableFile")
     }
 
-    private fun renderGeneratedGameTables(entries: List<TableEntry>): String {
+    private fun renderGeneratedGameTables(): String {
+        return """
+            |package com.mikai233.common.config.luban
+            |
+            |import com.mikai233.common.config.luban.gen.GameTablesGen
+            |import luban.ByteBuf
+            |import java.io.IOException
+            |
+            |class GameTables(
+            |    loader: IByteBufLoader,
+            |) {
+            |    internal val delegate = GameTablesGen { file -> loader.load(file) }
+            |
+            |    fun interface IByteBufLoader {
+            |        @Throws(IOException::class)
+            |        fun load(file: String): ByteBuf
+            |    }
+            |}
+            |""".trimMargin()
+    }
+
+    private fun renderGeneratedGameTableTypes(entries: List<TableEntry>): String {
         val typeAliases = entries.joinToString("\n") {
             "typealias ${it.rowAlias} = ${it.rowFqcn}"
         }
+        return """
+            |package com.mikai233.common.config.luban
+            |
+            |$typeAliases
+            |""".trimMargin()
+    }
+
+    private fun renderGeneratedGameTableAdapters(entries: List<TableEntry>): String {
         val adapters = entries.joinToString("\n\n") {
             buildString {
                 when (val shape = it.shape) {
@@ -139,36 +184,24 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
                 }
             }
         }
-
         return """
             |package com.mikai233.common.config.luban
             |
-            |import com.mikai233.common.config.luban.gen.GameTablesGen
-            |import io.github.realmlabs.asteria.config.ConfigSnapshot
             |import io.github.realmlabs.asteria.config.ConfigTableName
             |import io.github.realmlabs.asteria.config.ListConfigTable
             |import io.github.realmlabs.asteria.config.OrderedMapConfigTable
-            |import io.github.realmlabs.asteria.config.SnapshotEntry
             |import io.github.realmlabs.asteria.config.SingleConfigTable
-            |import io.github.realmlabs.asteria.config.table
-            |import io.github.realmlabs.asteria.config.luban.LubanSnapshotBridge
-            |import luban.ByteBuf
-            |import java.io.IOException
-            |
-            |class GameTables(
-            |    loader: IByteBufLoader,
-            |) {
-            |    internal val delegate = GameTablesGen { file -> loader.load(file) }
-            |
-            |    fun interface IByteBufLoader {
-            |        @Throws(IOException::class)
-            |        fun load(file: String): ByteBuf
-            |    }
-            |}
-            |
-            |$typeAliases
             |
             |$adapters
+            |""".trimMargin()
+    }
+
+    private fun renderGeneratedGameTablesSnapshotBridge(entries: List<TableEntry>): String {
+        return """
+            |package com.mikai233.common.config.luban
+            |
+            |import io.github.realmlabs.asteria.config.SnapshotEntry
+            |import io.github.realmlabs.asteria.config.luban.LubanSnapshotBridge
             |
             |object GameTablesSnapshotBridge : LubanSnapshotBridge<GameTables, GameTables.IByteBufLoader> {
             |    override val loaderType = GameTables.IByteBufLoader::class
@@ -183,8 +216,6 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
             |        )
             |    }
             |}
-            |
-            |${renderSnapshotAccessors(entries)}
             |""".trimMargin()
     }
 
@@ -194,13 +225,21 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
         }
     }
 
-    private fun renderSnapshotAccessors(entries: List<TableEntry>): String {
-        return entries.joinToString("\n\n") { entry ->
+    private fun renderGeneratedGameTableAccessors(entries: List<TableEntry>): String {
+        val accessors = entries.joinToString("\n\n") { entry ->
             """
             |val ConfigSnapshot.${entry.tableProperty}: ${entry.adapterClass}
             |    get() = table()
             """.trimMargin()
         }
+        return """
+            |package com.mikai233.common.config.luban
+            |
+            |import io.github.realmlabs.asteria.config.ConfigSnapshot
+            |import io.github.realmlabs.asteria.config.table
+            |
+            |$accessors
+            |""".trimMargin()
     }
 
     private fun renderGeneratedLubanMetadata(files: List<String>): String {
