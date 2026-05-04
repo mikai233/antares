@@ -1,10 +1,10 @@
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
-import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.FileSpec
-import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
 import org.gradle.api.DefaultTask
@@ -14,7 +14,8 @@ import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import java.io.File
-import java.util.Locale
+
+private const val ROUTE_CHUNK_SIZE = 200
 
 abstract class GenerateGatewayRoutingTask : DefaultTask() {
     @get:InputFiles
@@ -39,247 +40,256 @@ abstract class GenerateGatewayRoutingTask : DefaultTask() {
                             "message id not found for ${routeNode.path("messageType").asText()}"
                         },
                         messageType = routeNode.path("messageType").asText(),
-                        target = routeNode.path("target").asText(),
-                        entityIdSource = routeNode.path("entityIdSource").asText(),
-                        entityIdField = routeNode.path("entityIdField").asText(),
-                        injectRouteEntityIdTo = routeNode.path("injectRouteEntityIdTo").map { it.asText() },
-                        injectSessionPlayerIdTo = routeNode.path("injectSessionPlayerIdTo").map { it.asText() },
-                        injectSessionWorldIdTo = routeNode.path("injectSessionWorldIdTo").map { it.asText() },
+                        route = routeNode.path("route").asText(),
+                        entityId = routeNode.path("entityId").takeUnless { it.isNull }?.asText(),
+                        inject = routeNode.path("inject").map { it.asText() },
                         clearFields = routeNode.path("clearFields").map { it.asText() },
                     )
                 }
             }
+            .sortedBy { it.messageId }
         val outputRoot = outputDir.get().asFile
-        val stalePath = outputRoot.resolve("com/mikai233/gate/generated/GeneratedGatewayRouting.kt")
-        if (stalePath.isDirectory) {
-            stalePath.deleteRecursively()
+        val generatedDir = outputRoot.resolve("com/mikai233/gate/generated")
+        if (generatedDir.exists()) {
+            generatedDir.deleteRecursively()
         }
         outputRoot.mkdirs()
-        buildFile(routes).writeTo(outputRoot)
+        buildFiles(routes).forEach { it.writeTo(outputRoot) }
     }
 
-    private fun buildFile(routes: List<GatewayRouteSpec>): FileSpec {
+    private fun buildFiles(routes: List<GatewayRouteSpec>): List<FileSpec> {
+        val files = mutableListOf<FileSpec>()
         val routeSpecType = ClassName("com.mikai233.gate.generated", "GeneratedGatewayRouting", "GeneratedGatewayRouteSpec")
         val mapType = Map::class.asClassName().parameterizedBy(Int::class.asClassName(), routeSpecType)
         val gatewaySessionContext = ClassName("io.github.realmlabs.asteria.gateway", "GatewaySessionContext")
         val gatewayRoute = ClassName("io.github.realmlabs.asteria.gateway", "GatewayRoute")
         val clientProtobuf = ClassName("com.mikai233.common.message", "ClientProtobuf")
-        val targetEnum = ClassName("com.mikai233.common.message.catalog", "GatewayRouteTarget")
-        val entityIdSourceEnum = ClassName("com.mikai233.common.message.catalog", "GatewayEntityIdSource")
-        val fieldInjectionType = ClassName("com.mikai233.common.message.catalog", "GatewayFieldInjection")
-        val injectionSourceEnum = ClassName("com.mikai233.common.message.catalog", "GatewayInjectionSource")
-        val type = TypeSpec.objectBuilder("GeneratedGatewayRouting")
+
+        files += FileSpec.builder("com.mikai233.gate.generated", "GeneratedGatewayRouting")
             .addType(
-                TypeSpec.classBuilder("GeneratedGatewayRouteSpec")
-                    .primaryConstructor(
-                        FunSpec.constructorBuilder()
-                            .addParameter("target", targetEnum)
-                            .addParameter("entityIdSource", entityIdSourceEnum)
-                            .addParameter("entityIdField", String::class)
-                            .addParameter(
-                                "injections",
-                                List::class.asClassName().parameterizedBy(fieldInjectionType),
+                TypeSpec.objectBuilder("GeneratedGatewayRouting")
+                    .addType(
+                        TypeSpec.classBuilder("GeneratedGatewayRouteSpec")
+                            .primaryConstructor(
+                                FunSpec.constructorBuilder()
+                                    .addParameter("route", String::class)
+                                    .addParameter("entityId", String::class.asClassName().copy(nullable = true))
+                                    .addParameter(
+                                        "inject",
+                                        List::class.asClassName().parameterizedBy(String::class.asClassName()),
+                                    )
+                                    .addParameter(
+                                        "clearFields",
+                                        List::class.asClassName().parameterizedBy(String::class.asClassName()),
+                                    )
+                                    .build(),
+                            )
+                            .addProperty(PropertySpec.builder("route", String::class).initializer("route").build())
+                            .addProperty(
+                                PropertySpec.builder("entityId", String::class.asClassName().copy(nullable = true))
+                                    .initializer("entityId")
+                                    .build(),
+                            )
+                            .addProperty(
+                                PropertySpec.builder(
+                                    "inject",
+                                    List::class.asClassName().parameterizedBy(String::class.asClassName()),
+                                ).initializer("inject").build(),
+                            )
+                            .addProperty(
+                                PropertySpec.builder(
+                                    "clearFields",
+                                    List::class.asClassName().parameterizedBy(String::class.asClassName()),
+                                ).initializer("clearFields").build(),
                             )
                             .build(),
                     )
-                    .addProperty(PropertySpec.builder("target", targetEnum).initializer("target").build())
-                    .addProperty(PropertySpec.builder("entityIdSource", entityIdSourceEnum).initializer("entityIdSource").build())
-                    .addProperty(PropertySpec.builder("entityIdField", String::class).initializer("entityIdField").build())
                     .addProperty(
-                        PropertySpec.builder(
-                            "injections",
-                            List::class.asClassName().parameterizedBy(fieldInjectionType),
-                        ).initializer("injections").build(),
+                        PropertySpec.builder("routesById", mapType)
+                            .initializer(buildRoutesById(routes))
+                            .build(),
+                    )
+                    .addFunction(
+                        FunSpec.builder("resolve")
+                            .addParameter("context", gatewaySessionContext)
+                            .addParameter("packet", clientProtobuf)
+                            .returns(gatewayRoute.copy(nullable = true))
+                            .addCode(buildResolveCode())
+                            .build(),
+                    )
+                    .addFunction(
+                        FunSpec.builder("entityMessage")
+                            .addParameter("context", gatewaySessionContext)
+                            .addParameter("route", gatewayRoute)
+                            .addParameter("packet", clientProtobuf)
+                            .returns(ClassName("kotlin", "Any").copy(nullable = true))
+                            .addCode(buildEntityMessageCode(routes))
+                            .build(),
+                    )
+                    .addFunction(buildResolveTargetHelper())
+                    .addFunction(buildResolveEntityIdHelper())
+                    .addFunction(buildResolveLongSourceHelper())
+                    .addFunction(buildReadMessageLongFieldHelper())
+                    .addFunction(buildWriteLongFieldHelper())
+                    .addFunction(buildClearFieldHelper())
+                    .build(),
+            )
+            .build()
+
+        routes.chunked(ROUTE_CHUNK_SIZE).forEachIndexed { index, chunk ->
+            files += buildChunkFile(index, chunk, routeSpecType)
+        }
+        return files
+    }
+
+    private fun buildRoutesById(routes: List<GatewayRouteSpec>): CodeBlock {
+        val chunkCount = routes.chunked(ROUTE_CHUNK_SIZE).size
+        val builder = CodeBlock.builder()
+        builder.add("buildMap {\n")
+        repeat(chunkCount) { index ->
+            builder.add("  putAll(%T.routesById)\n", ClassName("com.mikai233.gate.generated", "GeneratedGatewayRoutingChunk$index"))
+        }
+        builder.add("}")
+        return builder.build()
+    }
+
+    private fun buildChunkFile(
+        index: Int,
+        routes: List<GatewayRouteSpec>,
+        routeSpecType: ClassName,
+    ): FileSpec {
+        val mapType = Map::class.asClassName().parameterizedBy(Int::class.asClassName(), routeSpecType)
+        return FileSpec.builder("com.mikai233.gate.generated", "GeneratedGatewayRoutingChunk$index")
+            .addType(
+                TypeSpec.objectBuilder("GeneratedGatewayRoutingChunk$index")
+                    .addProperty(
+                        PropertySpec.builder("routesById", mapType)
+                            .initializer(buildChunkRoutesById(routes, routeSpecType))
+                            .build(),
                     )
                     .build(),
             )
-            .addProperty(
-                PropertySpec.builder("routesById", mapType)
-                    .initializer(buildRoutesById(routes, routeSpecType, targetEnum, entityIdSourceEnum, fieldInjectionType, injectionSourceEnum))
-                    .build(),
-            )
-            .addFunction(
-                FunSpec.builder("resolve")
-                    .addParameter("context", gatewaySessionContext)
-                    .addParameter("packet", clientProtobuf)
-                    .returns(gatewayRoute.copy(nullable = true))
-                    .addCode(buildResolveCode())
-                    .build(),
-            )
-            .addFunction(
-                FunSpec.builder("entityMessage")
-                    .addParameter("context", gatewaySessionContext)
-                    .addParameter("route", gatewayRoute)
-                    .addParameter("packet", clientProtobuf)
-                    .returns(ClassName("kotlin", "Any").copy(nullable = true))
-                    .addCode(buildEntityMessageCode(routes))
-                    .build(),
-            )
-            .addFunction(buildResolveEntityIdHelper())
-            .addFunction(buildReadMessageLongFieldHelper())
-            .addFunction(buildWriteLongFieldHelper())
-            .addFunction(buildClearFieldHelper())
-            .build()
-        return FileSpec.builder("com.mikai233.gate.generated", "GeneratedGatewayRouting")
-            .addType(type)
             .build()
     }
 
-    private fun buildRoutesById(
+    private fun buildChunkRoutesById(
         routes: List<GatewayRouteSpec>,
         routeSpecType: ClassName,
-        targetEnum: ClassName,
-        entityIdSourceEnum: ClassName,
-        fieldInjectionType: ClassName,
-        injectionSourceEnum: ClassName,
     ): CodeBlock {
         val builder = CodeBlock.builder()
         builder.add("mapOf(\n")
-        routes.sortedBy { it.messageId }.forEachIndexed { index, route ->
+        routes.forEachIndexed { index, route ->
             builder.add(
-                "  %L to %T(target = %T.%L, entityIdSource = %T.%L, entityIdField = %S, injections = %L)",
+                "  %L to %T(route = %S, entityId = %L, inject = %L, clearFields = %L)",
                 route.messageId,
                 routeSpecType,
-                targetEnum,
-                route.target,
-                entityIdSourceEnum,
-                route.entityIdSource,
-                route.entityIdField,
-                buildInjectionsCode(route, fieldInjectionType, injectionSourceEnum),
+                route.route,
+                route.entityId?.let { "\"$it\"" } ?: "null",
+                buildStringListCode(route.inject),
+                buildStringListCode(route.clearFields),
             )
-            if (index != routes.lastIndex) {
-                builder.add(",\n")
-            } else {
-                builder.add("\n")
-            }
+            if (index != routes.lastIndex) builder.add(",\n") else builder.add("\n")
         }
         builder.add(")")
         return builder.build()
     }
 
-    private fun buildInjectionsCode(
-        route: GatewayRouteSpec,
-        fieldInjectionType: ClassName,
-        injectionSourceEnum: ClassName,
-    ): CodeBlock {
+    private fun buildStringListCode(values: List<String>): CodeBlock {
+        if (values.isEmpty()) return CodeBlock.of("emptyList()")
         val builder = CodeBlock.builder()
-        val injections = buildList {
-            route.injectRouteEntityIdTo.forEach { add(it to "ROUTE_ENTITY_ID") }
-            route.injectSessionPlayerIdTo.forEach { add(it to "SESSION_PLAYER_ID") }
-            route.injectSessionWorldIdTo.forEach { add(it to "SESSION_WORLD_ID") }
-            route.clearFields.forEach { add(it to "CLEAR") }
-        }
-        if (injections.isEmpty()) {
-            builder.add("emptyList()")
-            return builder.build()
-        }
         builder.add("listOf(")
-        injections.forEachIndexed { index, (field, source) ->
-            if (index > 0) {
-                builder.add(", ")
-            }
-            builder.add(
-                "%T(field = %S, source = %T.%L)",
-                fieldInjectionType,
-                field,
-                injectionSourceEnum,
-                source,
-            )
+        values.forEachIndexed { index, value ->
+            if (index > 0) builder.add(", ")
+            builder.add("%S", value)
         }
         builder.add(")")
         return builder.build()
     }
 
     private fun buildResolveCode(): CodeBlock {
-        val routeTarget = ClassName("io.github.realmlabs.asteria.message", "RouteTarget")
-        val entityKind = ClassName("io.github.realmlabs.asteria.core", "EntityKind")
         val gatewayRoute = ClassName("io.github.realmlabs.asteria.gateway", "GatewayRoute")
-        val gameEntityKinds = ClassName("com.mikai233.common.core", "GameEntityKinds")
-        val gatewayRouteTarget = ClassName("com.mikai233.common.message.catalog", "GatewayRouteTarget")
-        val gatewayEntityIdSource = ClassName("com.mikai233.common.message.catalog", "GatewayEntityIdSource")
         val builder = CodeBlock.builder()
-        builder.addStatement(
-            "val playerRouteTarget = %T.Entity(%T(%T.PlayerActor))",
-            routeTarget,
-            entityKind,
-            gameEntityKinds,
-        )
-        builder.addStatement(
-            "val worldRouteTarget = %T.Entity(%T(%T.WorldActor))",
-            routeTarget,
-            entityKind,
-            gameEntityKinds,
-        )
         builder.addStatement("val spec = routesById[packet.id] ?: return null")
-        builder.beginControlFlow("return when (spec.target)")
-        builder.addStatement("%T.GATEWAY_LOCAL -> %T(%T.GatewayLocal)", gatewayRouteTarget, gatewayRoute, routeTarget)
-        builder.addStatement(
-            "%T.PLAYER_ENTITY -> %T(playerRouteTarget, resolveEntityId(spec, context, packet))",
-            gatewayRouteTarget,
-            gatewayRoute,
-        )
-        builder.addStatement(
-            "%T.WORLD_ENTITY -> %T(worldRouteTarget, resolveEntityId(spec, context, packet))",
-            gatewayRouteTarget,
-            gatewayRoute,
-        )
-        builder.endControlFlow()
+        builder.addStatement("val target = resolveTarget(spec.route)")
+        builder.addStatement("val entityId = if (spec.route == %S) null else resolveEntityId(spec, context, packet)", "gateway-local")
+        builder.addStatement("return %T(target, entityId)", gatewayRoute)
         return builder.build()
     }
 
     private fun buildEntityMessageCode(routes: List<GatewayRouteSpec>): CodeBlock {
-        val gatewayInjectionSource = ClassName("com.mikai233.common.message.catalog", "GatewayInjectionSource")
         val builder = CodeBlock.builder()
-        val entityRouteIds = routes.filter { it.target == "PLAYER_ENTITY" || it.target == "WORLD_ENTITY" }
-            .filterNot { it.hasNoInjection() }
-            .map { it.messageId }
-            .sorted()
-        builder.addStatement("if (packet.id !in setOf(%L)) return null", entityRouteIds.joinToString())
+        if (routes.none { !it.hasNoPatch() }) {
+            builder.addStatement("return null")
+            return builder.build()
+        }
         builder.addStatement("val spec = routesById[packet.id] ?: return null")
-        builder.addStatement("val builder = packet.message.toBuilder()")
-        builder.beginControlFlow("for (injection in spec.injections)")
-        builder.beginControlFlow("when (injection.source)")
-        builder.addStatement(
-            "%T.ROUTE_ENTITY_ID -> writeLongField(builder, injection.field, route.entityId as Long)",
-            gatewayInjectionSource,
-        )
-        builder.addStatement(
-            "%T.SESSION_PLAYER_ID -> writeLongField(builder, injection.field, requireNotNull(context.session.get(com.mikai233.gate.GatePlayerIdKey)))",
-            gatewayInjectionSource,
-        )
-        builder.addStatement(
-            "%T.SESSION_WORLD_ID -> writeLongField(builder, injection.field, requireNotNull(context.session.get(com.mikai233.gate.GateWorldIdKey)))",
-            gatewayInjectionSource,
-        )
-        builder.addStatement("%T.CLEAR -> clearField(builder, injection.field)", gatewayInjectionSource)
+        builder.beginControlFlow("if (spec.inject.isEmpty() && spec.clearFields.isEmpty())")
+        builder.addStatement("return null")
         builder.endControlFlow()
+        builder.addStatement("val builder = packet.message.toBuilder()")
+        builder.beginControlFlow("for (entry in spec.inject)")
+        builder.addStatement("val field = entry.substringBefore(%S)", "=")
+        builder.addStatement("val source = entry.substringAfter(%S)", "=")
+        builder.addStatement("writeLongField(builder, field, resolveLongSource(source, route, context, packet))")
+        builder.endControlFlow()
+        builder.beginControlFlow("for (field in spec.clearFields)")
+        builder.addStatement("clearField(builder, field)")
         builder.endControlFlow()
         builder.addStatement("return builder.build()")
         return builder.build()
+    }
+
+    private fun buildResolveTargetHelper(): FunSpec {
+        val routeTarget = ClassName("io.github.realmlabs.asteria.message", "RouteTarget")
+        val entityKind = ClassName("io.github.realmlabs.asteria.core", "EntityKind")
+        val gameEntityKinds = ClassName("com.mikai233.common.core", "GameEntityKinds")
+        return FunSpec.builder("resolveTarget")
+            .addModifiers(com.squareup.kotlinpoet.KModifier.PRIVATE)
+            .addParameter("route", String::class)
+            .returns(routeTarget)
+            .beginControlFlow("return when (route)")
+            .addStatement("%S -> %T.GatewayLocal", "gateway-local", routeTarget)
+            .addStatement("%S -> %T.Entity(%T(%T.PlayerActor))", "player", routeTarget, entityKind, gameEntityKinds)
+            .addStatement("%S -> %T.Entity(%T(%T.WorldActor))", "world", routeTarget, entityKind, gameEntityKinds)
+            .addStatement("else -> error(%P + route)", "unsupported gateway route: ")
+            .endControlFlow()
+            .build()
     }
 
     private fun buildResolveEntityIdHelper(): FunSpec {
         val routeSpecType = ClassName("com.mikai233.gate.generated", "GeneratedGatewayRouting", "GeneratedGatewayRouteSpec")
         val gatewaySessionContext = ClassName("io.github.realmlabs.asteria.gateway", "GatewaySessionContext")
         val clientProtobuf = ClassName("com.mikai233.common.message", "ClientProtobuf")
-        val gatewayEntityIdSource = ClassName("com.mikai233.common.message.catalog", "GatewayEntityIdSource")
+        val gatewayRoute = ClassName("io.github.realmlabs.asteria.gateway", "GatewayRoute")
         return FunSpec.builder("resolveEntityId")
             .addModifiers(com.squareup.kotlinpoet.KModifier.PRIVATE)
             .addParameter("spec", routeSpecType)
             .addParameter("context", gatewaySessionContext)
             .addParameter("packet", clientProtobuf)
             .returns(Long::class)
-            .beginControlFlow("return when (spec.entityIdSource)")
-            .addStatement("%T.MESSAGE_FIELD -> readMessageLongField(packet.message, spec.entityIdField)", gatewayEntityIdSource)
-            .addStatement(
-                "%T.SESSION_PLAYER_ID -> requireNotNull(context.session.get(com.mikai233.gate.GatePlayerIdKey))",
-                gatewayEntityIdSource,
-            )
-            .addStatement(
-                "%T.SESSION_WORLD_ID -> requireNotNull(context.session.get(com.mikai233.gate.GateWorldIdKey))",
-                gatewayEntityIdSource,
-            )
-            .addStatement("%T.NONE -> error(%P)", gatewayEntityIdSource, "route spec has no entity id source")
+            .addStatement("val route = %T(resolveTarget(spec.route))", gatewayRoute)
+            .addStatement("return resolveLongSource(requireNotNull(spec.entityId), route, context, packet)")
+            .build()
+    }
+
+    private fun buildResolveLongSourceHelper(): FunSpec {
+        val gatewayRoute = ClassName("io.github.realmlabs.asteria.gateway", "GatewayRoute")
+        val gatewaySessionContext = ClassName("io.github.realmlabs.asteria.gateway", "GatewaySessionContext")
+        val clientProtobuf = ClassName("com.mikai233.common.message", "ClientProtobuf")
+        return FunSpec.builder("resolveLongSource")
+            .addModifiers(com.squareup.kotlinpoet.KModifier.PRIVATE)
+            .addParameter("source", String::class)
+            .addParameter("route", gatewayRoute)
+            .addParameter("context", gatewaySessionContext)
+            .addParameter("packet", clientProtobuf)
+            .returns(Long::class)
+            .beginControlFlow("return when")
+            .addStatement("source.startsWith(%S) -> readMessageLongField(packet.message, source.removePrefix(%S))", "message:", "message:")
+            .addStatement("source == %S -> requireNotNull(context.session.get(com.mikai233.gate.GatePlayerIdKey))", "session:player_id")
+            .addStatement("source == %S -> requireNotNull(context.session.get(com.mikai233.gate.GateWorldIdKey))", "session:world_id")
+            .addStatement("source == %S -> route.entityId as Long", "route.entity_id")
+            .addStatement("source.isBlank() -> error(%P)", "route spec has no source")
+            .addStatement("else -> error(%P + source)", "unsupported gateway source: ")
             .endControlFlow()
             .build()
     }
@@ -343,18 +353,10 @@ abstract class GenerateGatewayRoutingTask : DefaultTask() {
 private data class GatewayRouteSpec(
     val messageId: Int,
     val messageType: String,
-    val target: String,
-    val entityIdSource: String,
-    val entityIdField: String,
-    val injectRouteEntityIdTo: List<String>,
-    val injectSessionPlayerIdTo: List<String>,
-    val injectSessionWorldIdTo: List<String>,
+    val route: String,
+    val entityId: String?,
+    val inject: List<String>,
     val clearFields: List<String>,
 ) {
-    fun hasNoInjection(): Boolean {
-        return injectRouteEntityIdTo.isEmpty() &&
-            injectSessionPlayerIdTo.isEmpty() &&
-            injectSessionWorldIdTo.isEmpty() &&
-            clearFields.isEmpty()
-    }
+    fun hasNoPatch(): Boolean = inject.isEmpty() && clearFields.isEmpty()
 }

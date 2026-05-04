@@ -6,9 +6,9 @@ plugins {
 val generateGatewayRoutingTable by tasks.registering(GenerateGatewayRoutingTask::class) {
     dependsOn(":gate:kspKotlin", ":player:kspKotlin", ":world:kspKotlin")
     metadataFiles.from(
-        project(":gate").layout.buildDirectory.file("generated/ksp/main/resources/META-INF/antares/gateway-route-hints/gate.json"),
-        project(":player").layout.buildDirectory.file("generated/ksp/main/resources/META-INF/antares/gateway-route-hints/player.json"),
-        project(":world").layout.buildDirectory.file("generated/ksp/main/resources/META-INF/antares/gateway-route-hints/world.json"),
+        project(":gate").layout.buildDirectory.file("generated/ksp/main/resources/META-INF/asteria/gateway-route-hints/gate.json"),
+        project(":player").layout.buildDirectory.file("generated/ksp/main/resources/META-INF/asteria/gateway-route-hints/player.json"),
+        project(":world").layout.buildDirectory.file("generated/ksp/main/resources/META-INF/asteria/gateway-route-hints/world.json"),
     )
     outputDir.set(layout.buildDirectory.dir("generated/source/gateway/main/kotlin"))
 }
@@ -44,7 +44,6 @@ dependencies {
     implementation(libTool.jcommander)
     implementation(project(":common"))
     implementation(project(":proto"))
-    ksp(project(":message-ksp"))
 }
 
 tasks.compileKotlin {

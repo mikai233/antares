@@ -28,7 +28,6 @@ dependencies {
     implementation(libTool.spring.data.mongodb)
     implementation(project(":common"))
     implementation(project(":proto"))
-    ksp(project(":message-ksp"))
 }
 
 tasks.test {
