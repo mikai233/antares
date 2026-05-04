@@ -2,6 +2,13 @@ plugins {
     alias(libTool.plugins.ksp)
 }
 
+sourceSets.main {
+    java.srcDir("src/generated/luban/java")
+    kotlin.srcDir("src/generated/luban/kotlin")
+    // Keep Luban binary exports out of the runtime classpath; runtime loads config through the
+    // project's configured publication/fetch flow rather than source-tree artifacts.
+}
+
 dependencies {
     testImplementation(platform(libTest.junit.bom))
     testImplementation(libTest.junit.jupiter)
@@ -42,4 +49,42 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    systemProperty("common.projectDir", projectDir.absolutePath)
+}
+
+val exportLubanConfig by tasks.registering(Exec::class) {
+    group = "luban"
+    description = "Export Luban Java code and binary data from Excel workbooks."
+    workingDir(rootDir)
+    commandLine("bash", "${rootDir}/config/luban/generate.sh")
+    inputs.dir(rootDir.resolve("config/luban/Datas"))
+    inputs.file(rootDir.resolve("config/luban/luban.conf"))
+    inputs.file(rootDir.resolve("config/luban/generate.sh"))
+    inputs.file(rootDir.resolve("config/luban/scripts/generate_demo_excels.py"))
+    outputs.dir(layout.projectDirectory.dir("src/generated/luban/java"))
+    outputs.dir(layout.projectDirectory.dir("src/generated/luban/resources/luban"))
+}
+
+val generateLubanBridge by tasks.registering(GenerateLubanBridgeTask::class) {
+    group = "luban"
+    description = "Generate Kotlin table adapters and Luban artifact metadata from Luban Java outputs."
+    dependsOn(exportLubanConfig)
+    generatedJavaDir.set(layout.projectDirectory.dir("src/generated/luban/java"))
+    generatedDataDir.set(layout.projectDirectory.dir("src/generated/luban/resources/luban"))
+    outputDir.set(layout.projectDirectory.dir("src/generated/luban/kotlin/com/mikai233/common/config/luban"))
+}
+
+tasks.register("refreshLubanConfig") {
+    group = "luban"
+    description = "Regenerate Luban exports and project-side table adapters."
+    // Keep Luban export/bridge generation off the normal compile path; config schema changes are infrequent.
+    dependsOn(generateLubanBridge)
+}
+
+// `common` does not declare any test-side symbol processors. Keep `kspTestKotlin` dormant unless
+// a future change adds real `kspTest(...)` dependencies; this avoids KSP/Gradle test snapshot churn.
+tasks.matching { it.name == "kspTestKotlin" }.configureEach {
+    onlyIf {
+        configurations.findByName("kspTest")?.allDependencies?.isNotEmpty() == true
+    }
 }

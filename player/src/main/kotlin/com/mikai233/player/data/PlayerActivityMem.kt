@@ -1,6 +1,6 @@
 package com.mikai233.player.data
 
-import com.mikai233.common.config.luban.ActivityConfig
+import com.mikai233.common.config.luban.ActivityRow
 import com.mikai233.common.db.AsteriaTrackedMemData
 import com.mikai233.common.db.MongoDB
 import com.mikai233.common.entity.PlayerActivity
@@ -37,7 +37,7 @@ class PlayerActivityMem(
         return activitiesById
     }
 
-    fun syncFromConfigs(playerLevel: Int, activityConfigs: Collection<ActivityConfig>) {
+    fun syncFromConfigs(playerLevel: Int, activityConfigs: Collection<ActivityRow>) {
         val eligible = activityConfigs
             .filter { it.unlockLevel <= playerLevel }
             .associateBy { it.id }
@@ -55,8 +55,8 @@ class PlayerActivityMem(
             } else {
                 existing.activityName = config.name
                 existing.unlockLevel = config.unlockLevel
-                existing.conditionSummary = config.conditionSummary()
-                existing.rewardSummary = config.rewardSummary()
+                existing.conditionSummary = config.conditionSummary
+                existing.rewardSummary = config.rewardSummary
             }
         }
     }
@@ -68,25 +68,15 @@ class PlayerActivityMem(
         }
     }
 
-    private fun ActivityConfig.toPlayerActivity(playerId: Long): PlayerActivity {
+    private fun ActivityRow.toPlayerActivity(playerId: Long): PlayerActivity {
         return PlayerActivity(
             id = "${playerId}_$id",
             playerId = playerId,
             activityId = id,
             activityName = name,
             unlockLevel = unlockLevel,
-            conditionSummary = conditionSummary(),
-            rewardSummary = rewardSummary(),
+            conditionSummary = conditionSummary,
+            rewardSummary = rewardSummary,
         )
-    }
-
-    private fun ActivityConfig.conditionSummary(): String {
-        return conditions.entries
-            .sortedBy { it.key }
-            .joinToString(separator = ",") { (key, value) -> "$key=$value" }
-    }
-
-    private fun ActivityConfig.rewardSummary(): String {
-        return rewards.joinToString(separator = ",") { reward -> "${reward.itemId}x${reward.count}" }
     }
 }

@@ -8,11 +8,11 @@ import com.mikai233.common.config.GAME_CONFIG_PUBLICATION
 import com.mikai233.common.config.GAME_WORLDS
 import com.mikai233.common.config.GameWorldConfig
 import com.mikai233.common.config.NettyConfig
-import com.mikai233.common.config.luban.DemoGameConfigArtifacts
 import com.mikai233.common.config.luban.GameConfigSnapshotLoader
 import com.mikai233.common.config.luban.GameTables
 import com.mikai233.common.config.nettyConfigPath
 import com.mikai233.common.extension.asyncZookeeperClient
+import com.mikai233.tools.config.LubanPublishBundleArtifacts
 import io.github.realmlabs.asteria.cluster.config.ClusterConfigLayout
 import io.github.realmlabs.asteria.cluster.config.ClusterTopology
 import io.github.realmlabs.asteria.cluster.config.RuntimeNodeConfig
@@ -83,10 +83,12 @@ private suspend fun publishDemoGameConfig(store: ZookeeperConfigStore) {
         loader = GameConfigSnapshotLoader(
             LubanBinaryConfigLoader(
                 tablesType = GameTables::class,
-                dataSource = MemoryLubanDataSource(DemoGameConfigArtifacts.bytesByPath()),
+                dataSource = MemoryLubanDataSource(
+                    LubanPublishBundleArtifacts.unpackBundle(LubanPublishBundleArtifacts.bundleBytes()),
+                ),
             ),
         ),
-        artifactSource = { DemoGameConfigArtifacts.artifacts() },
+        artifactSource = { listOf(LubanPublishBundleArtifacts.bundleArtifact()) },
         store = store,
         layout = layout,
     ).publish()
