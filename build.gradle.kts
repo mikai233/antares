@@ -71,12 +71,6 @@ subprojects {
             kotlin.srcDir("build/generated/ksp/main/kotlin")
         }
     }
-    if (project.name == "common") {
-        sourceSets.test {
-            kotlin.srcDir("build/generated/ksp/test/kotlin")
-        }
-    }
-
     if (Boot.contains(project.name) || project.name == "common") {
         sourceSets {
             create("script") {
