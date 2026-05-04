@@ -5,9 +5,9 @@ import io.github.realmlabs.asteria.script.ActorScript
 import io.github.realmlabs.asteria.script.ActorScriptContext
 import io.github.realmlabs.asteria.script.ScriptExecutionResult
 
-class TestChannelActorScript : ActorScript<ChannelActor>() {
+class ChannelActorScriptTemplate : ActorScript<ChannelActor>() {
     override fun executeActor(context: ActorScriptContext<ChannelActor>): ScriptExecutionResult? {
-        context.actor.logger.info("TestChannelActorScript")
+        context.actor.logger.info("ChannelActorScriptTemplate")
         return null
     }
 }

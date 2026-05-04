@@ -7,15 +7,18 @@ import com.mikai233.common.WORLD_SHARD_NUM
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.*
 import com.mikai233.common.message.global.worker.HandoffWorker
+import com.mikai233.common.rpc.DefaultRpcEntityIdResolver
 import com.mikai233.common.rpc.GameRpcProtocol
+import com.mikai233.common.rpc.RpcEntityIdResolver
 import com.mikai233.global.actor.WorkerActor
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import io.github.realmlabs.asteria.cluster.pekko.actor
+import io.github.realmlabs.asteria.cluster.pekko.extractor
 import io.github.realmlabs.asteria.core.NodeState
 import io.github.realmlabs.asteria.core.RoleKey
 import io.github.realmlabs.asteria.core.ServiceRegistry
-import io.github.realmlabs.asteria.cluster.pekko.actor
-import io.github.realmlabs.asteria.cluster.pekko.extractor
+import io.github.realmlabs.asteria.patch.PatchableServiceRegistry
 import org.apache.pekko.actor.ActorRef
 import java.net.InetSocketAddress
 
@@ -47,18 +50,25 @@ class GlobalNode(
     val workerActor: ActorRef
         get() = singletonActor(GameSingletons.Worker)
 
+    init {
+        val patchableServices = PatchableServiceRegistry().apply {
+            register(RpcEntityIdResolver::class, DefaultRpcEntityIdResolver(GameRpcProtocol.protocol))
+        }
+        services.register(PatchableServiceRegistry::class, patchableServices)
+    }
+
     override suspend fun launch() {
         clusterNode.launch(onStateChange = ::updateState) {
             role(GameRoles.Global)
             entity<Long>(GameEntityKinds.PlayerActor) {
                 role(GameRoles.Player)
                 shardCount = PLAYER_SHARD_NUM
-                extractor(GameRpcProtocol.playerShardExtractor)
+                extractor(GameRpcProtocol.playerShardExtractor(this@GlobalNode))
             }
             entity<Long>(GameEntityKinds.WorldActor) {
                 role(GameRoles.World)
                 shardCount = WORLD_SHARD_NUM
-                extractor(GameRpcProtocol.worldShardExtractor)
+                extractor(GameRpcProtocol.worldShardExtractor(this@GlobalNode))
             }
             singleton(GameSingletons.Worker) {
                 role(GameRoles.Global)

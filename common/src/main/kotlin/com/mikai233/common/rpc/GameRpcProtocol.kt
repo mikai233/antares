@@ -3,11 +3,10 @@ package com.mikai233.common.rpc
 import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.PLAYER_SHARD_NUM
 import com.mikai233.common.WORLD_SHARD_NUM
-import com.mikai233.protocol.ProtoLogin.LoginReq
-import com.mikai233.protocol.ProtoSystem.GmReq
-import com.mikai233.protocol.ProtoTest.TestReq
+import com.mikai233.common.core.patchableServices
 import io.github.realmlabs.asteria.cluster.pekko.PekkoMessageExtractor
 import io.github.realmlabs.asteria.cluster.pekko.PekkoShardExtractors
+import io.github.realmlabs.asteria.core.NodeRuntime
 import io.github.realmlabs.asteria.rpc.protobuf.ProtobufRpcProtocol
 import io.github.realmlabs.asteria.rpc.protobuf.ProtobufRpcProtocols
 
@@ -26,28 +25,20 @@ object GameRpcProtocol {
         ProtobufRpcProtocols.load(GameRpcProtocol::class.java.classLoader)
     }
 
-    val playerShardExtractor by lazy {
-        byEntityIdHash(PLAYER_SHARD_NUM) { message ->
-            when (message) {
-                is TestReq -> message.playerId.toString()
-                is GmReq -> {
-                    require(message.playerId != 0L) { "gm req missing player_id" }
-                    message.playerId.toString()
-                }
-                else -> protocol.entityIds.requireEntityId(message)
+    fun playerShardExtractor(node: NodeRuntime): PekkoMessageExtractor<GeneratedMessage> {
+        return byEntityIdHash(PLAYER_SHARD_NUM) { message ->
+            val entityId = node.patchableServices.require(RpcEntityIdResolver::class).resolvePlayer(message)
+            requireNotNull(entityId) {
+                "protobuf rpc entity id for ${message::class.qualifiedName} not found in player shard extractor"
             }
         }
     }
 
-    val worldShardExtractor by lazy {
-        byEntityIdHash(WORLD_SHARD_NUM) { message ->
-            when (message) {
-                is LoginReq -> message.worldId.toString()
-                is GmReq -> {
-                    require(message.worldId != 0L) { "gm req missing world_id" }
-                    message.worldId.toString()
-                }
-                else -> protocol.entityIds.requireEntityId(message)
+    fun worldShardExtractor(node: NodeRuntime): PekkoMessageExtractor<GeneratedMessage> {
+        return byEntityIdHash(WORLD_SHARD_NUM) { message ->
+            val entityId = node.patchableServices.require(RpcEntityIdResolver::class).resolveWorld(message)
+            requireNotNull(entityId) {
+                "protobuf rpc entity id for ${message::class.qualifiedName} not found in world shard extractor"
             }
         }
     }

@@ -6,7 +6,7 @@ import io.github.realmlabs.asteria.script.ActorScript
 import io.github.realmlabs.asteria.script.ActorScriptContext
 import io.github.realmlabs.asteria.script.ScriptExecutionResult
 
-class TestPlayerScript : ActorScript<PlayerActor>() {
+class PlayerActorScriptTemplate : ActorScript<PlayerActor>() {
     private val logger = logger()
 
     override fun executeActor(context: ActorScriptContext<PlayerActor>): ScriptExecutionResult? {

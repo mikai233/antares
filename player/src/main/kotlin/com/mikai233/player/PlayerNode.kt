@@ -4,25 +4,25 @@ import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
 import com.mikai233.common.PLAYER_SHARD_NUM
 import com.mikai233.common.WORLD_SHARD_NUM
-import com.mikai233.common.config.ConfigChangeDispatcher
 import com.mikai233.common.conf.GlobalEnv
+import com.mikai233.common.config.ConfigChangeDispatcher
 import com.mikai233.common.core.*
-import com.mikai233.common.event.PlayerCreateEvent
-import com.mikai233.common.event.PlayerLoginEvent
 import com.mikai233.common.message.player.HandoffPlayer
+import com.mikai233.common.rpc.DefaultRpcEntityIdResolver
 import com.mikai233.common.rpc.GameRpcProtocol
+import com.mikai233.common.rpc.RpcEntityIdResolver
+import com.mikai233.player.config.PlayerActivityConfigChangeHandler
 import com.mikai233.player.generated.GeneratedPlayerMessageCatalog
 import com.mikai233.player.generated.GeneratedPlayerNodeDispatchers
-import com.mikai233.player.config.PlayerActivityConfigChangeHandler
 import com.mikai233.player.service.LoginService
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import io.github.realmlabs.asteria.core.NodeState
-import io.github.realmlabs.asteria.core.RoleKey
-import io.github.realmlabs.asteria.core.ServiceRegistry
 import io.github.realmlabs.asteria.cluster.pekko.actor
 import io.github.realmlabs.asteria.cluster.pekko.allocationStrategy
 import io.github.realmlabs.asteria.cluster.pekko.extractor
+import io.github.realmlabs.asteria.core.NodeState
+import io.github.realmlabs.asteria.core.RoleKey
+import io.github.realmlabs.asteria.core.ServiceRegistry
 import io.github.realmlabs.asteria.id.IdGenerator
 import io.github.realmlabs.asteria.message.MessageCatalog
 import io.github.realmlabs.asteria.patch.PatchableServiceRegistry
@@ -75,6 +75,7 @@ class PlayerNode(
     init {
         val patchableServices = PatchableServiceRegistry().apply {
             register(LoginService::class, LoginService())
+            register(RpcEntityIdResolver::class, DefaultRpcEntityIdResolver(GameRpcProtocol.protocol))
         }
         services.register(PatchableServiceRegistry::class, patchableServices)
     }
@@ -89,14 +90,14 @@ class PlayerNode(
                 role(GameRoles.Player)
                 shardCount = PLAYER_SHARD_NUM
                 handoffMessage = HandoffPlayer
-                extractor(GameRpcProtocol.playerShardExtractor)
+                extractor(GameRpcProtocol.playerShardExtractor(this@PlayerNode))
                 allocationStrategy(ShardCoordinator.LeastShardAllocationStrategy(1, 3))
                 actor { runtime, _ -> PlayerActor.props(runtime as PlayerNode) }
             }
             entity<Long>(GameEntityKinds.WorldActor) {
                 role(GameRoles.World)
                 shardCount = WORLD_SHARD_NUM
-                extractor(GameRpcProtocol.worldShardExtractor)
+                extractor(GameRpcProtocol.worldShardExtractor(this@PlayerNode))
             }
         }
     }

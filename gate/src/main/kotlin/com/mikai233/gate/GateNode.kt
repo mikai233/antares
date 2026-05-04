@@ -2,30 +2,23 @@ package com.mikai233.gate
 
 import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
-import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.PLAYER_SHARD_NUM
 import com.mikai233.common.WORLD_SHARD_NUM
-import com.mikai233.common.broadcast.PlayerBroadcastEnvelope
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.*
-import com.mikai233.common.message.ClientProtobuf
-import com.mikai233.common.message.StopChannel
-import com.mikai233.common.message.ChannelExpired
-import com.mikai233.common.message.ChannelAuthorized
+import com.mikai233.common.rpc.DefaultRpcEntityIdResolver
 import com.mikai233.common.rpc.GameRpcProtocol
+import com.mikai233.common.rpc.RpcEntityIdResolver
 import com.mikai233.gate.generated.GeneratedGateMessageCatalog
 import com.mikai233.gate.generated.GeneratedGateNodeDispatchers
-import com.mikai233.protocol.ProtoRpcBroadcast.BroadcastEnvelope
-import com.mikai233.protocol.ProtoRpcWorld.SubscribeTopicReq
-import com.mikai233.protocol.ProtoRpcWorld.UnsubscribeTopicReq
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import io.github.realmlabs.asteria.cluster.pekko.extractor
 import io.github.realmlabs.asteria.core.NodeState
 import io.github.realmlabs.asteria.core.RoleKey
 import io.github.realmlabs.asteria.core.ServiceRegistry
-import io.github.realmlabs.asteria.cluster.pekko.extractor
 import io.github.realmlabs.asteria.message.MessageCatalog
-import com.mikai233.protocol.ProtoSystem.PingReq
+import io.github.realmlabs.asteria.patch.PatchableServiceRegistry
 import org.apache.pekko.actor.ActorRef
 import java.net.InetSocketAddress
 
@@ -63,6 +56,13 @@ class GateNode(
     val messageCatalog: MessageCatalog
         get() = GeneratedGateMessageCatalog
 
+    init {
+        val patchableServices = PatchableServiceRegistry().apply {
+            register(RpcEntityIdResolver::class, DefaultRpcEntityIdResolver(GameRpcProtocol.protocol))
+        }
+        services.register(PatchableServiceRegistry::class, patchableServices)
+    }
+
     override suspend fun launch() {
         clusterNode.launch(
             afterClusterModules = listOf(GateGatewayTransportModule(this)),
@@ -72,12 +72,12 @@ class GateNode(
             entity<Long>(GameEntityKinds.PlayerActor) {
                 role(GameRoles.Player)
                 shardCount = PLAYER_SHARD_NUM
-                extractor(GameRpcProtocol.playerShardExtractor)
+                extractor(GameRpcProtocol.playerShardExtractor(this@GateNode))
             }
             entity<Long>(GameEntityKinds.WorldActor) {
                 role(GameRoles.World)
                 shardCount = WORLD_SHARD_NUM
-                extractor(GameRpcProtocol.worldShardExtractor)
+                extractor(GameRpcProtocol.worldShardExtractor(this@GateNode))
             }
         }
     }

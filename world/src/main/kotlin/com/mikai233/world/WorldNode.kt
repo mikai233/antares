@@ -9,7 +9,9 @@ import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.core.*
 import com.mikai233.common.event.WorldActiveEvent
 import com.mikai233.common.message.world.HandoffWorld
+import com.mikai233.common.rpc.DefaultRpcEntityIdResolver
 import com.mikai233.common.rpc.GameRpcProtocol
+import com.mikai233.common.rpc.RpcEntityIdResolver
 import com.mikai233.world.generated.GeneratedWorldMessageCatalog
 import com.mikai233.world.generated.GeneratedWorldNodeDispatchers
 import com.typesafe.config.Config
@@ -70,6 +72,7 @@ class WorldNode(
     init {
         val patchableServices = PatchableServiceRegistry().apply {
             register(WorldService::class, WorldService())
+            register(RpcEntityIdResolver::class, DefaultRpcEntityIdResolver(GameRpcProtocol.protocol))
         }
         services.register(PatchableServiceRegistry::class, patchableServices)
     }
@@ -84,13 +87,13 @@ class WorldNode(
             entity<Long>(GameEntityKinds.PlayerActor) {
                 role(GameRoles.Player)
                 shardCount = PLAYER_SHARD_NUM
-                extractor(GameRpcProtocol.playerShardExtractor)
+                extractor(GameRpcProtocol.playerShardExtractor(this@WorldNode))
             }
             entity<Long>(GameEntityKinds.WorldActor) {
                 role(GameRoles.World)
                 shardCount = WORLD_SHARD_NUM
                 handoffMessage = HandoffWorld
-                extractor(GameRpcProtocol.worldShardExtractor)
+                extractor(GameRpcProtocol.worldShardExtractor(this@WorldNode))
                 allocationStrategy(ShardCoordinator.LeastShardAllocationStrategy(1, 3))
                 actor { runtime, _ -> WorldActor.props(runtime as WorldNode) }
             }
