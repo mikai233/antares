@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 CONF_ROOT="$ROOT/config/luban"
+DATA_DIR="${LUBAN_DATA_DIR:-$CONF_ROOT/Datas}"
 LUBAN_EXAMPLES_ROOT="${LUBAN_EXAMPLES_ROOT:-/tmp/luban_examples}"
 LUBAN_DLL="$LUBAN_EXAMPLES_ROOT/Tools/Luban/Luban.dll"
 JAVA_CORELIB="$LUBAN_EXAMPLES_ROOT/Projects/Java_bin/src/main/corelib/luban"
@@ -20,6 +21,11 @@ if [ ! -d "$JAVA_CORELIB" ]; then
   exit 1
 fi
 
+if [ ! -d "$DATA_DIR" ]; then
+  echo "Luban data dir not found: $DATA_DIR" >&2
+  exit 1
+fi
+
 rm -rf "$OUTPUT_CODE_DIR" "$OUTPUT_DATA_DIR"
 mkdir -p "$OUTPUT_CODE_DIR" "$OUTPUT_DATA_DIR"
 
@@ -28,6 +34,7 @@ dotnet "$LUBAN_DLL" \
   -c java-bin \
   -d bin \
   --conf "$CONF_ROOT/luban.conf" \
+  -x inputDataDir="$DATA_DIR" \
   -x outputCodeDir="$OUTPUT_CODE_DIR" \
   -x outputDataDir="$OUTPUT_DATA_DIR"
 
@@ -36,3 +43,4 @@ cp "$JAVA_CORELIB"/*.java "$OUTPUT_CODE_DIR/luban/"
 
 echo "Generated Luban Java code into $OUTPUT_CODE_DIR"
 echo "Generated Luban binary data into $OUTPUT_DATA_DIR"
+echo "Using Luban Excel data dir $DATA_DIR"

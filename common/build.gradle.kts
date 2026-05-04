@@ -2,6 +2,13 @@ plugins {
     alias(libTool.plugins.ksp)
 }
 
+val lubanDataDirProvider = providers.gradleProperty("lubanDataDir")
+    .map { rootDir.resolve(it) }
+    .orElse(rootDir.resolve("config/luban/Datas"))
+val lubanBundleOutputDirProvider = providers.gradleProperty("lubanBundleOutputDir")
+    .map { layout.projectDirectory.dir(it) }
+    .orElse(layout.buildDirectory.dir("generated/luban/bundles"))
+
 sourceSets.main {
     java.srcDir("src/generated/luban/java")
     kotlin.srcDir("src/generated/luban/kotlin")
@@ -57,7 +64,8 @@ val exportLubanConfig by tasks.registering(Exec::class) {
     description = "Export Luban Java code and binary data from Excel workbooks."
     workingDir(rootDir)
     commandLine("bash", "${rootDir}/config/luban/generate.sh")
-    inputs.dir(rootDir.resolve("config/luban/Datas"))
+    environment("LUBAN_DATA_DIR", lubanDataDirProvider.get().absolutePath)
+    inputs.dir(lubanDataDirProvider)
     inputs.file(rootDir.resolve("config/luban/luban.conf"))
     inputs.file(rootDir.resolve("config/luban/generate.sh"))
     inputs.file(rootDir.resolve("config/luban/scripts/generate_demo_excels.py"))
@@ -79,6 +87,17 @@ tasks.register("refreshLubanConfig") {
     description = "Regenerate Luban exports and project-side table adapters."
     // Keep Luban export/bridge generation off the normal compile path; config schema changes are infrequent.
     dependsOn(generateLubanBridge)
+}
+
+tasks.register<Zip>("packageLubanConfigBundle") {
+    group = "luban"
+    description = "Package generated Luban binary tables into a single server-consumable bundle."
+    dependsOn(exportLubanConfig)
+    from(layout.buildDirectory.dir("generated/luban/resources/luban")) {
+        include("*.bytes")
+    }
+    destinationDirectory.set(lubanBundleOutputDirProvider)
+    archiveFileName.set("game-config.zip")
 }
 
 // `common` does not declare any test-side symbol processors. Keep `kspTestKotlin` dormant unless
