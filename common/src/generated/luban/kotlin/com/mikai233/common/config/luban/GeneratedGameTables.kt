@@ -3,7 +3,9 @@ package com.mikai233.common.config.luban
 import com.mikai233.common.config.luban.gen.GameTablesGen
 import io.github.realmlabs.asteria.config.ConfigSnapshot
 import io.github.realmlabs.asteria.config.ConfigTableName
+import io.github.realmlabs.asteria.config.ListConfigTable
 import io.github.realmlabs.asteria.config.OrderedMapConfigTable
+import io.github.realmlabs.asteria.config.SingleConfigTable
 import io.github.realmlabs.asteria.config.table
 import luban.ByteBuf
 import java.io.IOException
@@ -12,6 +14,10 @@ class GameTables(
     loader: IByteBufLoader,
 ) {
     private val delegate = GameTablesGen { file -> loader.load(file) }
+
+    val tbRotationMessage by lazy { TbRotationMessage(delegate.tbRotationMessage) }
+
+    val tbGameGlobal by lazy { TbGameGlobal(delegate.tbGameGlobal) }
 
     val tbActivity by lazy { TbActivity(delegate.tbactivity) }
 
@@ -29,11 +35,25 @@ class GameTables(
     }
 }
 
+typealias RotationMessageRow = com.mikai233.common.config.luban.gen.game.RotationMessage
+typealias GameGlobalRow = com.mikai233.common.config.luban.gen.game.GameGlobal
 typealias ActivityRow = com.mikai233.common.config.luban.gen.game.activity
 typealias DroppoolRow = com.mikai233.common.config.luban.gen.game.droppool
 typealias MonsterRow = com.mikai233.common.config.luban.gen.game.monster
 typealias ItemRow = com.mikai233.common.config.luban.gen.game.item
 typealias SceneRow = com.mikai233.common.config.luban.gen.game.scene
+
+class TbRotationMessage(delegate: com.mikai233.common.config.luban.gen.game.TbRotationMessage) : ListConfigTable<RotationMessageRow>(
+    name = ConfigTableName("rotation_messages"),
+    rowType = RotationMessageRow::class,
+    rows = delegate.dataList,
+)
+
+class TbGameGlobal(delegate: com.mikai233.common.config.luban.gen.game.TbGameGlobal) : SingleConfigTable<GameGlobalRow>(
+    name = ConfigTableName("game_globals"),
+    rowType = GameGlobalRow::class,
+    row = delegate.data(),
+)
 
 class TbActivity(delegate: com.mikai233.common.config.luban.gen.game.Tbactivity) : OrderedMapConfigTable<String, ActivityRow>(
     name = ConfigTableName("activities"),
@@ -69,6 +89,12 @@ class TbScene(delegate: com.mikai233.common.config.luban.gen.game.Tbscene) : Ord
     rowType = SceneRow::class,
     rows = delegate.dataList.map { row -> row.id to row },
 )
+
+val ConfigSnapshot.tbRotationMessage: TbRotationMessage
+    get() = table()
+
+val ConfigSnapshot.tbGameGlobal: TbGameGlobal
+    get() = table()
 
 val ConfigSnapshot.tbActivity: TbActivity
     get() = table()

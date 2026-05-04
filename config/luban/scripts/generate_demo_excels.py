@@ -30,6 +30,13 @@ def clear_sheet(path: Path):
 
 copyfile(require(MINI_DATAS / "__tables__.xlsx"), DATAS / "__tables__.xlsx")
 wb, ws = clear_sheet(DATAS / "__tables__.xlsx")
+table_rows = [
+    ("", "game.TbRotationMessage", "RotationMessage", True, "#game.rotation_message.xlsx", None, "list", "s", "轮播消息列表", None, None),
+    ("", "game.TbGameGlobal", "GameGlobal", True, "#game.game_global.xlsx", None, "one", "s", "全局单例配置", None, None),
+]
+for i, row in enumerate(table_rows, start=4):
+    for j, value in enumerate(row, start=1):
+        ws.cell(i, j).value = value
 wb.save(DATAS / "__tables__.xlsx")
 
 copyfile(require(MINI_DATAS / "__beans__.xlsx"), DATAS / "__beans__.xlsx")
@@ -166,5 +173,43 @@ for i, row in enumerate(rows, start=1):
     for j, value in enumerate(row, start=1):
         ws.cell(i, j).value = value
 wb.save(DATAS / "#game.scene.xlsx")
+
+copyfile(require(MINI_DATAS / "#demo.item.xlsx"), DATAS / "#game.rotation_message.xlsx")
+wb = load_workbook(DATAS / "#game.rotation_message.xlsx")
+ws = wb.active
+for r in range(1, max(ws.max_row, 7) + 5):
+    for c in range(1, 8):
+        ws.cell(r, c).value = None
+rows = [
+    ("##var", "id", "content", "minLevel"),
+    ("##type", "int", "string", "int"),
+    ("##group", "s", "s", "s"),
+    ("##", "编号", "内容", "最低等级"),
+    ("", 1, "Welcome to Antares", 1),
+    ("", 2, "Weekend bonus is live", 10),
+    ("", 3, "World boss opens at 20:00", 20),
+]
+for i, row in enumerate(rows, start=1):
+    for j, value in enumerate(row, start=1):
+        ws.cell(i, j).value = value
+wb.save(DATAS / "#game.rotation_message.xlsx")
+
+copyfile(require(MINI_DATAS / "#demo.item.xlsx"), DATAS / "#game.game_global.xlsx")
+wb = load_workbook(DATAS / "#game.game_global.xlsx")
+ws = wb.active
+for r in range(1, max(ws.max_row, 6) + 5):
+    for c in range(1, 8):
+        ws.cell(r, c).value = None
+rows = [
+    ("##var", "defaultWorldId", "maxPlayerLevel", "maintenanceNotice"),
+    ("##type", "int", "int", "string"),
+    ("##group", "s", "s", "s"),
+    ("##", "默认世界ID", "最大玩家等级", "维护公告"),
+    ("", 1, 60, "No maintenance scheduled"),
+]
+for i, row in enumerate(rows, start=1):
+    for j, value in enumerate(row, start=1):
+        ws.cell(i, j).value = value
+wb.save(DATAS / "#game.game_global.xlsx")
 
 print(f"Generated workbooks under {DATAS}")

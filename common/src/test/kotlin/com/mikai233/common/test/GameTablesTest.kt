@@ -5,8 +5,10 @@ import com.mikai233.common.config.luban.GameConfigQueries
 import com.mikai233.common.config.luban.GameTables
 import com.mikai233.common.config.luban.tbActivity
 import com.mikai233.common.config.luban.tbDroppool
+import com.mikai233.common.config.luban.tbGameGlobal
 import com.mikai233.common.config.luban.tbItem
 import com.mikai233.common.config.luban.tbMonster
+import com.mikai233.common.config.luban.tbRotationMessage
 import com.mikai233.common.config.luban.tbScene
 import io.github.realmlabs.asteria.config.component
 import io.github.realmlabs.asteria.config.luban.LubanBinaryConfigLoader
@@ -33,8 +35,10 @@ class GameTablesTest {
         val wolf = snapshot.tbMonster.require(101)
         val novicePlains = snapshot.tbScene.require(1)
         val activity = snapshot.tbActivity.require("wolf_hunt")
+        val firstRotationMessage = snapshot.tbRotationMessage.first()
+        val gameGlobal = snapshot.tbGameGlobal.get()
 
-        assertEquals(5, snapshot.tables().size)
+        assertEquals(7, snapshot.tables().size)
         assertEquals("Iron Sword", snapshot.tbItem.require(3001).name)
         assertEquals(com.mikai233.common.config.luban.gen.item.ItemType.Equipment, sword.type)
         assertEquals(1, sword.maxStack)
@@ -48,6 +52,12 @@ class GameTablesTest {
         assertEquals(2, novicePlains.safeZones.size)
         assertEquals("killCount=10,monsterId=101", activity.conditionSummary)
         assertEquals("1001x500,3001x1", activity.rewardSummary)
+        assertEquals(3, snapshot.tbRotationMessage.size)
+        assertEquals("Welcome to Antares", firstRotationMessage.content)
+        assertEquals(1, firstRotationMessage.minLevel)
+        assertEquals(1, gameGlobal.defaultWorldId)
+        assertEquals(60, gameGlobal.maxPlayerLevel)
+        assertEquals("No maintenance scheduled", gameGlobal.maintenanceNotice)
         assertEquals(
             1,
             snapshot.tbItem.all().count { row ->

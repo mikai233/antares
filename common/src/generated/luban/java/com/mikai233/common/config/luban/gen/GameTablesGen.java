@@ -17,6 +17,16 @@ public final class GameTablesGen
         ByteBuf load(String file) throws java.io.IOException;
     }
 
+    /**
+     * 轮播消息列表
+     */
+    private final com.mikai233.common.config.luban.gen.game.TbRotationMessage _tbrotationmessage;
+    public com.mikai233.common.config.luban.gen.game.TbRotationMessage getTbRotationMessage() { return _tbrotationmessage; }
+    /**
+     * 全局单例配置
+     */
+    private final com.mikai233.common.config.luban.gen.game.TbGameGlobal _tbgameglobal;
+    public com.mikai233.common.config.luban.gen.game.TbGameGlobal getTbGameGlobal() { return _tbgameglobal; }
     private final com.mikai233.common.config.luban.gen.game.Tbactivity _tbactivity;
     public com.mikai233.common.config.luban.gen.game.Tbactivity getTbactivity() { return _tbactivity; }
     private final com.mikai233.common.config.luban.gen.game.Tbdroppool _tbdroppool;
@@ -29,6 +39,8 @@ public final class GameTablesGen
     public com.mikai233.common.config.luban.gen.game.Tbscene getTbscene() { return _tbscene; }
 
     public GameTablesGen(IByteBufLoader loader) throws java.io.IOException {
+        _tbrotationmessage = new com.mikai233.common.config.luban.gen.game.TbRotationMessage(loader.load("game_tbrotationmessage")); 
+        _tbgameglobal = new com.mikai233.common.config.luban.gen.game.TbGameGlobal(loader.load("game_tbgameglobal")); 
         _tbactivity = new com.mikai233.common.config.luban.gen.game.Tbactivity(loader.load("game_tbactivity")); 
         _tbdroppool = new com.mikai233.common.config.luban.gen.game.Tbdroppool(loader.load("game_tbdroppool")); 
         _tbmonster = new com.mikai233.common.config.luban.gen.game.Tbmonster(loader.load("game_tbmonster")); 

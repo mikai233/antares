@@ -49,34 +49,60 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
     private fun parseTableEntries(source: String): List<TableEntry> {
         val lineRegex = Regex("""_(\w+)\s*=\s*new\s+([\w.]+)\(loader\.load\("([^"]+)"\)\);""")
         return lineRegex.findAll(source).map { match ->
-            val fieldName = match.groupValues[1]
             val tableClassFqcn = match.groupValues[2]
+            val tableClassSimple = tableClassFqcn.substringAfterLast('.')
             val tableFile = File(generatedJavaDir.get().asFile, tableClassFqcn.replace('.', '/') + ".java")
             require(tableFile.isFile) { "generated Luban table source not found: $tableFile" }
             val tableSource = tableFile.readText()
-            val mapRegex = Regex("""HashMap<([^,>]+),\s*([^>]+)>\s+_dataMap""")
-            val mapMatch = requireNotNull(mapRegex.find(tableSource)) { "unable to parse data map in $tableFile" }
-            val keyFieldRegex = Regex("""_dataMap\.put\(_v\.([A-Za-z0-9_]+),\s*_v\);""")
-            val keyFieldMatch = requireNotNull(keyFieldRegex.find(tableSource)) {
-                "unable to parse key field in $tableFile"
-            }
-            val keyType = mapMatch.groupValues[1].trim()
-            val rowFqcn = mapMatch.groupValues[2].trim()
-            val keyField = keyFieldMatch.groupValues[1]
+            val shape = parseTableShape(tableSource, tableFile)
+            val rowFqcn = shape.rowFqcn
             val rowSimple = rowFqcn.substringAfterLast('.')
             val baseName = snakeToCamel(rowSimple)
             TableEntry(
-                delegatePropertyName = fieldName,
+                delegatePropertyName = decapitalize(tableClassSimple),
                 tableClassFqcn = tableClassFqcn,
                 rowFqcn = rowFqcn,
                 rowAlias = "${baseName}Row",
                 adapterClass = "Tb$baseName",
                 tableName = pluralize(camelToSnake(baseName)),
-                keyType = toKotlinType(keyType),
-                keyField = keyField,
                 tableProperty = "tb$baseName",
+                shape = shape,
             )
         }.toList()
+    }
+
+    private fun parseTableShape(tableSource: String, tableFile: File): TableShape {
+        val mapRegex = Regex("""HashMap<([^,>]+),\s*([^>]+)>\s+_dataMap""")
+        val mapMatch = mapRegex.find(tableSource)
+        if (mapMatch != null) {
+            val keyFieldRegex = Regex("""_dataMap\.put\(_v\.([A-Za-z0-9_]+),\s*_v\);""")
+            val keyFieldMatch = requireNotNull(keyFieldRegex.find(tableSource)) {
+                "unable to parse key field in $tableFile"
+            }
+            return TableShape.Keyed(
+                keyType = toKotlinType(mapMatch.groupValues[1].trim()),
+                rowFqcn = mapMatch.groupValues[2].trim(),
+                keyField = keyFieldMatch.groupValues[1],
+            )
+        }
+
+        val listRegex = Regex("""ArrayList<([^>]+)>\s+_dataList""")
+        val listMatch = listRegex.find(tableSource)
+        if (listMatch != null) {
+            return TableShape.ListLike(
+                rowFqcn = listMatch.groupValues[1].trim(),
+            )
+        }
+
+        val singletonRegex = Regex("""private\s+final\s+([\w.]+)\s+_data;""")
+        val singletonMatch = singletonRegex.find(tableSource)
+        if (singletonMatch != null) {
+            return TableShape.Singleton(
+                rowFqcn = singletonMatch.groupValues[1].trim(),
+            )
+        }
+
+        error("unsupported Luban table shape in $tableFile")
     }
 
     private fun renderGeneratedGameTables(entries: List<TableEntry>): String {
@@ -88,12 +114,32 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
         }
         val adapters = entries.joinToString("\n\n") {
             buildString {
-                append("class ${it.adapterClass}(delegate: ${it.tableClassFqcn}) : OrderedMapConfigTable<${it.keyType}, ${it.rowAlias}>(\n")
-                append("    name = ConfigTableName(\"${it.tableName}\"),\n")
-                append("    keyType = ${kclassLiteral(it.keyType)},\n")
-                append("    rowType = ${it.rowAlias}::class,\n")
-                append("    rows = delegate.dataList.map { row -> row.${it.keyField} to row },\n")
-                append(")")
+                when (val shape = it.shape) {
+                    is TableShape.Keyed -> {
+                        append("class ${it.adapterClass}(delegate: ${it.tableClassFqcn}) : OrderedMapConfigTable<${shape.keyType}, ${it.rowAlias}>(\n")
+                        append("    name = ConfigTableName(\"${it.tableName}\"),\n")
+                        append("    keyType = ${kclassLiteral(shape.keyType)},\n")
+                        append("    rowType = ${it.rowAlias}::class,\n")
+                        append("    rows = delegate.dataList.map { row -> row.${shape.keyField} to row },\n")
+                        append(")")
+                    }
+
+                    is TableShape.ListLike -> {
+                        append("class ${it.adapterClass}(delegate: ${it.tableClassFqcn}) : ListConfigTable<${it.rowAlias}>(\n")
+                        append("    name = ConfigTableName(\"${it.tableName}\"),\n")
+                        append("    rowType = ${it.rowAlias}::class,\n")
+                        append("    rows = delegate.dataList,\n")
+                        append(")")
+                    }
+
+                    is TableShape.Singleton -> {
+                        append("class ${it.adapterClass}(delegate: ${it.tableClassFqcn}) : SingleConfigTable<${it.rowAlias}>(\n")
+                        append("    name = ConfigTableName(\"${it.tableName}\"),\n")
+                        append("    rowType = ${it.rowAlias}::class,\n")
+                        append("    row = delegate.data(),\n")
+                        append(")")
+                    }
+                }
             }
         }
 
@@ -103,7 +149,9 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
             |import com.mikai233.common.config.luban.gen.GameTablesGen
             |import io.github.realmlabs.asteria.config.ConfigSnapshot
             |import io.github.realmlabs.asteria.config.ConfigTableName
+            |import io.github.realmlabs.asteria.config.ListConfigTable
             |import io.github.realmlabs.asteria.config.OrderedMapConfigTable
+            |import io.github.realmlabs.asteria.config.SingleConfigTable
             |import io.github.realmlabs.asteria.config.table
             |import luban.ByteBuf
             |import java.io.IOException
@@ -178,6 +226,10 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
         return camelToSnake(value).split('_').joinToString("") { it.replaceFirstChar { c -> c.titlecase(Locale.US) } }
     }
 
+    private fun decapitalize(value: String): String {
+        return value.replaceFirstChar { it.lowercase(Locale.US) }
+    }
+
     private fun camelToSnake(value: String): String {
         return value
             .replace(Regex("([a-z0-9])([A-Z])"), "$1_$2")
@@ -199,8 +251,25 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
         val rowAlias: String,
         val adapterClass: String,
         val tableName: String,
-        val keyType: String,
-        val keyField: String,
         val tableProperty: String,
+        val shape: TableShape,
     )
+
+    private sealed interface TableShape {
+        val rowFqcn: String
+
+        data class Keyed(
+            val keyType: String,
+            override val rowFqcn: String,
+            val keyField: String,
+        ) : TableShape
+
+        data class ListLike(
+            override val rowFqcn: String,
+        ) : TableShape
+
+        data class Singleton(
+            override val rowFqcn: String,
+        ) : TableShape
+    }
 }

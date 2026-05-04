@@ -19,11 +19,13 @@ class LubanGameConfigArtifactsTest {
 
         assertEquals(
             listOf(
+                "game_tbactivity.bytes",
+                "game_tbgameglobal.bytes",
                 "game_tbitem.bytes",
                 "game_tbmonster.bytes",
+                "game_tbrotationmessage.bytes",
                 "game_tbdroppool.bytes",
                 "game_tbscene.bytes",
-                "game_tbactivity.bytes",
             ).sorted(),
             filesByPath.keys.sorted(),
         )
