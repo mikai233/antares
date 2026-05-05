@@ -5,6 +5,8 @@ plugins {
 }
 
 val generateGatewayRoutingTable by tasks.registering(GenerateGatewayRoutingTask::class) {
+    group = "code generation"
+    description = "Generate gateway routing source from Asteria gateway route metadata."
     dependsOn(":gate:kspKotlin", ":player:kspKotlin", ":world:kspKotlin")
     metadataFiles.from(
         project(":gate").layout.buildDirectory.file("generated/ksp/main/resources/META-INF/asteria/gateway-route-hints/gate.json"),

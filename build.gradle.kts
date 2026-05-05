@@ -98,6 +98,9 @@ subprojects {
         }
     }
     tasks.register("generateVersionFile") {
+        group = "version"
+        description = "Generate a version resource file for ${project.path}."
+
         val resourcesDir = file("${layout.buildDirectory.get()}/generated/resources/")
         val versionFile = File(resourcesDir, "version")
 
@@ -161,6 +164,7 @@ fun Project.configureJvmTarget() {
 tasks.register("release") {
     val releaseDir: String by project
     group = "build"
+    description = "Collect executable node JARs into the configured release directory."
     dependsOn(getTasksByName("bootJar", true))
     doLast {
         Boot.forEach {
@@ -185,6 +189,7 @@ versionCatalogUpdate {
 
 tasks.register("versionCatalogUpdates") {
     group = "version catalog update"
+    description = "Check dependency updates and write the version catalog update report."
     dependsOn("versionCatalogUpdate")
 }
 
@@ -193,5 +198,15 @@ tasks.register("printProjectVersion") {
     description = "Print the unified project version used by code, config publication, and image tagging."
     doLast {
         println(version)
+    }
+}
+
+gradle.projectsEvaluated {
+    allprojects {
+        tasks.configureEach {
+            if (description.isNullOrBlank()) {
+                description = "Runs the ${path} task."
+            }
+        }
     }
 }
