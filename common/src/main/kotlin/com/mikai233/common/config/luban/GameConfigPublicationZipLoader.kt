@@ -9,8 +9,6 @@ import io.github.realmlabs.asteria.config.luban.LubanBinaryConfigLoader
 import io.github.realmlabs.asteria.config.luban.MemoryLubanDataSource
 import io.github.realmlabs.asteria.config.publisher.ConfigPublicationConsumer
 import io.github.realmlabs.asteria.config.publisher.ConfigPublicationLayout
-import java.io.ByteArrayInputStream
-import java.util.zip.ZipInputStream
 
 class GameConfigPublicationZipLoader(
     store: ConfigStore,
@@ -27,24 +25,10 @@ class GameConfigPublicationZipLoader(
         }
         return LubanBinaryConfigLoader(
             tablesType = GameTables::class,
-            dataSource = MemoryLubanDataSource(unpackZip(zipBytes)),
+            dataSource = MemoryLubanDataSource(unpackZipEntries(zipBytes)),
             bridge = GameTablesSnapshotBridge,
             revisionFactory = { bundle.manifest.revision },
         ).load()
-    }
-
-    private fun unpackZip(bytes: ByteArray): Map<String, ByteArray> {
-        return linkedMapOf<String, ByteArray>().also { filesByPath ->
-            ZipInputStream(ByteArrayInputStream(bytes)).use { zip ->
-                while (true) {
-                    val entry = zip.nextEntry ?: break
-                    if (!entry.isDirectory) {
-                        filesByPath[entry.name] = zip.readAllBytes()
-                    }
-                    zip.closeEntry()
-                }
-            }
-        }
     }
 
     companion object {

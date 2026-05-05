@@ -1,13 +1,12 @@
 package com.mikai233.tools.config
 
 import com.mikai233.common.config.luban.GeneratedLubanMetadata
+import com.mikai233.common.config.luban.unpackZipEntries
 import io.github.realmlabs.asteria.config.publisher.ConfigPublicationArtifact
-import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.zip.ZipEntry
-import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 import kotlin.io.path.exists
 
@@ -33,17 +32,7 @@ object LubanPublishBundleArtifacts {
     }
 
     fun unpackBundle(bundle: ByteArray): Map<String, ByteArray> {
-        return LinkedHashMap<String, ByteArray>().also { filesByPath ->
-            ZipInputStream(ByteArrayInputStream(bundle)).use { zip ->
-                while (true) {
-                    val entry = zip.nextEntry ?: break
-                    if (!entry.isDirectory) {
-                        filesByPath[entry.name] = zip.readAllBytes()
-                    }
-                    zip.closeEntry()
-                }
-            }
-        }
+        return unpackZipEntries(bundle)
     }
 
     private fun rawBytesByPath(): Map<String, ByteArray> {
