@@ -5,18 +5,22 @@ import com.beust.jcommander.Parameter
 import com.mikai233.common.PLAYER_SHARD_NUM
 import com.mikai233.common.WORLD_SHARD_NUM
 import com.mikai233.common.conf.GlobalEnv
+import com.mikai233.common.conf.ServerMode
 import com.mikai233.common.config.ConfigChangeDispatcher
 import com.mikai233.common.core.*
 import com.mikai233.common.message.world.HandoffWorld
 import com.mikai233.common.rpc.DefaultRpcEntityIdResolver
 import com.mikai233.common.rpc.GameRpcProtocol
 import com.mikai233.common.rpc.RpcEntityIdResolver
+import com.mikai233.protocol.ProtoRpcWorld.WorldWakeupReq
+import com.mikai233.protocol.ProtoRpcWorld.WorldWakeupResp
 import com.mikai233.world.generated.GeneratedWorldConfigChangeHandlers
 import com.mikai233.world.generated.GeneratedWorldMessageCatalog
 import com.mikai233.world.generated.GeneratedWorldNodeDispatchers
 import com.mikai233.world.service.WorldService
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import io.github.realmlabs.asteria.cluster.pekko.PekkoEntityWakerModule
 import io.github.realmlabs.asteria.cluster.pekko.actor
 import io.github.realmlabs.asteria.cluster.pekko.allocationStrategy
 import io.github.realmlabs.asteria.cluster.pekko.extractor
@@ -29,12 +33,15 @@ import io.github.realmlabs.asteria.patch.PatchableServiceRegistry
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.cluster.sharding.ShardCoordinator
 import java.net.InetSocketAddress
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 class WorldNode(
     val addr: InetSocketAddress,
     override val name: String,
-    val nodeId: String = "world-${addr.port}",
-    val config: Config,
+    nodeId: String = "world-${addr.port}",
+    config: Config,
     zookeeperConnectString: String,
     sameJvm: Boolean = false,
 ) : LaunchableNode {
@@ -82,7 +89,7 @@ class WorldNode(
     override suspend fun launch() {
         clusterNode.launch(
             beforeClusterModules = listOf(clusterNode.workerIdModule()),
-            afterClusterModules = listOf(WorldWakerModule(this)),
+            afterClusterModules = listOf(worldWakerModule()),
             onStateChange = ::updateState,
         ) {
             role(GameRoles.World)
@@ -104,6 +111,52 @@ class WorldNode(
 
     private fun updateState(newState: NodeState) {
         currentState = newState
+    }
+
+    private fun worldWakerModule(): PekkoEntityWakerModule {
+        return PekkoEntityWakerModule {
+            moduleName = "world-waker"
+            singletonName = "worldWaker"
+            coordinatorRole(GameRoles.World)
+            task("world") {
+                kind(GameEntityKinds.WorldActor)
+                targets { runtime.gameWorldIds }
+                message { worldId ->
+                    WorldWakeupReq.newBuilder()
+                        .setWorldId(worldId)
+                        .build()
+                }
+                success { response ->
+                    response is WorldWakeupResp
+                }
+                readiness {
+                    role(GameRoles.World)
+                    minUpRatio = 0.7
+                }
+                concurrency {
+                    initial = 20
+                    min = 1
+                    max = 100
+                    growthStep = 7
+                    shrinkStep = 10
+                    growthSuccessRate = 0.8
+                    shrinkFailureRate = 0.5
+                    adjustmentWindow = 20
+                    cooldownWindows = 2
+                }
+                retry {
+                    timeout = 3.minutes
+                    initialDelay = when (GlobalEnv.serverMode) {
+                        ServerMode.DevMode -> 1.milliseconds
+                        ServerMode.ReleaseMode -> 5.seconds
+                    }
+                    maxDelay = initialDelay
+                    backoffFactor = 1.0
+                    maxAttempts = null
+                    exhaustedDelay = null
+                }
+            }
+        }
     }
 
 }

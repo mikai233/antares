@@ -1,5 +1,7 @@
+import com.fasterxml.jackson.core.util.DefaultIndenter
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter
+import com.fasterxml.jackson.core.util.Separators
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.node.ArrayNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.google.protobuf.DescriptorProtos
@@ -136,7 +138,7 @@ abstract class RpcProtocolRegistryTask : DefaultTask() {
 
     private fun writeOutput(file: File, messages: List<Map.Entry<String, Int>>) {
         file.parentFile.mkdirs()
-        val mapper = ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT)
+        val mapper = ObjectMapper()
         val root: ObjectNode = mapper.createObjectNode()
         val messagesNode: ArrayNode = root.putArray("messages")
         messages.forEach { (type, id) ->
@@ -144,7 +146,16 @@ abstract class RpcProtocolRegistryTask : DefaultTask() {
                 .put("id", id)
                 .put("type", type)
         }
-        mapper.writeValue(file, root)
+        val indenter = DefaultIndenter("  ", "\n")
+        val prettyPrinter = DefaultPrettyPrinter()
+            .withObjectIndenter(indenter)
+            .withArrayIndenter(indenter)
+            .withSeparators(
+                Separators.createDefaultInstance()
+                    .withObjectFieldValueSpacing(Separators.Spacing.AFTER),
+            )
+        mapper.writer(prettyPrinter).writeValue(file, root)
+        file.appendText("\n")
     }
 
     private fun outerClassName(protoFileName: String): String {
