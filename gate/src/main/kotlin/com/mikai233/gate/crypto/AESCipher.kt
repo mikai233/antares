@@ -1,4 +1,4 @@
-package com.mikai233.common.crypto
+package com.mikai233.gate.crypto
 
 import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec

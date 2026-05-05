@@ -1,4 +1,4 @@
-package com.mikai233.common.crypto
+package com.mikai233.gate.crypto
 
 import org.bouncycastle.crypto.agreement.X25519Agreement
 import org.bouncycastle.crypto.params.X25519PrivateKeyParameters

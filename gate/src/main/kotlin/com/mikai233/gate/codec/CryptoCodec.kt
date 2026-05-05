@@ -1,6 +1,6 @@
-package com.mikai233.common.codec
+package com.mikai233.gate.codec
 
-import com.mikai233.common.crypto.AESCipher
+import com.mikai233.gate.crypto.AESCipher
 import io.netty.buffer.ByteBuf
 import io.netty.buffer.ByteBufUtil
 import io.netty.buffer.Unpooled

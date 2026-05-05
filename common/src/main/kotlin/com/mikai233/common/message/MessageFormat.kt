@@ -1,8 +1,7 @@
-package com.mikai233.common
+package com.mikai233.common.message
 
 import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.extension.protobufJsonPrinter
-import com.mikai233.common.message.ClientProtobuf
 
 private val ProtobufPrinter = protobufJsonPrinter()
 

@@ -2,8 +2,8 @@ package com.mikai233.gate
 
 import com.google.protobuf.GeneratedMessage
 import com.google.protobuf.kotlin.toByteString
-import com.mikai233.common.codec.*
-import com.mikai233.common.crypto.AESCipher
+import com.mikai233.gate.codec.*
+import com.mikai233.gate.crypto.AESCipher
 import com.mikai233.protocol.*
 import io.netty.buffer.ByteBuf
 import io.netty.buffer.ByteBufInputStream

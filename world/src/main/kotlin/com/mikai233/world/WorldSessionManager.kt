@@ -5,7 +5,7 @@ import com.mikai233.common.conf.ServerMode
 import com.mikai233.common.extension.invokeOnTargetMode
 import com.mikai233.common.extension.logger
 import com.mikai233.common.extension.tell
-import com.mikai233.common.formatMessage
+import com.mikai233.common.message.formatMessage
 import org.apache.pekko.actor.ActorRef
 
 typealias PlayerSession = WorldSessionManager.WorldSession

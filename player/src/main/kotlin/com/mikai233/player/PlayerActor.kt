@@ -1,7 +1,6 @@
 package com.mikai233.player
 
 import com.google.protobuf.GeneratedMessage
-import com.mikai233.common.core.system
 import com.mikai233.common.event.GameConfigChangedEvent
 import com.mikai233.common.event.PlayerCreateEvent
 import com.mikai233.common.event.PlayerLoginEvent
@@ -9,11 +8,12 @@ import com.mikai233.common.extension.ask
 import com.mikai233.common.message.Message
 import com.mikai233.common.message.player.HandoffPlayer
 import com.mikai233.common.message.player.PlayerTick
+import com.mikai233.common.runtime.system
 import com.mikai233.protocol.ProtoLogin
 import com.mikai233.protocol.ProtoRpcGate.ChannelExpiredReq
-import io.github.realmlabs.asteria.actor.AsteriaActor
 import io.github.realmlabs.asteria.actor.ActorLifecycleGate
 import io.github.realmlabs.asteria.actor.ActorTimerSupport
+import io.github.realmlabs.asteria.actor.AsteriaActor
 import io.github.realmlabs.asteria.message.dispatchActor
 import io.github.realmlabs.asteria.script.pekko.ActorScriptSupport
 import org.apache.pekko.actor.ActorRef

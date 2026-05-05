@@ -1,4 +1,4 @@
-package com.mikai233.common.core
+package com.mikai233.common.runtime
 
 import io.github.realmlabs.asteria.core.NodeRuntime
 import io.github.realmlabs.asteria.patch.PatchId

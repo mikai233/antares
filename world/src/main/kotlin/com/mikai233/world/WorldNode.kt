@@ -2,15 +2,14 @@ package com.mikai233.world
 
 import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
-import com.mikai233.common.PLAYER_SHARD_NUM
-import com.mikai233.common.WORLD_SHARD_NUM
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.conf.ServerMode
-import com.mikai233.common.core.*
 import com.mikai233.common.message.world.HandoffWorld
 import com.mikai233.common.rpc.DefaultRpcEntityIdResolver
 import com.mikai233.common.rpc.GameRpcProtocol
 import com.mikai233.common.rpc.RpcEntityIdResolver
+import com.mikai233.common.runtime.*
+import com.mikai233.common.runtime.module.WORLD_WAKE_TASK
 import com.mikai233.protocol.ProtoRpcWorld.WorldWakeupReq
 import com.mikai233.protocol.ProtoRpcWorld.WorldWakeupResp
 import com.mikai233.world.generated.GeneratedWorldConfigChangeHandlers

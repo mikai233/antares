@@ -1,4 +1,4 @@
-package com.mikai233.common.codec
+package com.mikai233.gate.codec
 
 import io.netty.buffer.ByteBufUtil
 import io.netty.buffer.Unpooled

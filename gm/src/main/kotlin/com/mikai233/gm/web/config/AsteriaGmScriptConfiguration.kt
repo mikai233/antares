@@ -1,7 +1,7 @@
 package com.mikai233.gm.web.config
 
 import com.mikai233.common.annotation.AllOpen
-import com.mikai233.common.core.*
+import com.mikai233.common.runtime.*
 import com.mikai233.gm.GmNode
 import io.github.realmlabs.asteria.core.EntityKind
 import io.github.realmlabs.asteria.core.RoleKey

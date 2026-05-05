@@ -39,6 +39,8 @@ dependencies {
     runtimeOnly(libKotlinx.core.jvm)
     implementation(libLog.bundles.common)
     implementation(libTool.netty)
+    implementation(libTool.lz4)
+    implementation(libTool.bcprov)
     implementation(libTool.protobuf.kotlin)
     implementation(libTool.bundles.curator)
     implementation(libTool.jcommander)

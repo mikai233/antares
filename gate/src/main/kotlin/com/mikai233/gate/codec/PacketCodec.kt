@@ -1,4 +1,4 @@
-package com.mikai233.common.codec
+package com.mikai233.gate.codec
 
 import com.mikai233.common.extension.logger
 import io.netty.buffer.ByteBuf

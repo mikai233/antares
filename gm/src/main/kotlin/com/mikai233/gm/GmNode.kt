@@ -2,11 +2,9 @@ package com.mikai233.gm
 
 import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
-import com.mikai233.common.PLAYER_SHARD_NUM
-import com.mikai233.common.WORLD_SHARD_NUM
 import com.mikai233.common.conf.GlobalEnv
-import com.mikai233.common.core.*
 import com.mikai233.common.rpc.GameRpcProtocol
+import com.mikai233.common.runtime.*
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import io.github.realmlabs.asteria.cluster.pekko.PekkoSingletonStartup

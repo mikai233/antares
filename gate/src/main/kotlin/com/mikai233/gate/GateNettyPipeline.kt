@@ -1,7 +1,8 @@
 package com.mikai233.gate
 
-import com.mikai233.common.codec.*
 import com.mikai233.common.message.ClientProtobuf
+import com.mikai233.gate.codec.*
+import com.mikai233.gate.crypto.AESCipher
 import io.github.realmlabs.asteria.gateway.GatewayCloseReason
 import io.github.realmlabs.asteria.gateway.GatewaySession
 import io.github.realmlabs.asteria.gateway.GatewaySessionAttributeKey
@@ -49,7 +50,7 @@ object GateNettyPipeline {
     }
 }
 
-fun GatewaySession.enableGateCipher(cipher: com.mikai233.common.crypto.AESCipher) {
+fun GatewaySession.enableGateCipher(cipher: AESCipher) {
     requireNotNull(get(GateNettyChannelKey)) { "gate Netty channel not bound for session ${id.value}" }
         .attr(CIPHER_KEY)
         .set(cipher)

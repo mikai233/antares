@@ -1,9 +1,9 @@
 package com.mikai233.common.rpc
 
 import com.google.protobuf.GeneratedMessage
-import com.mikai233.common.PLAYER_SHARD_NUM
-import com.mikai233.common.WORLD_SHARD_NUM
-import com.mikai233.common.core.patchableServices
+import com.mikai233.common.runtime.PLAYER_SHARD_NUM
+import com.mikai233.common.runtime.WORLD_SHARD_NUM
+import com.mikai233.common.runtime.patchableServices
 import io.github.realmlabs.asteria.cluster.pekko.PekkoMessageExtractor
 import io.github.realmlabs.asteria.cluster.pekko.PekkoShardExtractors
 import io.github.realmlabs.asteria.core.NodeRuntime

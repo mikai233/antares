@@ -1,4 +1,4 @@
-package com.mikai233.common.core
+package com.mikai233.common.runtime
 
 import com.google.common.io.Resources
 import com.mikai233.common.broadcast.PlayerBroadcastEventBus
@@ -6,6 +6,13 @@ import com.mikai233.common.config.GameWorldConfig
 import com.mikai233.common.config.WORKER_IDS
 import com.mikai233.common.db.MongoDB
 import com.mikai233.common.extension.asyncZookeeperClient
+import com.mikai233.common.runtime.module.GameConfigModule
+import com.mikai233.common.runtime.module.GameWorldConfigModule
+import com.mikai233.common.runtime.module.GameWorldConfigService
+import com.mikai233.common.runtime.module.MongoDbModule
+import com.mikai233.common.runtime.module.PlayerBroadcastModule
+import com.mikai233.common.runtime.module.PlayerBroadcastRuntime
+import com.mikai233.common.runtime.module.PrometheusMetricsModule
 import com.typesafe.config.Config
 import io.github.realmlabs.asteria.cluster.pekko.EntityShardRegistry
 import io.github.realmlabs.asteria.cluster.pekko.SingletonActorRegistry

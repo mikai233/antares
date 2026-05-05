@@ -1,8 +1,8 @@
 package com.mikai233.gate
 
-import com.mikai233.common.core.GameEntityKinds
-import com.mikai233.common.core.system
 import com.mikai233.common.message.ClientProtobuf
+import com.mikai233.common.runtime.GameEntityKinds
+import com.mikai233.common.runtime.system
 import com.mikai233.gate.generated.GeneratedGatewayRouting
 import com.mikai233.protocol.ProtoSystem.GmReq
 import io.github.realmlabs.asteria.cluster.pekko.EntityShardRegistry

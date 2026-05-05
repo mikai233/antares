@@ -1,4 +1,4 @@
-package com.mikai233.common.core
+package com.mikai233.common.runtime
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory

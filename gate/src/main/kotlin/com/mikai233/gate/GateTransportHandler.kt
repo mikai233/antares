@@ -1,9 +1,9 @@
 package com.mikai233.gate
 
-import com.mikai233.common.core.system
 import com.mikai233.common.extension.logger
 import com.mikai233.common.extension.tell
 import com.mikai233.common.message.StopChannel
+import com.mikai233.common.runtime.system
 import io.github.realmlabs.asteria.core.NodeState
 import io.github.realmlabs.asteria.gateway.*
 import org.apache.pekko.actor.ActorRef

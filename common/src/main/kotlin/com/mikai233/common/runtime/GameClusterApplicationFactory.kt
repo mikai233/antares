@@ -1,5 +1,6 @@
-package com.mikai233.common.core
+package com.mikai233.common.runtime
 
+import com.mikai233.common.runtime.module.PekkoCoroutineScopeModule
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import io.github.realmlabs.asteria.core.AsteriaApplication
