@@ -118,7 +118,7 @@ class WorldNode(
             moduleName = "world-waker"
             singletonName = "worldWaker"
             coordinatorRole(GameRoles.World)
-            task("world") {
+            task(WORLD_WAKE_TASK) {
                 kind(GameEntityKinds.WorldActor)
                 targets { runtime.gameWorldIds }
                 message { worldId ->
