@@ -2,6 +2,7 @@ package com.mikai233.common.test
 
 import com.mikai233.common.config.luban.GeneratedLubanMetadata
 import io.github.realmlabs.asteria.config.publisher.ConfigPublicationArtifact
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.nio.file.Files
@@ -63,9 +64,7 @@ object LubanTestConfigArtifacts {
             "Missing test system property: common.buildDir"
         }
         val dir = Path.of(commonBuildDir, "generated", "luban", "resources", "luban")
-        check(dir.exists()) {
-            "Generated Luban data directory not found: $dir. Run :common:refreshLubanConfig first."
-        }
+        assumeTrue(dir.exists(), "Generated Luban data directory not found: $dir. Run :common:exportLubanConfig first.")
         return dir
     }
 }

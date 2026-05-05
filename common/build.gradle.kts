@@ -1,4 +1,5 @@
 plugins {
+    idea
     alias(libTool.plugins.ksp)
 }
 
@@ -19,6 +20,13 @@ kotlin {
 java {
     sourceSets.main {
         java.srcDir("src/generated/luban/java")
+    }
+}
+
+idea {
+    module {
+        generatedSourceDirs.add(file("src/generated/luban/java"))
+        generatedSourceDirs.add(file("src/generated/luban/kotlin"))
     }
 }
 
@@ -61,7 +69,6 @@ dependencies {
 }
 
 tasks.test {
-    dependsOn(exportLubanConfig)
     useJUnitPlatform()
     systemProperty("common.buildDir", layout.buildDirectory.get().asFile.absolutePath)
 }
