@@ -1,0 +1,34 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: antares-runtime-config
+  namespace: antares
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: antares-runtime-config
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: init
+          image: akka-game-server-tools:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: ZK_CONNECT
+              value: "zookeeper:2181"
+            - name: MONGO_HOST
+              value: "mongodb"
+            - name: MONGO_PORT
+              value: "27017"
+            - name: MONGO_DATABASE
+              value: "asteria_example"
+            - name: GATE_NETTY_CONFIG_NODE_ID
+              value: "gate"
+            - name: GATE_HOST
+              value: "0.0.0.0"
+            - name: GATE_PORT
+              value: "6666"
+            - name: GAME_WORLD_COUNT
+              value: "1"

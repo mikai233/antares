@@ -7,7 +7,6 @@ import com.mikai233.common.config.WORKER_IDS
 import com.mikai233.common.db.MongoDB
 import com.mikai233.common.extension.asyncZookeeperClient
 import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
 import io.github.realmlabs.asteria.cluster.pekko.EntityShardRegistry
 import io.github.realmlabs.asteria.cluster.pekko.SingletonActorRegistry
 import io.github.realmlabs.asteria.cluster.pekko.addSuspendTask
@@ -20,10 +19,6 @@ import io.github.realmlabs.asteria.id.WorkerIdModuleOptions
 import io.github.realmlabs.asteria.id.WorkerIdOwner
 import io.github.realmlabs.asteria.id.zookeeper.ZookeeperWorkerIdRepository
 import io.github.realmlabs.asteria.patch.PatchableServiceRegistry
-import io.github.realmlabs.asteria.script.engine.groovy.GroovyScriptEngine
-import io.github.realmlabs.asteria.script.engine.jar.JarScriptEngine
-import io.github.realmlabs.asteria.script.pekko.ScriptModule
-import io.github.realmlabs.asteria.starter.clusterGameApplication
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.future.await
@@ -132,22 +127,19 @@ class ClusterNodeBootstrap(
         onStateChange: (NodeState) -> Unit,
         configure: AsteriaApplicationBuilder.() -> Unit,
     ) {
-        val application = clusterGameApplication(nodeId = nodeId, pekkoConfig = runtimeConfig()) {
-            name = runtime.name
-            commonModules().forEach(::install)
-            beforeClusterModules.forEach(::install)
-            configure()
-            install(PekkoCoroutineScopeModule())
-            install(
-                ScriptModule {
-                    engine(GroovyScriptEngine())
-                    engine(JarScriptEngine())
-                    allowNodeScripts = true
-                    allowActorScripts = true
-                },
-            )
-            afterClusterModules.forEach(::install)
-        }
+        val application = GameClusterApplicationFactories.select(config).build(
+            GameClusterApplicationRequest(
+                runtime = runtime,
+                addr = addr,
+                nodeId = nodeId,
+                config = config,
+                sameJvm = sameJvm,
+                commonModules = commonModules(),
+                beforeClusterModules = beforeClusterModules,
+                afterClusterModules = afterClusterModules,
+                configure = configure,
+            ),
+        )
         val lifecycle = application.bind(runtime) { newState ->
             val previousState = runtime.state
             onStateChange(newState)
@@ -177,16 +169,6 @@ class ClusterNodeBootstrap(
             GameConfigModule(),
             PlayerBroadcastModule(),
         )
-    }
-
-    private fun runtimeConfig(): Config {
-        return if (sameJvm) {
-            ConfigFactory.parseMap(
-                mapOf("pekko.cluster.jmx.multi-mbeans-in-same-jvm" to "on"),
-            ).withFallback(config)
-        } else {
-            config
-        }
     }
 
     private fun addCoordinatedShutdownTasks(onStateChange: (NodeState) -> Unit) {

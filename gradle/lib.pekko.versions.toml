@@ -4,7 +4,7 @@
 
 [versions]
 pekko = "1.2.1"
-pekkoManagement = "1.1.1"
+pekkoManagement = "1.2.1"
 
 ###############################
 # 📦 Libraries
@@ -22,7 +22,9 @@ stream = { module = "org.apache.pekko:pekko-stream_2.13", version.ref = "pekko" 
 
 # --- Pekko Management Components ---
 discovery = { module = "org.apache.pekko:pekko-discovery_2.13", version.ref = "pekko" }
+discovery-kubernetes-api = { module = "org.apache.pekko:pekko-discovery-kubernetes-api_2.13", version.ref = "pekko" }
 management = { module = "org.apache.pekko:pekko-management_2.13", version.ref = "pekkoManagement" }
+management-cluster-bootstrap = { module = "org.apache.pekko:pekko-management-cluster-bootstrap_2.13", version.ref = "pekkoManagement" }
 management-cluster-http = { module = "org.apache.pekko:pekko-management-cluster-http_2.13", version.ref = "pekkoManagement" }
 
 ###############################

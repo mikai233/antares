@@ -1,10 +1,9 @@
 plugins {
     application
-    alias(libTool.plugins.boot)
 }
 
 application {
-    mainClass.set("com.mikai233.tools.zookeeper.KubernetesRuntimeConfigInitializerKt")
+    mainClass.set("com.mikai233.stardust.StardustKt")
 }
 
 dependencies {
@@ -12,21 +11,19 @@ dependencies {
     testImplementation(libTest.junit.jupiter)
     implementation(libTool.bundles.asteria.cluster)
     implementation(libTool.bundles.asteria.config)
-    implementation(libTool.bundles.asteria.persistence)
-    implementation(libTool.kotlinpoet)
+    implementation(libPekko.actor)
     implementation(libLog.bundles.common)
-    implementation(libKotlinx.datetime)
     implementation(libKotlinx.core)
     runtimeOnly(libKotlinx.core.jvm)
     implementation(libKotlin.reflect)
-    implementation(libTool.bundles.curator)
     implementation(project(":common"))
+    implementation(project(":gate"))
+    implementation(project(":global"))
+    implementation(project(":gm"))
+    implementation(project(":player"))
+    implementation(project(":world"))
 }
 
 tasks.test {
     useJUnitPlatform()
-}
-
-tasks.bootJar {
-    mainClass.set(application.mainClass)
 }

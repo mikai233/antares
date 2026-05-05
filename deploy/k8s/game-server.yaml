@@ -1,0 +1,261 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: player
+  namespace: antares
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: antares
+      role: player
+  template:
+    metadata:
+      labels:
+        app: antares
+        role: player
+    spec:
+      serviceAccountName: antares
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: player
+          image: akka-game-server-player:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: CLUSTER_DISCOVERY
+              value: "kubernetes"
+            - name: ZK_CONNECT
+              value: "zookeeper:2181"
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          ports:
+            - name: remoting
+              containerPort: 2333
+            - name: metrics
+              containerPort: 3333
+            - name: management
+              containerPort: 4333
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: world
+  namespace: antares
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: antares
+      role: world
+  template:
+    metadata:
+      labels:
+        app: antares
+        role: world
+    spec:
+      serviceAccountName: antares
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: world
+          image: akka-game-server-world:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: CLUSTER_DISCOVERY
+              value: "kubernetes"
+            - name: ZK_CONNECT
+              value: "zookeeper:2181"
+            - name: NODE_PORT
+              value: "2336"
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          ports:
+            - name: remoting
+              containerPort: 2336
+            - name: metrics
+              containerPort: 3336
+            - name: management
+              containerPort: 4336
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: global
+  namespace: antares
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: antares
+      role: global
+  template:
+    metadata:
+      labels:
+        app: antares
+        role: global
+    spec:
+      serviceAccountName: antares
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: global
+          image: akka-game-server-global:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: CLUSTER_DISCOVERY
+              value: "kubernetes"
+            - name: ZK_CONNECT
+              value: "zookeeper:2181"
+            - name: NODE_PORT
+              value: "2335"
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          ports:
+            - name: remoting
+              containerPort: 2335
+            - name: metrics
+              containerPort: 3335
+            - name: management
+              containerPort: 4335
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gate
+  namespace: antares
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: antares
+      role: gate
+  template:
+    metadata:
+      labels:
+        app: antares
+        role: gate
+    spec:
+      serviceAccountName: antares
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: gate
+          image: akka-game-server-gate:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: CLUSTER_DISCOVERY
+              value: "kubernetes"
+            - name: ZK_CONNECT
+              value: "zookeeper:2181"
+            - name: NODE_PORT
+              value: "2334"
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          ports:
+            - name: remoting
+              containerPort: 2334
+            - name: metrics
+              containerPort: 3334
+            - name: management
+              containerPort: 4334
+            - name: client
+              containerPort: 6666
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gate
+  namespace: antares
+spec:
+  type: LoadBalancer
+  selector:
+    app: antares
+    role: gate
+  ports:
+    - name: client
+      port: 6666
+      targetPort: client
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gm
+  namespace: antares
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: antares
+      role: gm
+  template:
+    metadata:
+      labels:
+        app: antares
+        role: gm
+    spec:
+      serviceAccountName: antares
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: gm
+          image: akka-game-server-gm:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: CLUSTER_DISCOVERY
+              value: "kubernetes"
+            - name: ZK_CONNECT
+              value: "zookeeper:2181"
+            - name: NODE_PORT
+              value: "2337"
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          ports:
+            - name: remoting
+              containerPort: 2337
+            - name: metrics
+              containerPort: 3337
+            - name: management
+              containerPort: 4337
+            - name: http
+              containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gm
+  namespace: antares
+spec:
+  type: ClusterIP
+  selector:
+    app: antares
+    role: gm
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

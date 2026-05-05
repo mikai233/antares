@@ -19,7 +19,8 @@ class GateGatewayTransportModule(
     override suspend fun start(context: ModuleContext) {
         val repository = context.services.get(RuntimeConfigRepository::class)
         val config = repository.get<NettyConfig>(nettyConfigPath(node.nodeId))?.value
-            ?: error("runtime config ${nettyConfigPath(node.nodeId)} not found")
+            ?: repository.get<NettyConfig>(nettyConfigPath("gate"))?.value
+            ?: error("runtime config ${nettyConfigPath(node.nodeId)} or ${nettyConfigPath("gate")} not found")
         val gatewayTransport = NettyTcpGatewayServerTransport(
             NettyGatewayServerOptions(
                 host = config.host,

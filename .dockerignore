@@ -1,0 +1,10 @@
+.git
+.gradle
+**/.gradle
+**/build
+release
+client/target
+client/.cargo
+*.iml
+.idea
+.DS_Store

@@ -1,4 +1,4 @@
-package com.mikai233.tools.cluster
+package com.mikai233.stardust
 
 import ch.qos.logback.classic.LoggerContext
 import com.mikai233.common.conf.GlobalEnv
@@ -18,14 +18,18 @@ import io.github.realmlabs.asteria.cluster.config.RuntimeNodeConfig
 import io.github.realmlabs.asteria.config.center.JacksonConfigCodec
 import io.github.realmlabs.asteria.config.center.RuntimeConfigRepository
 import io.github.realmlabs.asteria.config.center.zookeeper.ZookeeperConfigStore
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.future.await
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import org.apache.pekko.actor.ActorSystem
 import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
 import kotlin.system.exitProcess
 
-object DevClusterLauncher {
+object StardustCluster {
     private typealias NodeFactory = (
         addr: InetSocketAddress,
         name: String,
@@ -105,5 +109,3 @@ object DevClusterLauncher {
         }
     }
 }
-
-suspend fun main() = DevClusterLauncher.launch()

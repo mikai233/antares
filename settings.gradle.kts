@@ -36,6 +36,7 @@ dependencyResolutionManagement {
 
 include("common")
 include("gate")
+include("stardust")
 include("tools")
 include("player")
 include("proto")
