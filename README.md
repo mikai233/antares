@@ -54,6 +54,32 @@ It also publishes:
 - demo world definitions
 - demo game config publication
 
+Useful local tasks:
+
+```bash
+# Prepare local Zookeeper topology/runtime config and game config for Stardust
+./gradlew :stardust:prepareLocalDev
+
+# Re-publish changed Excel data to local Zookeeper without rewriting topology
+./gradlew :tools:publishLocalGameConfig
+
+# Re-publish with an explicit config revision override
+./gradlew :tools:publishLocalGameConfig -PgameConfigVersion=4.3.0
+
+# Reinitialize local topology/runtime config after clearing Zookeeper
+./gradlew :tools:initializeLocalRuntimeConfig
+```
+
+If you changed Luban schema or table structure, refresh generated sources first:
+
+```bash
+./gradlew :common:refreshLubanConfig
+./gradlew :tools:publishLocalGameConfig
+```
+
+Project version is centralized in `gradle.properties` as `projectVersion`. Code package metadata, default game config
+publication revision, and Docker image tags all read that value unless explicitly overridden.
+
 If you prefer to debug a single process, each node still has its own `main` entry:
 
 - `gate/.../GateNode.kt`
@@ -208,10 +234,11 @@ Excel is the source of truth for demo game config.
 - generated Kotlin Luban metadata/bridge: `common/src/generated/luban/kotlin`
 - generated table accessors: `common/build/generated/ksp/main/kotlin`
 - generated raw `.bytes`: `common/build/generated/luban/resources/luban`
-- packaged server bundle: `common/build/generated/luban/bundles/game-config.zip`
+- packaged publication artifact: `common/build/generated/luban/bundles/game-config.zip`
 
 The generated Java/Kotlin source is checked into the repo. Raw `.bytes` files are local build outputs and are not part
-of the runtime classpath.
+of the runtime classpath. Runtime nodes consume a single `game-config.zip` publication artifact from the config center
+and unpack it in memory before loading Luban tables.
 
 Common commands:
 
