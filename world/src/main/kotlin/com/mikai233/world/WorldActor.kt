@@ -14,16 +14,17 @@ import com.mikai233.common.message.world.HandoffWorld
 import com.mikai233.common.message.world.WorldTick
 import com.mikai233.protocol.ProtoSystem.GmReq
 import com.mikai233.protocol.idForServerMessage
+import io.github.realmlabs.asteria.actor.AsteriaActor
 import io.github.realmlabs.asteria.actor.ActorLifecycleGate
 import io.github.realmlabs.asteria.actor.ActorTimerSupport
 import io.github.realmlabs.asteria.message.dispatchActor
-import io.github.realmlabs.asteria.script.pekko.ScriptableAsteriaActor
+import io.github.realmlabs.asteria.script.pekko.ActorScriptSupport
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.actor.Props
 import org.apache.pekko.cluster.sharding.ShardRegion
 import kotlin.time.Duration.Companion.seconds
 
-class WorldActor(val node: WorldNode) : ScriptableAsteriaActor<WorldNode>(node) {
+class WorldActor(val node: WorldNode) : AsteriaActor<WorldNode>(node) {
     companion object {
         val WorldTickDuration = 1.seconds
 
@@ -33,6 +34,7 @@ class WorldActor(val node: WorldNode) : ScriptableAsteriaActor<WorldNode>(node) 
     val worldId: Long = self.path().name().toLong()
 
     private val timers = ActorTimerSupport(this)
+    private val scripts = ActorScriptSupport(this)
     val sessionManager = WorldSessionManager(this)
     val manager = WorldDataManager(this)
     private val lifecycle = ActorLifecycleGate(
@@ -58,7 +60,7 @@ class WorldActor(val node: WorldNode) : ScriptableAsteriaActor<WorldNode>(node) 
     }
 
     override fun createReceive(): Receive {
-        return lifecycle.loadingReceive(::running)
+        return lifecycle.loadingReceive { withScripts(running()) }
     }
 
     private fun running(): Receive {
@@ -75,6 +77,10 @@ class WorldActor(val node: WorldNode) : ScriptableAsteriaActor<WorldNode>(node) 
             .match(GameConfigChangedEvent::class.java) { handleWorldMessage(it) }
             .match(Message::class.java) { handleWorldMessage(it) }
             .build()
+    }
+
+    private fun withScripts(receive: Receive): Receive {
+        return receive.orElse(scripts.receive())
     }
 
     private fun handleWorldMessage(message: Message) {

@@ -23,9 +23,10 @@ import com.mikai233.protocol.ProtoRpcBroadcast.BroadcastEnvelope
 import com.mikai233.protocol.ProtoRpcWorld.SubscribeTopicReq
 import com.mikai233.protocol.ProtoRpcWorld.UnsubscribeTopicReq
 import com.mikai233.protocol.connectionExpiredNotify
+import io.github.realmlabs.asteria.actor.AsteriaActor
 import io.github.realmlabs.asteria.gateway.GatewaySession
 import io.github.realmlabs.asteria.message.dispatchActor
-import io.github.realmlabs.asteria.script.pekko.ScriptableAsteriaActor
+import io.github.realmlabs.asteria.script.pekko.ActorScriptSupport
 import org.apache.pekko.actor.Props
 import org.apache.pekko.actor.ReceiveTimeout
 import org.apache.pekko.cluster.pubsub.DistributedPubSub
@@ -35,7 +36,7 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.toJavaDuration
 
 class ChannelActor(val node: GateNode, private val session: GatewaySession) :
-    ScriptableAsteriaActor<GateNode>(node) {
+    AsteriaActor<GateNode>(node) {
     companion object {
         val MaxIdleDuration = 1.minutes
 
@@ -47,6 +48,7 @@ class ChannelActor(val node: GateNode, private val session: GatewaySession) :
     private var worldId: Long? = null
     private lateinit var clientPublicKey: ByteArray
     private val mediator = DistributedPubSub.get(context.system).mediator()
+    private val scripts = ActorScriptSupport(this)
     private val subscribedTopics = mutableSetOf<String>()
 
     override fun preStart() {
@@ -78,6 +80,7 @@ class ChannelActor(val node: GateNode, private val session: GatewaySession) :
             .match(ChannelExpired::class.java) { handleChannelExpired(it) }
             .match(ReceiveTimeout::class.java) { stopChannel() }
             .build()
+            .let(::withScripts)
     }
 
     fun write(message: GeneratedMessage) {
@@ -172,6 +175,7 @@ class ChannelActor(val node: GateNode, private val session: GatewaySession) :
             }
             .match(ReceiveTimeout::class.java) { stopChannel() }
             .build()
+            .let(::withScripts)
     }
 
     private fun handleChannelExpired(message: ChannelExpired) {
@@ -188,6 +192,11 @@ class ChannelActor(val node: GateNode, private val session: GatewaySession) :
             .match(StopChannel::class.java) { stopChannel() }
             .match(ReceiveTimeout::class.java) { stopChannel() }
             .build()
+            .let(::withScripts)
+    }
+
+    private fun withScripts(receive: Receive): Receive {
+        return receive.orElse(scripts.receive())
     }
 
     /**

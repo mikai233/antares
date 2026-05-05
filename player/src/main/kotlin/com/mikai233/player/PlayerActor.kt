@@ -11,10 +11,11 @@ import com.mikai233.common.message.player.HandoffPlayer
 import com.mikai233.common.message.player.PlayerTick
 import com.mikai233.protocol.ProtoLogin
 import com.mikai233.protocol.ProtoRpcGate.ChannelExpiredReq
+import io.github.realmlabs.asteria.actor.AsteriaActor
 import io.github.realmlabs.asteria.actor.ActorLifecycleGate
 import io.github.realmlabs.asteria.actor.ActorTimerSupport
 import io.github.realmlabs.asteria.message.dispatchActor
-import io.github.realmlabs.asteria.script.pekko.ScriptableAsteriaActor
+import io.github.realmlabs.asteria.script.pekko.ActorScriptSupport
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.actor.Props
 import org.apache.pekko.actor.ReceiveTimeout
@@ -23,7 +24,7 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
-class PlayerActor(val node: PlayerNode) : ScriptableAsteriaActor<PlayerNode>(node) {
+class PlayerActor(val node: PlayerNode) : AsteriaActor<PlayerNode>(node) {
     companion object {
         val PlayerTickDuration = 1.seconds
 
@@ -34,6 +35,7 @@ class PlayerActor(val node: PlayerNode) : ScriptableAsteriaActor<PlayerNode>(nod
 
     private var channelActor: ActorRef? = null
     private val timers = ActorTimerSupport(this)
+    private val scripts = ActorScriptSupport(this)
     val manager = PlayerDataManager(this)
     private val lifecycle = ActorLifecycleGate(
         owner = this,
@@ -55,7 +57,7 @@ class PlayerActor(val node: PlayerNode) : ScriptableAsteriaActor<PlayerNode>(nod
     }
 
     override fun createReceive(): Receive {
-        return lifecycle.loadingReceive(::running)
+        return lifecycle.loadingReceive { withScripts(running()) }
     }
 
     private fun running(): Receive {
@@ -77,6 +79,10 @@ class PlayerActor(val node: PlayerNode) : ScriptableAsteriaActor<PlayerNode>(nod
             .match(PlayerLoginEvent::class.java) { handlePlayerMessage(it) }
             .match(PlayerCreateEvent::class.java) { handlePlayerMessage(it) }
             .build()
+    }
+
+    private fun withScripts(receive: Receive): Receive {
+        return receive.orElse(scripts.receive())
     }
 
     private fun handleProtobufMessage(message: GeneratedMessage) {
