@@ -227,7 +227,8 @@ monolithic rules file.
 
 ## Luban Pipeline
 
-Excel is the source of truth for demo game config.
+Excel is the source of truth for demo game config. The default Excel directory is configured by `lubanDataDir` in the
+root `gradle.properties`.
 
 - Excel source: `config/luban/Datas`
 - generated Java table/model code: `common/src/generated/luban/java`
@@ -259,12 +260,16 @@ Common commands:
 ./gradlew :common:packageLubanConfigBundle
 ```
 
-Optional parameters:
+Common configuration:
 
-```bash
--PlubanDataDir=/path/to/Datas
--PlubanBundleOutputDir=dist/config
+```properties
+lubanDataDir=config/luban/Datas
+# lubanToolRoot=/path/to/luban/tool/root
 ```
+
+Use Gradle properties or environment variables for temporary overrides: `-PlubanDataDir=/path/to/Datas`,
+`LUBAN_DATA_DIR=/path/to/Datas`, `-PlubanToolRoot=/path/to/luban/tool/root`, or
+`LUBAN_TOOL_ROOT=/path/to/luban/tool/root`.
 
 For more detail, see [config/luban/README.md](config/luban/README.md).
 

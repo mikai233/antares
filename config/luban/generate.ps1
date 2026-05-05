@@ -3,14 +3,16 @@ $ErrorActionPreference = "Stop"
 $Root = (Resolve-Path (Join-Path $PSScriptRoot "../..")).Path
 $ConfRoot = Join-Path $Root "config/luban"
 $DataDir = if ($env:LUBAN_DATA_DIR) { $env:LUBAN_DATA_DIR } else { Join-Path $ConfRoot "Datas" }
-$LubanExamplesRoot = if ($env:LUBAN_EXAMPLES_ROOT) { $env:LUBAN_EXAMPLES_ROOT } else { "C:\tmp\luban_examples" }
-$LubanDll = Join-Path $LubanExamplesRoot "Tools/Luban/Luban.dll"
-$JavaCorelib = Join-Path $LubanExamplesRoot "Projects/Java_bin/src/main/corelib/luban"
+if (-not $env:LUBAN_TOOL_ROOT) {
+    Write-Error "Luban tool root is not configured. Set LUBAN_TOOL_ROOT."
+}
+$LubanDll = Join-Path $env:LUBAN_TOOL_ROOT "Tools/Luban/Luban.dll"
+$JavaCorelib = Join-Path $env:LUBAN_TOOL_ROOT "Projects/Java_bin/src/main/corelib/luban"
 $OutputCodeDir = Join-Path $Root "common/src/generated/luban/java"
 $OutputDataDir = Join-Path $Root "common/build/generated/luban/resources/luban"
 
 if (-not (Test-Path $LubanDll -PathType Leaf)) {
-    Write-Error "Luban tool not found: $LubanDll`nSet LUBAN_EXAMPLES_ROOT or clone https://github.com/focus-creative-games/luban_examples"
+    Write-Error "Luban tool not found: $LubanDll`nSet LUBAN_TOOL_ROOT to a Luban checkout that contains Tools/Luban/Luban.dll"
 }
 
 if (-not (Test-Path $JavaCorelib -PathType Container)) {

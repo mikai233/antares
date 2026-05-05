@@ -1,10 +1,12 @@
 # Luban Demo Config
 
-This directory contains the Excel source-of-truth for the project's demo game configs.
+This directory contains the default Excel source-of-truth for the project's demo game configs. The path used by Gradle
+tasks is configured by `lubanDataDir` in the root `gradle.properties`, so real projects can point at a local or shared
+config-table checkout without changing build scripts.
 
 The flow is:
 
-1. Edit the Excel files under `Datas/`.
+1. Edit the Excel files under the configured `lubanDataDir`.
 2. Run `config/luban/generate.sh` / `config/luban/generate.ps1` or the Gradle tasks below.
 3. Luban generates:
     - Java model/table code into `common/src/generated/luban/java`
@@ -49,25 +51,31 @@ Default bundle output:
 common/build/generated/luban/bundles/game-config.zip
 ```
 
-Optional parameters:
+Common configuration in the root `gradle.properties`:
 
-```bash
-# Use a custom Excel directory
--PlubanDataDir=/path/to/Datas
-
-# Use a custom bundle output directory (resolved from the repo root)
--PlubanBundleOutputDir=dist/config
+```properties
+lubanDataDir=config/luban/Datas
+# lubanToolRoot=/path/to/luban/tool/root
 ```
 
-The generator script expects an existing Luban examples checkout because it reuses the official tool and Java corelib:
+Temporary overrides are also supported:
 
-- default location: `/tmp/luban_examples`
-- override with: `LUBAN_EXAMPLES_ROOT=/path/to/luban_examples`
+```bash
+./gradlew :common:refreshLubanConfig -PlubanDataDir=/path/to/Datas
+./gradlew :common:refreshLubanConfig -PlubanToolRoot=/path/to/luban/tool/root
+LUBAN_DATA_DIR=/path/to/Datas ./gradlew :common:refreshLubanConfig
+LUBAN_TOOL_ROOT=/path/to/luban/tool/root ./gradlew :common:refreshLubanConfig
+```
+
+The generator expects an existing Luban examples checkout because it reuses the official tool and Java corelib:
+
+- Gradle config: `lubanToolRoot=/path/to/luban/tool/root`
+- direct script config: `LUBAN_TOOL_ROOT=/path/to/luban/tool/root`
 
 If you don't have the repo locally:
 
 ```bash
-git clone --depth 1 https://github.com/focus-creative-games/luban_examples /tmp/luban_examples
+git clone --depth 1 https://github.com/focus-creative-games/luban_examples /path/to/luban/tool/root
 ```
 
 Then regenerate:

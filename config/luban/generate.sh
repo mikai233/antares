@@ -4,15 +4,18 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 CONF_ROOT="$ROOT/config/luban"
 DATA_DIR="${LUBAN_DATA_DIR:-$CONF_ROOT/Datas}"
-LUBAN_EXAMPLES_ROOT="${LUBAN_EXAMPLES_ROOT:-/tmp/luban_examples}"
-LUBAN_DLL="$LUBAN_EXAMPLES_ROOT/Tools/Luban/Luban.dll"
-JAVA_CORELIB="$LUBAN_EXAMPLES_ROOT/Projects/Java_bin/src/main/corelib/luban"
+if [ -z "${LUBAN_TOOL_ROOT:-}" ]; then
+  echo "Luban tool root is not configured. Set LUBAN_TOOL_ROOT." >&2
+  exit 1
+fi
+LUBAN_DLL="$LUBAN_TOOL_ROOT/Tools/Luban/Luban.dll"
+JAVA_CORELIB="$LUBAN_TOOL_ROOT/Projects/Java_bin/src/main/corelib/luban"
 OUTPUT_CODE_DIR="$ROOT/common/src/generated/luban/java"
 OUTPUT_DATA_DIR="$ROOT/common/build/generated/luban/resources/luban"
 
 if [ ! -f "$LUBAN_DLL" ]; then
   echo "Luban tool not found: $LUBAN_DLL" >&2
-  echo "Set LUBAN_EXAMPLES_ROOT or clone https://github.com/focus-creative-games/luban_examples" >&2
+  echo "Set LUBAN_TOOL_ROOT to a Luban checkout that contains Tools/Luban/Luban.dll" >&2
   exit 1
 fi
 

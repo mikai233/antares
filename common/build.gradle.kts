@@ -4,10 +4,13 @@ plugins {
     alias(libTool.plugins.asteria.config.codegen)
 }
 
-val isWindows = System.getProperty("os.name").startsWith("Windows", ignoreCase = true)
 val lubanDataDirProvider = providers.gradleProperty("lubanDataDir")
-    .map { rootDir.resolve(it) }
-    .orElse(rootDir.resolve("config/luban/Datas"))
+    .orElse(providers.environmentVariable("LUBAN_DATA_DIR"))
+    .orElse("config/luban/Datas")
+    .map { rootDir.resolveProjectPath(it) }
+val lubanToolRootProvider = providers.gradleProperty("lubanToolRoot")
+    .orElse(providers.environmentVariable("LUBAN_TOOL_ROOT"))
+    .map { rootDir.resolveProjectPath(it) }
 val lubanBundleOutputDirProvider = providers.gradleProperty("lubanBundleOutputDir")
     .map { layout.projectDirectory.dir(it) }
     .orElse(layout.buildDirectory.dir("generated/luban/bundles"))
@@ -101,7 +104,7 @@ val exportLubanConfig by tasks.registering(Exec::class) {
     group = "luban"
     description = "Export Luban Java code and binary data from Excel workbooks."
     workingDir(rootDir)
-    if (isWindows) {
+    if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) {
         commandLine(
             "powershell",
             "-ExecutionPolicy",
@@ -112,8 +115,14 @@ val exportLubanConfig by tasks.registering(Exec::class) {
     } else {
         commandLine("bash", "${rootDir}/config/luban/generate.sh")
     }
-    environment("LUBAN_DATA_DIR", lubanDataDirProvider.get().absolutePath)
+    doFirst {
+        val lubanToolRoot = lubanToolRootProvider.orNull
+            ?: error("Luban tool root is not configured. Set lubanToolRoot in gradle.properties or LUBAN_TOOL_ROOT.")
+        environment("LUBAN_DATA_DIR", lubanDataDirProvider.get().absolutePath)
+        environment("LUBAN_TOOL_ROOT", lubanToolRoot.absolutePath)
+    }
     inputs.dir(lubanDataDirProvider)
+    inputs.property("lubanToolRoot", lubanToolRootProvider.map { it.absolutePath }.orElse(""))
     inputs.file(rootDir.resolve("config/luban/luban.conf"))
     inputs.file(rootDir.resolve("config/luban/generate.sh"))
     inputs.file(rootDir.resolve("config/luban/generate.ps1"))
@@ -176,4 +185,9 @@ tasks.matching { it.name == "kspTestKotlin" }.configureEach {
     onlyIf {
         configurations.findByName("kspTest")?.allDependencies?.isNotEmpty() == true
     }
+}
+
+fun File.resolveProjectPath(path: String): File {
+    val file = File(path)
+    return if (file.isAbsolute) file else resolve(path)
 }
