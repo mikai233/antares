@@ -6,9 +6,8 @@ import com.mikai233.common.config.DATA_SOURCE_GAME
 import com.mikai233.common.config.GAME_CONFIG_PUBLICATION
 import com.mikai233.common.config.GAME_WORLDS
 import com.mikai233.common.config.GameWorldConfig
+import com.mikai233.common.config.luban.GameConfigPublicationZipLoader
 import com.mikai233.common.config.luban.GameConfigSnapshotLoader
-import com.mikai233.common.config.luban.GameTables
-import com.mikai233.common.config.luban.GameTablesSnapshotBridge
 import com.mikai233.common.db.MongoDB
 import com.mikai233.common.event.GameConfigChangedEvent
 import io.github.realmlabs.asteria.cluster.pekko.PekkoEntityWaker
@@ -18,24 +17,11 @@ import io.github.realmlabs.asteria.config.center.ConfigStore
 import io.github.realmlabs.asteria.config.center.ConfigWatchMode
 import io.github.realmlabs.asteria.config.center.RuntimeConfigRepository
 import io.github.realmlabs.asteria.config.publisher.ConfigPublicationLayout
-import io.github.realmlabs.asteria.config.publisher.ConfigPublicationLubanBinaryLoader
 import io.github.realmlabs.asteria.core.AsteriaModule
 import io.github.realmlabs.asteria.core.ModuleContext
 import io.prometheus.client.exporter.HTTPServer
 import io.prometheus.client.hotspot.DefaultExports
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.asCoroutineDispatcher
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.routing.FromConfig
@@ -218,10 +204,8 @@ class GameConfigModule : AsteriaModule {
         delegate = ConfigModule {
             loader(
                 GameConfigSnapshotLoader(
-                    ConfigPublicationLubanBinaryLoader(
-                        tablesType = GameTables::class,
+                    GameConfigPublicationZipLoader(
                         store = store,
-                        bridge = GameTablesSnapshotBridge,
                         layout = ConfigPublicationLayout(GAME_CONFIG_PUBLICATION),
                     ),
                 ),

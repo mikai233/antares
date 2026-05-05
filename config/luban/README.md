@@ -11,7 +11,8 @@ The flow is:
     - binary table files into `common/build/generated/luban/resources/luban`
 4. The project checks in the generated Java sources plus Kotlin Luban metadata/bridge sources. Asteria KSP generates
    table accessors during build. The generated `.bytes` files are local build artifacts used by tests and publication
-   tooling, not runtime source files.
+   tooling, not runtime source files. Runtime nodes consume the packaged `game-config.zip` publication artifact from
+   the config center and unpack it in memory.
 
 Common commands:
 
@@ -25,6 +26,22 @@ Common commands:
 # Build a server-consumable binary bundle
 ./gradlew :common:packageLubanConfigBundle
 ```
+
+Publishing to the local config center defaults the publication revision to `projectVersion` from the root
+`gradle.properties`:
+
+```bash
+./gradlew :tools:publishLocalGameConfig
+```
+
+Use `-PgameConfigVersion` only when intentionally publishing a config revision that differs from the code version:
+
+```bash
+./gradlew :tools:publishLocalGameConfig -PgameConfigVersion=4.3.0
+```
+
+That writes paths such as `/antares/game-config/revisions/4.3.0/...` while keeping the content checksum in the
+publication manifest.
 
 Default bundle output:
 

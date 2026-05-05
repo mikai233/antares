@@ -2,21 +2,15 @@ package com.mikai233.tools.zookeeper
 
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.config.*
-import com.mikai233.common.config.luban.GameConfigSnapshotLoader
-import com.mikai233.common.config.luban.GameTables
-import com.mikai233.common.config.luban.GameTablesSnapshotBridge
 import com.mikai233.common.extension.asyncZookeeperClient
-import com.mikai233.tools.config.LubanPublishBundleArtifacts
+import com.mikai233.tools.config.GameConfigPublishOptions
+import com.mikai233.tools.config.LocalGameConfigPublisher
 import io.github.realmlabs.asteria.cluster.config.ClusterConfigLayout
 import io.github.realmlabs.asteria.cluster.config.ClusterTopology
 import io.github.realmlabs.asteria.cluster.config.RuntimeNodeConfig
 import io.github.realmlabs.asteria.config.center.JacksonConfigCodec
 import io.github.realmlabs.asteria.config.center.RuntimeConfigRepository
 import io.github.realmlabs.asteria.config.center.zookeeper.ZookeeperConfigStore
-import io.github.realmlabs.asteria.config.luban.LubanBinaryConfigLoader
-import io.github.realmlabs.asteria.config.luban.MemoryLubanDataSource
-import io.github.realmlabs.asteria.config.publisher.ConfigPublicationLayout
-import io.github.realmlabs.asteria.config.publisher.ConfigPublisher
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -57,7 +51,7 @@ fun main() = runBlocking {
         repository.put(GAME_WORLDS / world.id.toString(), world)
     }
 
-    publishDemoGameConfig(store)
+    LocalGameConfigPublisher.publish(store, GameConfigPublishOptions.fromEnvironment())
 }
 
 private fun generateGameWorld(worldId: Long): GameWorldConfig {
@@ -68,22 +62,4 @@ private fun generateGameWorld(worldId: Long): GameWorldConfig {
         5000,
         10000,
     )
-}
-
-private suspend fun publishDemoGameConfig(store: ZookeeperConfigStore) {
-    val layout = ConfigPublicationLayout(GAME_CONFIG_PUBLICATION)
-    ConfigPublisher(
-        loader = GameConfigSnapshotLoader(
-            LubanBinaryConfigLoader(
-                tablesType = GameTables::class,
-                dataSource = MemoryLubanDataSource(
-                    LubanPublishBundleArtifacts.unpackBundle(LubanPublishBundleArtifacts.bundleBytes()),
-                ),
-                bridge = GameTablesSnapshotBridge,
-            ),
-        ),
-        artifactSource = { listOf(LubanPublishBundleArtifacts.bundleArtifact()) },
-        store = store,
-        layout = layout,
-    ).publish()
 }
