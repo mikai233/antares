@@ -9,7 +9,6 @@ public class ByteBuf {
 
     public static final byte[] EMPTY_BYTES = new byte[0];
     private static final Charset MARSHAL_CHARSET = StandardCharsets.UTF_8;
-    private final static ThreadLocal<Stack<ByteBuf>> pool = ThreadLocal.withInitial(Stack::new);
     private byte[] data;
     private int beginPos;
     private int endPos;
@@ -24,7 +23,14 @@ public class ByteBuf {
     }
 
     public ByteBuf(byte[] data) {
-        this(data, 0, data.length);
+        this(data, 0,  data.length);
+    }
+
+    public ByteBuf(byte[] data, int beginPos, int endPos) {
+        this.data = data;
+        this.beginPos = beginPos;
+        this.endPos = endPos;
+        this.capacity = data.length;
     }
 
 //    public static Octets wrap(byte[] bytes) {
@@ -35,16 +41,10 @@ public class ByteBuf {
 //        return new Octets(bytes, beginPos, beginPos + len);
 //    }
 
-    public ByteBuf(byte[] data, int beginPos, int endPos) {
-        this.data = data;
-        this.beginPos = beginPos;
-        this.endPos = endPos;
-        this.capacity = data.length;
-    }
-
+    private final static ThreadLocal<Stack<ByteBuf>> pool = ThreadLocal.withInitial(Stack::new);
     public static ByteBuf alloc() {
         Stack<ByteBuf> p = pool.get();
-        if (!p.empty()) {
+        if(!p.empty()) {
             return p.pop();
         } else {
             return new ByteBuf();
@@ -54,18 +54,6 @@ public class ByteBuf {
     public static ByteBuf free(ByteBuf os) {
         os.clear();
         return pool.get().push(os);
-    }
-
-    public static ByteBuf fromString(String value) {
-        if (value.isEmpty()) {
-            return new ByteBuf();
-        }
-        String[] ss = value.split(",");
-        byte[] data = new byte[ss.length];
-        for (int i = 0; i < data.length; i++) {
-            data[i] = (byte) Integer.parseInt(ss[i]);
-        }
-        return new ByteBuf(data);
     }
 
     public void replace(byte[] data, int beginPos, int endPos) {
@@ -133,17 +121,17 @@ public class ByteBuf {
         int h = (data[beginPos] & 0xff);
         if (h < 0x80) {
             beginPos++;
-            return (short) h;
+            return (short)h;
         } else if (h < 0xc0) {
             sureRead(2);
             int x = ((h & 0x3f) << 8) | (data[beginPos + 1] & 0xff);
             beginPos += 2;
-            return (short) x;
-        } else if ((h == 0xff)) {
+            return (short)x;
+        } else if( (h == 0xff)){
             sureRead(3);
             int x = ((data[beginPos + 1] & 0xff) << 8) | (data[beginPos + 2] & 0xff);
             beginPos += 3;
-            return (short) x;
+            return (short)x;
         } else {
             throw new SerializationException("exceed max short");
         }
@@ -385,6 +373,10 @@ public class ByteBuf {
         }
     }
 
+    public void writeCompactUint(int x) {
+        writeCompactInt(x);
+    }
+
 //    public void writeCompactUint(ByteBuf byteBuf, int x) {
 //        if (x >= 0) {
 //            if (x < 0x80) {
@@ -400,10 +392,6 @@ public class ByteBuf {
 //            }
 //        }
 //    }
-
-    public void writeCompactUint(int x) {
-        writeCompactInt(x);
-    }
 
     public int readInt() {
         return readCompactInt();
@@ -427,7 +415,7 @@ public class ByteBuf {
 
     public int readSint() {
         int x = readInt();
-        return (x >>> 1) | ((x & 1) << 31);
+        return (x >>> 1) | ((x&1) << 31);
     }
 
     public void writeSlong(long x) {
@@ -436,14 +424,13 @@ public class ByteBuf {
 
     public long readSlong() {
         long x = readLong();
-        return (x >>> 1) | ((x & 1L) << 63);
+        return (x >>> 1) | ((x&1L) << 63);
     }
-
     public short readFshort() {
         sureRead(4);
         int x = (data[(beginPos)] & 0xff) | ((data[(beginPos + 1)] & 0xff) << 8);
         beginPos += 2;
-        return (short) x;
+        return (short)x;
     }
 
     public void writeFshort(short x) {
@@ -507,7 +494,7 @@ public class ByteBuf {
 
     public String readString() {
         int n = readSize();
-        if (n > 0) {
+        if(n > 0) {
             sureRead(n);
             int start = beginPos;
             beginPos += n;
@@ -518,7 +505,7 @@ public class ByteBuf {
     }
 
     public void writeString(String x) {
-        if (x.length() > 0) {
+        if(x.length() > 0) {
             byte[] bytes = x.getBytes(ByteBuf.MARSHAL_CHARSET);
             int n = bytes.length;
             writeCompactUint(n);
@@ -533,7 +520,7 @@ public class ByteBuf {
     public void writeOctets(ByteBuf o) {
         int n = o.size();
         writeCompactUint(n);
-        if (n > 0) {
+        if(n > 0) {
             sureWrite(n);
             System.arraycopy(o.data, o.beginPos, this.data, this.endPos, n);
             this.endPos += n;
@@ -561,7 +548,7 @@ public class ByteBuf {
 
     public byte[] readBytes() {
         int n = readSize();
-        if (n > 0) {
+        if(n > 0) {
             sureRead(n);
             int start = beginPos;
             beginPos += n;
@@ -574,7 +561,7 @@ public class ByteBuf {
     public void writeBytes(byte[] x) {
         int n = x.length;
         writeCompactUint(n);
-        if (n > 0) {
+        if(n > 0) {
             sureWrite(n);
             System.arraycopy(x, 0, data, endPos, n);
             endPos += n;
@@ -596,22 +583,15 @@ public class ByteBuf {
         return data[(beginPos++)];
     }
 
-//    public void writeTo(ByteBuf byteBuf) {
-//        int n = size();
-//        writeCompactUint(byteBuf, n);
-//        byteBuf.writeBytes(data, beginPos, n);
-//    }
-
     public void writeByte(byte x) {
         sureWrite(1);
         data[endPos++] = x;
     }
 
-//    public void readFrom(ByteBuf byteBuf) {
-//        int n = byteBuf.readableBytes();
-//        sureWrite(n);
-//        byteBuf.readBytes(data, endPos, n);
-//        endPos += n;
+//    public void writeTo(ByteBuf byteBuf) {
+//        int n = size();
+//        writeCompactUint(byteBuf, n);
+//        byteBuf.writeBytes(data, beginPos, n);
 //    }
 
     public void writeTo(ByteBuf os) {
@@ -621,6 +601,13 @@ public class ByteBuf {
         System.arraycopy(data, beginPos, os.data, os.endPos, n);
         os.endPos += n;
     }
+
+//    public void readFrom(ByteBuf byteBuf) {
+//        int n = byteBuf.readableBytes();
+//        sureWrite(n);
+//        byteBuf.readBytes(data, endPos, n);
+//        endPos += n;
+//    }
 
     public void wrapRead(ByteBuf src, int size) {
         this.data = src.data;
@@ -679,6 +666,18 @@ public class ByteBuf {
             b.append(data[i]).append(",");
         }
         return b.toString();
+    }
+
+    public static ByteBuf fromString(String value) {
+        if(value.isEmpty()) {
+            return new ByteBuf();
+        }
+        String[] ss = value.split(",");
+        byte[] data = new byte[ss.length];
+        for (int i = 0; i < data.length; i++) {
+            data[i] = (byte)Integer.parseInt(ss[i]);
+        }
+        return new ByteBuf(data);
     }
 
     @Override
