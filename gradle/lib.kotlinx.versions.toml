@@ -1,7 +1,6 @@
 ###############################
 # 🧩 KotlinX Version Catalog
 ###############################
-
 [versions]
 coroutines = "1.10.2"
 datetime = "0.7.1"
@@ -9,13 +8,11 @@ datetime = "0.7.1"
 ###############################
 # 📦 Libraries
 ###############################
-
 [libraries]
 # --- Coroutines ---
 core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 core-jvm = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm", version.ref = "coroutines" }
-reactor = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactor", version.ref = "coroutines" }
-
 # --- DateTime ---
 datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }
 datetime-jvm = { module = "org.jetbrains.kotlinx:kotlinx-datetime-jvm", version.ref = "datetime" }
+reactor = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactor", version.ref = "coroutines" }

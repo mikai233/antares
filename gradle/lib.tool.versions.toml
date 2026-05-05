@@ -4,13 +4,13 @@
 [versions]
 asteria = "0.3.3"
 curator = "5.9.0"
-jackson = "2.21.2"
+jackson = "2.21.3"
 kotlinpoet = "2.3.0"
 ksp = "2.3.7"
 org-apache-groovy = "5.0.5"
 prometheus = "0.16.0"
 protobuf = "4.34.1"
-spring-boot = "4.0.5"
+spring-boot = "4.0.6"
 spring-data = "4.0.5"
 testcontainers = "1.21.4"
 
@@ -21,8 +21,8 @@ testcontainers = "1.21.4"
 # Utilities
 asteria-cluster-config = { module = "io.github.realm-labs.asteria:cluster-config", version.ref = "asteria" }
 asteria-cluster-pekko = { module = "io.github.realm-labs.asteria:cluster-pekko", version.ref = "asteria" }
-asteria-config-center-zookeeper = { module = "io.github.realm-labs.asteria:config-center-zookeeper", version.ref = "asteria" }
 asteria-config-annotations = { module = "io.github.realm-labs.asteria:config-annotations", version.ref = "asteria" }
+asteria-config-center-zookeeper = { module = "io.github.realm-labs.asteria:config-center-zookeeper", version.ref = "asteria" }
 asteria-config-core = { module = "io.github.realm-labs.asteria:config-core", version.ref = "asteria" }
 asteria-config-ksp = { module = "io.github.realm-labs.asteria:config-ksp", version.ref = "asteria" }
 asteria-config-luban = { module = "io.github.realm-labs.asteria:config-luban", version.ref = "asteria" }
@@ -55,7 +55,7 @@ curator-async = { module = "org.apache.curator:curator-x-async", version.ref = "
 curator-framework = { module = "org.apache.curator:curator-framework", version.ref = "curator" }
 curator-recipes = { module = "org.apache.curator:curator-recipes", version.ref = "curator" }
 groovy-all = { module = "org.apache.groovy:groovy-all", version.ref = "org-apache-groovy" }
-guava = "com.google.guava:guava:33.5.0-jre"
+guava = "com.google.guava:guava:33.6.0-jre"
 # Jackson
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
 jackson-guava = { module = "com.fasterxml.jackson.datatype:jackson-datatype-guava", version.ref = "jackson" }
@@ -67,9 +67,9 @@ jcommander = "org.jcommander:jcommander:3.0"
 # KotlinPoet & KSP
 kotlinpoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet" }
 kotlinpoet-ksp = { module = "com.squareup:kotlinpoet-ksp", version.ref = "kotlinpoet" }
-lz4 = "at.yawk.lz4:lz4-java:1.10.2"
+lz4 = "at.yawk.lz4:lz4-java:1.11.0"
 # Networking & compression
-netty = "io.netty:netty-all:4.2.12.Final"
+netty = "io.netty:netty-all:4.2.13.Final"
 protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf" }
 protobuf-kotlin = { module = "com.google.protobuf:protobuf-kotlin", version.ref = "protobuf" }
 # Misc core libs
@@ -81,38 +81,38 @@ simpleclient-httpserver = { module = "io.prometheus:simpleclient_httpserver", ve
 # Spring & Mongo
 spring-boot-dependencies = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
-spring-data-commons = { module = "org.springframework.data:spring-data-commons", version.ref = "spring-data" }
-spring-data-mongodb = { module = "org.springframework.data:spring-data-mongodb", version.ref = "spring-data" }
-testcontainers-mongodb = { module = "org.testcontainers:mongodb", version.ref = "testcontainers" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
 spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
 spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
+spring-data-commons = { module = "org.springframework.data:spring-data-commons", version.ref = "spring-data" }
+spring-data-mongodb = "org.springframework.data:spring-data-mongodb:5.0.5"
 symbol-processing-api = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "ksp" }
+testcontainers-mongodb = { module = "org.testcontainers:mongodb", version.ref = "testcontainers" }
 
 ###############################
 # 🧺 Bundles
 ###############################
 [bundles]
-asteria-foundation = [
-    "asteria-foundation-core",
-    "asteria-foundation-message",
-    "asteria-foundation-actor",
-    "asteria-foundation-id",
-]
 asteria-cluster = [
-    "asteria-foundation-id-zookeeper",
     "asteria-cluster-config",
     "asteria-cluster-pekko",
-    "asteria-starter-game-server-pekko",
+    "asteria-foundation-id-zookeeper",
     "asteria-rpc-protobuf",
     "asteria-rpc-protobuf-pekko",
+    "asteria-starter-game-server-pekko",
 ]
 asteria-config = [
     "asteria-config-annotations",
-    "asteria-config-core",
     "asteria-config-center-zookeeper",
+    "asteria-config-core",
     "asteria-config-luban",
     "asteria-config-publisher",
+]
+asteria-foundation = [
+    "asteria-foundation-actor",
+    "asteria-foundation-core",
+    "asteria-foundation-id",
+    "asteria-foundation-message",
 ]
 asteria-persistence = [
     "asteria-persistence-core",
@@ -120,9 +120,9 @@ asteria-persistence = [
 ]
 asteria-script = [
     "asteria-script-core",
-    "asteria-script-pekko",
     "asteria-script-engine-groovy",
     "asteria-script-engine-jar",
+    "asteria-script-pekko",
 ]
 curator = [
     "curator-async",
@@ -151,13 +151,13 @@ spring-boot-web = [
 # 🔌 Plugins
 ###############################
 [plugins]
+asteria-config-codegen = { id = "io.github.realm-labs.asteria.config-codegen", version.ref = "asteria" }
+asteria-message-codegen = { id = "io.github.realm-labs.asteria.message-codegen", version.ref = "asteria" }
+asteria-protobuf-protocol-codegen = { id = "io.github.realm-labs.asteria.protobuf-protocol-codegen", version.ref = "asteria" }
 boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
 detekt = "io.gitlab.arturbosch.detekt:1.23.8"
 dokka = "org.jetbrains.dokka:2.2.0"
 foojay-resolver-convention = "org.gradle.toolchains.foojay-resolver-convention:1.0.0"
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-asteria-message-codegen = { id = "io.github.realm-labs.asteria.message-codegen", version.ref = "asteria" }
-asteria-config-codegen = { id = "io.github.realm-labs.asteria.config-codegen", version.ref = "asteria" }
-asteria-protobuf-protocol-codegen = { id = "io.github.realm-labs.asteria.protobuf-protocol-codegen", version.ref = "asteria" }
-protobuf = "com.google.protobuf:0.9.6"
+protobuf = "com.google.protobuf:0.10.0"
 version-catalog-update = "nl.littlerobots.version-catalog-update:1.1.0"

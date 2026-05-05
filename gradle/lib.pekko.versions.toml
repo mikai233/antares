@@ -1,34 +1,30 @@
 ###############################
 # 🦅 Pekko Version Catalog
 ###############################
-
 [versions]
-pekko = "1.2.1"
-pekkoManagement = "1.1.1"
+pekko = "1.6.0"
+pekkoManagement = "1.2.1"
 
 ###############################
 # 📦 Libraries
 ###############################
-
 [libraries]
 # --- Pekko Core Components ---
 actor = { module = "org.apache.pekko:pekko-actor_2.13", version.ref = "pekko" }
 cluster = { module = "org.apache.pekko:pekko-cluster_2.13", version.ref = "pekko" }
 cluster-tools = { module = "org.apache.pekko:pekko-cluster-tools_2.13", version.ref = "pekko" }
-testkit = { module = "org.apache.pekko:pekko-testkit_2.13", version.ref = "pekko" }
-sharding = { module = "org.apache.pekko:pekko-cluster-sharding_2.13", version.ref = "pekko" }
-slf4j = { module = "org.apache.pekko:pekko-slf4j_2.13", version.ref = "pekko" }
-stream = { module = "org.apache.pekko:pekko-stream_2.13", version.ref = "pekko" }
-
 # --- Pekko Management Components ---
 discovery = { module = "org.apache.pekko:pekko-discovery_2.13", version.ref = "pekko" }
 management = { module = "org.apache.pekko:pekko-management_2.13", version.ref = "pekkoManagement" }
 management-cluster-http = { module = "org.apache.pekko:pekko-management-cluster-http_2.13", version.ref = "pekkoManagement" }
+sharding = { module = "org.apache.pekko:pekko-cluster-sharding_2.13", version.ref = "pekko" }
+slf4j = { module = "org.apache.pekko:pekko-slf4j_2.13", version.ref = "pekko" }
+stream = { module = "org.apache.pekko:pekko-stream_2.13", version.ref = "pekko" }
+testkit = { module = "org.apache.pekko:pekko-testkit_2.13", version.ref = "pekko" }
 
 ###############################
 # 🧺 Bundles
 ###############################
-
 [bundles]
 common = [
     "actor",
