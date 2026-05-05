@@ -1,13 +1,14 @@
 package com.mikai233.player.script
 
-import com.mikai233.common.script.ActorScriptFunction
 import com.mikai233.player.PlayerActor
-import kotlin.Unit
+import io.github.realmlabs.asteria.script.ActorScript
+import io.github.realmlabs.asteria.script.ActorScriptContext
+import io.github.realmlabs.asteria.script.ScriptExecutionResult
 
-class TestGroovyActorScript implements ActorScriptFunction<PlayerActor> {
+class TestGroovyActorScript extends ActorScript<PlayerActor> {
     @Override
-    Unit invoke(PlayerActor playerActor, byte[] bytes) {
-        playerActor.logger.info("hello groovy")
+    ScriptExecutionResult executeActor(ActorScriptContext<PlayerActor> context) {
+        context.actor.logger.info("hello groovy")
         return null
     }
 }

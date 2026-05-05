@@ -48,7 +48,8 @@ while IFS= read -r -d '' file; do
   fi
   package_name="${package_line#package }"
   package_name="${package_name%;}"
-  target_dir="$OUTPUT_CODE_DIR/${package_name//./\/}"
+  package_path="$(printf '%s' "$package_name" | tr '.' '/')"
+  target_dir="$OUTPUT_CODE_DIR/$package_path"
   mkdir -p "$target_dir"
   target_file="$target_dir/$(basename "$file")"
   if [ "$file" != "$target_file" ]; then
