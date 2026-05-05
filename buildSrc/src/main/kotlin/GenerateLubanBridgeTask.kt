@@ -1,7 +1,9 @@
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import java.io.File
 import java.util.*
@@ -15,6 +17,9 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
 
     @get:OutputDirectory
     abstract val outputDir: DirectoryProperty
+
+    @get:OutputFile
+    abstract val metadataFile: RegularFileProperty
 
     @TaskAction
     fun generate() {
@@ -45,20 +50,22 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
             renderGeneratedGameTableTypes(tableEntries),
         )
         writeGeneratedFile(
-            File(outDir, "GeneratedGameTableAdapters.kt"),
-            renderGeneratedGameTableAdapters(tableEntries),
-        )
-        writeGeneratedFile(
             File(outDir, "GeneratedGameTablesSnapshotBridge.kt"),
             renderGeneratedGameTablesSnapshotBridge(tableEntries),
         )
         writeGeneratedFile(
-            File(outDir, "GeneratedGameTableAccessors.kt"),
-            renderGeneratedGameTableAccessors(tableEntries),
-        )
-        writeGeneratedFile(
             File(outDir, "GeneratedLubanMetadata.kt"),
             renderGeneratedLubanMetadata(artifactFiles),
+        )
+        writeGeneratedFile(
+            metadataFile.get().asFile,
+            renderAsteriaConfigTableMetadata(tableEntries),
+        )
+        deleteStaleGeneratedFiles(
+            outDir,
+            "GeneratedGameTableAccessors.kt",
+            "GeneratedGameTableAdapters.kt",
+            "GeneratedGameConfigCatalog.kt",
         )
     }
 
@@ -76,10 +83,10 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
             val baseName = snakeToCamel(rowSimple)
             TableEntry(
                 delegatePropertyName = decapitalize(tableClassSimple),
-                tableClassFqcn = tableClassFqcn,
                 rowFqcn = rowFqcn,
                 rowAlias = "${baseName}Row",
-                adapterClass = "Tb$baseName",
+                tableRef = "Tb$baseName",
+                tableMarker = "${baseName}ConfigTable",
                 tableName = pluralize(camelToSnake(baseName)),
                 tableProperty = "tb$baseName",
                 shape = shape,
@@ -153,55 +160,15 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
             |""".trimMargin()
     }
 
-    private fun renderGeneratedGameTableAdapters(entries: List<TableEntry>): String {
-        val adapters = entries.joinToString("\n\n") {
-            buildString {
-                when (val shape = it.shape) {
-                    is TableShape.Keyed -> {
-                        append("class ${it.adapterClass}(delegate: ${it.tableClassFqcn}) : OrderedMapConfigTable<${shape.keyType}, ${it.rowAlias}>(\n")
-                        append("    name = ConfigTableName(\"${it.tableName}\"),\n")
-                        append("    keyType = ${kclassLiteral(shape.keyType)},\n")
-                        append("    rowType = ${it.rowAlias}::class,\n")
-                        append("    rows = delegate.dataList.map { row -> row.${shape.keyField} to row },\n")
-                        append(")")
-                    }
-
-                    is TableShape.ListLike -> {
-                        append("class ${it.adapterClass}(delegate: ${it.tableClassFqcn}) : ListConfigTable<${it.rowAlias}>(\n")
-                        append("    name = ConfigTableName(\"${it.tableName}\"),\n")
-                        append("    rowType = ${it.rowAlias}::class,\n")
-                        append("    rows = delegate.dataList,\n")
-                        append(")")
-                    }
-
-                    is TableShape.Singleton -> {
-                        append("class ${it.adapterClass}(delegate: ${it.tableClassFqcn}) : SingleConfigTable<${it.rowAlias}>(\n")
-                        append("    name = ConfigTableName(\"${it.tableName}\"),\n")
-                        append("    rowType = ${it.rowAlias}::class,\n")
-                        append("    row = delegate.data(),\n")
-                        append(")")
-                    }
-                }
-            }
-        }
-        return """
-            |package com.mikai233.common.config.luban
-            |
-            |import io.github.realmlabs.asteria.config.ConfigTableName
-            |import io.github.realmlabs.asteria.config.ListConfigTable
-            |import io.github.realmlabs.asteria.config.OrderedMapConfigTable
-            |import io.github.realmlabs.asteria.config.SingleConfigTable
-            |
-            |$adapters
-            |""".trimMargin()
-    }
-
     private fun renderGeneratedGameTablesSnapshotBridge(entries: List<TableEntry>): String {
         return """
             |package com.mikai233.common.config.luban
             |
             |import io.github.realmlabs.asteria.config.SnapshotEntry
+            |import io.github.realmlabs.asteria.config.listConfigTable
             |import io.github.realmlabs.asteria.config.luban.LubanSnapshotBridge
+            |import io.github.realmlabs.asteria.config.orderedMapConfigTable
+            |import io.github.realmlabs.asteria.config.singleConfigTable
             |
             |object GameTablesSnapshotBridge : LubanSnapshotBridge<GameTables, GameTables.IByteBufLoader> {
             |    override val loaderType = GameTables.IByteBufLoader::class
@@ -221,24 +188,42 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
 
     private fun renderBridgeEntries(entries: List<TableEntry>): String {
         return entries.joinToString(",\n") { entry ->
-            "            SnapshotEntry.Table(${entry.adapterClass}(tables.delegate.${entry.delegatePropertyName}), ${entry.adapterClass}::class)"
+            val source = "tables.delegate.${entry.delegatePropertyName}"
+            val table = when (val shape = entry.shape) {
+                is TableShape.Keyed ->
+                    "orderedMapConfigTable(GameConfigTables.${entry.tableRef}, $source.dataList.map { row -> row.${shape.keyField} to row })"
+                is TableShape.ListLike ->
+                    "listConfigTable(GameConfigTables.${entry.tableRef}, $source.dataList)"
+                is TableShape.Singleton ->
+                    "singleConfigTable(GameConfigTables.${entry.tableRef}, $source.data())"
+            }
+            "            SnapshotEntry.Table($table)"
         }
     }
 
-    private fun renderGeneratedGameTableAccessors(entries: List<TableEntry>): String {
-        val accessors = entries.joinToString("\n\n") { entry ->
-            """
-            |val ConfigSnapshot.${entry.tableProperty}: ${entry.adapterClass}
-            |    get() = table()
-            """.trimMargin()
+    private fun renderAsteriaConfigTableMetadata(entries: List<TableEntry>): String {
+        val tables = entries.joinToString(",\n") { entry ->
+            val fields = mutableListOf(
+                "      \"name\": \"${jsonEscape(entry.tableName)}\"",
+                "      \"shape\": \"${entry.shape.configShape}\"",
+            )
+            if (entry.shape is TableShape.Keyed) {
+                fields += "      \"keyType\": \"${jsonEscape(entry.shape.keyType)}\""
+            }
+            fields += listOf(
+                "      \"rowType\": \"${jsonEscape(entry.rowFqcn)}\"",
+                "      \"refName\": \"${jsonEscape(entry.tableRef)}\"",
+                "      \"propertyName\": \"${jsonEscape(entry.tableProperty)}\"",
+                "      \"markerName\": \"${jsonEscape(entry.tableMarker)}\"",
+            )
+            fields.joinToString(",\n", prefix = "    {\n", postfix = "\n    }")
         }
         return """
-            |package com.mikai233.common.config.luban
-            |
-            |import io.github.realmlabs.asteria.config.ConfigSnapshot
-            |import io.github.realmlabs.asteria.config.table
-            |
-            |$accessors
+            |{
+            |  "tables": [
+            |$tables
+            |  ]
+            |}
             |""".trimMargin()
     }
 
@@ -260,21 +245,36 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
         file.writeText(content + "\n")
     }
 
+    private fun deleteStaleGeneratedFiles(
+        outDir: File,
+        vararg names: String,
+    ) {
+        names.forEach { name ->
+            File(outDir, name).delete()
+        }
+    }
+
+    private fun jsonEscape(value: String): String {
+        return buildString {
+            for (char in value) {
+                when (char) {
+                    '\\' -> append("\\\\")
+                    '"' -> append("\\\"")
+                    '\n' -> append("\\n")
+                    '\r' -> append("\\r")
+                    '\t' -> append("\\t")
+                    else -> append(char)
+                }
+            }
+        }
+    }
+
     private fun toKotlinType(javaType: String): String {
         return when (javaType) {
             "Integer", "int" -> "Int"
             "Long", "long" -> "Long"
             "String" -> "String"
             else -> javaType
-        }
-    }
-
-    private fun kclassLiteral(type: String): String {
-        return when (type) {
-            "Int" -> "Int::class"
-            "Long" -> "Long::class"
-            "String" -> "String::class"
-            else -> "$type::class"
         }
     }
 
@@ -302,10 +302,10 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
 
     private data class TableEntry(
         val delegatePropertyName: String,
-        val tableClassFqcn: String,
         val rowFqcn: String,
         val rowAlias: String,
-        val adapterClass: String,
+        val tableRef: String,
+        val tableMarker: String,
         val tableName: String,
         val tableProperty: String,
         val shape: TableShape,
@@ -313,19 +313,26 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
 
     private sealed interface TableShape {
         val rowFqcn: String
+        val configShape: String
 
         data class Keyed(
             val keyType: String,
             override val rowFqcn: String,
             val keyField: String,
-        ) : TableShape
+        ) : TableShape {
+            override val configShape: String = "KEYED"
+        }
 
         data class ListLike(
             override val rowFqcn: String,
-        ) : TableShape
+        ) : TableShape {
+            override val configShape: String = "LIST"
+        }
 
         data class Singleton(
             override val rowFqcn: String,
-        ) : TableShape
+        ) : TableShape {
+            override val configShape: String = "SINGLETON"
+        }
     }
 }

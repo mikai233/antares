@@ -35,7 +35,7 @@ class PlayerActivityConfigChangeHandler : ConfigChangeHandler<PlayerActor> {
         val player = actor.manager.get<PlayerMem>().player
         actor.manager.get<PlayerActivityMem>().syncFromConfigs(
             playerLevel = player.level,
-            activityConfigs = snapshot.tbActivity.all(),
+            activityConfigs = snapshot.tbActivity().all(),
         )
     }
 }

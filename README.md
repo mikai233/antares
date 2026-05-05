@@ -196,7 +196,8 @@ Excel is the source of truth for demo game config.
 
 - Excel source: `config/luban/Datas`
 - generated Java table/model code: `common/src/generated/luban/java`
-- generated Kotlin bridge: `common/src/generated/luban/kotlin`
+- generated Kotlin Luban metadata/bridge: `common/src/generated/luban/kotlin`
+- generated table accessors: `common/build/generated/ksp/main/kotlin`
 - generated raw `.bytes`: `common/build/generated/luban/resources/luban`
 - packaged server bundle: `common/build/generated/luban/bundles/game-config.zip`
 
@@ -209,7 +210,7 @@ Common commands:
 # Export Luban Java code and raw .bytes
 ./gradlew :common:exportLubanConfig
 
-# Export Luban Java/.bytes and refresh the generated Kotlin bridge
+# Export Luban Java/.bytes and refresh the generated Kotlin metadata/bridge
 ./gradlew :common:refreshLubanConfig
 
 # Validate tables and custom business rules

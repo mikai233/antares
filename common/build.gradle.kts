@@ -1,6 +1,7 @@
 plugins {
     idea
     alias(libTool.plugins.ksp)
+    alias(libTool.plugins.asteria.config.codegen)
 }
 
 val isWindows = System.getProperty("os.name").startsWith("Windows", ignoreCase = true)
@@ -27,6 +28,19 @@ idea {
     module {
         generatedSourceDirs.add(file("src/generated/luban/java"))
         generatedSourceDirs.add(file("src/generated/luban/kotlin"))
+    }
+}
+
+asteriaConfigCodegen {
+    packageName.set("com.mikai233.common.config.luban")
+    tablesObjectName.set("GameConfigTables")
+    accessorClassName.set("GameConfigs")
+    addDependencies.set(false)
+    luban {
+        enabled.set(true)
+        metadataFile.set(layout.projectDirectory.file("src/generated/luban/asteria-config-tables.json"))
+        packageName.set("com.mikai233.common.config.luban")
+        fileName.set("GeneratedGameConfigMarkers")
     }
 }
 
@@ -65,6 +79,7 @@ dependencies {
     implementation(libTool.netty)
     implementation(libTool.bundles.prometheus)
     implementation(project(":proto"))
+    ksp(libTool.asteria.config.ksp)
     ksp(libTool.asteria.persistence.mongodb.ksp)
 }
 
@@ -104,16 +119,17 @@ val exportLubanConfig by tasks.registering(Exec::class) {
 
 val generateLubanBridge by tasks.registering(GenerateLubanBridgeTask::class) {
     group = "luban"
-    description = "Generate Kotlin table adapters and Luban artifact metadata from Luban Java outputs."
+    description = "Generate Kotlin Luban bridge sources and Asteria config table metadata from Luban Java outputs."
     dependsOn(exportLubanConfig)
     generatedJavaDir.set(layout.projectDirectory.dir("src/generated/luban/java"))
     generatedDataDir.set(layout.buildDirectory.dir("generated/luban/resources/luban"))
     outputDir.set(layout.projectDirectory.dir("src/generated/luban/kotlin/com/mikai233/common/config/luban"))
+    metadataFile.set(layout.projectDirectory.file("src/generated/luban/asteria-config-tables.json"))
 }
 
 tasks.register("refreshLubanConfig") {
     group = "luban"
-    description = "Regenerate Luban exports and project-side table adapters."
+    description = "Regenerate Luban exports, bridge sources, and config table metadata."
     // Keep Luban export/bridge generation off the normal compile path; config schema changes are infrequent.
     dependsOn(generateLubanBridge)
 }

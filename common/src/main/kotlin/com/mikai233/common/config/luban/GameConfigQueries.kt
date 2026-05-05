@@ -11,10 +11,10 @@ class GameConfigQueries(
     companion object {
         fun from(snapshot: ConfigSnapshot): GameConfigQueries {
             return GameConfigQueries(
-                itemsByType = snapshot.tbItem.all().groupBy { it.type },
-                monstersBySceneId = snapshot.tbMonster.all().groupBy { it.sceneId },
-                activitiesByUnlockLevel = snapshot.tbActivity.all().groupBy { it.unlockLevel },
-                dropEntriesByItemId = snapshot.tbDroppool
+                itemsByType = snapshot.tbItem().all().groupBy { it.type },
+                monstersBySceneId = snapshot.tbMonster().all().groupBy { it.sceneId },
+                activitiesByUnlockLevel = snapshot.tbActivity().all().groupBy { it.unlockLevel },
+                dropEntriesByItemId = snapshot.tbDroppool()
                     .all()
                     .flatMap { it.entries }
                     .groupBy { it.itemId },

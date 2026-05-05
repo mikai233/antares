@@ -1,0 +1,65 @@
+{
+  "tables": [
+    {
+      "name": "rotation_messages",
+      "shape": "LIST",
+      "rowType": "com.mikai233.common.config.luban.gen.game.RotationMessage",
+      "refName": "TbRotationMessage",
+      "propertyName": "tbRotationMessage",
+      "markerName": "RotationMessageConfigTable"
+    },
+    {
+      "name": "game_globals",
+      "shape": "SINGLETON",
+      "rowType": "com.mikai233.common.config.luban.gen.game.GameGlobal",
+      "refName": "TbGameGlobal",
+      "propertyName": "tbGameGlobal",
+      "markerName": "GameGlobalConfigTable"
+    },
+    {
+      "name": "activities",
+      "shape": "KEYED",
+      "keyType": "String",
+      "rowType": "com.mikai233.common.config.luban.gen.game.activity",
+      "refName": "TbActivity",
+      "propertyName": "tbActivity",
+      "markerName": "ActivityConfigTable"
+    },
+    {
+      "name": "droppools",
+      "shape": "KEYED",
+      "keyType": "Int",
+      "rowType": "com.mikai233.common.config.luban.gen.game.droppool",
+      "refName": "TbDroppool",
+      "propertyName": "tbDroppool",
+      "markerName": "DroppoolConfigTable"
+    },
+    {
+      "name": "monsters",
+      "shape": "KEYED",
+      "keyType": "Int",
+      "rowType": "com.mikai233.common.config.luban.gen.game.monster",
+      "refName": "TbMonster",
+      "propertyName": "tbMonster",
+      "markerName": "MonsterConfigTable"
+    },
+    {
+      "name": "items",
+      "shape": "KEYED",
+      "keyType": "Int",
+      "rowType": "com.mikai233.common.config.luban.gen.game.item",
+      "refName": "TbItem",
+      "propertyName": "tbItem",
+      "markerName": "ItemConfigTable"
+    },
+    {
+      "name": "scenes",
+      "shape": "KEYED",
+      "keyType": "Int",
+      "rowType": "com.mikai233.common.config.luban.gen.game.scene",
+      "refName": "TbScene",
+      "propertyName": "tbScene",
+      "markerName": "SceneConfigTable"
+    }
+  ]
+}

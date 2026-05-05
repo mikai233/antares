@@ -9,8 +9,9 @@ The flow is:
 3. Luban generates:
     - Java model/table code into `common/src/generated/luban/java`
     - binary table files into `common/build/generated/luban/resources/luban`
-4. The project checks in the generated Java/Kotlin bridge sources. The generated `.bytes`
-   files are local build artifacts used by tests and publication tooling, not runtime source files.
+4. The project checks in the generated Java sources plus Kotlin Luban metadata/bridge sources. Asteria KSP generates
+   table accessors during build. The generated `.bytes` files are local build artifacts used by tests and publication
+   tooling, not runtime source files.
 
 Common commands:
 
@@ -18,7 +19,7 @@ Common commands:
 # Export Luban Java code and raw .bytes
 ./gradlew :common:exportLubanConfig
 
-# Export Luban Java/.bytes and refresh the generated Kotlin table bridge
+# Export Luban Java/.bytes and refresh the generated Kotlin metadata/bridge
 ./gradlew :common:refreshLubanConfig
 
 # Build a server-consumable binary bundle
