@@ -1,6 +1,6 @@
 plugins {
     application
-    alias(libTool.plugins.boot)
+    alias(libs.plugins.boot)
 }
 
 application {
@@ -8,18 +8,15 @@ application {
 }
 
 dependencies {
-    testImplementation(platform(libTest.junit.bom))
-    testImplementation(libTest.junit.jupiter)
-    implementation(libTool.bundles.asteria.cluster)
-    implementation(libTool.bundles.asteria.config)
-    implementation(libTool.bundles.asteria.persistence)
-    implementation(libTool.kotlinpoet)
-    implementation(libLog.bundles.common)
-    implementation(libKotlinx.datetime)
-    implementation(libKotlinx.core)
-    runtimeOnly(libKotlinx.core.jvm)
-    implementation(libKotlin.reflect)
-    implementation(libTool.bundles.curator)
+    testImplementation(platform(libs.test.junit.bom))
+    testImplementation(libs.test.junit.jupiter)
+    implementation(libs.bundles.asteria.cluster)
+    implementation(libs.bundles.asteria.config)
+    implementation(libs.bundles.asteria.persistence)
+    implementation(libs.kotlinpoet)
+    implementation(libs.bundles.log.common)
+    implementation(libs.kotlinx.core)
+    implementation(libs.bundles.curator)
     implementation(project(":common"))
 }
 

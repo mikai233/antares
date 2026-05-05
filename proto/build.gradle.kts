@@ -2,13 +2,13 @@ import com.google.protobuf.gradle.id
 import io.gitlab.arturbosch.detekt.Detekt
 
 plugins {
-    alias(libTool.plugins.protobuf)
-    alias(libTool.plugins.asteria.protobuf.protocol.codegen)
+    alias(libs.plugins.protobuf)
+    alias(libs.plugins.asteria.protobuf.protocol.codegen)
 }
 
 protobuf {
     protoc {
-        val version = libTool.versions.protobuf.get()
+        val version = libs.versions.protobuf.get()
         artifact = "com.google.protobuf:protoc:$version"
     }
     generateProtoTasks {
@@ -32,11 +32,11 @@ tasks.withType<Detekt>().configureEach {
 }
 
 dependencies {
-    testImplementation(platform(libTest.junit.bom))
-    testImplementation(libTest.junit.jupiter)
-    implementation(libTool.protobuf.kotlin)
-    implementation(libTool.asteria.protocol.protobuf)
-    implementation(libTool.asteria.rpc.protobuf)
+    testImplementation(platform(libs.test.junit.bom))
+    testImplementation(libs.test.junit.jupiter)
+    implementation(libs.protobuf.kotlin)
+    implementation(libs.asteria.protocol.protobuf)
+    implementation(libs.asteria.rpc.protobuf)
 }
 
 val protoMetaOutputDir = layout.buildDirectory.dir("generated/source/proto-meta/main/kotlin")

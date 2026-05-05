@@ -1,7 +1,7 @@
 plugins {
     groovy
-    alias(libTool.plugins.ksp)
-    alias(libTool.plugins.asteria.message.codegen)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.asteria.message.codegen)
 }
 
 val generateGatewayRoutingTable by tasks.registering(GenerateGatewayRoutingTask::class) {
@@ -25,25 +25,22 @@ asteriaMessageCodegen {
 }
 
 dependencies {
-    testImplementation(platform(libTest.junit.bom))
-    testImplementation(libTest.junit.jupiter)
-    implementation(libTool.bundles.asteria.foundation)
-    implementation(libTool.bundles.asteria.cluster)
-    implementation(libTool.bundles.asteria.script)
-    implementation(libTool.asteria.gateway.core)
-    implementation(libTool.asteria.gateway.pekko)
-    implementation(libTool.asteria.gateway.netty)
-    implementation(libPekko.bundles.common)
-    implementation(libKotlin.reflect)
-    implementation(libKotlinx.core)
-    runtimeOnly(libKotlinx.core.jvm)
-    implementation(libLog.bundles.common)
-    implementation(libTool.netty)
-    implementation(libTool.lz4)
-    implementation(libTool.bcprov)
-    implementation(libTool.protobuf.kotlin)
-    implementation(libTool.bundles.curator)
-    implementation(libTool.jcommander)
+    testImplementation(platform(libs.test.junit.bom))
+    testImplementation(libs.test.junit.jupiter)
+    implementation(libs.bundles.asteria.foundation)
+    implementation(libs.bundles.asteria.cluster)
+    implementation(libs.bundles.asteria.script)
+    implementation(libs.asteria.gateway.core)
+    implementation(libs.asteria.gateway.pekko)
+    implementation(libs.asteria.gateway.netty)
+    implementation(libs.bundles.pekko.common)
+    implementation(libs.kotlinx.core)
+    implementation(libs.bundles.log.common)
+    implementation(libs.netty)
+    implementation(libs.lz4)
+    implementation(libs.bcprov)
+    implementation(libs.protobuf.kotlin)
+    implementation(libs.jcommander)
     implementation(project(":common"))
     implementation(project(":proto"))
 }

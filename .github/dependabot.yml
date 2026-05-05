@@ -1,5 +1,12 @@
 version: 2
 updates:
+  - package-ecosystem: gradle
+    directory: "/"
+    schedule:
+      interval: weekly
+      time: "04:30"
+    open-pull-requests-limit: 5
+
   - package-ecosystem: cargo
     directory: "/client"
     schedule:

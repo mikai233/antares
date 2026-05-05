@@ -1,7 +1,7 @@
 plugins {
     groovy
-    alias(libTool.plugins.ksp)
-    alias(libTool.plugins.asteria.message.codegen)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.asteria.message.codegen)
 }
 
 asteriaMessageCodegen {
@@ -10,26 +10,24 @@ asteriaMessageCodegen {
 }
 
 dependencies {
-    testImplementation(platform(libTest.junit.bom))
-    testImplementation(libTest.junit.jupiter)
-    implementation(libTool.bundles.asteria.foundation)
-    implementation(libTool.bundles.asteria.cluster)
-    implementation(libTool.asteria.config.annotations)
-    implementation(libTool.bundles.asteria.persistence)
-    implementation(libTool.bundles.asteria.script)
-    implementation(libPekko.bundles.common)
-    implementation(libKotlin.reflect)
-    implementation(libKotlinx.core)
-    implementation(libKotlinx.reactor)
-    implementation(libKotlinx.datetime.jvm)
-    runtimeOnly(libKotlinx.core.jvm)
-    implementation(libTool.protobuf.kotlin)
-    implementation(libTool.groovy.all)
-    implementation(libTool.jcommander)
-    implementation(libTool.spring.data.mongodb)
+    testImplementation(platform(libs.test.junit.bom))
+    testImplementation(libs.test.junit.jupiter)
+    implementation(libs.bundles.asteria.foundation)
+    implementation(libs.bundles.asteria.cluster)
+    implementation(libs.asteria.config.annotations)
+    implementation(libs.bundles.asteria.persistence)
+    implementation(libs.bundles.asteria.script)
+    implementation(libs.bundles.pekko.common)
+    implementation(libs.kotlin.reflect)
+    implementation(libs.kotlinx.core)
+    implementation(libs.kotlinx.reactor)
+    implementation(libs.protobuf.kotlin)
+    implementation(libs.groovy.all)
+    implementation(libs.jcommander)
+    implementation(libs.spring.data.mongodb)
     implementation(project(":common"))
     implementation(project(":proto"))
-    ksp(libTool.asteria.config.ksp)
+    ksp(libs.asteria.config.ksp)
 }
 
 tasks.test {

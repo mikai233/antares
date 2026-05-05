@@ -1,16 +1,15 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import java.util.*
 
 plugins {
     idea
-    alias(libKotlin.plugins.jvm)
-    alias(libKotlin.plugins.allopen)
-    alias(libKotlin.plugins.noarg)
-    alias(libTool.plugins.detekt)
-    alias(libTool.plugins.dokka)
-    alias(libTool.plugins.boot) apply false
-    alias(libTool.plugins.version.catalog.update)
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.allopen)
+    alias(libs.plugins.kotlin.noarg)
+    alias(libs.plugins.detekt)
+    alias(libs.plugins.dokka)
+    alias(libs.plugins.boot) apply false
+    alias(libs.plugins.version.catalog.update)
 }
 
 idea {
@@ -180,31 +179,13 @@ tasks.getByName<Delete>("clean") {
     delete.add(releaseDir)
 }
 
-val versionFileName = listOf("pekko", "kotlinx", "log", "test", "tool")
-
 versionCatalogUpdate {
-    catalogFile = file("gradle/lib.kotlin.versions.toml")
-    versionCatalogs {
-        versionFileName.onEach { name ->
-            create(name) {
-                catalogFile = file("gradle/lib.$name.versions.toml")
-            }
-        }
-    }
+    catalogFile = file("gradle/libs.versions.toml")
 }
 
 tasks.register("versionCatalogUpdates") {
     group = "version catalog update"
-    val updateTasks = listOf("", *versionFileName.toTypedArray()).map { name ->
-        "versionCatalogUpdate${
-            name.replaceFirstChar {
-                if (it.isLowerCase()) it.titlecase(
-                    Locale.getDefault(),
-                ) else it.toString()
-            }
-        }"
-    }
-    dependsOn(*updateTasks.toTypedArray())
+    dependsOn("versionCatalogUpdate")
 }
 
 tasks.register("printProjectVersion") {
