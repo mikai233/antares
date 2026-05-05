@@ -24,9 +24,12 @@ dependencies {
     testImplementation(kotlin("test"))
 }
 
+val unifiedProjectGroup = providers.gradleProperty("projectGroup").get()
+val unifiedProjectVersion = providers.gradleProperty("projectVersion").get()
+
 allprojects {
-    group = Version.PROJECT_GROUP
-    version = Version.PROJECT_VERSION
+    group = unifiedProjectGroup
+    version = unifiedProjectVersion
 
     apply(plugin = "io.gitlab.arturbosch.detekt")
 
@@ -202,4 +205,12 @@ tasks.register("versionCatalogUpdates") {
         }"
     }
     dependsOn(*updateTasks.toTypedArray())
+}
+
+tasks.register("printProjectVersion") {
+    group = "version"
+    description = "Print the unified project version used by code, config publication, and image tagging."
+    doLast {
+        println(version)
+    }
 }
