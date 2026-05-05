@@ -1,8 +1,9 @@
 # Antares
 
-Antares is a game server scaffold built on top of Asteria. It keeps a non-trivial demo domain in place and focuses on
-the parts that usually become painful in real projects: clustered routing, generated message dispatch, scriptable
-hotfixes, configuration publication, config reload, and historical-data compatibility.
+Antares is a game server scaffold built on top of [Asteria](https://github.com/realm-labs/Asteria). It keeps a
+non-trivial demo domain in place and focuses on the parts that usually become painful in real projects: clustered
+routing, generated message dispatch, scriptable hotfixes, configuration publication, config reload, and historical-data
+compatibility.
 
 Main modules:
 
