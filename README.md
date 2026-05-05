@@ -14,6 +14,7 @@ Main modules:
 - `proto`: client/internal protobuf contracts and generated protocol support
 - `common`: shared runtime, config, routing, hotfix, and persistence abstractions
 - `tools`: local topology/config bootstrap helpers
+- `stardust`: local all-in-one development launcher
 
 ## Requirements
 
@@ -25,9 +26,17 @@ Main modules:
 ## Quick Start
 
 1. Start MongoDB and Zookeeper.
-2. Run `tools/src/main/kotlin/com/mikai233/tools/zookeeper/ZookeeperInitializer.kt`.
-3. Launch `tools/src/main/kotlin/com/mikai233/tools/cluster/DevClusterLauncher.kt`.
+2. Run `./gradlew :stardust:prepareLocalDev` once when local Zookeeper is empty or stale.
+3. Run `./gradlew :stardust:run`.
 4. Optionally start the protocol debug client in `client/`.
+
+`stardust:run` only starts the all-in-one local development cluster. It does not publish config automatically.
+
+If you prefer to launch Stardust from the IDE, run this manually when local runtime config needs refreshing:
+
+```bash
+./gradlew :stardust:prepareLocalDev
+```
 
 The bootstrap tool writes a default topology into Zookeeper:
 

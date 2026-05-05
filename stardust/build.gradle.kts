@@ -27,3 +27,13 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
 }
+
+tasks.register("prepareLocalDev") {
+    group = "antares local"
+    description = "Prepare local Zookeeper runtime config and game-config publication for Stardust."
+    dependsOn(":tools:initializeLocalRuntimeConfig")
+}
+
+tasks.named<JavaExec>("run") {
+    description = "Launch the Stardust all-in-one local development cluster."
+}
