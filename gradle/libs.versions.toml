@@ -54,7 +54,7 @@ curator-async = { module = "org.apache.curator:curator-x-async", version.ref = "
 curator-framework = { module = "org.apache.curator:curator-framework", version.ref = "curator" }
 curator-recipes = { module = "org.apache.curator:curator-recipes", version.ref = "curator" }
 groovy-all = { module = "org.apache.groovy:groovy-all", version.ref = "org-apache-groovy" }
-guava = "com.google.guava:guava:33.5.0-jre"
+guava = "com.google.guava:guava:33.6.0-jre"
 jcommander = "org.jcommander:jcommander:3.0"
 kotlin-jdk8 = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
