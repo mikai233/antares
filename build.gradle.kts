@@ -187,12 +187,6 @@ versionCatalogUpdate {
     catalogFile = file("gradle/libs.versions.toml")
 }
 
-tasks.register("versionCatalogUpdates") {
-    group = "version catalog update"
-    description = "Check dependency updates and write the version catalog update report."
-    dependsOn("versionCatalogUpdate")
-}
-
 tasks.register("printProjectVersion") {
     group = "version"
     description = "Print the unified project version used by code, config publication, and image tagging."
