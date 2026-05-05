@@ -13,6 +13,7 @@ import com.mikai233.common.runtime.broadcastRouter
 import com.mikai233.common.runtime.gameWorldIds
 import com.mikai233.common.runtime.system
 import com.mikai233.protocol.ProtoSystem.GmReq
+import com.mikai233.protocol.ProtoRpcWorld.WorldShutdownAck
 import com.mikai233.protocol.idForServerMessage
 import io.github.realmlabs.asteria.actor.ActorLifecycleGate
 import io.github.realmlabs.asteria.actor.ActorTimerSupport
@@ -37,6 +38,7 @@ class WorldActor(val node: WorldNode) : AsteriaActor<WorldNode>(node) {
     private val scripts = ActorScriptSupport(this)
     val sessionManager = WorldSessionManager(this)
     val manager = WorldDataManager(this)
+    private var shutdownStarted = false
     private val lifecycle = ActorLifecycleGate(
         owner = this,
         load = {
@@ -105,6 +107,28 @@ class WorldActor(val node: WorldNode) : AsteriaActor<WorldNode>(node) {
 
     fun passivate() {
         context.parent.tell(ShardRegion.Passivate(HandoffWorld), self)
+    }
+
+    fun shutdownForPlan(planId: String, coordinator: ActorRef) {
+        if (shutdownStarted) {
+            return
+        }
+        shutdownStarted = true
+        sessionManager.clear()
+        context.become(receiveBuilder().build())
+        launch(timeout = null) {
+            val result = runCatching { manager.flush() }
+            val ack = WorldShutdownAck.newBuilder()
+                .setWorldId(worldId)
+                .setShutdownPlanId(planId)
+                .setSuccess(result.getOrDefault(false))
+                .also { builder ->
+                    result.exceptionOrNull()?.localizedMessage?.let(builder::setError)
+                }
+                .build()
+            coordinator.tell(ack, self)
+            context.stop(self)
+        }
     }
 
     fun tellPlayer(message: GeneratedMessage, sender: ActorRef = self) {

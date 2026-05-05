@@ -11,6 +11,7 @@ import com.mikai233.common.message.player.PlayerTick
 import com.mikai233.common.runtime.system
 import com.mikai233.protocol.ProtoLogin
 import com.mikai233.protocol.ProtoRpcGate.ChannelExpiredReq
+import com.mikai233.protocol.ProtoRpcPlayer.PlayerShutdownAck
 import io.github.realmlabs.asteria.actor.ActorLifecycleGate
 import io.github.realmlabs.asteria.actor.ActorTimerSupport
 import io.github.realmlabs.asteria.actor.AsteriaActor
@@ -34,6 +35,7 @@ class PlayerActor(val node: PlayerNode) : AsteriaActor<PlayerNode>(node) {
     val playerId: Long = self.path().name().toLong()
 
     private var channelActor: ActorRef? = null
+    private var shutdownStarted = false
     private val timers = ActorTimerSupport(this)
     private val scripts = ActorScriptSupport(this)
     val manager = PlayerDataManager(this)
@@ -134,6 +136,29 @@ class PlayerActor(val node: PlayerNode) : AsteriaActor<PlayerNode>(node) {
 
     fun clearChannelActor() {
         channelActor = null
+    }
+
+    fun shutdownForPlan(planId: String, coordinator: ActorRef) {
+        if (shutdownStarted) {
+            return
+        }
+        shutdownStarted = true
+        channelActor = null
+        context.cancelReceiveTimeout()
+        context.become(receiveBuilder().build())
+        launch(timeout = null) {
+            val result = runCatching { manager.flush() }
+            val ack = PlayerShutdownAck.newBuilder()
+                .setPlayerId(playerId)
+                .setShutdownPlanId(planId)
+                .setSuccess(result.getOrDefault(false))
+                .also { builder ->
+                    result.exceptionOrNull()?.localizedMessage?.let(builder::setError)
+                }
+                .build()
+            coordinator.tell(ack, self)
+            context.stop(self)
+        }
     }
 
     fun tellPlayer(message: GeneratedMessage) {

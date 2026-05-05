@@ -20,6 +20,7 @@ dependencies {
     implementation(libTool.jcommander)
     implementation(libTool.bundles.curator)
     implementation(project(":common"))
+    implementation(project(":proto"))
 }
 
 tasks.test {

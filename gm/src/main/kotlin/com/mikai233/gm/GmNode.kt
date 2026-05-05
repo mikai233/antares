@@ -44,6 +44,9 @@ class GmNode(
     val workerSingletonProxy: ActorRef
         get() = singletonActor(GameSingletons.Worker)
 
+    val shutdownCoordinator: ActorRef
+        get() = singletonActor(GameSingletons.ShutdownCoordinator)
+
     override suspend fun launch() {
         clusterNode.launch(
             afterClusterModules = listOf(GmRuntimeModule(this)),
@@ -61,6 +64,10 @@ class GmNode(
                 extractor(GameRpcProtocol.worldShardExtractor(this@GmNode))
             }
             singleton(GameSingletons.Worker) {
+                role(GameRoles.Global)
+                singletonStartup(PekkoSingletonStartup.Proxy)
+            }
+            singleton(GameSingletons.ShutdownCoordinator) {
                 role(GameRoles.Global)
                 singletonStartup(PekkoSingletonStartup.Proxy)
             }

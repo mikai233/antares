@@ -1,0 +1,47 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: gate
+  namespace: antares
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: antares
+      role: gate
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: player
+  namespace: antares
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: antares
+      role: player
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: world
+  namespace: antares
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: antares
+      role: world
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: global
+  namespace: antares
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: antares
+      role: global

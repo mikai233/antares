@@ -35,6 +35,10 @@ class WorldSessionManager(val world: WorldActor) : Map<Long, WorldSessionManager
         get(playerId)?.send(message)
     }
 
+    fun clear() {
+        sessions.clear()
+    }
+
     override val size: Int
         get() = sessions.size
     override val entries: Set<Map.Entry<Long, WorldSession>>

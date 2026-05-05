@@ -4,4 +4,5 @@ resources:
   - config.yaml
   - infrastructure.yaml
   - runtime-config-job.yaml
+  - disruption-budget.yaml
   - game-server.yaml

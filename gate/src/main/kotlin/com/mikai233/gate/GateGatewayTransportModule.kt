@@ -8,6 +8,7 @@ import io.github.realmlabs.asteria.core.ModuleContext
 import io.github.realmlabs.asteria.gateway.netty.NettyGatewayServerOptions
 import io.github.realmlabs.asteria.gateway.netty.NettyTcpGatewayServerTransport
 import kotlinx.coroutines.CoroutineScope
+import org.apache.pekko.actor.ActorSystem
 
 class GateGatewayTransportModule(
     private val node: GateNode,
@@ -17,6 +18,8 @@ class GateGatewayTransportModule(
     private var transport: NettyTcpGatewayServerTransport? = null
 
     override suspend fun start(context: ModuleContext) {
+        context.services.get(ActorSystem::class)
+            .actorOf(GateShutdownListenerActor.props(node), GateShutdownListenerActor.Name)
         val repository = context.services.get(RuntimeConfigRepository::class)
         val config = repository.get<NettyConfig>(nettyConfigPath(node.nodeId))?.value
             ?: repository.get<NettyConfig>(nettyConfigPath("gate"))?.value
@@ -35,7 +38,9 @@ class GateGatewayTransportModule(
     }
 
     override suspend fun stop(context: ModuleContext) {
+        node.connectionDrainer.beginDrain("gateway transport stopping")
         transport?.stop()
+        node.connectionDrainer.closeAll()
         transport = null
     }
 }

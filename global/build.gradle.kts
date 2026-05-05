@@ -16,6 +16,7 @@ dependencies {
     implementation(libTool.groovy.all)
     implementation(libTool.jcommander)
     implementation(project(":common"))
+    implementation(project(":proto"))
 }
 
 tasks.test {

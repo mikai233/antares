@@ -83,6 +83,38 @@
     {
       "id": 110013,
       "type": "com.mikai233.protocol.ProtoRpcBroadcast.BroadcastEnvelope"
+    },
+    {
+      "id": 110014,
+      "type": "com.mikai233.protocol.ProtoRpcPlayer.PlayerShutdownAck"
+    },
+    {
+      "id": 110015,
+      "type": "com.mikai233.protocol.ProtoRpcWorld.WorldShutdownReq"
+    },
+    {
+      "id": 110016,
+      "type": "com.mikai233.protocol.ProtoRpcWorld.WorldShutdownAck"
+    },
+    {
+      "id": 110017,
+      "type": "com.mikai233.protocol.ProtoRpcShutdown.ShutdownStartReq"
+    },
+    {
+      "id": 110018,
+      "type": "com.mikai233.protocol.ProtoRpcShutdown.ShutdownStatusReq"
+    },
+    {
+      "id": 110019,
+      "type": "com.mikai233.protocol.ProtoRpcShutdown.ShutdownStatusResp"
+    },
+    {
+      "id": 110020,
+      "type": "com.mikai233.protocol.ProtoRpcShutdown.GateDrainCommand"
+    },
+    {
+      "id": 110021,
+      "type": "com.mikai233.protocol.ProtoRpcShutdown.GateDrainAck"
     }
   ]
 }

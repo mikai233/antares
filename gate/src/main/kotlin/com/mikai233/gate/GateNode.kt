@@ -51,6 +51,8 @@ class GateNode(
 
     val gatewayRouter: GateGatewayRouter by lazy { GateGatewayRouter(this) }
 
+    val connectionDrainer = GateConnectionDrainer()
+
     val messageCatalog: MessageCatalog
         get() = GeneratedGateMessageCatalog
 
@@ -82,6 +84,9 @@ class GateNode(
 
     private fun updateState(newState: NodeState) {
         currentState = newState
+        if (newState == NodeState.Stopping) {
+            connectionDrainer.beginDrain("node stopping")
+        }
     }
 
 }

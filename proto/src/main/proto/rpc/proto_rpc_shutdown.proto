@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package com.mikai233.protocol;
+
+import "proto_common.proto";
+
+message ShutdownStartReq {
+  string plan_id = 1;
+  string requested_by = 2;
+}
+
+message ShutdownStatusReq {
+}
+
+enum ShutdownPhase {
+  SHUTDOWN_PHASE_IDLE = 0;
+  SHUTDOWN_PHASE_DRAINING_GATES = 1;
+  SHUTDOWN_PHASE_DRAINING_PLAYERS = 2;
+  SHUTDOWN_PHASE_STOPPING_WORLDS = 3;
+  SHUTDOWN_PHASE_COMPLETED = 4;
+  SHUTDOWN_PHASE_FAILED = 5;
+}
+
+message ShutdownStatusResp {
+  string plan_id = 1;
+  ShutdownPhase phase = 2;
+  string requested_by = 3;
+  int32 expected_gate_count = 4;
+  int32 drained_gate_count = 5;
+  int32 expected_player_count = 6;
+  int32 flushed_player_count = 7;
+  int32 expected_world_count = 8;
+  int32 flushed_world_count = 9;
+  repeated string errors = 10;
+}
+
+message GateDrainCommand {
+  string plan_id = 1;
+  ActorRef coordinator_actor = 2;
+}
+
+message GateDrainAck {
+  string plan_id = 1;
+  string gate_node_id = 2;
+  repeated int64 player_id = 3;
+}

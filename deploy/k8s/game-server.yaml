@@ -9,6 +9,11 @@ spec:
     matchLabels:
       app: antares
       role: player
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   template:
     metadata:
       labels:
@@ -16,7 +21,7 @@ spec:
         role: player
     spec:
       serviceAccountName: antares
-      terminationGracePeriodSeconds: 60
+      terminationGracePeriodSeconds: 180
       containers:
         - name: player
           image: akka-game-server-player:latest
@@ -37,6 +42,17 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep ${PRE_STOP_DRAIN_SECONDS:-20}"]
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "768Mi"
+            limits:
+              cpu: "2"
+              memory: "2Gi"
           ports:
             - name: remoting
               containerPort: 2333
@@ -74,6 +90,11 @@ spec:
     matchLabels:
       app: antares
       role: world
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   template:
     metadata:
       labels:
@@ -81,7 +102,7 @@ spec:
         role: world
     spec:
       serviceAccountName: antares
-      terminationGracePeriodSeconds: 60
+      terminationGracePeriodSeconds: 180
       containers:
         - name: world
           image: akka-game-server-world:latest
@@ -102,6 +123,17 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep ${PRE_STOP_DRAIN_SECONDS:-20}"]
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "768Mi"
+            limits:
+              cpu: "2"
+              memory: "2Gi"
           ports:
             - name: remoting
               containerPort: 2336
@@ -139,6 +171,11 @@ spec:
     matchLabels:
       app: antares
       role: global
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   template:
     metadata:
       labels:
@@ -146,7 +183,7 @@ spec:
         role: global
     spec:
       serviceAccountName: antares
-      terminationGracePeriodSeconds: 60
+      terminationGracePeriodSeconds: 180
       containers:
         - name: global
           image: akka-game-server-global:latest
@@ -167,6 +204,17 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep ${PRE_STOP_DRAIN_SECONDS:-20}"]
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "384Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
           ports:
             - name: remoting
               containerPort: 2335
@@ -204,6 +252,11 @@ spec:
     matchLabels:
       app: antares
       role: gate
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   template:
     metadata:
       labels:
@@ -211,7 +264,7 @@ spec:
         role: gate
     spec:
       serviceAccountName: antares
-      terminationGracePeriodSeconds: 60
+      terminationGracePeriodSeconds: 180
       containers:
         - name: gate
           image: akka-game-server-gate:latest
@@ -232,6 +285,17 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep ${PRE_STOP_DRAIN_SECONDS:-20}"]
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "384Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
           ports:
             - name: remoting
               containerPort: 2334
@@ -286,6 +350,11 @@ spec:
     matchLabels:
       app: antares
       role: gm
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   template:
     metadata:
       labels:
@@ -293,7 +362,7 @@ spec:
         role: gm
     spec:
       serviceAccountName: antares
-      terminationGracePeriodSeconds: 60
+      terminationGracePeriodSeconds: 180
       containers:
         - name: gm
           image: akka-game-server-gm:latest
@@ -314,6 +383,17 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep ${PRE_STOP_DRAIN_SECONDS:-20}"]
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "192Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
           ports:
             - name: remoting
               containerPort: 2337

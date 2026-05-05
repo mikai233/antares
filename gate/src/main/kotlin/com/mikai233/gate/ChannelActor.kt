@@ -4,6 +4,7 @@ import com.google.protobuf.GeneratedMessage
 import com.google.protobuf.kotlin.toByteString
 import com.mikai233.common.broadcast.Topic
 import com.mikai233.common.conf.ServerMode
+import com.mikai233.common.extension.encodeActorRef
 import com.mikai233.common.extension.invokeOnTargetMode
 import com.mikai233.common.extension.tell
 import com.mikai233.common.message.*
@@ -15,6 +16,7 @@ import com.mikai233.protocol.ProtoLogin
 import com.mikai233.protocol.ProtoLogin.LoginReq
 import com.mikai233.protocol.ProtoLogin.LoginResp
 import com.mikai233.protocol.ProtoRpcBroadcast.BroadcastEnvelope
+import com.mikai233.protocol.ProtoRpcPlayer.PlayerChannelClosedReq
 import com.mikai233.protocol.ProtoRpcWorld.SubscribeTopicReq
 import com.mikai233.protocol.ProtoRpcWorld.UnsubscribeTopicReq
 import com.mikai233.protocol.connectionExpiredNotify
@@ -56,6 +58,7 @@ class ChannelActor(val node: GateNode, private val session: GatewaySession) :
 
     override fun postStop() {
         super.postStop()
+        notifyPlayerChannelClosed()
         unsubscribeAll()
         mediator.tell(Unsubscribe(Topic.WORLD_ACTIVE, self))
         logger.info("{} stopped", remoteActorRefAddress())
@@ -257,5 +260,22 @@ class ChannelActor(val node: GateNode, private val session: GatewaySession) :
             node.playerBroadcastEventBus.unsubscribe(self, topic)
         }
         subscribedTopics.clear()
+    }
+
+    private fun notifyPlayerChannelClosed() {
+        val currentPlayerId = playerId ?: return
+        val drainContext = node.connectionDrainer.drainContext
+        val requestBuilder = PlayerChannelClosedReq.newBuilder()
+            .setPlayerId(currentPlayerId)
+        if (drainContext != null) {
+            requestBuilder
+                .setShutdown(true)
+                .setShutdownPlanId(drainContext.planId)
+                .setCoordinatorActor(drainContext.coordinator.encodeActorRef(node.system))
+        }
+        node.playerSharding.tell(
+            requestBuilder.build(),
+            self,
+        )
     }
 }

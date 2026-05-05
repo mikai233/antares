@@ -15,7 +15,7 @@ class GateTransportHandler(private val node: GateNode) : GatewayTransportHandler
 
     override suspend fun connected(connection: GatewayConnection): GatewaySession {
         val session = GatewaySession(GatewaySessionId(connection.id.value), connection)
-        if (node.state == NodeState.Started) {
+        if (node.state == NodeState.Started && node.connectionDrainer.register(session)) {
             val channelActor = node.system.actorOf(ChannelActor.props(node, session))
             session.set(GateChannelActorKey, channelActor)
         } else {
@@ -43,6 +43,7 @@ class GateTransportHandler(private val node: GateNode) : GatewayTransportHandler
         } else {
             GatewayCloseReason.error(cause)
         }
+        node.connectionDrainer.unregister(session)
         session.markClosed(reason)
         session.get(GateChannelActorKey)?.tell(StopChannel)
     }

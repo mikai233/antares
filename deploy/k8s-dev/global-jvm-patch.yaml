@@ -11,3 +11,10 @@ spec:
           env:
             - name: JAVA_OPTS
               value: "-Xms96m -Xmx256m -XX:+ExitOnOutOfMemoryError"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "384Mi"

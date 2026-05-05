@@ -7,3 +7,7 @@ patches:
   - path: global-jvm-patch.yaml
   - path: gate-jvm-patch.yaml
   - path: gm-jvm-patch.yaml
+  - path: gate-pdb-patch.yaml
+  - path: player-pdb-patch.yaml
+  - path: world-pdb-patch.yaml
+  - path: global-pdb-patch.yaml

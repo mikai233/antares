@@ -3,6 +3,7 @@ syntax = "proto3";
 package com.mikai233.protocol;
 
 import "asteria_rpc_options.proto";
+import "proto_common.proto";
 
 message WorldWakeupReq{
   option (asteria.rpc.entity_id) = "world_id";
@@ -32,4 +33,18 @@ message SubscribeTopicReq{
 
 message UnsubscribeTopicReq{
   string topic = 1;
+}
+
+message WorldShutdownReq{
+  option (asteria.rpc.entity_id) = "world_id";
+  int64 world_id = 1;
+  string shutdown_plan_id = 2;
+  ActorRef coordinator_actor = 3;
+}
+
+message WorldShutdownAck{
+  int64 world_id = 1;
+  string shutdown_plan_id = 2;
+  bool success = 3;
+  string error = 4;
 }

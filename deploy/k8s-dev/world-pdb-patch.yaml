@@ -1,0 +1,7 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: world
+  namespace: antares
+spec:
+  minAvailable: 0

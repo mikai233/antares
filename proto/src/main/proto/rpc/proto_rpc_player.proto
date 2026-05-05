@@ -34,4 +34,14 @@ message PlayerCreateResp{
 message PlayerChannelClosedReq{
   option (asteria.rpc.entity_id) = "player_id";
   int64 player_id = 1;
+  bool shutdown = 2;
+  string shutdown_plan_id = 3;
+  ActorRef coordinator_actor = 4;
+}
+
+message PlayerShutdownAck{
+  int64 player_id = 1;
+  string shutdown_plan_id = 2;
+  bool success = 3;
+  string error = 4;
 }

@@ -75,6 +75,21 @@ For production, keep JVM heap and Kubernetes memory limits aligned per node
 role. Player and world usually need the largest heap, while GM and global can
 start smaller.
 
+## Shutdown
+
+Kubernetes manifests use rolling updates with `maxUnavailable=0`, per-role
+resource limits, a 180 second termination grace period, and a short `preStop`
+delay. The delay gives Kubernetes time to remove the terminating Pod from
+service endpoints before the JVM receives `SIGTERM`.
+
+After `SIGTERM`, nodes rely on Pekko coordinated shutdown. Gate nodes also enter
+connection drain mode: new sessions are rejected and existing sessions are asked
+to close before the gateway transport stops.
+
+`PRE_STOP_DRAIN_SECONDS` controls the pre-stop endpoint drain delay. Keep this
+well below `terminationGracePeriodSeconds`, because Kubernetes counts pre-stop
+time as part of the total termination grace period.
+
 ## Apply
 
 ```bash
