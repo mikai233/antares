@@ -1,0 +1,13 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gm
+  namespace: antares
+spec:
+  template:
+    spec:
+      containers:
+        - name: gm
+          env:
+            - name: JAVA_OPTS
+              value: "-Xms64m -Xmx192m -XX:+ExitOnOutOfMemoryError"

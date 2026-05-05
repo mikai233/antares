@@ -1,0 +1,7 @@
+resources:
+  - namespace.yaml
+  - rbac.yaml
+  - config.yaml
+  - infrastructure.yaml
+  - runtime-config-job.yaml
+  - game-server.yaml

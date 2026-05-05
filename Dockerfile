@@ -14,6 +14,7 @@ COPY player player
 COPY world world
 COPY global global
 COPY gm gm
+COPY stardust stardust
 COPY tools tools
 COPY config config
 

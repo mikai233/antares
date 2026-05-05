@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: antares-runtime-env
+  namespace: antares
+data:
+  CLUSTER_DISCOVERY: "kubernetes"
+  ZK_CONNECT: "zookeeper:2181"
+  PEKKO_DISCOVERY_POD_LABEL_SELECTOR: "app=antares"
+  PEKKO_CLUSTER_BOOTSTRAP_REQUIRED_CONTACT_POINT_NR: "1"
+  MONGO_HOST: "mongodb"
+  MONGO_PORT: "27017"
+  MONGO_DATABASE: "asteria_example"
+  GATE_NETTY_CONFIG_NODE_ID: "gate"
+  GATE_HOST: "0.0.0.0"
+  GATE_PORT: "6666"
+  GAME_WORLD_COUNT: "1"
+  GAME_WORLD_BASE_ID: "16800"
+  GAME_WORLD_NAME_PREFIX: "时光回忆"
+  GAME_WORLD_OPEN_TIME: "2025-01-01T10:00:00"
+  GAME_WORLD_MAX_ONLINE: "5000"
+  GAME_WORLD_MAX_CREATE: "10000"

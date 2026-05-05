@@ -1,0 +1,13 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: world
+  namespace: antares
+spec:
+  template:
+    spec:
+      containers:
+        - name: world
+          env:
+            - name: JAVA_OPTS
+              value: "-Xms128m -Xmx384m -XX:+ExitOnOutOfMemoryError"

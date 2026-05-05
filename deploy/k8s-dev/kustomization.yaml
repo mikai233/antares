@@ -1,0 +1,9 @@
+resources:
+  - ../k8s
+
+patches:
+  - path: player-jvm-patch.yaml
+  - path: world-jvm-patch.yaml
+  - path: global-jvm-patch.yaml
+  - path: gate-jvm-patch.yaml
+  - path: gm-jvm-patch.yaml

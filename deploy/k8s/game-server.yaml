@@ -21,11 +21,14 @@ spec:
         - name: player
           image: akka-game-server-player:latest
           imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: antares-runtime-env
           env:
-            - name: CLUSTER_DISCOVERY
-              value: "kubernetes"
-            - name: ZK_CONNECT
-              value: "zookeeper:2181"
+            - name: JAVA_OPTS
+              value: "-Xms512m -Xmx1536m -XX:+ExitOnOutOfMemoryError"
+            - name: NODE_PORT
+              value: "2333"
             - name: POD_IP
               valueFrom:
                 fieldRef:
@@ -41,6 +44,24 @@ spec:
               containerPort: 3333
             - name: management
               containerPort: 4333
+          startupProbe:
+            httpGet:
+              path: /alive
+              port: management
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: management
+            periodSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /alive
+              port: management
+            periodSeconds: 10
+            failureThreshold: 6
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -65,11 +86,12 @@ spec:
         - name: world
           image: akka-game-server-world:latest
           imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: antares-runtime-env
           env:
-            - name: CLUSTER_DISCOVERY
-              value: "kubernetes"
-            - name: ZK_CONNECT
-              value: "zookeeper:2181"
+            - name: JAVA_OPTS
+              value: "-Xms512m -Xmx1536m -XX:+ExitOnOutOfMemoryError"
             - name: NODE_PORT
               value: "2336"
             - name: POD_IP
@@ -87,6 +109,24 @@ spec:
               containerPort: 3336
             - name: management
               containerPort: 4336
+          startupProbe:
+            httpGet:
+              path: /alive
+              port: management
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: management
+            periodSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /alive
+              port: management
+            periodSeconds: 10
+            failureThreshold: 6
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -111,11 +151,12 @@ spec:
         - name: global
           image: akka-game-server-global:latest
           imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: antares-runtime-env
           env:
-            - name: CLUSTER_DISCOVERY
-              value: "kubernetes"
-            - name: ZK_CONNECT
-              value: "zookeeper:2181"
+            - name: JAVA_OPTS
+              value: "-Xms256m -Xmx768m -XX:+ExitOnOutOfMemoryError"
             - name: NODE_PORT
               value: "2335"
             - name: POD_IP
@@ -133,6 +174,24 @@ spec:
               containerPort: 3335
             - name: management
               containerPort: 4335
+          startupProbe:
+            httpGet:
+              path: /alive
+              port: management
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: management
+            periodSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /alive
+              port: management
+            periodSeconds: 10
+            failureThreshold: 6
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -157,11 +216,12 @@ spec:
         - name: gate
           image: akka-game-server-gate:latest
           imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: antares-runtime-env
           env:
-            - name: CLUSTER_DISCOVERY
-              value: "kubernetes"
-            - name: ZK_CONNECT
-              value: "zookeeper:2181"
+            - name: JAVA_OPTS
+              value: "-Xms256m -Xmx768m -XX:+ExitOnOutOfMemoryError"
             - name: NODE_PORT
               value: "2334"
             - name: POD_IP
@@ -181,6 +241,24 @@ spec:
               containerPort: 4334
             - name: client
               containerPort: 6666
+          startupProbe:
+            httpGet:
+              path: /alive
+              port: management
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: management
+            periodSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /alive
+              port: management
+            periodSeconds: 10
+            failureThreshold: 6
 ---
 apiVersion: v1
 kind: Service
@@ -220,11 +298,12 @@ spec:
         - name: gm
           image: akka-game-server-gm:latest
           imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: antares-runtime-env
           env:
-            - name: CLUSTER_DISCOVERY
-              value: "kubernetes"
-            - name: ZK_CONNECT
-              value: "zookeeper:2181"
+            - name: JAVA_OPTS
+              value: "-Xms128m -Xmx384m -XX:+ExitOnOutOfMemoryError"
             - name: NODE_PORT
               value: "2337"
             - name: POD_IP
@@ -244,6 +323,24 @@ spec:
               containerPort: 4337
             - name: http
               containerPort: 8080
+          startupProbe:
+            httpGet:
+              path: /alive
+              port: management
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: management
+            periodSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /alive
+              port: management
+            periodSeconds: 10
+            failureThreshold: 6
 ---
 apiVersion: v1
 kind: Service
