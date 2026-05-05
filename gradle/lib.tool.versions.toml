@@ -2,7 +2,7 @@
 # 🧩 Version Catalog (Gradle)
 ###############################
 [versions]
-asteria = "0.2.0"
+asteria = "0.2.1"
 curator = "5.9.0"
 jackson = "2.21.2"
 kotlinpoet = "2.3.0"
@@ -22,7 +22,9 @@ testcontainers = "1.21.4"
 asteria-cluster-config = { module = "io.github.realm-labs.asteria:cluster-config", version.ref = "asteria" }
 asteria-cluster-pekko = { module = "io.github.realm-labs.asteria:cluster-pekko", version.ref = "asteria" }
 asteria-config-center-zookeeper = { module = "io.github.realm-labs.asteria:config-center-zookeeper", version.ref = "asteria" }
+asteria-config-annotations = { module = "io.github.realm-labs.asteria:config-annotations", version.ref = "asteria" }
 asteria-config-core = { module = "io.github.realm-labs.asteria:config-core", version.ref = "asteria" }
+asteria-config-ksp = { module = "io.github.realm-labs.asteria:config-ksp", version.ref = "asteria" }
 asteria-config-luban = { module = "io.github.realm-labs.asteria:config-luban", version.ref = "asteria" }
 asteria-config-publisher = { module = "io.github.realm-labs.asteria:config-publisher", version.ref = "asteria" }
 asteria-foundation-actor = { module = "io.github.realm-labs.asteria:foundation-actor", version.ref = "asteria" }
@@ -106,6 +108,7 @@ asteria-cluster = [
     "asteria-rpc-protobuf-pekko",
 ]
 asteria-config = [
+    "asteria-config-annotations",
     "asteria-config-core",
     "asteria-config-center-zookeeper",
     "asteria-config-luban",

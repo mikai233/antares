@@ -16,10 +16,6 @@ class WorldActiveEventHandler : WorldMessageHandler<WorldActiveEvent> {
         val actor = context.actor
         val snapshot = actor.node.services.get(ConfigService::class).current()
         val sync = actor.manager.get<ActorConfigSyncMem>()
-        if (sync.currentRevision() == snapshot.revision.version) {
-            return
-        }
-        actor.node.configChangeDispatcher.catchUp(actor, snapshot)
-        sync.updateRevision(snapshot.revision.version)
+        actor.node.configChangeDispatcher.catchUpIfNew(actor, snapshot, sync)
     }
 }

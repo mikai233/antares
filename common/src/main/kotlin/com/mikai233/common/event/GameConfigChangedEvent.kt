@@ -11,6 +11,15 @@ data class GameConfigChangedEvent(
     val current: ConfigSnapshot,
     val changedTables: Set<ConfigTableName>,
 ) : Event {
+    fun toConfigChangedEvent(): ConfigChangedEvent {
+        return ConfigChangedEvent(
+            previousRevision = previousRevision,
+            currentRevision = currentRevision,
+            current = current,
+            changedTables = changedTables,
+        )
+    }
+
     companion object {
         fun from(event: ConfigChangedEvent): GameConfigChangedEvent {
             return GameConfigChangedEvent(

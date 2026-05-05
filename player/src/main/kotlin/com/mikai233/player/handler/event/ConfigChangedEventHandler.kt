@@ -14,10 +14,6 @@ class ConfigChangedEventHandler : PlayerMessageHandler<GameConfigChangedEvent> {
     override fun handle(context: PlayerHandlerContext, message: GameConfigChangedEvent) {
         val actor = context.actor
         val sync = actor.manager.get<ActorConfigSyncMem>()
-        if (sync.currentRevision() == message.currentRevision.version) {
-            return
-        }
-        actor.node.configChangeDispatcher.dispatch(actor, message)
-        sync.updateRevision(message.currentRevision.version)
+        actor.node.configChangeDispatcher.dispatchIfNew(actor, message.toConfigChangedEvent(), sync)
     }
 }

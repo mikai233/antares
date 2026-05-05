@@ -5,6 +5,7 @@ import com.mikai233.common.db.MongoDB
 import com.mikai233.common.entity.ActorConfigSyncState
 import com.mikai233.common.entity.ActorConfigSyncStateMongo
 import com.mikai233.common.entity.ActorConfigSyncStateTracked
+import io.github.realmlabs.asteria.config.ConfigRevisionTracker
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.data.mongodb.core.query.Criteria.where
 import org.springframework.data.mongodb.core.query.Query.query
@@ -17,7 +18,7 @@ class ActorConfigSyncMem(
     ActorConfigSyncStateMongo.COLLECTION,
     { mongoDbProvider().database },
     ActorConfigSyncStateMongo::wrap,
-) {
+), ConfigRevisionTracker {
     private var state: ActorConfigSyncStateTracked? = null
 
     override suspend fun load() {
@@ -33,12 +34,16 @@ class ActorConfigSyncMem(
         }
     }
 
-    fun currentRevision(): String? {
+    override fun currentRevision(): String? {
         val revision = state?.revision.orEmpty()
         return revision.ifBlank { null }
     }
 
-    fun updateRevision(revision: String, updatedAt: Long = System.currentTimeMillis()) {
+    override fun updateRevision(revision: String) {
+        updateRevision(revision, System.currentTimeMillis())
+    }
+
+    fun updateRevision(revision: String, updatedAt: Long) {
         val tracked = state ?: createTracked(
             ActorConfigSyncState(
                 id = documentId(),

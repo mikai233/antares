@@ -6,7 +6,6 @@ import com.mikai233.common.PLAYER_SHARD_NUM
 import com.mikai233.common.WORLD_SHARD_NUM
 import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.conf.ServerMode
-import com.mikai233.common.config.ConfigChangeDispatcher
 import com.mikai233.common.core.*
 import com.mikai233.common.message.world.HandoffWorld
 import com.mikai233.common.rpc.DefaultRpcEntityIdResolver
@@ -24,6 +23,7 @@ import io.github.realmlabs.asteria.cluster.pekko.PekkoEntityWakerModule
 import io.github.realmlabs.asteria.cluster.pekko.actor
 import io.github.realmlabs.asteria.cluster.pekko.allocationStrategy
 import io.github.realmlabs.asteria.cluster.pekko.extractor
+import io.github.realmlabs.asteria.config.ConfigChangeDispatcher
 import io.github.realmlabs.asteria.core.NodeState
 import io.github.realmlabs.asteria.core.RoleKey
 import io.github.realmlabs.asteria.core.ServiceRegistry

@@ -178,8 +178,8 @@ The flow is:
 Handlers can also implement `catchUp(actor, snapshot)` so an actor can rebuild its relevant derived state when it starts
 or resynchronizes.
 
-Player/world config-change handlers are also auto-collected during build through the project-side
-`@GameConfigChangeHandler` annotation.
+Player/world config-change handlers are also auto-collected during build through Asteria's
+`@AsteriaConfigChangeHandler` annotation.
 
 ### Config validation
 
