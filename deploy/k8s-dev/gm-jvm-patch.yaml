@@ -10,11 +10,11 @@ spec:
         - name: gm
           env:
             - name: JAVA_OPTS
-              value: "-Xms64m -Xmx192m -XX:+ExitOnOutOfMemoryError"
+              value: "-Xms128m -Xmx384m -XX:+ExitOnOutOfMemoryError"
           resources:
             requests:
-              cpu: "50m"
-              memory: "96Mi"
+              cpu: "100m"
+              memory: "192Mi"
             limits:
               cpu: "500m"
-              memory: "256Mi"
+              memory: "512Mi"

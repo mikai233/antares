@@ -22,6 +22,7 @@ import org.apache.pekko.cluster.Cluster
 import org.apache.pekko.cluster.MemberStatus
 import org.apache.pekko.cluster.pubsub.DistributedPubSub
 import org.apache.pekko.cluster.pubsub.DistributedPubSubMediator.Publish
+import java.time.Duration
 
 class ShutdownCoordinatorActor(val node: GlobalNode) : AsteriaActor<GlobalNode>(node) {
     companion object {
@@ -29,10 +30,23 @@ class ShutdownCoordinatorActor(val node: GlobalNode) : AsteriaActor<GlobalNode>(
     }
 
     private val mediator = DistributedPubSub.get(context.system).mediator()
+    private val gateDrainTimeout = node.config.getDurationOrDefault(
+        "game.shutdown.timeout.gate-drain",
+        Duration.ofSeconds(30),
+    )
+    private val playerDrainTimeout = node.config.getDurationOrDefault(
+        "game.shutdown.timeout.player-drain",
+        Duration.ofMinutes(2),
+    )
+    private val worldStopTimeout = node.config.getDurationOrDefault(
+        "game.shutdown.timeout.world-stop",
+        Duration.ofMinutes(3),
+    )
 
     private var planId: String? = null
     private var requestedBy: String? = null
     private var phase: ShutdownPhase = ShutdownPhase.SHUTDOWN_PHASE_IDLE
+    private var generation: Long = 0
     private var expectedGateCount: Int = 0
     private val drainedGateNodes = linkedSetOf<String>()
     private val expectedPlayerIds = linkedSetOf<Long>()
@@ -58,6 +72,7 @@ class ShutdownCoordinatorActor(val node: GlobalNode) : AsteriaActor<GlobalNode>(
             .match(GateDrainAck::class.java) { handleGateDrainAck(it) }
             .match(PlayerShutdownAck::class.java) { handlePlayerShutdownAck(it) }
             .match(WorldShutdownAck::class.java) { handleWorldShutdownAck(it) }
+            .match(ShutdownPhaseTimeout::class.java) { handlePhaseTimeout(it) }
             .match(HandoffShutdownCoordinator::class.java) { context.stop(self) }
             .build()
     }
@@ -74,7 +89,7 @@ class ShutdownCoordinatorActor(val node: GlobalNode) : AsteriaActor<GlobalNode>(
             return
         }
         reset(command)
-        phase = ShutdownPhase.SHUTDOWN_PHASE_DRAINING_GATES
+        enterPhase(ShutdownPhase.SHUTDOWN_PHASE_DRAINING_GATES)
         expectedGateCount = activeRoleMemberCount(GameRoles.Gate)
         logger.info(
             "shutdown plan started planId={} requestedBy={} expectedGateCount={}",
@@ -112,7 +127,7 @@ class ShutdownCoordinatorActor(val node: GlobalNode) : AsteriaActor<GlobalNode>(
             "${drainedGateNodes.size}/$expectedGateCount",
         )
         if (drainedGateNodes.size >= expectedGateCount) {
-            phase = ShutdownPhase.SHUTDOWN_PHASE_DRAINING_PLAYERS
+            enterPhase(ShutdownPhase.SHUTDOWN_PHASE_DRAINING_PLAYERS)
             if (expectedPlayerIds.all { it in flushedPlayerIds }) {
                 beginWorldShutdown()
             }
@@ -120,14 +135,20 @@ class ShutdownCoordinatorActor(val node: GlobalNode) : AsteriaActor<GlobalNode>(
     }
 
     private fun handlePlayerShutdownAck(ack: PlayerShutdownAck) {
-        if (ack.shutdownPlanId != planId) {
+        if (
+            ack.shutdownPlanId != planId ||
+            phase !in setOf(
+                ShutdownPhase.SHUTDOWN_PHASE_DRAINING_GATES,
+                ShutdownPhase.SHUTDOWN_PHASE_DRAINING_PLAYERS,
+            )
+        ) {
             return
         }
         if (ack.success) {
             flushedPlayerIds += ack.playerId
         } else {
             errors += "player ${ack.playerId} shutdown failed: ${ack.error}"
-            phase = ShutdownPhase.SHUTDOWN_PHASE_FAILED
+            enterPhase(ShutdownPhase.SHUTDOWN_PHASE_FAILED)
             return
         }
         logger.info(
@@ -146,12 +167,12 @@ class ShutdownCoordinatorActor(val node: GlobalNode) : AsteriaActor<GlobalNode>(
     }
 
     private fun beginWorldShutdown() {
-        phase = ShutdownPhase.SHUTDOWN_PHASE_STOPPING_WORLDS
+        enterPhase(ShutdownPhase.SHUTDOWN_PHASE_STOPPING_WORLDS)
         expectedWorldIds.clear()
         expectedWorldIds += node.gameWorldIds
         logger.info("world shutdown started planId={} expectedWorldCount={}", planId, expectedWorldIds.size)
         if (expectedWorldIds.isEmpty()) {
-            phase = ShutdownPhase.SHUTDOWN_PHASE_COMPLETED
+            enterPhase(ShutdownPhase.SHUTDOWN_PHASE_COMPLETED)
             return
         }
         expectedWorldIds.forEach { worldId ->
@@ -174,7 +195,7 @@ class ShutdownCoordinatorActor(val node: GlobalNode) : AsteriaActor<GlobalNode>(
             flushedWorldIds += ack.worldId
         } else {
             errors += "world ${ack.worldId} shutdown failed: ${ack.error}"
-            phase = ShutdownPhase.SHUTDOWN_PHASE_FAILED
+            enterPhase(ShutdownPhase.SHUTDOWN_PHASE_FAILED)
             return
         }
         logger.info(
@@ -185,12 +206,76 @@ class ShutdownCoordinatorActor(val node: GlobalNode) : AsteriaActor<GlobalNode>(
             expectedWorldIds.size,
         )
         if (expectedWorldIds.all { it in flushedWorldIds }) {
-            phase = ShutdownPhase.SHUTDOWN_PHASE_COMPLETED
+            enterPhase(ShutdownPhase.SHUTDOWN_PHASE_COMPLETED)
             logger.info("shutdown plan completed planId={}", planId)
         }
     }
 
+    private fun handlePhaseTimeout(timeout: ShutdownPhaseTimeout) {
+        if (!timeout.isCurrent()) {
+            return
+        }
+        val error = when (phase) {
+            ShutdownPhase.SHUTDOWN_PHASE_DRAINING_GATES ->
+                "gate drain timeout: drained ${drainedGateNodes.size}/$expectedGateCount gate nodes"
+
+            ShutdownPhase.SHUTDOWN_PHASE_DRAINING_PLAYERS -> {
+                val missing = expectedPlayerIds - flushedPlayerIds
+                "player shutdown timeout: flushed ${flushedPlayerIds.size}/${expectedPlayerIds.size} " +
+                        "missing=${missing.formatIds()}"
+            }
+
+            ShutdownPhase.SHUTDOWN_PHASE_STOPPING_WORLDS -> {
+                val missing = expectedWorldIds - flushedWorldIds
+                "world shutdown timeout: flushed ${flushedWorldIds.size}/${expectedWorldIds.size} " +
+                        "missing=${missing.formatIds()}"
+            }
+
+            else -> "shutdown timeout at phase=$phase"
+        }
+        errors += error
+        logger.error("shutdown plan failed planId={} phase={} error={}", planId, phase, error)
+        enterPhase(ShutdownPhase.SHUTDOWN_PHASE_FAILED)
+    }
+
+    private fun ShutdownPhaseTimeout.isCurrent(): Boolean {
+        return planId == this@ShutdownCoordinatorActor.planId &&
+                phase == this@ShutdownCoordinatorActor.phase &&
+                generation == this@ShutdownCoordinatorActor.generation &&
+                !this@ShutdownCoordinatorActor.phase.isTerminal()
+    }
+
+    private fun enterPhase(nextPhase: ShutdownPhase) {
+        phase = nextPhase
+        schedulePhaseTimeout(nextPhase)
+    }
+
+    private fun schedulePhaseTimeout(nextPhase: ShutdownPhase) {
+        if (nextPhase.isTerminal()) {
+            return
+        }
+        val currentPlanId = planId ?: return
+        val timeout = timeoutFor(nextPhase) ?: return
+        context.system.scheduler().scheduleOnce(
+            timeout,
+            self,
+            ShutdownPhaseTimeout(currentPlanId, generation, nextPhase),
+            context.dispatcher,
+            self,
+        )
+    }
+
+    private fun timeoutFor(currentPhase: ShutdownPhase): Duration? {
+        return when (currentPhase) {
+            ShutdownPhase.SHUTDOWN_PHASE_DRAINING_GATES -> gateDrainTimeout
+            ShutdownPhase.SHUTDOWN_PHASE_DRAINING_PLAYERS -> playerDrainTimeout
+            ShutdownPhase.SHUTDOWN_PHASE_STOPPING_WORLDS -> worldStopTimeout
+            else -> null
+        }
+    }
+
     private fun reset(command: ShutdownStartReq) {
+        generation += 1
         planId = command.planId
         requestedBy = command.requestedBy
         expectedGateCount = 0
@@ -222,4 +307,34 @@ class ShutdownCoordinatorActor(val node: GlobalNode) : AsteriaActor<GlobalNode>(
         requestedBy?.let(builder::setRequestedBy)
         return builder.build()
     }
+}
+
+private data class ShutdownPhaseTimeout(
+    val planId: String,
+    val generation: Long,
+    val phase: ShutdownPhase,
+)
+
+private fun ShutdownPhase.isTerminal(): Boolean {
+    return this in setOf(
+        ShutdownPhase.SHUTDOWN_PHASE_IDLE,
+        ShutdownPhase.SHUTDOWN_PHASE_COMPLETED,
+        ShutdownPhase.SHUTDOWN_PHASE_FAILED,
+    )
+}
+
+private fun Collection<Long>.formatIds(limit: Int = 20): String {
+    if (isEmpty()) {
+        return "[]"
+    }
+    val values = take(limit).joinToString(prefix = "[", postfix = "]")
+    return if (size <= limit) {
+        values
+    } else {
+        values.dropLast(1) + ", ... +${size - limit}]"
+    }
+}
+
+private fun com.typesafe.config.Config.getDurationOrDefault(path: String, defaultValue: Duration): Duration {
+    return if (hasPath(path)) getDuration(path) else defaultValue
 }
