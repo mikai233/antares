@@ -212,6 +212,7 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
             }
             fields += listOf(
                 "      \"rowType\": \"${jsonEscape(entry.rowFqcn)}\"",
+                "      \"tableType\": \"${entry.shape.tableType}\"",
                 "      \"refName\": \"${jsonEscape(entry.tableRef)}\"",
                 "      \"propertyName\": \"${jsonEscape(entry.tableProperty)}\"",
                 "      \"markerName\": \"${jsonEscape(entry.tableMarker)}\"",
@@ -271,9 +272,9 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
 
     private fun toKotlinType(javaType: String): String {
         return when (javaType) {
-            "Integer", "int" -> "Int"
-            "Long", "long" -> "Long"
-            "String" -> "String"
+            "Integer", "int" -> "kotlin.Int"
+            "Long", "long" -> "kotlin.Long"
+            "String" -> "kotlin.String"
             else -> javaType
         }
     }
@@ -314,6 +315,7 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
     private sealed interface TableShape {
         val rowFqcn: String
         val configShape: String
+        val tableType: String
 
         data class Keyed(
             val keyType: String,
@@ -321,18 +323,21 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
             val keyField: String,
         ) : TableShape {
             override val configShape: String = "KEYED"
+            override val tableType: String = "io.github.realmlabs.asteria.config.OrderedMapConfigTable"
         }
 
         data class ListLike(
             override val rowFqcn: String,
         ) : TableShape {
             override val configShape: String = "LIST"
+            override val tableType: String = "io.github.realmlabs.asteria.config.ListConfigTable"
         }
 
         data class Singleton(
             override val rowFqcn: String,
         ) : TableShape {
             override val configShape: String = "SINGLETON"
+            override val tableType: String = "io.github.realmlabs.asteria.config.SingleConfigTable"
         }
     }
 }

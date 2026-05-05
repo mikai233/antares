@@ -18,7 +18,7 @@ class PlayerActorScriptTemplate : ActorScript<PlayerActor>() {
         player.node.gameWorldConfigs.forEach { (id, config) ->
             logger.info("id:{} config:{}", id, config)
         }
-        val item = player.node.gameConfigSnapshot.tbItem()[1001]
+        val item = player.node.gameConfigSnapshot.tbItem[1001]
         logger.info("demo item config:{}", item)
         return null
     }
