@@ -26,8 +26,8 @@ protobuf {
 
 tasks.withType<Detekt>().configureEach {
     exclude(
-        "com/mikai233/protocol/ClientToServer.kt",
-        "com/mikai233/protocol/ServerToClient.kt",
+        "**/com/mikai233/protocol/ClientToServer*.kt",
+        "**/com/mikai233/protocol/ServerToClient*.kt",
     )
 }
 
@@ -37,15 +37,16 @@ dependencies {
     implementation(libTool.protobuf.kotlin)
     implementation(libTool.asteria.protocol.protobuf)
     implementation(libTool.asteria.rpc.protobuf)
-    implementation(libTool.reflections)
-    implementation(libKotlin.reflect)
-    implementation(libTool.kotlinpoet)
 }
 
-tasks.register<JavaExec>("generateProtoMeta") {
-    group = "other"
-    mainClass = "com.mikai233.protocol.MessageMetaGeneratorKt"
-    classpath = sourceSets["main"].runtimeClasspath
+val protoMetaOutputDir = layout.buildDirectory.dir("generated/source/proto-meta/main/kotlin")
+
+val generateProtoMeta = tasks.register<GenerateProtoMetaTask>("generateProtoMeta") {
+    group = "code generation"
+    description = "Generates client/server protobuf id and parser metadata from the protobuf descriptor set."
+    descriptorSetFile.set(layout.buildDirectory.file("descriptors/generateProto.pb"))
+    outputDir.set(protoMetaOutputDir)
+    dependsOn("generateProto")
 }
 
 val generateRpcProtocolRegistry = tasks.register<RpcProtocolRegistryTask>("generateRpcProtocolRegistry") {
@@ -72,8 +73,14 @@ asteriaProtobufProtocol {
     }
 }
 
-tasks.named("generateProto") {
-    finalizedBy("generateProtoMeta")
+kotlin {
+    sourceSets.main {
+        kotlin.srcDir(protoMetaOutputDir)
+    }
+}
+
+tasks.named("compileKotlin") {
+    dependsOn(generateProtoMeta)
 }
 
 tasks.named("generateAsteriaRpcProtocol") {
