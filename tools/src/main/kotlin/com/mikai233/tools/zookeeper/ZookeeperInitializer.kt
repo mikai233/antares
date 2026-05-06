@@ -42,7 +42,10 @@ fun main() = runBlocking {
         DATA_SOURCE_GAME,
         DataSourceConfig(
             databaseName = "asteria_example",
-            sources = listOf(DataSource("127.0.0.1", 27017)),
+            mode = MongoDeploymentMode.Standalone,
+            endpoints = listOf(MongoEndpoint("127.0.0.1", 27017)),
+            writeConcern = "w1",
+            validation = MongoValidationConfig(enabled = false),
         ),
     )
     repository.put(nettyConfigPath("gate-2337"), NettyConfig(host = "0.0.0.0", port = 6666))

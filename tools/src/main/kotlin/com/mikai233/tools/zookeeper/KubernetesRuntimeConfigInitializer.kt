@@ -25,11 +25,19 @@ fun main() = runBlocking {
         DATA_SOURCE_GAME,
         DataSourceConfig(
             databaseName = env("MONGO_DATABASE", "asteria_example"),
-            sources = listOf(
-                DataSource(
-                    host = env("MONGO_HOST", "mongodb"),
-                    port = intEnv("MONGO_PORT", 27017),
-                ),
+            mode = mongoDeploymentMode(),
+            endpoints = mongoEndpoints(),
+            replicaSetName = optionalEnv("MONGO_REPLICA_SET"),
+            authDatabase = optionalEnv("MONGO_AUTH_DATABASE"),
+            username = optionalEnv("MONGO_USERNAME"),
+            passwordEnv = optionalEnv("MONGO_PASSWORD_ENV"),
+            readPreference = optionalEnv("MONGO_READ_PREFERENCE"),
+            writeConcern = env("MONGO_WRITE_CONCERN", "majority"),
+            validation = MongoValidationConfig(
+                enabled = boolEnv("MONGO_VALIDATION_ENABLED", true),
+                ping = boolEnv("MONGO_VALIDATION_PING", true),
+                requiredCollections = csvEnv("MONGO_REQUIRED_COLLECTIONS"),
+                ensureIndexes = boolEnv("MONGO_ENSURE_INDEXES", true),
             ),
         ),
     )
@@ -64,10 +72,47 @@ private fun env(name: String, defaultValue: String): String {
     return System.getenv(name)?.takeIf(String::isNotBlank) ?: defaultValue
 }
 
+private fun optionalEnv(name: String): String? {
+    return System.getenv(name)?.takeIf(String::isNotBlank)
+}
+
+private fun csvEnv(name: String): List<String> {
+    return optionalEnv(name)
+        ?.split(",")
+        ?.map(String::trim)
+        ?.filter(String::isNotEmpty)
+        .orEmpty()
+}
+
+private fun boolEnv(name: String, defaultValue: Boolean): Boolean {
+    return optionalEnv(name)?.toBooleanStrictOrNull() ?: defaultValue
+}
+
 private fun intEnv(name: String, defaultValue: Int): Int {
     return env(name, defaultValue.toString()).toInt()
 }
 
 private fun longEnv(name: String, defaultValue: Long): Long {
     return env(name, defaultValue.toString()).toLong()
+}
+
+private fun mongoDeploymentMode(): MongoDeploymentMode {
+    return when (env("MONGO_DEPLOYMENT_MODE", MongoDeploymentMode.ShardedCluster.name).lowercase()) {
+        "standalone" -> MongoDeploymentMode.Standalone
+        "replicaset", "replica_set", "replica-set" -> MongoDeploymentMode.ReplicaSet
+        "shardedcluster", "sharded_cluster", "sharded-cluster" -> MongoDeploymentMode.ShardedCluster
+        else -> error("unsupported MONGO_DEPLOYMENT_MODE")
+    }
+}
+
+private fun mongoEndpoints(): List<MongoEndpoint> {
+    return csvEnv("MONGO_ENDPOINTS")
+        .ifEmpty { listOf("${env("MONGO_HOST", "mongodb")}:${intEnv("MONGO_PORT", 27017)}") }
+        .map { endpoint ->
+            val parts = endpoint.split(":", limit = 2)
+            MongoEndpoint(
+                host = parts[0],
+                port = parts.getOrNull(1)?.toInt() ?: 27017,
+            )
+        }
 }

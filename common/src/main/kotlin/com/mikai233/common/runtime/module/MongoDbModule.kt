@@ -14,6 +14,8 @@ class MongoDbModule : AsteriaModule {
         val repository = context.services.get(RuntimeConfigRepository::class)
         val config = repository.get<DataSourceConfig>(DATA_SOURCE_GAME)?.value
             ?: error("runtime config $DATA_SOURCE_GAME not found")
-        context.services.register(MongoDB::class, MongoDB(config))
+        val mongoDB = MongoDB(config)
+        mongoDB.validate()
+        context.services.register(MongoDB::class, mongoDB)
     }
 }

@@ -1,6 +1,7 @@
 package com.mikai233.gm.web
 
 import com.mikai233.common.config.DataSourceConfig
+import com.mikai233.common.config.mongoUri
 import com.mikai233.gm.GmNode
 import com.typesafe.config.Config
 import org.springframework.boot.WebApplicationType
@@ -55,11 +56,6 @@ class GmHttpServer(
             "management.endpoints.web.exposure.include" to "health,info,metrics",
         )
     }
-}
-
-private fun DataSourceConfig.mongoUri(): String {
-    val hosts = sources.joinToString(",") { "${it.host}:${it.port}" }
-    return "mongodb://$hosts/$databaseName"
 }
 
 private fun Config.getIntOrDefault(primaryPath: String, fallbackPath: String, defaultValue: Int): Int {
