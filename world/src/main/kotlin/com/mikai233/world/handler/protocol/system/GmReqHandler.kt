@@ -19,7 +19,7 @@ class GmReqHandler(
         val actor = context.actor
         val session = actor.sessionManager[message.playerId]
             ?: error("session not found for playerId=${message.playerId}")
-        invokeOnTargetMode(ServerMode.DevMode) {
+        invokeOnTargetMode(actor.node.runtimeEnv.serverMode, ServerMode.DevMode) {
             when (message.cmd) {
                 "testBroadcast" -> testBroadcastHandler.handle(actor, session, message.paramsList)
                 else -> error("gm handler for command=${message.cmd} not found")

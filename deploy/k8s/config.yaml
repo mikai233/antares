@@ -5,7 +5,7 @@ metadata:
   namespace: antares
 data:
   CLUSTER_DISCOVERY: "kubernetes"
-  ZK_CONNECT: "zookeeper:2181"
+  ZOOKEEPER_CONNECT: "zookeeper:2181"
   PEKKO_DISCOVERY_POD_LABEL_SELECTOR: "app=antares"
   PEKKO_CLUSTER_BOOTSTRAP_REQUIRED_CONTACT_POINT_NR: "1"
   MONGO_HOST: "mongodb"

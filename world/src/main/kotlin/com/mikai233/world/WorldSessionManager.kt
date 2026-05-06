@@ -18,7 +18,7 @@ class WorldSessionManager(val world: WorldActor) : Map<Long, WorldSessionManager
 
         fun send(message: GeneratedMessage) {
             channelActor.tell(message)
-            invokeOnTargetMode(ServerMode.DevMode) {
+            invokeOnTargetMode(world.node.runtimeEnv.serverMode, ServerMode.DevMode) {
                 val formattedMessage = formatMessage(message)
                 logger.debug("send message:{} to playerId:{} worldId:{}", formattedMessage, playerId, world.worldId)
             }

@@ -2,7 +2,6 @@ package com.mikai233.common.extension
 
 import com.google.common.base.CaseFormat
 import com.google.protobuf.util.JsonFormat
-import com.mikai233.common.conf.GlobalEnv
 import com.mikai233.common.conf.ServerMode
 import org.apache.curator.framework.CuratorFrameworkFactory
 import org.apache.curator.retry.ExponentialBackoffRetry
@@ -25,8 +24,6 @@ fun getInet4Address(): Inet4Address? {
             .flatMap { it.inetAddresses().filter { inetAddress -> inetAddress is Inet4Address } }.toList()
     return inet4Addresses.firstOrNull() as Inet4Address?
 }
-
-fun getenv(name: String): String? = System.getenv(name)
 
 fun asyncZookeeperClient(connectionString: String): AsyncCuratorFramework {
     val retryPolicy = ExponentialBackoffRetry(1000, 3)
@@ -65,8 +62,8 @@ fun protobufJsonPrinter(): JsonFormat.Printer =
 
 fun unixTimestamp() = System.currentTimeMillis()
 
-fun invokeOnTargetMode(vararg modes: ServerMode, block: () -> Unit) {
-    if (modes.contains(GlobalEnv.serverMode)) {
+fun invokeOnTargetMode(currentMode: ServerMode, vararg modes: ServerMode, block: () -> Unit) {
+    if (modes.contains(currentMode)) {
         block.invoke()
     }
 }

@@ -17,7 +17,7 @@ class GmReqHandler(
 ) : PlayerMessageHandler<GmReq> {
     override fun handle(context: PlayerHandlerContext, message: GmReq) {
         val actor = context.actor
-        invokeOnTargetMode(ServerMode.DevMode) {
+        invokeOnTargetMode(actor.node.runtimeEnv.serverMode, ServerMode.DevMode) {
             when (message.cmd) {
                 "testGm" -> testGmHandler.handle(actor, message.paramsList)
                 else -> error("gm handler for command=${message.cmd} not found")

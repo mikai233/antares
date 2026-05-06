@@ -1,7 +1,8 @@
 package com.mikai233.stardust
 
 import ch.qos.logback.classic.LoggerContext
-import com.mikai233.common.conf.GlobalEnv
+import com.mikai233.common.conf.RuntimeEnv
+import com.mikai233.common.config.SYSTEM_NAME
 import com.mikai233.common.extension.asyncZookeeperClient
 import com.mikai233.common.extension.logger
 import com.mikai233.common.runtime.GameRoles
@@ -33,33 +34,35 @@ object StardustCluster {
         config: Config,
         zookeeperConnectString: String,
         sameJvm: Boolean,
+        runtimeEnv: RuntimeEnv,
     ) -> LaunchableNode
 
     private val logger = logger()
     private val nodeByRole: Map<String, NodeFactory> = mapOf(
-        GameRoles.Player to { addr, name, nodeId, config, zookeeperConnectString, sameJvm ->
-            PlayerNode(addr, name, nodeId, config, zookeeperConnectString, sameJvm)
+        GameRoles.Player to { addr, name, nodeId, config, zookeeperConnectString, sameJvm, runtimeEnv ->
+            PlayerNode(addr, name, nodeId, config, zookeeperConnectString, sameJvm, runtimeEnv)
         },
-        GameRoles.Gate to { addr, name, nodeId, config, zookeeperConnectString, sameJvm ->
-            GateNode(addr, name, nodeId, config, zookeeperConnectString, sameJvm)
+        GameRoles.Gate to { addr, name, nodeId, config, zookeeperConnectString, sameJvm, runtimeEnv ->
+            GateNode(addr, name, nodeId, config, zookeeperConnectString, sameJvm, runtimeEnv)
         },
-        GameRoles.World to { addr, name, nodeId, config, zookeeperConnectString, sameJvm ->
-            WorldNode(addr, name, nodeId, config, zookeeperConnectString, sameJvm)
+        GameRoles.World to { addr, name, nodeId, config, zookeeperConnectString, sameJvm, runtimeEnv ->
+            WorldNode(addr, name, nodeId, config, zookeeperConnectString, sameJvm, runtimeEnv)
         },
-        GameRoles.Global to { addr, name, nodeId, config, zookeeperConnectString, sameJvm ->
-            GlobalNode(addr, name, nodeId, config, zookeeperConnectString, sameJvm)
+        GameRoles.Global to { addr, name, nodeId, config, zookeeperConnectString, sameJvm, runtimeEnv ->
+            GlobalNode(addr, name, nodeId, config, zookeeperConnectString, sameJvm, runtimeEnv)
         },
-        GameRoles.Gm to { addr, name, nodeId, config, zookeeperConnectString, sameJvm ->
-            GmNode(addr, name, nodeId, config, zookeeperConnectString, sameJvm)
+        GameRoles.Gm to { addr, name, nodeId, config, zookeeperConnectString, sameJvm, runtimeEnv ->
+            GmNode(addr, name, nodeId, config, zookeeperConnectString, sameJvm, runtimeEnv)
         },
     )
 
     suspend fun launch() {
+        val runtimeEnv = RuntimeEnv.fromSystem()
         val repository = RuntimeConfigRepository(
-            ZookeeperConfigStore(asyncZookeeperClient(GlobalEnv.zkConnect)),
+            ZookeeperConfigStore(asyncZookeeperClient(runtimeEnv.zookeeperConnect)),
             JacksonConfigCodec(),
         )
-        val layout = ClusterConfigLayout.default(GlobalEnv.SYSTEM_NAME)
+        val layout = ClusterConfigLayout.default(SYSTEM_NAME)
         val nodeConfigs = repository.children<RuntimeNodeConfig>(layout.nodes)
             .values
             .values
@@ -87,11 +90,12 @@ object StardustCluster {
                     val config = ConfigFactory.load("${role.lowercase()}.conf")
                     nodeFactory(
                         addr,
-                        GlobalEnv.SYSTEM_NAME,
+                        SYSTEM_NAME,
                         nodeConfig.nodeId,
                         config,
-                        GlobalEnv.zkConnect,
+                        runtimeEnv.zookeeperConnect,
                         true,
+                        runtimeEnv,
                     ).also { it.launch() }
                 }
             }.awaitAll()
@@ -99,7 +103,7 @@ object StardustCluster {
         supervisorScope {
             nodes.forEach { node ->
                 launch(exceptionHandler) {
-                    node.services.get(ActorSystem::class).getWhenTerminated().await()
+                    node.services.get(ActorSystem::class).whenTerminated.await()
                 }
             }
         }

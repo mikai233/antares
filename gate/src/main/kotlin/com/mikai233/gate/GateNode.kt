@@ -2,7 +2,8 @@ package com.mikai233.gate
 
 import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
-import com.mikai233.common.conf.GlobalEnv
+import com.mikai233.common.conf.RuntimeEnv
+import com.mikai233.common.config.SYSTEM_NAME
 import com.mikai233.common.rpc.DefaultRpcEntityIdResolver
 import com.mikai233.common.rpc.GameRpcProtocol
 import com.mikai233.common.rpc.RpcEntityIdResolver
@@ -27,6 +28,7 @@ class GateNode(
     val config: Config,
     zookeeperConnectString: String,
     sameJvm: Boolean = false,
+    val runtimeEnv: RuntimeEnv = RuntimeEnv.fromSystem(),
 ) : LaunchableNode {
     override val roles: Set<RoleKey> = setOf(RoleKey(GameRoles.Gate))
     override val services: ServiceRegistry = ServiceRegistry()
@@ -91,9 +93,9 @@ class GateNode(
 
 }
 
-private class Cli {
+private class Cli(runtimeEnv: RuntimeEnv) {
     @Parameter(names = ["-h", "--host"], description = "host")
-    var host: String = GlobalEnv.machineIp
+    var host: String = runtimeEnv.machineIp
 
     @Parameter(names = ["-p", "--port"], description = "port")
     var port: Int = 2334
@@ -102,17 +104,18 @@ private class Cli {
     var conf: String = "gate.conf"
 
     @Parameter(names = ["-z", "--zookeeper"], description = "zookeeper")
-    var zookeeper: String = GlobalEnv.zkConnect
+    var zookeeper: String = runtimeEnv.zookeeperConnect
 
     @Parameter(names = ["-n", "--name"], description = "system name")
-    var name: String = GlobalEnv.SYSTEM_NAME
+    var name: String = SYSTEM_NAME
 
     @Parameter(names = ["-i", "--node-id"], description = "runtime node id")
     var nodeId: String? = null
 }
 
 suspend fun main(args: Array<String>) {
-    val cli = Cli()
+    val runtimeEnv = RuntimeEnv.fromSystem()
+    val cli = Cli(runtimeEnv)
     @Suppress("SpreadOperator")
     JCommander.newBuilder()
         .addObject(cli)
@@ -120,7 +123,7 @@ suspend fun main(args: Array<String>) {
         .parse(*args)
     val addr = InetSocketAddress(cli.host, cli.port)
     val config = ConfigFactory.load(cli.conf)
-    GateNode(addr, cli.name, cli.nodeId ?: "gate-${cli.port}", config, cli.zookeeper).also {
+    GateNode(addr, cli.name, cli.nodeId ?: "gate-${cli.port}", config, cli.zookeeper, runtimeEnv = runtimeEnv).also {
         it.launch()
         it.awaitTermination()
     }

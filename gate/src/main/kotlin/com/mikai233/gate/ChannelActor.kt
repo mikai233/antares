@@ -226,7 +226,7 @@ class ChannelActor(val node: GateNode, private val session: GatewaySession) :
         when (message) {
             is SubscribeTopicReq, is UnsubscribeTopicReq, is BroadcastEnvelope -> handleProtobuf(message)
             else -> {
-                invokeOnTargetMode(ServerMode.DevMode) {
+                invokeOnTargetMode(node.runtimeEnv.serverMode, ServerMode.DevMode) {
                     logger.info(
                         "{} playerId:{} worldId:{} receive server message:{}",
                         remoteActorRefAddress(),

@@ -1,6 +1,6 @@
 package com.mikai233.tools.zookeeper
 
-import com.mikai233.common.conf.GlobalEnv
+import com.mikai233.common.conf.RuntimeEnv
 import com.mikai233.common.config.*
 import com.mikai233.common.extension.asyncZookeeperClient
 import com.mikai233.tools.config.GameConfigPublishOptions
@@ -17,7 +17,8 @@ import kotlinx.coroutines.runBlocking
  * Initializes the local development config center using Asteria's runtime config model.
  */
 fun main() = runBlocking {
-    val client = asyncZookeeperClient(GlobalEnv.zkConnect)
+    val runtimeEnv = RuntimeEnv.fromSystem()
+    val client = asyncZookeeperClient(runtimeEnv.zookeeperConnect)
     val store = ZookeeperConfigStore(client)
     val codec = JacksonConfigCodec()
     val repository = RuntimeConfigRepository(store, codec)
@@ -32,7 +33,7 @@ fun main() = runBlocking {
             RuntimeNodeConfig("gm-2338", "127.0.0.1", 2338, setOf("Gm"), seed = true),
         ),
     )
-    val clusterLayout = ClusterConfigLayout.default(GlobalEnv.SYSTEM_NAME)
+    val clusterLayout = ClusterConfigLayout.default(SYSTEM_NAME)
     topology.nodes.forEach { node ->
         repository.put(clusterLayout.node(node.nodeId), node)
     }

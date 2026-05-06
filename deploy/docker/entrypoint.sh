@@ -23,14 +23,14 @@ node_port="${NODE_PORT:-$(default_port)}"
 node_host="${NODE_HOST:-${POD_IP:-0.0.0.0}}"
 node_id="${NODE_ID:-${module}-${POD_NAME:-${HOSTNAME:-$node_port}}}"
 node_conf="${NODE_CONF:-${module}.conf}"
-zk_connect="${ZK_CONNECT:-zookeeper:2181}"
+zookeeper_connect="${ZOOKEEPER_CONNECT:-zookeeper:2181}"
 system_name="${SYSTEM_NAME:-antares}"
 
 exec java ${JAVA_OPTS:-} -jar /app/app.jar \
   --host "$node_host" \
   --port "$node_port" \
   --conf "$node_conf" \
-  --zookeeper "$zk_connect" \
+  --zookeeper "$zookeeper_connect" \
   --name "$system_name" \
   --node-id "$node_id" \
   "$@"

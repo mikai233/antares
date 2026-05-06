@@ -1,13 +1,7 @@
 package com.mikai233.tools.zookeeper
 
-import com.mikai233.common.conf.GlobalEnv
-import com.mikai233.common.config.DATA_SOURCE_GAME
-import com.mikai233.common.config.DataSource
-import com.mikai233.common.config.DataSourceConfig
-import com.mikai233.common.config.GAME_WORLDS
-import com.mikai233.common.config.GameWorldConfig
-import com.mikai233.common.config.NettyConfig
-import com.mikai233.common.config.nettyConfigPath
+import com.mikai233.common.conf.RuntimeEnv
+import com.mikai233.common.config.*
 import com.mikai233.common.extension.asyncZookeeperClient
 import io.github.realmlabs.asteria.config.center.JacksonConfigCodec
 import io.github.realmlabs.asteria.config.center.RuntimeConfigRepository
@@ -20,7 +14,8 @@ import kotlinx.coroutines.runBlocking
  * Cluster topology is intentionally not written here: Kubernetes discovery owns cluster membership.
  */
 fun main() = runBlocking {
-    val client = asyncZookeeperClient(env("ZK_CONNECT", GlobalEnv.zkConnect))
+    val runtimeEnv = RuntimeEnv.fromSystem()
+    val client = asyncZookeeperClient(runtimeEnv.zookeeperConnect)
     val repository = RuntimeConfigRepository(
         ZookeeperConfigStore(client),
         JacksonConfigCodec(),
