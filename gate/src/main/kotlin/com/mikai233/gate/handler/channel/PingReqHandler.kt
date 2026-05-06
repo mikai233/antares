@@ -1,4 +1,4 @@
-package com.mikai233.gate.handler.protocol.system
+package com.mikai233.gate.handler.channel
 
 import com.mikai233.common.annotation.AllOpen
 import com.mikai233.common.extension.unixTimestamp
