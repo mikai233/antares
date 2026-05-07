@@ -79,10 +79,16 @@ class MongoDB(
     private fun validateConfig() {
         require(gameDataSourceConfig.databaseName.isNotBlank()) { "Mongo databaseName must not be blank" }
         require(gameDataSourceConfig.endpoints.isNotEmpty()) { "Mongo endpoints must not be empty" }
-        require(gameDataSourceConfig.mode != MongoDeploymentMode.ReplicaSet || !gameDataSourceConfig.replicaSetName.isNullOrBlank()) {
+        require(
+            gameDataSourceConfig.mode != MongoDeploymentMode.ReplicaSet ||
+                !gameDataSourceConfig.replicaSetName.isNullOrBlank(),
+        ) {
             "Mongo replicaSetName is required for ReplicaSet mode"
         }
-        require(gameDataSourceConfig.mode != MongoDeploymentMode.ShardedCluster || gameDataSourceConfig.validation.enabled) {
+        require(
+            gameDataSourceConfig.mode != MongoDeploymentMode.ShardedCluster ||
+                gameDataSourceConfig.validation.enabled,
+        ) {
             "Mongo validation must be enabled for ShardedCluster mode"
         }
     }
@@ -94,7 +100,8 @@ class MongoDB(
         val existing = database.listCollectionNames().toList().toSet()
         val missing = requiredCollections.filterNot(existing::contains)
         require(missing.isEmpty()) {
-            "Mongo database ${gameDataSourceConfig.databaseName} is missing required collections: ${missing.joinToString()}"
+            "Mongo database ${gameDataSourceConfig.databaseName} is missing required collections: " +
+                missing.joinToString()
         }
     }
 

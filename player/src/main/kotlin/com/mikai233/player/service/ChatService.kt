@@ -111,7 +111,9 @@ class ChatService {
     private fun dispatch(actor: PlayerActor, request: ChatSendReq, content: String) {
         when (request.channel) {
             ProtoChat.ChatChannel.Private -> sendPrivate(actor, request, content)
-            ProtoChat.ChatChannel.World -> broadcastToWorld(actor, request, content, Topic.ofWorld(playerWorldId(actor)))
+            ProtoChat.ChatChannel.World -> {
+                broadcastToWorld(actor, request, content, Topic.ofWorld(playerWorldId(actor)))
+            }
             ProtoChat.ChatChannel.Alliance -> {
                 val allianceId = playerAllianceId(actor)
                 if (request.targetId <= 0 || request.targetId != allianceId) {
@@ -350,7 +352,7 @@ class ChatService {
         if (request.beforeSentAt > 0) {
             criteria += where("sentAt").lt(request.beforeSentAt)
         }
-        return query(Criteria().andOperator(*criteria.toTypedArray()))
+        return query(Criteria().andOperator(criteria))
             .with(Sort.by(Sort.Direction.DESC, "sentAt"))
             .limit(request.limit.coerceIn(1, MaxOfflinePrivateMessagesPerLogin))
     }

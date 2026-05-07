@@ -26,6 +26,7 @@ data class ChatMessageLog(
 
         @JvmStatic
         @PersistenceCreator
+        @Suppress("LongParameterList")
         fun create(
             id: Long?,
             channel: Int?,
