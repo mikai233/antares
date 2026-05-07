@@ -1,5 +1,5 @@
 [versions]
-asteria = "0.3.3"
+asteria = "0.3.8"
 coroutines = "1.10.2"
 curator = "5.9.0"
 datetime = "0.7.1"

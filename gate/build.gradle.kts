@@ -24,6 +24,8 @@ kotlin {
 }
 
 asteriaMessageCodegen {
+    generatedPackage.set("com.mikai233.gate.generated")
+    moduleId.set("gate")
     dispatcherSuperType("PROTOBUF", "com.google.protobuf.GeneratedMessage")
 }
 

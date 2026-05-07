@@ -5,6 +5,7 @@ import com.mikai233.common.entity.PlayerAbstract
 import com.mikai233.common.extension.encodeActorRef
 import com.mikai233.common.extension.unixTimestamp
 import com.mikai233.common.message.DispatcherKeys
+import com.mikai233.common.message.GatewayRoutes
 import com.mikai233.common.runtime.system
 import com.mikai233.protocol.ProtoLogin.LoginReq
 import com.mikai233.protocol.ProtoRpcPlayer.*
@@ -16,10 +17,7 @@ import io.github.realmlabs.asteria.message.AsteriaMessageHandler
 
 @AllOpen
 @AsteriaMessageHandler(dispatcher = DispatcherKeys.PROTOBUF)
-@AsteriaGatewayRoute(
-    route = "world",
-    entityId = "message:world_id",
-)
+@AsteriaGatewayRoute(route = GatewayRoutes.WORLD)
 class PlayerLoginHandler : WorldMessageHandler<LoginReq> {
     override fun handle(context: WorldHandlerContext, message: LoginReq) {
         val actor = context.actor

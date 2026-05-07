@@ -1,5 +1,6 @@
 package com.mikai233.gate
 
+import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.message.ClientProtobuf
 import com.mikai233.common.runtime.GameEntityKinds
 import com.mikai233.common.runtime.system
@@ -26,7 +27,7 @@ private val GmCommandTargets = mapOf(
 )
 
 data class LocalClientProtobuf(
-    val message: com.google.protobuf.GeneratedMessage,
+    val message: GeneratedMessage,
 )
 
 class GateGatewayRouter(

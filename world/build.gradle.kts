@@ -5,6 +5,8 @@ plugins {
 }
 
 asteriaMessageCodegen {
+    generatedPackage.set("com.mikai233.world.generated")
+    moduleId.set("world")
     dispatcherSuperType("PROTOBUF", "com.google.protobuf.GeneratedMessage")
     dispatcherSuperType("INTERNAL", "com.mikai233.common.message.Message")
 }

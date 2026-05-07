@@ -13,6 +13,15 @@ import org.gradle.api.tasks.TaskAction
 import java.io.File
 
 private const val ROUTE_CHUNK_SIZE = 200
+private const val GATEWAY_LOCAL_ROUTE = "gateway-local"
+private const val PLAYER_ROUTE = "player"
+private const val WORLD_ROUTE = "world"
+private const val MESSAGE_WORLD_ID_SOURCE = "message:world_id"
+private const val ROUTE_ENTITY_ID_SOURCE = "route.entity_id"
+private const val SESSION_PLAYER_ID_SOURCE = "session:player_id"
+private const val SESSION_WORLD_ID_SOURCE = "session:world_id"
+private const val PLAYER_ID_FIELD = "player_id"
+private const val INJECT_PLAYER_ID_FROM_ROUTE_ENTITY_ID = "player_id=route.entity_id"
 
 abstract class GenerateGatewayRoutingTask : DefaultTask() {
     @get:InputFiles
@@ -29,6 +38,7 @@ abstract class GenerateGatewayRoutingTask : DefaultTask() {
         val mapper = ObjectMapper()
         val descriptorSet = DescriptorProtos.FileDescriptorSet.parseFrom(descriptorSetFile.get().asFile.inputStream())
         val messageIds = loadClientMessageIds(descriptorSet)
+        val messageDescriptors = discoverGeneratedMessageDescriptors(descriptorSet)
         val routes = metadataFiles.files
             .filter(File::exists)
             .sortedBy { it.name }
@@ -41,9 +51,14 @@ abstract class GenerateGatewayRoutingTask : DefaultTask() {
                         },
                         messageType = routeNode.path("messageType").asText(),
                         route = routeNode.path("route").asText(),
-                        entityId = routeNode.path("entityId").takeUnless { it.isNull }?.asText(),
-                        inject = routeNode.path("inject").map { it.asText() },
-                        clearFields = routeNode.path("clearFields").map { it.asText() },
+                        entityId = routeNode.optionalText("entityId")
+                            ?: defaultEntityId(routeNode.path("route").asText()),
+                        inject = routeNode.optionalTextList("inject")
+                            ?: defaultInject(
+                                route = routeNode.path("route").asText(),
+                                descriptor = messageDescriptors[routeNode.path("messageType").asText()],
+                            ),
+                        clearFields = routeNode.optionalTextList("clearFields") ?: emptyList(),
                     )
                 }
             }
@@ -184,11 +199,11 @@ abstract class GenerateGatewayRoutingTask : DefaultTask() {
         builder.add("mapOf(\n")
         routes.forEachIndexed { index, route ->
             builder.add(
-                "  %L to %T(route = %S, entityId = %L, inject = %L, clearFields = %L)",
+                "  %L to %T(route = %L, entityId = %L, inject = %L, clearFields = %L)",
                 route.messageId,
                 routeSpecType,
-                route.route,
-                route.entityId?.let { "\"$it\"" } ?: "null",
+                buildRouteCode(route.route),
+                buildRouteSourceCode(route.entityId),
                 buildStringListCode(route.inject),
                 buildStringListCode(route.clearFields),
             )
@@ -196,6 +211,30 @@ abstract class GenerateGatewayRoutingTask : DefaultTask() {
         }
         builder.add(")")
         return builder.build()
+    }
+
+    private fun buildRouteCode(route: String): CodeBlock {
+        val gatewayRoutes = ClassName("com.mikai233.common.message", "GatewayRoutes")
+        return when (route) {
+            GATEWAY_LOCAL_ROUTE -> CodeBlock.of("%T.GATEWAY_LOCAL", gatewayRoutes)
+            PLAYER_ROUTE -> CodeBlock.of("%T.PLAYER", gatewayRoutes)
+            WORLD_ROUTE -> CodeBlock.of("%T.WORLD", gatewayRoutes)
+            else -> CodeBlock.of("%S", route)
+        }
+    }
+
+    private fun buildRouteSourceCode(source: String?): CodeBlock {
+        if (source == null) {
+            return CodeBlock.of("null")
+        }
+        val gatewayRouteSources = ClassName("com.mikai233.common.message", "GatewayRouteSources")
+        return when (source) {
+            MESSAGE_WORLD_ID_SOURCE -> CodeBlock.of("%T.MESSAGE_WORLD_ID", gatewayRouteSources)
+            ROUTE_ENTITY_ID_SOURCE -> CodeBlock.of("%T.ROUTE_ENTITY_ID", gatewayRouteSources)
+            SESSION_PLAYER_ID_SOURCE -> CodeBlock.of("%T.SESSION_PLAYER_ID", gatewayRouteSources)
+            SESSION_WORLD_ID_SOURCE -> CodeBlock.of("%T.SESSION_WORLD_ID", gatewayRouteSources)
+            else -> CodeBlock.of("%S", source)
+        }
     }
 
     private fun buildStringListCode(values: List<String>): CodeBlock {
@@ -212,12 +251,13 @@ abstract class GenerateGatewayRoutingTask : DefaultTask() {
 
     private fun buildResolveCode(): CodeBlock {
         val gatewayRoute = ClassName("io.github.realmlabs.asteria.gateway", "GatewayRoute")
+        val gatewayRoutes = ClassName("com.mikai233.common.message", "GatewayRoutes")
         val builder = CodeBlock.builder()
         builder.addStatement("val spec = routesById[packet.id] ?: return null")
         builder.addStatement("val target = resolveTarget(spec.route)")
         builder.addStatement(
-            "val entityId = if (spec.route == %S) null else resolveEntityId(spec, context, packet)",
-            "gateway-local",
+            "val entityId = if (spec.route == %T.GATEWAY_LOCAL) null else resolveEntityId(spec, context, packet)",
+            gatewayRoutes,
         )
         builder.addStatement("return %T(target, entityId)", gatewayRoute)
         return builder.build()
@@ -250,14 +290,15 @@ abstract class GenerateGatewayRoutingTask : DefaultTask() {
         val routeTarget = ClassName("io.github.realmlabs.asteria.message", "RouteTarget")
         val entityKind = ClassName("io.github.realmlabs.asteria.core", "EntityKind")
         val gameEntityKinds = ClassName("com.mikai233.common.runtime", "GameEntityKinds")
+        val gatewayRoutes = ClassName("com.mikai233.common.message", "GatewayRoutes")
         return FunSpec.builder("resolveTarget")
             .addModifiers(com.squareup.kotlinpoet.KModifier.PRIVATE)
             .addParameter("route", String::class)
             .returns(routeTarget)
             .beginControlFlow("return when (route)")
-            .addStatement("%S -> %T.GatewayLocal", "gateway-local", routeTarget)
-            .addStatement("%S -> %T.Entity(%T(%T.PlayerActor))", "player", routeTarget, entityKind, gameEntityKinds)
-            .addStatement("%S -> %T.Entity(%T(%T.WorldActor))", "world", routeTarget, entityKind, gameEntityKinds)
+            .addStatement("%T.GATEWAY_LOCAL -> %T.GatewayLocal", gatewayRoutes, routeTarget)
+            .addStatement("%T.PLAYER -> %T.Entity(%T(%T.PlayerActor))", gatewayRoutes, routeTarget, entityKind, gameEntityKinds)
+            .addStatement("%T.WORLD -> %T.Entity(%T(%T.WorldActor))", gatewayRoutes, routeTarget, entityKind, gameEntityKinds)
             .addStatement("else -> error(%P + route)", "unsupported gateway route: ")
             .endControlFlow()
             .build()
@@ -284,6 +325,7 @@ abstract class GenerateGatewayRoutingTask : DefaultTask() {
         val gatewayRoute = ClassName("io.github.realmlabs.asteria.gateway", "GatewayRoute")
         val gatewaySessionContext = ClassName("io.github.realmlabs.asteria.gateway", "GatewaySessionContext")
         val clientProtobuf = ClassName("com.mikai233.common.message", "ClientProtobuf")
+        val gatewayRouteSources = ClassName("com.mikai233.common.message", "GatewayRouteSources")
         return FunSpec.builder("resolveLongSource")
             .addModifiers(com.squareup.kotlinpoet.KModifier.PRIVATE)
             .addParameter("source", String::class)
@@ -293,19 +335,19 @@ abstract class GenerateGatewayRoutingTask : DefaultTask() {
             .returns(Long::class)
             .beginControlFlow("return when")
             .addStatement(
-                "source.startsWith(%S) -> readMessageLongField(packet.message, source.removePrefix(%S))",
-                "message:",
-                "message:",
+                "source.startsWith(%T.MESSAGE_PREFIX) -> readMessageLongField(packet.message, source.removePrefix(%T.MESSAGE_PREFIX))",
+                gatewayRouteSources,
+                gatewayRouteSources,
             )
             .addStatement(
-                "source == %S -> requireNotNull(context.session.get(com.mikai233.gate.GatePlayerIdKey))",
-                "session:player_id",
+                "source == %T.SESSION_PLAYER_ID -> requireNotNull(context.session.get(com.mikai233.gate.GatePlayerIdKey))",
+                gatewayRouteSources,
             )
             .addStatement(
-                "source == %S -> requireNotNull(context.session.get(com.mikai233.gate.GateWorldIdKey))",
-                "session:world_id",
+                "source == %T.SESSION_WORLD_ID -> requireNotNull(context.session.get(com.mikai233.gate.GateWorldIdKey))",
+                gatewayRouteSources,
             )
-            .addStatement("source == %S -> route.entityId as Long", "route.entity_id")
+            .addStatement("source == %T.ROUTE_ENTITY_ID -> route.entityId as Long", gatewayRouteSources)
             .addStatement("source.isBlank() -> error(%P)", "route spec has no source")
             .addStatement("else -> error(%P + source)", "unsupported gateway source: ")
             .endControlFlow()
@@ -374,6 +416,30 @@ abstract class GenerateGatewayRoutingTask : DefaultTask() {
         }
     }
 
+    private fun defaultEntityId(route: String): String? {
+        return when (route) {
+            GATEWAY_LOCAL_ROUTE -> null
+            PLAYER_ROUTE -> SESSION_PLAYER_ID_SOURCE
+            WORLD_ROUTE -> MESSAGE_WORLD_ID_SOURCE
+            else -> null
+        }
+    }
+
+    private fun defaultInject(
+        route: String,
+        descriptor: DescriptorProtos.DescriptorProto?,
+    ): List<String> {
+        if (route != PLAYER_ROUTE) {
+            return emptyList()
+        }
+        val hasPlayerId = descriptor?.fieldList?.any { field -> field.name == PLAYER_ID_FIELD } == true
+        return if (hasPlayerId) {
+            listOf(INJECT_PLAYER_ID_FROM_ROUTE_ENTITY_ID)
+        } else {
+            emptyList()
+        }
+    }
+
     private fun discoverGeneratedTypes(
         descriptorSet: DescriptorProtos.FileDescriptorSet,
     ): Map<String, String> {
@@ -388,6 +454,19 @@ abstract class GenerateGatewayRoutingTask : DefaultTask() {
         }
     }
 
+    private fun discoverGeneratedMessageDescriptors(
+        descriptorSet: DescriptorProtos.FileDescriptorSet,
+    ): Map<String, DescriptorProtos.DescriptorProto> {
+        return buildMap {
+            descriptorSet.fileList.forEach { file ->
+                file.messageTypeList.forEach { message ->
+                    val generatedType = "${file.`package`}.${outerClassName(file.name)}.${message.name}"
+                    put(generatedType, message)
+                }
+            }
+        }
+    }
+
     private fun outerClassName(protoFileName: String): String {
         val baseName = File(protoFileName).nameWithoutExtension
         return baseName.split('_')
@@ -396,6 +475,14 @@ abstract class GenerateGatewayRoutingTask : DefaultTask() {
                 segment.replaceFirstChar { char -> char.uppercase() }
             }
     }
+}
+
+private fun com.fasterxml.jackson.databind.JsonNode.optionalText(fieldName: String): String? {
+    return if (hasNonNull(fieldName)) path(fieldName).asText() else null
+}
+
+private fun com.fasterxml.jackson.databind.JsonNode.optionalTextList(fieldName: String): List<String>? {
+    return if (hasNonNull(fieldName)) path(fieldName).map { it.asText() } else null
 }
 
 private data class GatewayRouteSpec(
