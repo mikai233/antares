@@ -20,6 +20,8 @@ class PlayerLoginReqHandler : PlayerMessageHandler<PlayerLoginReq> {
         actor.bindChannelActor(message.channelActor.decodeActorRef(actor.node.system))
         val response = actor.node.loginService.loginSuccessResp(actor)
         actor.sender.tell(PlayerLoginResp.newBuilder().setResponse(response).build())
+        actor.node.chatService.subscribeCurrentAllianceTopic(actor)
+        actor.node.chatService.deliverOfflinePrivateMessages(actor)
         actor.self tell PlayerLoginEvent
     }
 }

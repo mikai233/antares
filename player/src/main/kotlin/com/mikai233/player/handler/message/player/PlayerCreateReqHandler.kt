@@ -21,6 +21,8 @@ class PlayerCreateReqHandler : PlayerMessageHandler<PlayerCreateReq> {
         actor.node.loginService.createPlayer(actor, message)
         val response = actor.node.loginService.loginSuccessResp(actor)
         actor.sender.tell(PlayerCreateResp.newBuilder().setResponse(response).build())
+        actor.node.chatService.subscribeCurrentAllianceTopic(actor)
+        actor.node.chatService.deliverOfflinePrivateMessages(actor)
         actor.self tell PlayerCreateEvent
     }
 }

@@ -12,6 +12,7 @@ import com.mikai233.common.runtime.*
 import com.mikai233.player.generated.GeneratedPlayerConfigChangeHandlers
 import com.mikai233.player.generated.GeneratedPlayerMessageCatalog
 import com.mikai233.player.generated.GeneratedPlayerNodeDispatchers
+import com.mikai233.player.service.ChatService
 import com.mikai233.player.service.LoginService
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
@@ -44,6 +45,9 @@ class PlayerNode(
     val loginService: LoginService
         get() = patchableServices.require(LoginService::class)
 
+    val chatService: ChatService
+        get() = patchableServices.require(ChatService::class)
+
     @Volatile
     private var currentState: NodeState = NodeState.Unstarted
 
@@ -74,6 +78,7 @@ class PlayerNode(
     init {
         val patchableServices = PatchableServiceRegistry().apply {
             register(LoginService::class, LoginService())
+            register(ChatService::class, ChatService())
             register(RpcEntityIdResolver::class, DefaultRpcEntityIdResolver(GameRpcProtocol.protocol))
         }
         services.register(PatchableServiceRegistry::class, patchableServices)

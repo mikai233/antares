@@ -2,6 +2,7 @@ syntax = "proto3";
 import "client/proto_system.proto";
 import "client/proto_login.proto";
 import "client/proto_test.proto";
+import "client/proto_chat.proto";
 
 package com.mikai233.protocol;
 
@@ -10,4 +11,7 @@ message MessageServerToClient{
   GmResp gm_resp = 2;
   TestResp test_resp = 3;
   LoginResp login_resp = 10001;
+  ChatSendResp chat_send_resp = 10002;
+  ChatMessageNotify chat_message_notify = 10003;
+  ChatHistoryResp chat_history_resp = 10004;
 }

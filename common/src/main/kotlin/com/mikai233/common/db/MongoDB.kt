@@ -103,6 +103,8 @@ class MongoDB(
         ensureAscendingIndex(PlayerActivityMongo.COLLECTION, "playerId")
         ensureAscendingIndex(PlayerAbstractMongo.COLLECTION, "worldId")
         ensureAscendingIndex(WorldActionMongo.COLLECTION, "worldId")
+        ensureAscendingIndex(ChatMessageLog.COLLECTION, "sentAt")
+        ensureAscendingIndex(OfflinePrivateChatMessage.COLLECTION, "targetPlayerId")
         reactiveTemplate.indexOps(ActorConfigSyncStateMongo.COLLECTION)
             .ensureIndex(
                 Index()

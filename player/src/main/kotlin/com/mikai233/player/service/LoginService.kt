@@ -24,6 +24,8 @@ class LoginService {
             worldId = playerCreateReq.worldId,
             nickname = playerCreateReq.nickname,
             level = 1,
+            allianceId = 0,
+            chatMutedUntil = 0,
         )
         player.manager.get<PlayerMem>().initPlayer(entity)
     }

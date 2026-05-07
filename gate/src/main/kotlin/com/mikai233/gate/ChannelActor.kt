@@ -187,6 +187,7 @@ class ChannelActor(val node: GateNode, private val session: GatewaySession) :
 
     private fun authorizeChannel() {
         subscribe(Topic.ofWorld(requireNotNull(worldId) { "worldId is null" }))
+        subscribe(Topic.CROSS_WORLD_CHAT)
         state = ChannelState.Authorized
         unstashAll()
     }

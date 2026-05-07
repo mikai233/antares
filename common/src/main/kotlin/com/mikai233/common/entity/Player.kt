@@ -13,11 +13,13 @@ data class Player(
     val worldId: Long,
     var nickname: String,
     var level: Int,
+    var allianceId: Long,
+    var chatMutedUntil: Long,
 ) : Entity<Long> {
     companion object {
         @JvmStatic
         fun defaults(): Player {
-            return Player(0, "", 0, "", 0)
+            return Player(0, "", 0, "", 0, 0, 0)
         }
 
         @JvmStatic
@@ -28,6 +30,8 @@ data class Player(
             worldId: Long?,
             nickname: String?,
             level: Int?,
+            allianceId: Long?,
+            chatMutedUntil: Long?,
         ): Player {
             val defaults = defaults()
             return Player(
@@ -36,6 +40,8 @@ data class Player(
                 worldId = worldId ?: defaults.worldId,
                 nickname = nickname ?: defaults.nickname,
                 level = level ?: defaults.level,
+                allianceId = allianceId ?: defaults.allianceId,
+                chatMutedUntil = chatMutedUntil ?: defaults.chatMutedUntil,
             )
         }
     }

@@ -3,6 +3,8 @@ package com.mikai233.common.rpc
 import com.google.protobuf.GeneratedMessage
 import com.mikai233.common.runtime.patchableServices
 import com.mikai233.common.runtime.replacePatchableService
+import com.mikai233.protocol.ProtoChat.ChatHistoryReq
+import com.mikai233.protocol.ProtoChat.ChatSendReq
 import com.mikai233.protocol.ProtoLogin.LoginReq
 import com.mikai233.protocol.ProtoSystem.GmReq
 import com.mikai233.protocol.ProtoTest.TestReq
@@ -22,6 +24,8 @@ class DefaultRpcEntityIdResolver(
     override fun resolvePlayer(message: GeneratedMessage): String? {
         return when (message) {
             is TestReq -> message.playerId.toString()
+            is ChatSendReq -> message.playerId.toString()
+            is ChatHistoryReq -> message.playerId.toString()
             is GmReq -> message.playerId.takeIf { it != 0L }?.toString()
             else -> protocol.entityIds.findEntityIdOrNull(message)
         }

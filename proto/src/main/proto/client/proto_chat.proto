@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package com.mikai233.protocol;
+
+enum ChatChannel{
+  ChatChannelUnspecified = 0;
+  Private = 1;
+  World = 2;
+  Alliance = 3;
+  CrossWorld = 4;
+  System = 5;
+}
+
+enum ChatSendResult{
+  ChatSendSuccess = 0;
+  ChatSendInvalidChannel = 1;
+  ChatSendInvalidTarget = 2;
+  ChatSendEmptyContent = 3;
+  ChatSendContentTooLong = 4;
+  ChatSendRejected = 5;
+  ChatSendMuted = 6;
+  ChatSendRateLimited = 7;
+  ChatSendSensitiveContent = 8;
+}
+
+message ChatSendReq{
+  int64 player_id = 1;
+  ChatChannel channel = 2;
+  int64 target_id = 3;
+  string content = 4;
+  int64 client_seq = 5;
+}
+
+message ChatSendResp{
+  int64 client_seq = 1;
+  int64 message_id = 2;
+  ChatSendResult result = 3;
+  string reason = 4;
+  int64 muted_until = 5;
+  int64 retry_after_millis = 6;
+}
+
+message ChatMessageNotify{
+  int64 message_id = 1;
+  ChatChannel channel = 2;
+  int64 from_player_id = 3;
+  string from_name = 4;
+  int64 target_id = 5;
+  string content = 6;
+  int64 sent_at = 7;
+  int64 world_id = 8;
+}
+
+message ChatHistoryReq{
+  int64 player_id = 1;
+  ChatChannel channel = 2;
+  int64 target_id = 3;
+  int64 before_sent_at = 4;
+  int32 limit = 5;
+}
+
+message ChatHistoryResp{
+  ChatChannel channel = 1;
+  int64 target_id = 2;
+  repeated ChatMessageNotify messages = 3;
+}

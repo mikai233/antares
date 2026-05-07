@@ -1,9 +1,12 @@
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.google.protobuf.DescriptorProtos
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
@@ -15,14 +18,17 @@ abstract class GenerateGatewayRoutingTask : DefaultTask() {
     @get:InputFiles
     abstract val metadataFiles: ConfigurableFileCollection
 
+    @get:InputFile
+    abstract val descriptorSetFile: RegularFileProperty
+
     @get:OutputDirectory
     abstract val outputDir: DirectoryProperty
 
     @TaskAction
     fun generate() {
         val mapper = ObjectMapper()
-        val rpcRegistry = project.rootDir.resolve("proto/protocol/rpc-protocol.json")
-        val messageIds = loadMessageIds(mapper, rpcRegistry)
+        val descriptorSet = DescriptorProtos.FileDescriptorSet.parseFrom(descriptorSetFile.get().asFile.inputStream())
+        val messageIds = loadClientMessageIds(descriptorSet)
         val routes = metadataFiles.files
             .filter(File::exists)
             .sortedBy { it.name }
@@ -354,11 +360,41 @@ abstract class GenerateGatewayRoutingTask : DefaultTask() {
             .build()
     }
 
-    private fun loadMessageIds(mapper: ObjectMapper, file: File): Map<String, Int> {
-        val root = mapper.readTree(file)
-        return root.path("messages").associate { node ->
-            node.path("type").asText() to node.path("id").asInt()
+    private fun loadClientMessageIds(
+        descriptorSet: DescriptorProtos.FileDescriptorSet,
+    ): Map<String, Int> {
+        val generatedTypes = discoverGeneratedTypes(descriptorSet)
+        val file = descriptorSet.fileList.first { it.name == "client/msg_cs.proto" }
+        val wrapper = file.messageTypeList.first { it.name == "MessageClientToServer" }
+        return wrapper.fieldList.associate { field ->
+            val protoFullName = field.typeName.removePrefix(".")
+            requireNotNull(generatedTypes[protoFullName]) {
+                "generated type for client message $protoFullName not found"
+            } to field.number
         }
+    }
+
+    private fun discoverGeneratedTypes(
+        descriptorSet: DescriptorProtos.FileDescriptorSet,
+    ): Map<String, String> {
+        return buildMap {
+            descriptorSet.fileList.forEach { file ->
+                file.messageTypeList.forEach { message ->
+                    val protoFullName = "${file.`package`}.${message.name}"
+                    val generatedType = "${file.`package`}.${outerClassName(file.name)}.${message.name}"
+                    put(protoFullName, generatedType)
+                }
+            }
+        }
+    }
+
+    private fun outerClassName(protoFileName: String): String {
+        val baseName = File(protoFileName).nameWithoutExtension
+        return baseName.split('_')
+            .filter { it.isNotBlank() }
+            .joinToString("") { segment ->
+                segment.replaceFirstChar { char -> char.uppercase() }
+            }
     }
 }
 

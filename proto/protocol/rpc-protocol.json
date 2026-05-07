@@ -33,6 +33,26 @@
       "type": "com.mikai233.protocol.ProtoLogin.LoginResp"
     },
     {
+      "id": 100009,
+      "type": "com.mikai233.protocol.ProtoChat.ChatSendReq"
+    },
+    {
+      "id": 100010,
+      "type": "com.mikai233.protocol.ProtoChat.ChatSendResp"
+    },
+    {
+      "id": 100011,
+      "type": "com.mikai233.protocol.ProtoChat.ChatMessageNotify"
+    },
+    {
+      "id": 100012,
+      "type": "com.mikai233.protocol.ProtoChat.ChatHistoryReq"
+    },
+    {
+      "id": 100013,
+      "type": "com.mikai233.protocol.ProtoChat.ChatHistoryResp"
+    },
+    {
       "id": 110001,
       "type": "com.mikai233.protocol.ProtoRpcPlayer.PlayerCreateReq"
     },
@@ -115,6 +135,18 @@
     {
       "id": 110021,
       "type": "com.mikai233.protocol.ProtoRpcShutdown.GateDrainAck"
+    },
+    {
+      "id": 110022,
+      "type": "com.mikai233.protocol.ProtoRpcChat.PrivateChatDeliverReq"
+    },
+    {
+      "id": 110023,
+      "type": "com.mikai233.protocol.ProtoRpcChat.WorldChatBroadcastReq"
+    },
+    {
+      "id": 110024,
+      "type": "com.mikai233.protocol.ProtoRpcChat.PlayerAllianceChangedReq"
     }
   ]
 }
