@@ -8,16 +8,10 @@ import com.mikai233.common.extension.unixTimestamp
 import com.mikai233.common.runtime.mongoDB
 import com.mikai233.player.PlayerActor
 import com.mikai233.player.data.PlayerMem
+import com.mikai233.player.service.chat.*
 import com.mikai233.protocol.ProtoChat
-import com.mikai233.protocol.ProtoChat.ChatHistoryReq
-import com.mikai233.protocol.ProtoChat.ChatHistoryResp
-import com.mikai233.protocol.ProtoChat.ChatMessageNotify
-import com.mikai233.protocol.ProtoChat.ChatSendReq
-import com.mikai233.protocol.ProtoChat.ChatSendResp
-import com.mikai233.protocol.ProtoChat.ChatSendResult
-import com.mikai233.protocol.ProtoRpcChat.PlayerAllianceChangedReq
-import com.mikai233.protocol.ProtoRpcChat.PrivateChatDeliverReq
-import com.mikai233.protocol.ProtoRpcChat.WorldChatBroadcastReq
+import com.mikai233.protocol.ProtoChat.*
+import com.mikai233.protocol.ProtoRpcChat.*
 import com.mikai233.protocol.ProtoRpcWorld.CrossWorldSubscribeTopicReq
 import com.mikai233.protocol.ProtoRpcWorld.CrossWorldUnsubscribeTopicReq
 import kotlinx.coroutines.reactor.awaitSingle
@@ -27,64 +21,43 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Criteria.where
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Query.query
-import java.util.ArrayDeque
-import java.util.concurrent.ConcurrentHashMap
 
 @AllOpen
-class ChatService {
+class ChatService(
+    private val chatPolicy: ChatPolicy = DefaultChatPolicy(
+        ChatPolicyConfig(
+            maxContentLength = MAX_CONTENT_LENGTH,
+            maxOfflinePrivateMessagesPerLogin = MAX_OFFLINE_PRIVATE_MESSAGES_PER_LOGIN,
+            rateLimitWindowMillis = RATE_LIMIT_WINDOW_MILLIS,
+            maxMessagesPerWindow = MAX_MESSAGES_PER_WINDOW,
+        ),
+    ),
+) {
     companion object {
-        const val MaxContentLength = 200
-        const val MaxOfflinePrivateMessagesPerLogin = 100
-        const val RateLimitWindowMillis = 10_000L
-        const val MaxMessagesPerWindow = 5
+        const val MAX_CONTENT_LENGTH = 200
+        const val MAX_OFFLINE_PRIVATE_MESSAGES_PER_LOGIN = 100
+        const val RATE_LIMIT_WINDOW_MILLIS = 10_000L
+        const val MAX_MESSAGES_PER_WINDOW = 5
     }
 
     private val logger = LoggerFactory.getLogger(ChatService::class.java)
-    private val rateStates = ConcurrentHashMap<Long, PlayerChatRateState>()
-    private val blockedKeywords = setOf(
-        "badword",
-    )
 
     fun handleSend(actor: PlayerActor, request: ChatSendReq) {
-        val content = request.content.trim()
-        when {
-            request.playerId != actor.playerId -> {
-                reject(actor, request, ChatSendResult.ChatSendRejected, "player_id mismatch")
+        when (val decision = chatPolicy.decideSend(actor.toChatParticipant(), request)) {
+            is ChatSendDecision.Accept -> {
+                dispatch(actor, request, decision)
             }
 
-            content.isBlank() -> {
-                reject(actor, request, ChatSendResult.ChatSendEmptyContent, "empty content")
-            }
-
-            content.length > MaxContentLength -> {
-                reject(actor, request, ChatSendResult.ChatSendContentTooLong, "content too long")
-            }
-
-            mutedUntil(actor) > unixTimestamp() -> {
+            is ChatSendDecision.Reject -> {
                 reject(
                     actor,
                     request,
-                    ChatSendResult.ChatSendMuted,
-                    "player is muted",
-                    mutedUntil = mutedUntil(actor),
+                    decision.result,
+                    decision.reason,
+                    mutedUntil = decision.mutedUntil,
+                    retryAfterMillis = decision.retryAfterMillis,
                 )
             }
-
-            containsBlockedKeyword(content) -> {
-                reject(actor, request, ChatSendResult.ChatSendSensitiveContent, "sensitive content")
-            }
-
-            retryAfterMillis(actor) > 0 -> {
-                reject(
-                    actor,
-                    request,
-                    ChatSendResult.ChatSendRateLimited,
-                    "rate limited",
-                    retryAfterMillis = retryAfterMillis(actor),
-                )
-            }
-
-            else -> dispatch(actor, request, content)
         }
     }
 
@@ -108,43 +81,24 @@ class ChatService {
         }
     }
 
-    private fun dispatch(actor: PlayerActor, request: ChatSendReq, content: String) {
-        when (request.channel) {
-            ProtoChat.ChatChannel.Private -> sendPrivate(actor, request, content)
-            ProtoChat.ChatChannel.World -> {
-                broadcastToWorld(actor, request, content, Topic.ofWorld(playerWorldId(actor)))
-            }
-            ProtoChat.ChatChannel.Alliance -> {
-                val allianceId = playerAllianceId(actor)
-                if (request.targetId <= 0 || request.targetId != allianceId) {
-                    reject(actor, request, ChatSendResult.ChatSendInvalidTarget, "invalid alliance")
-                } else {
-                    broadcastToWorld(actor, request, content, Topic.ofAlliance(request.targetId))
-                }
+    private fun dispatch(actor: PlayerActor, request: ChatSendReq, decision: ChatSendDecision.Accept) {
+        when (val delivery = decision.delivery) {
+            is ChatDelivery.Private -> {
+                sendPrivate(actor, request, decision.content, delivery.targetPlayerId)
             }
 
-            ProtoChat.ChatChannel.CrossWorld -> {
-                broadcastToWorld(actor, request, content, Topic.CROSS_WORLD_CHAT)
+            is ChatDelivery.Broadcast -> {
+                broadcastToWorld(actor, request, decision.content, delivery.worldId, delivery.topic)
             }
-
-            ProtoChat.ChatChannel.System,
-            ProtoChat.ChatChannel.ChatChannelUnspecified,
-            ProtoChat.ChatChannel.UNRECOGNIZED,
-            null,
-                -> reject(actor, request, ChatSendResult.ChatSendInvalidChannel, "invalid channel")
         }
     }
 
-    private fun sendPrivate(actor: PlayerActor, request: ChatSendReq, content: String) {
-        if (request.targetId <= 0 || request.targetId == actor.playerId) {
-            reject(actor, request, ChatSendResult.ChatSendInvalidTarget, "invalid private target")
-            return
-        }
+    private fun sendPrivate(actor: PlayerActor, request: ChatSendReq, content: String, targetPlayerId: Long) {
         val notify = buildNotify(actor, request, content)
         persistChatLog(actor, notify)
         actor.tellPlayer(
             PrivateChatDeliverReq.newBuilder()
-                .setPlayerId(request.targetId)
+                .setPlayerId(targetPlayerId)
                 .setMessage(notify)
                 .build(),
         )
@@ -152,12 +106,18 @@ class ChatService {
         actor.send(success(request, notify.messageId))
     }
 
-    private fun broadcastToWorld(actor: PlayerActor, request: ChatSendReq, content: String, topic: String) {
+    private fun broadcastToWorld(
+        actor: PlayerActor,
+        request: ChatSendReq,
+        content: String,
+        worldId: Long,
+        topic: String,
+    ) {
         val notify = buildNotify(actor, request, content)
         persistChatLog(actor, notify)
         actor.tellWorld(
             WorldChatBroadcastReq.newBuilder()
-                .setWorldId(playerWorldId(actor))
+                .setWorldId(worldId)
                 .setTopic(topic)
                 .setMessage(notify)
                 .build(),
@@ -179,7 +139,7 @@ class ChatService {
                 val template = actor.node.mongoDB.reactiveTemplate
                 val loadQuery = query(where("targetPlayerId").`is`(actor.playerId))
                     .with(Sort.by(Sort.Direction.ASC, "sentAt"))
-                    .limit(MaxOfflinePrivateMessagesPerLogin)
+                    .limit(chatPolicy.maxOfflinePrivateMessagesPerLogin)
                 val messages = template.find(
                     loadQuery,
                     OfflinePrivateChatMessage::class.java,
@@ -232,7 +192,7 @@ class ChatService {
     }
 
     fun clearRateLimit(actor: PlayerActor) {
-        rateStates.remove(actor.playerId)
+        chatPolicy.clearRateLimit(actor.playerId)
     }
 
     private fun buildNotify(actor: PlayerActor, request: ChatSendReq, content: String): ChatMessageNotify {
@@ -284,21 +244,6 @@ class ChatService {
         return actor.manager.get<PlayerMem>().player.allianceId
     }
 
-    private fun mutedUntil(actor: PlayerActor): Long {
-        return actor.manager.get<PlayerMem>().player.chatMutedUntil
-    }
-
-    private fun containsBlockedKeyword(content: String): Boolean {
-        val normalized = content.lowercase()
-        return blockedKeywords.any(normalized::contains)
-    }
-
-    private fun retryAfterMillis(actor: PlayerActor): Long {
-        val now = unixTimestamp()
-        val state = rateStates.computeIfAbsent(actor.playerId) { PlayerChatRateState() }
-        return state.hit(now)
-    }
-
     private fun subscribeAllianceTopic(actor: PlayerActor, allianceId: Long) {
         actor.tellWorld(
             CrossWorldSubscribeTopicReq.newBuilder()
@@ -324,7 +269,7 @@ class ChatService {
             where("channel").`is`(request.channelValue),
         )
         when (request.channel) {
-            ProtoChat.ChatChannel.Private -> {
+            ChatChannel.Private -> {
                 require(request.targetId > 0) { "private chat history target_id must be positive" }
                 criteria += Criteria().orOperator(
                     where("fromPlayerId").`is`(actor.playerId).and("targetId").`is`(request.targetId),
@@ -332,20 +277,20 @@ class ChatService {
                 )
             }
 
-            ProtoChat.ChatChannel.World -> {
+            ChatChannel.World -> {
                 criteria += where("worldId").`is`(playerWorldId(actor))
             }
 
-            ProtoChat.ChatChannel.Alliance -> {
+            ChatChannel.Alliance -> {
                 require(request.targetId > 0) { "alliance chat history target_id must be positive" }
                 require(request.targetId == playerAllianceId(actor)) { "player is not in alliance:${request.targetId}" }
                 criteria += where("targetId").`is`(request.targetId)
             }
 
-            ProtoChat.ChatChannel.CrossWorld -> Unit
-            ProtoChat.ChatChannel.System,
-            ProtoChat.ChatChannel.ChatChannelUnspecified,
-            ProtoChat.ChatChannel.UNRECOGNIZED,
+            ChatChannel.CrossWorld -> Unit
+            ChatChannel.System,
+            ChatChannel.ChatChannelUnspecified,
+            ChatChannel.UNRECOGNIZED,
             null,
                 -> error("unsupported chat history channel:${request.channel}")
         }
@@ -354,7 +299,7 @@ class ChatService {
         }
         return query(Criteria().andOperator(criteria))
             .with(Sort.by(Sort.Direction.DESC, "sentAt"))
-            .limit(request.limit.coerceIn(1, MaxOfflinePrivateMessagesPerLogin))
+            .limit(request.limit.coerceIn(1, chatPolicy.maxOfflinePrivateMessagesPerLogin))
     }
 
     private fun persistChatLog(actor: PlayerActor, notify: ChatMessageNotify) {
@@ -404,7 +349,7 @@ class ChatService {
     private fun ChatMessageLog.toNotify(): ChatMessageNotify {
         return ChatMessageNotify.newBuilder()
             .setMessageId(id)
-            .setChannel(ProtoChat.ChatChannel.forNumber(channel) ?: ProtoChat.ChatChannel.UNRECOGNIZED)
+            .setChannel(ChatChannel.forNumber(channel) ?: ChatChannel.UNRECOGNIZED)
             .setFromPlayerId(fromPlayerId)
             .setFromName(fromName)
             .setTargetId(targetId)
@@ -437,7 +382,7 @@ class ChatService {
     private fun OfflinePrivateChatMessage.toNotify(): ChatMessageNotify {
         return ChatMessageNotify.newBuilder()
             .setMessageId(id)
-            .setChannel(ProtoChat.ChatChannel.Private)
+            .setChannel(ChatChannel.Private)
             .setFromPlayerId(fromPlayerId)
             .setFromName(fromName)
             .setTargetId(targetPlayerId)
@@ -447,19 +392,13 @@ class ChatService {
             .build()
     }
 
-    private class PlayerChatRateState {
-        private val timestamps = ArrayDeque<Long>()
-
-        @Synchronized
-        fun hit(now: Long): Long {
-            while (timestamps.isNotEmpty() && now - timestamps.peekFirst() > RateLimitWindowMillis) {
-                timestamps.removeFirst()
-            }
-            if (timestamps.size >= MaxMessagesPerWindow) {
-                return RateLimitWindowMillis - (now - timestamps.peekFirst())
-            }
-            timestamps.addLast(now)
-            return 0
-        }
+    private fun PlayerActor.toChatParticipant(): ChatParticipant {
+        val player = manager.get<PlayerMem>().player
+        return ChatParticipant(
+            playerId = playerId,
+            worldId = player.worldId,
+            allianceId = player.allianceId,
+            mutedUntil = player.chatMutedUntil,
+        )
     }
 }
