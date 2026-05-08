@@ -10,6 +10,7 @@ plugins {
     alias(libs.plugins.dokka)
     alias(libs.plugins.boot) apply false
     alias(libs.plugins.version.catalog.update)
+    id("antares-script-conventions") apply false
 }
 
 idea {
@@ -74,28 +75,7 @@ subprojects {
         }
     }
     if (Boot.contains(project.name) || project.name == "common") {
-        sourceSets {
-            create("script") {
-                compileClasspath += main.get().run { compileClasspath + output }
-            }
-        }
-        val scriptSourceSets = sourceSets["script"]
-        scriptSourceSets.output.classesDirs.forEach { file ->
-            val scriptClassesDir = file.resolve("com/mikai233/${project.name}/script")
-            scriptClassesDir.walk().filter { it.isFile && it.extension == "class" }.forEach { classFile ->
-                val className = classFile.nameWithoutExtension
-                tasks.register<Jar>("buildJarFor${className}") {
-                    group = "script"
-                    description = "Build JAR for $className"
-                    archiveFileName.set("${rootProject.name}_${project.name}_${className}.jar")
-                    manifest {
-                        attributes("Script-Class" to "com.mikai233.${project.name}.script.${className}")
-                    }
-                    from(scriptSourceSets.output)
-                    include("com/mikai233/${project.name}/script/*")
-                }
-            }
-        }
+        apply(plugin = "antares-script-conventions")
     }
     tasks.register("generateVersionFile") {
         group = "version"
