@@ -8,8 +8,10 @@ import com.mikai233.common.extension.ask
 import com.mikai233.common.extension.tell
 import com.mikai233.common.message.Message
 import com.mikai233.common.runtime.broadcastRouter
+import com.mikai233.common.runtime.gameTimeSource
 import com.mikai233.common.runtime.gameWorldIds
 import com.mikai233.common.runtime.system
+import com.mikai233.common.time.ActorGameTime
 import com.mikai233.protocol.ProtoRpcWorld.WorldShutdownAck
 import com.mikai233.protocol.ProtoSystem.GmReq
 import com.mikai233.protocol.idForServerMessage
@@ -33,6 +35,7 @@ class WorldActor(val node: WorldNode) : AsteriaActor<WorldNode>(node) {
     }
 
     val worldId: Long = self.path().name().toLong()
+    val gameTime: ActorGameTime = node.gameTimeSource.actorTime()
 
     private val timers = ActorTimerSupport(this)
     private val scripts = ActorScriptSupport(this)

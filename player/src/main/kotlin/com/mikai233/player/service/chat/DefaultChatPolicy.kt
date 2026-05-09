@@ -1,7 +1,6 @@
 package com.mikai233.player.service.chat
 
 import com.mikai233.common.broadcast.Topic
-import com.mikai233.common.extension.unixTimestamp
 import com.mikai233.protocol.ProtoChat
 import com.mikai233.protocol.ProtoChat.ChatSendResult
 
@@ -13,17 +12,20 @@ class DefaultChatPolicy(
         config.rateLimitWindowMillis,
         config.maxMessagesPerWindow,
     ),
-    private val nowMillis: () -> Long = ::unixTimestamp,
 ) : ChatPolicy {
     override val maxOfflinePrivateMessagesPerLogin: Int
         get() = config.maxOfflinePrivateMessagesPerLogin
 
-    override fun decideSend(sender: ChatParticipant, request: ProtoChat.ChatSendReq): ChatSendDecision {
+    override fun decideSend(
+        sender: ChatParticipant,
+        request: ProtoChat.ChatSendReq,
+        nowMillis: Long,
+    ): ChatSendDecision {
         val context = ChatSendContext(
             sender = sender,
             request = request,
             content = request.content.trim(),
-            nowMillis = nowMillis(),
+            nowMillis = nowMillis,
         )
         guards.firstNotNullOfOrNull { guard -> guard.reject(context) }?.let {
             return it

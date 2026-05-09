@@ -2,7 +2,6 @@ package com.mikai233.world.handler.message.world
 
 import com.mikai233.common.annotation.AllOpen
 import com.mikai233.common.extension.encodeActorRef
-import com.mikai233.common.extension.unixTimestamp
 import com.mikai233.common.message.DispatcherKeys
 import com.mikai233.common.message.GatewayRoutes
 import com.mikai233.common.runtime.system
@@ -38,7 +37,14 @@ class PlayerLoginHandler : WorldMessageHandler<LoginReq> {
                         .build(),
                 ).getOrThrow()
                 channelActor.tell(response.response, actor.self)
-                val abstract = PlayerAbstract(playerId, actor.worldId, message.account, "", 1, unixTimestamp())
+                val abstract = PlayerAbstract(
+                    playerId,
+                    actor.worldId,
+                    message.account,
+                    "",
+                    1,
+                    actor.gameTime.nowMillis(),
+                )
                 abstractMem.addAbstract(abstract)
             }
         } else {

@@ -6,7 +6,9 @@ import com.mikai233.common.event.PlayerCreateEvent
 import com.mikai233.common.event.PlayerLoginEvent
 import com.mikai233.common.extension.ask
 import com.mikai233.common.message.Message
+import com.mikai233.common.runtime.gameTimeSource
 import com.mikai233.common.runtime.system
+import com.mikai233.common.time.ActorGameTime
 import com.mikai233.player.message.HandoffPlayer
 import com.mikai233.player.message.PlayerTick
 import com.mikai233.protocol.ProtoLogin
@@ -33,6 +35,7 @@ class PlayerActor(val node: PlayerNode) : AsteriaActor<PlayerNode>(node) {
     }
 
     val playerId: Long = self.path().name().toLong()
+    val gameTime: ActorGameTime = node.gameTimeSource.actorTime()
 
     private var channelActor: ActorRef? = null
     private var shutdownStarted = false

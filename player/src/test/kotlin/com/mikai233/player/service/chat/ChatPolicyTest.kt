@@ -1,16 +1,14 @@
 package com.mikai233.player.service.chat
 
 import com.mikai233.common.broadcast.Topic
-import com.mikai233.protocol.ProtoChat.ChatChannel
-import com.mikai233.protocol.ProtoChat.ChatSendReq
-import com.mikai233.protocol.ProtoChat.ChatSendResult
+import com.mikai233.protocol.ProtoChat.*
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class ChatPolicyTest {
     @Test
     fun `accepts private chat and trims content`() {
-        val decision = policy().decideSend(participant(), request(ChatChannel.Private, 2, " hello "))
+        val decision = policy().decideSend(participant(), request(ChatChannel.Private, 2, " hello "), 1_000L)
 
         val accepted = decision as ChatSendDecision.Accept
         val delivery = accepted.delivery as ChatDelivery.Private
@@ -20,7 +18,7 @@ class ChatPolicyTest {
 
     @Test
     fun `rejects invalid private target`() {
-        val decision = policy().decideSend(participant(), request(ChatChannel.Private, PLAYER_ID))
+        val decision = policy().decideSend(participant(), request(ChatChannel.Private, PLAYER_ID), 1_000L)
 
         val rejected = decision as ChatSendDecision.Reject
         assertEquals(ChatSendResult.ChatSendInvalidTarget, rejected.result)
@@ -32,6 +30,7 @@ class ChatPolicyTest {
         val decision = policy().decideSend(
             participant(allianceId = ALLIANCE_ID),
             request(ChatChannel.Alliance, ALLIANCE_ID),
+            1_000L,
         )
 
         val accepted = decision as ChatSendDecision.Accept
@@ -45,6 +44,7 @@ class ChatPolicyTest {
         val decision = policy().decideSend(
             participant(allianceId = ALLIANCE_ID),
             request(ChatChannel.Alliance, ALLIANCE_ID + 1),
+            1_000L,
         )
 
         val rejected = decision as ChatSendDecision.Reject
@@ -54,8 +54,8 @@ class ChatPolicyTest {
 
     @Test
     fun `resolves world and cross world topics`() {
-        val world = policy().decideSend(participant(), request(ChatChannel.World))
-        val crossWorld = policy().decideSend(participant(), request(ChatChannel.CrossWorld))
+        val world = policy().decideSend(participant(), request(ChatChannel.World), 1_000L)
+        val crossWorld = policy().decideSend(participant(), request(ChatChannel.CrossWorld), 1_000L)
 
         val worldDelivery = (world as ChatSendDecision.Accept).delivery as ChatDelivery.Broadcast
         val crossWorldDelivery = (crossWorld as ChatSendDecision.Accept).delivery as ChatDelivery.Broadcast
@@ -66,9 +66,10 @@ class ChatPolicyTest {
     @Test
     fun `rejects muted player`() {
         val now = 1_000L
-        val decision = policy(now).decideSend(
+        val decision = policy().decideSend(
             participant(mutedUntil = now + 1),
             request(ChatChannel.World),
+            now,
         )
 
         val rejected = decision as ChatSendDecision.Reject
@@ -78,7 +79,7 @@ class ChatPolicyTest {
 
     @Test
     fun `rejects blocked keywords`() {
-        val decision = policy().decideSend(participant(), request(ChatChannel.World, content = "badword"))
+        val decision = policy().decideSend(participant(), request(ChatChannel.World, content = "badword"), 1_000L)
 
         val rejected = decision as ChatSendDecision.Reject
         assertEquals(ChatSendResult.ChatSendSensitiveContent, rejected.result)
@@ -92,23 +93,22 @@ class ChatPolicyTest {
                 rateLimitWindowMillis = 1_000,
                 maxMessagesPerWindow = 2,
             ),
-            nowMillis = { now },
         )
 
-        policy.decideSend(participant(), request(ChatChannel.World))
-        policy.decideSend(participant(), request(ChatChannel.World))
-        val rejected = policy.decideSend(participant(), request(ChatChannel.World)) as ChatSendDecision.Reject
+        policy.decideSend(participant(), request(ChatChannel.World), now)
+        policy.decideSend(participant(), request(ChatChannel.World), now)
+        val rejected = policy.decideSend(participant(), request(ChatChannel.World), now) as ChatSendDecision.Reject
 
         assertEquals(ChatSendResult.ChatSendRateLimited, rejected.result)
         assertEquals(1_000, rejected.retryAfterMillis)
 
         now = 2_001L
-        val accepted = policy.decideSend(participant(), request(ChatChannel.World))
+        val accepted = policy.decideSend(participant(), request(ChatChannel.World), now)
         assertEquals(ChatSendDecision.Accept::class, accepted::class)
     }
 
-    private fun policy(now: Long = 1_000L): ChatPolicy {
-        return DefaultChatPolicy(nowMillis = { now })
+    private fun policy(): ChatPolicy {
+        return DefaultChatPolicy()
     }
 
     private fun participant(

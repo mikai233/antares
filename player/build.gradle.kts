@@ -22,6 +22,7 @@ dependencies {
     implementation(libs.bundles.pekko.common)
     implementation(libs.kotlin.reflect)
     implementation(libs.kotlinx.core)
+    implementation(libs.kotlinx.datetime)
     implementation(libs.kotlinx.reactor)
     implementation(libs.protobuf.kotlin)
     implementation(libs.groovy.all)

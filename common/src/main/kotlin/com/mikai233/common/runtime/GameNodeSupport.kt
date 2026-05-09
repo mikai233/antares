@@ -6,13 +6,8 @@ import com.mikai233.common.config.GameWorldConfig
 import com.mikai233.common.config.WORKER_IDS
 import com.mikai233.common.db.MongoDB
 import com.mikai233.common.extension.asyncZookeeperClient
-import com.mikai233.common.runtime.module.GameConfigModule
-import com.mikai233.common.runtime.module.GameWorldConfigModule
-import com.mikai233.common.runtime.module.GameWorldConfigService
-import com.mikai233.common.runtime.module.MongoDbModule
-import com.mikai233.common.runtime.module.PlayerBroadcastModule
-import com.mikai233.common.runtime.module.PlayerBroadcastRuntime
-import com.mikai233.common.runtime.module.PrometheusMetricsModule
+import com.mikai233.common.runtime.module.*
+import com.mikai233.common.time.GameTimeSource
 import com.typesafe.config.Config
 import io.github.realmlabs.asteria.cluster.pekko.EntityShardRegistry
 import io.github.realmlabs.asteria.cluster.pekko.SingletonActorRegistry
@@ -80,6 +75,9 @@ val NodeRuntime.coroutineScope: CoroutineScope
 
 val NodeRuntime.mongoDB: MongoDB
     get() = services.get(MongoDB::class)
+
+val NodeRuntime.gameTimeSource: GameTimeSource
+    get() = services.get(GameTimeSource::class)
 
 val NodeRuntime.gameWorldIds: Set<Long>
     get() = gameWorldConfigService.worldIds
@@ -171,6 +169,7 @@ class ClusterNodeBootstrap(
             ZookeeperConfigCenterModule {
                 client(zookeeper)
             },
+            GameTimeModule(config),
             PrometheusMetricsModule(addr.port + 1000),
             MongoDbModule(),
             GameWorldConfigModule(),

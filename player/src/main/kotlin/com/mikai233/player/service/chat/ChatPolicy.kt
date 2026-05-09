@@ -6,7 +6,7 @@ import com.mikai233.protocol.ProtoChat.ChatSendResult
 interface ChatPolicy {
     val maxOfflinePrivateMessagesPerLogin: Int
 
-    fun decideSend(sender: ChatParticipant, request: ChatSendReq): ChatSendDecision
+    fun decideSend(sender: ChatParticipant, request: ChatSendReq, nowMillis: Long): ChatSendDecision
 
     fun clearRateLimit(playerId: Long)
 }

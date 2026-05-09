@@ -1,7 +1,6 @@
 package com.mikai233.gate.handler
 
 import com.mikai233.common.annotation.AllOpen
-import com.mikai233.common.extension.unixTimestamp
 import com.mikai233.common.message.DispatcherKeys
 import com.mikai233.common.message.GatewayRoutes
 import com.mikai233.gate.ChannelHandlerContext
@@ -17,6 +16,6 @@ import io.github.realmlabs.asteria.message.AsteriaMessageHandler
 class PingReqHandler : ChannelMessageHandler<PingReq> {
     override fun handle(context: ChannelHandlerContext, message: PingReq) {
         val actor = context.actor
-        actor.write(pingResp { serverTimestamp = unixTimestamp() })
+        actor.write(pingResp { serverTimestamp = actor.gameTime.nowMillis() })
     }
 }

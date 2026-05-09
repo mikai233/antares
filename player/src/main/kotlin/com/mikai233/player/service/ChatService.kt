@@ -2,7 +2,6 @@ package com.mikai233.player.service
 
 import com.mikai233.common.annotation.AllOpen
 import com.mikai233.common.broadcast.Topic
-import com.mikai233.common.extension.unixTimestamp
 import com.mikai233.common.runtime.mongoDB
 import com.mikai233.player.PlayerActor
 import com.mikai233.player.data.PlayerMem
@@ -42,7 +41,7 @@ class ChatService(
     private val logger = LoggerFactory.getLogger(ChatService::class.java)
 
     fun handleSend(actor: PlayerActor, request: ChatSendReq) {
-        when (val decision = chatPolicy.decideSend(actor.toChatParticipant(), request)) {
+        when (val decision = chatPolicy.decideSend(actor.toChatParticipant(), request, actor.gameTime.nowMillis())) {
             is ChatSendDecision.Accept -> {
                 dispatch(actor, request, decision)
             }
@@ -203,7 +202,7 @@ class ChatService(
             .setFromName(player.nickname)
             .setTargetId(request.targetId)
             .setContent(content)
-            .setSentAt(unixTimestamp())
+            .setSentAt(actor.gameTime.nowMillis())
             .setWorldId(player.worldId)
             .build()
     }

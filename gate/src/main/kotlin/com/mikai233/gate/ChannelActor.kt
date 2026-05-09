@@ -8,8 +8,10 @@ import com.mikai233.common.extension.encodeActorRef
 import com.mikai233.common.extension.invokeOnTargetMode
 import com.mikai233.common.extension.tell
 import com.mikai233.common.message.formatMessage
+import com.mikai233.common.runtime.gameTimeSource
 import com.mikai233.common.runtime.playerBroadcastEventBus
 import com.mikai233.common.runtime.system
+import com.mikai233.common.time.ActorGameTime
 import com.mikai233.gate.crypto.AESCipher
 import com.mikai233.gate.crypto.ECDH
 import com.mikai233.gate.message.ChannelExpired
@@ -49,6 +51,7 @@ class ChannelActor(val node: GateNode, private val session: GatewaySession) :
     private val scripts = ActorScriptSupport(this)
     private val subscribedTopics = mutableSetOf<String>()
     private var state = ChannelState.Connecting
+    val gameTime: ActorGameTime = node.gameTimeSource.actorTime()
 
     override fun preStart() {
         super.preStart()

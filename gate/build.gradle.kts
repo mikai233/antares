@@ -40,6 +40,7 @@ dependencies {
     implementation(libs.asteria.gateway.netty)
     implementation(libs.bundles.pekko.common)
     implementation(libs.kotlinx.core)
+    implementation(libs.kotlinx.datetime)
     implementation(libs.bundles.log.common)
     implementation(libs.netty)
     implementation(libs.lz4)

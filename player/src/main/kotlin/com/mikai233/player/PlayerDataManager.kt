@@ -5,6 +5,7 @@ import com.mikai233.common.extension.logger
 import com.mikai233.common.extension.tryCatchSuspend
 import com.mikai233.common.runtime.GameEntityKinds
 import com.mikai233.common.runtime.mongoDB
+import com.mikai233.common.time.GameTime
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import io.github.realmlabs.asteria.core.EntityKind
 import io.github.realmlabs.asteria.core.ServiceRegistry
@@ -25,6 +26,7 @@ class PlayerDataManager(private val player: PlayerActor) {
                 register(MongoDB::class, player.node.mongoDB)
                 register(MongoDatabase::class, player.node.mongoDB.database)
                 register(ReactiveMongoTemplate::class, player.node.mongoDB.reactiveTemplate)
+                register(GameTime::class, player.gameTime)
             },
         ),
         PlayerDataModules,

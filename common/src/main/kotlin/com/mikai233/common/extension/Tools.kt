@@ -60,6 +60,7 @@ fun getPlatform(): Platform {
 fun protobufJsonPrinter(): JsonFormat.Printer =
     JsonFormat.printer().omittingInsignificantWhitespace().alwaysPrintFieldsWithNoPresence()
 
+@Deprecated("Use GameTime from actor/runtime for business time.")
 fun unixTimestamp() = System.currentTimeMillis()
 
 fun invokeOnTargetMode(currentMode: ServerMode, vararg modes: ServerMode, block: () -> Unit) {

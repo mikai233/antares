@@ -5,6 +5,7 @@ import com.mikai233.common.db.MongoDB
 import com.mikai233.common.entity.ActorConfigSyncState
 import com.mikai233.common.entity.ActorConfigSyncStateMongo
 import com.mikai233.common.entity.ActorConfigSyncStateTracked
+import com.mikai233.common.time.GameTime
 import io.github.realmlabs.asteria.config.ConfigRevisionTracker
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.data.mongodb.core.query.Criteria.where
@@ -14,6 +15,7 @@ class ActorConfigSyncMem(
     private val actorKind: String,
     private val actorEntityId: String,
     private val mongoDbProvider: () -> MongoDB,
+    private val gameTimeProvider: () -> GameTime,
 ) : AsteriaTrackedMemData<ActorConfigSyncState, ActorConfigSyncStateTracked>(
     ActorConfigSyncStateMongo.COLLECTION,
     { mongoDbProvider().database },
@@ -40,7 +42,7 @@ class ActorConfigSyncMem(
     }
 
     override fun updateRevision(revision: String) {
-        updateRevision(revision, System.currentTimeMillis())
+        updateRevision(revision, gameTimeProvider().nowMillis())
     }
 
     fun updateRevision(revision: String, updatedAt: Long) {

@@ -21,6 +21,7 @@ dependencies {
     implementation(libs.bundles.asteria.script)
     implementation(libs.bundles.pekko.common)
     implementation(libs.kotlinx.core)
+    implementation(libs.kotlinx.datetime)
     implementation(libs.kotlinx.reactor)
     implementation(libs.kotlin.reflect)
     implementation(libs.protobuf.kotlin)
