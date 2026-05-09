@@ -16,6 +16,12 @@ The flow is:
    tooling, not runtime source files. Runtime nodes consume the packaged `game-config.zip` publication artifact from
    the config center and unpack it in memory.
 
+`luban_server.conf` is the default config used by the generation scripts. It points at
+`Datas/__tables_server_used.xlsx`, which is a server-used table whitelist. This is intended as a project-level
+trimming layer for real deployments where the upstream table definitions are too broad or not consistently grouped.
+It does not replace Luban's regular `c` / `s` grouping model; when the source tables are maintained cleanly, the
+server-used table list can simply mirror the normal table list.
+
 Common commands:
 
 ```bash
