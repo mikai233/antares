@@ -1,7 +1,7 @@
 {
   "tables": [
     {
-      "name": "rotation_messages",
+      "name": "game_tbrotationmessage",
       "shape": "LIST",
       "rowType": "com.mikai233.common.config.luban.gen.game.RotationMessage",
       "tableType": "io.github.realmlabs.asteria.config.ListConfigTable",
@@ -10,7 +10,7 @@
       "markerName": "RotationMessageConfigTable"
     },
     {
-      "name": "game_globals",
+      "name": "game_tbgameglobal",
       "shape": "SINGLETON",
       "rowType": "com.mikai233.common.config.luban.gen.game.GameGlobal",
       "tableType": "io.github.realmlabs.asteria.config.SingleConfigTable",
@@ -19,7 +19,7 @@
       "markerName": "GameGlobalConfigTable"
     },
     {
-      "name": "activities",
+      "name": "game_tbactivity",
       "shape": "KEYED",
       "keyType": "kotlin.String",
       "rowType": "com.mikai233.common.config.luban.gen.game.activity",
@@ -29,7 +29,7 @@
       "markerName": "ActivityConfigTable"
     },
     {
-      "name": "droppools",
+      "name": "game_tbdroppool",
       "shape": "KEYED",
       "keyType": "kotlin.Int",
       "rowType": "com.mikai233.common.config.luban.gen.game.droppool",
@@ -39,7 +39,7 @@
       "markerName": "DroppoolConfigTable"
     },
     {
-      "name": "monsters",
+      "name": "game_tbmonster",
       "shape": "KEYED",
       "keyType": "kotlin.Int",
       "rowType": "com.mikai233.common.config.luban.gen.game.monster",
@@ -49,7 +49,7 @@
       "markerName": "MonsterConfigTable"
     },
     {
-      "name": "items",
+      "name": "game_tbitem",
       "shape": "KEYED",
       "keyType": "kotlin.Int",
       "rowType": "com.mikai233.common.config.luban.gen.game.item",
@@ -59,7 +59,7 @@
       "markerName": "ItemConfigTable"
     },
     {
-      "name": "scenes",
+      "name": "game_tbscene",
       "shape": "KEYED",
       "keyType": "kotlin.Int",
       "rowType": "com.mikai233.common.config.luban.gen.game.scene",

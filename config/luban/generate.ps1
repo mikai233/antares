@@ -3,6 +3,7 @@ $ErrorActionPreference = "Stop"
 $Root = (Resolve-Path (Join-Path $PSScriptRoot "../..")).Path
 $ConfRoot = Join-Path $Root "config/luban"
 $DataDir = if ($env:LUBAN_DATA_DIR) { $env:LUBAN_DATA_DIR } else { Join-Path $ConfRoot "Datas" }
+$ConfFile = if ($env:LUBAN_CONF) { $env:LUBAN_CONF } else { Join-Path $ConfRoot "luban_server.conf" }
 if (-not $env:LUBAN_TOOL_ROOT) {
     Write-Error "Luban tool root is not configured. Set LUBAN_TOOL_ROOT."
 }
@@ -23,6 +24,10 @@ if (-not (Test-Path $DataDir -PathType Container)) {
     Write-Error "Luban data dir not found: $DataDir"
 }
 
+if (-not (Test-Path $ConfFile -PathType Leaf)) {
+    Write-Error "Luban conf file not found: $ConfFile"
+}
+
 if (Test-Path $OutputCodeDir) {
     Remove-Item $OutputCodeDir -Recurse -Force
 }
@@ -37,7 +42,7 @@ dotnet $LubanDll `
   -t server `
   -c java-bin `
   -d bin `
-  --conf (Join-Path $ConfRoot "luban.conf") `
+  --conf $ConfFile `
   -x "inputDataDir=$DataDir" `
   -x "outputCodeDir=$OutputCodeDir" `
   -x "outputDataDir=$OutputDataDir"
@@ -65,3 +70,4 @@ Get-ChildItem -Path $OutputCodeDir -Recurse -Filter *.java |
 Write-Host "Generated Luban Java code into $OutputCodeDir"
 Write-Host "Generated Luban binary data into $OutputDataDir"
 Write-Host "Using Luban Excel data dir $DataDir"
+Write-Host "Using Luban conf file $ConfFile"

@@ -14,4 +14,3 @@ class GameTables(
         fun load(file: String): ByteBuf
     }
 }
-

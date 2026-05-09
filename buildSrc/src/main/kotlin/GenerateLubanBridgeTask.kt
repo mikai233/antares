@@ -1,10 +1,8 @@
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.tasks.InputDirectory
-import org.gradle.api.tasks.OutputDirectory
-import org.gradle.api.tasks.OutputFile
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.*
+import org.gradle.api.tasks.Optional
 import java.io.File
 import java.util.*
 
@@ -12,6 +10,7 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
     @get:InputDirectory
     abstract val generatedJavaDir: DirectoryProperty
 
+    @get:Optional
     @get:InputDirectory
     abstract val generatedDataDir: DirectoryProperty
 
@@ -39,7 +38,6 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
             ?.map { it.name }
             ?.sorted()
             ?: emptyList()
-        require(artifactFiles.isNotEmpty()) { "no Luban binary artifacts found in $dataDir" }
 
         writeGeneratedFile(
             File(outDir, "GeneratedGameTables.kt"),
@@ -49,14 +47,8 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
             File(outDir, "GeneratedGameTableTypes.kt"),
             renderGeneratedGameTableTypes(tableEntries),
         )
-        writeGeneratedFile(
-            File(outDir, "GeneratedGameTablesSnapshotBridge.kt"),
-            renderGeneratedGameTablesSnapshotBridge(tableEntries),
-        )
-        writeGeneratedFile(
-            File(outDir, "GeneratedLubanMetadata.kt"),
-            renderGeneratedLubanMetadata(artifactFiles),
-        )
+        writeGeneratedGameTablesSnapshotBridge(outDir, tableEntries)
+        writeGeneratedLubanMetadata(outDir, artifactFiles)
         writeGeneratedFile(
             metadataFile.get().asFile,
             renderAsteriaConfigTableMetadata(tableEntries),
@@ -66,6 +58,7 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
             "GeneratedGameTableAccessors.kt",
             "GeneratedGameTableAdapters.kt",
             "GeneratedGameConfigCatalog.kt",
+            "GeneratedGameConfigTables.kt",
         )
     }
 
@@ -73,6 +66,7 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
         val lineRegex = Regex("""_(\w+)\s*=\s*new\s+([\w.]+)\(loader\.load\("([^"]+)"\)\);""")
         return lineRegex.findAll(source).map { match ->
             val tableClassFqcn = match.groupValues[2]
+            val tableName = match.groupValues[3]
             val tableClassSimple = tableClassFqcn.substringAfterLast('.')
             val tableFile = File(generatedJavaDir.get().asFile, tableClassFqcn.replace('.', '/') + ".java")
             require(tableFile.isFile) { "generated Luban table source not found: $tableFile" }
@@ -87,7 +81,7 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
                 rowAlias = "${baseName}Row",
                 tableRef = "Tb$baseName",
                 tableMarker = "${baseName}ConfigTable",
-                tableName = pluralize(camelToSnake(baseName)),
+                tableName = tableName,
                 tableProperty = "tb$baseName",
                 shape = shape,
             )
@@ -160,15 +154,27 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
             |""".trimMargin()
     }
 
-    private fun renderGeneratedGameTablesSnapshotBridge(entries: List<TableEntry>): String {
+    private fun writeGeneratedGameTablesSnapshotBridge(outDir: File, entries: List<TableEntry>) {
+        val chunkedEntries = entries.chunked(BRIDGE_ENTRY_CHUNK_SIZE)
+        deleteGeneratedChunks(outDir, "GeneratedGameTablesSnapshotBridgeChunk")
+        writeGeneratedFile(
+            File(outDir, "GeneratedGameTablesSnapshotBridge.kt"),
+            renderGeneratedGameTablesSnapshotBridge(chunkedEntries.indices),
+        )
+        chunkedEntries.forEachIndexed { index, chunk ->
+            writeGeneratedFile(
+                File(outDir, "GeneratedGameTablesSnapshotBridgeChunk$index.kt"),
+                renderGeneratedGameTablesSnapshotBridgeChunk(index, chunk),
+            )
+        }
+    }
+
+    private fun renderGeneratedGameTablesSnapshotBridge(indices: IntRange): String {
         return """
             |package com.mikai233.common.config.luban
             |
             |import io.github.realmlabs.asteria.config.SnapshotEntry
-            |import io.github.realmlabs.asteria.config.listConfigTable
             |import io.github.realmlabs.asteria.config.luban.LubanSnapshotBridge
-            |import io.github.realmlabs.asteria.config.orderedMapConfigTable
-            |import io.github.realmlabs.asteria.config.singleConfigTable
             |
             |object GameTablesSnapshotBridge : LubanSnapshotBridge<GameTables, GameTables.IByteBufLoader> {
             |    override val loaderType = GameTables.IByteBufLoader::class
@@ -178,10 +184,36 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
             |    }
             |
             |    override fun buildEntries(tables: GameTables): List<SnapshotEntry> {
-            |        return listOf(
-            |${renderBridgeEntries(entries)}
-            |        )
+            |        return buildList {
+            |${renderBridgeEntryChunkCalls(indices)}
+            |        }
             |    }
+            |}
+            |""".trimMargin()
+    }
+
+    private fun renderBridgeEntryChunkCalls(indices: IntRange): String {
+        return indices.joinToString("\n") { index ->
+            "            addAll(buildGameTableSnapshotEntriesChunk$index(tables))"
+        }
+    }
+
+    private fun renderGeneratedGameTablesSnapshotBridgeChunk(
+        index: Int,
+        entries: List<TableEntry>,
+    ): String {
+        return """
+            |package com.mikai233.common.config.luban
+            |
+            |import io.github.realmlabs.asteria.config.SnapshotEntry
+            |import io.github.realmlabs.asteria.config.listConfigTable
+            |import io.github.realmlabs.asteria.config.orderedMapConfigTable
+            |import io.github.realmlabs.asteria.config.singleConfigTable
+            |
+            |internal fun buildGameTableSnapshotEntriesChunk$index(tables: GameTables): List<SnapshotEntry> {
+            |    return listOf(
+            |${renderBridgeEntries(entries)}
+            |    )
             |}
             |""".trimMargin()
     }
@@ -197,7 +229,7 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
                 is TableShape.Singleton ->
                     "singleConfigTable(GameConfigTables.${entry.tableRef}, $source.data())"
             }
-            "            SnapshotEntry.Table($table)"
+            "        SnapshotEntry.Table($table)"
         }
     }
 
@@ -228,13 +260,49 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
             |""".trimMargin()
     }
 
-    private fun renderGeneratedLubanMetadata(files: List<String>): String {
-        val joined = files.joinToString(",\n") { "        \"$it\"" }
+    private fun writeGeneratedLubanMetadata(outDir: File, files: List<String>) {
+        val chunkedFiles = files.chunked(METADATA_FILE_CHUNK_SIZE)
+        deleteGeneratedChunks(outDir, "GeneratedLubanMetadataChunk")
+        writeGeneratedFile(
+            File(outDir, "GeneratedLubanMetadata.kt"),
+            renderGeneratedLubanMetadata(chunkedFiles.indices),
+        )
+        chunkedFiles.forEachIndexed { index, chunk ->
+            writeGeneratedFile(
+                File(outDir, "GeneratedLubanMetadataChunk$index.kt"),
+                renderGeneratedLubanMetadataChunk(index, chunk),
+            )
+        }
+    }
+
+    private fun renderGeneratedLubanMetadata(indices: IntRange): String {
         return """
             |package com.mikai233.common.config.luban
             |
             |object GeneratedLubanMetadata {
-            |    val files: List<String> = listOf(
+            |    val files: List<String> = buildList {
+            |${renderMetadataFileChunkCalls(indices)}
+            |    }
+            |}
+            |""".trimMargin()
+    }
+
+    private fun renderMetadataFileChunkCalls(indices: IntRange): String {
+        return indices.joinToString("\n") { index ->
+            "        addAll(generatedLubanMetadataFilesChunk$index())"
+        }
+    }
+
+    private fun renderGeneratedLubanMetadataChunk(
+        index: Int,
+        files: List<String>,
+    ): String {
+        val joined = files.joinToString(",\n") { "        \"$it\"" }
+        return """
+            |package com.mikai233.common.config.luban
+            |
+            |internal fun generatedLubanMetadataFilesChunk$index(): List<String> {
+            |    return listOf(
             |$joined
             |    )
             |}
@@ -243,7 +311,16 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
 
     private fun writeGeneratedFile(file: File, content: String) {
         file.parentFile.mkdirs()
-        file.writeText(content + "\n")
+        file.writeText(content.trimEnd() + "\n")
+    }
+
+    private fun deleteGeneratedChunks(
+        outDir: File,
+        prefix: String,
+    ) {
+        outDir.listFiles()
+            ?.filter { file -> file.isFile && file.name.startsWith(prefix) && file.extension == "kt" }
+            ?.forEach { file -> file.delete() }
     }
 
     private fun deleteStaleGeneratedFiles(
@@ -293,14 +370,6 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
             .lowercase(Locale.US)
     }
 
-    private fun pluralize(value: String): String {
-        return when {
-            value.endsWith("y") -> value.dropLast(1) + "ies"
-            value.endsWith("s") -> value
-            else -> value + "s"
-        }
-    }
-
     private data class TableEntry(
         val delegatePropertyName: String,
         val rowFqcn: String,
@@ -339,5 +408,10 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
             override val configShape: String = "SINGLETON"
             override val tableType: String = "io.github.realmlabs.asteria.config.SingleConfigTable"
         }
+    }
+
+    private companion object {
+        const val BRIDGE_ENTRY_CHUNK_SIZE = 50
+        const val METADATA_FILE_CHUNK_SIZE = 50
     }
 }

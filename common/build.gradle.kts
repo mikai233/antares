@@ -118,6 +118,8 @@ val exportLubanConfig by tasks.registering(Exec::class) {
     inputs.dir(lubanDataDirProvider)
     inputs.property("lubanToolRoot", lubanToolRootProvider.map { it.absolutePath }.orElse(""))
     inputs.file(rootDir.resolve("config/luban/luban.conf"))
+    inputs.file(rootDir.resolve("config/luban/luban_server.conf"))
+    inputs.file(rootDir.resolve("config/luban/Datas/__tables_server_used.xlsx"))
     inputs.file(rootDir.resolve("config/luban/generate.sh"))
     inputs.file(rootDir.resolve("config/luban/generate.ps1"))
     inputs.file(rootDir.resolve("config/luban/scripts/generate_demo_excels.py"))

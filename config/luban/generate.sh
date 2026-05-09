@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 CONF_ROOT="$ROOT/config/luban"
 DATA_DIR="${LUBAN_DATA_DIR:-$CONF_ROOT/Datas}"
+CONF_FILE="${LUBAN_CONF:-$CONF_ROOT/luban_server.conf}"
 if [ -z "${LUBAN_TOOL_ROOT:-}" ]; then
   echo "Luban tool root is not configured. Set LUBAN_TOOL_ROOT." >&2
   exit 1
@@ -29,6 +30,11 @@ if [ ! -d "$DATA_DIR" ]; then
   exit 1
 fi
 
+if [ ! -f "$CONF_FILE" ]; then
+  echo "Luban conf file not found: $CONF_FILE" >&2
+  exit 1
+fi
+
 rm -rf "$OUTPUT_CODE_DIR" "$OUTPUT_DATA_DIR"
 mkdir -p "$OUTPUT_CODE_DIR" "$OUTPUT_DATA_DIR"
 
@@ -36,7 +42,7 @@ dotnet "$LUBAN_DLL" \
   -t server \
   -c java-bin \
   -d bin \
-  --conf "$CONF_ROOT/luban.conf" \
+  --conf "$CONF_FILE" \
   -x inputDataDir="$DATA_DIR" \
   -x outputCodeDir="$OUTPUT_CODE_DIR" \
   -x outputDataDir="$OUTPUT_DATA_DIR"
@@ -63,3 +69,4 @@ done < <(find "$OUTPUT_CODE_DIR" -type f -name '*.java' ! -path "$OUTPUT_CODE_DI
 echo "Generated Luban Java code into $OUTPUT_CODE_DIR"
 echo "Generated Luban binary data into $OUTPUT_DATA_DIR"
 echo "Using Luban Excel data dir $DATA_DIR"
+echo "Using Luban conf file $CONF_FILE"
