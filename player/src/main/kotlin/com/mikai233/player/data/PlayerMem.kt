@@ -2,9 +2,9 @@ package com.mikai233.player.data
 
 import com.mikai233.common.db.AsteriaTrackedMemData
 import com.mikai233.common.db.MongoDB
-import com.mikai233.common.entity.Player
-import com.mikai233.common.entity.PlayerMongo
-import com.mikai233.common.entity.PlayerTracked
+import com.mikai233.player.entity.Player
+import com.mikai233.player.entity.PlayerMongo
+import com.mikai233.player.entity.PlayerTracked
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.data.mongodb.core.query.Criteria.where
 import org.springframework.data.mongodb.core.query.Query.query

@@ -3,9 +3,9 @@ package com.mikai233.world.data
 import com.mikai233.common.constants.WorldActionType
 import com.mikai233.common.db.AsteriaTrackedMemData
 import com.mikai233.common.db.MongoDB
-import com.mikai233.common.entity.WorldAction
-import com.mikai233.common.entity.WorldActionMongo
-import com.mikai233.common.entity.WorldActionTracked
+import com.mikai233.world.entity.WorldAction
+import com.mikai233.world.entity.WorldActionMongo
+import com.mikai233.world.entity.WorldActionTracked
 import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.data.mongodb.core.query.Criteria.where
 import org.springframework.data.mongodb.core.query.Query.query

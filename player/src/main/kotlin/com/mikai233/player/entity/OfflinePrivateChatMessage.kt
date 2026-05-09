@@ -1,4 +1,4 @@
-package com.mikai233.common.entity
+package com.mikai233.player.entity
 
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.PersistenceCreator

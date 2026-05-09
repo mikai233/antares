@@ -30,6 +30,7 @@ dependencies {
     implementation(project(":common"))
     implementation(project(":proto"))
     ksp(libs.asteria.config.ksp)
+    ksp(libs.asteria.persistence.mongodb.ksp)
 }
 
 tasks.test {

@@ -85,7 +85,7 @@ class WorldNode(
 
     override suspend fun launch() {
         clusterNode.launch(
-            beforeClusterModules = listOf(clusterNode.workerIdModule()),
+            beforeClusterModules = listOf(WorldMongoIndexModule(), clusterNode.workerIdModule()),
             afterClusterModules = listOf(worldWakerModule()),
             onStateChange = ::updateState,
         ) {

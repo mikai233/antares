@@ -1,4 +1,4 @@
-package com.mikai233.common.entity
+package com.mikai233.world.entity
 
 import io.github.realmlabs.asteria.persistence.Entity
 import io.github.realmlabs.asteria.persistence.mongodb.annotations.AsteriaMongoEntity

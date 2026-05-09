@@ -82,7 +82,7 @@ class PlayerNode(
 
     override suspend fun launch() {
         clusterNode.launch(
-            beforeClusterModules = listOf(clusterNode.workerIdModule()),
+            beforeClusterModules = listOf(PlayerMongoIndexModule(), clusterNode.workerIdModule()),
             onStateChange = ::updateState,
         ) {
             role(GameRoles.Player)

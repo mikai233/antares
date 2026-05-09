@@ -1,9 +1,7 @@
 package com.mikai233.common.test.db
 
-import com.mikai233.common.entity.PlayerActivity
-import com.mikai233.common.entity.PlayerActivityMongo
-import com.mikai233.common.entity.WorldAction
-import com.mikai233.common.entity.WorldActionMongo
+import com.mikai233.common.entity.ActorConfigSyncState
+import com.mikai233.common.entity.ActorConfigSyncStateMongo
 import com.mongodb.reactivestreams.client.MongoClients
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
@@ -42,10 +40,7 @@ class SpringDataMongoCompatibilityTest {
     @AfterEach
     fun cleanup() {
         runBlocking {
-            template.dropCollection(WorldActionMongo.COLLECTION)
-                .onErrorResume { reactor.core.publisher.Mono.empty() }
-                .awaitSingleOrNull()
-            template.dropCollection(PlayerActivityMongo.COLLECTION)
+            template.dropCollection(ActorConfigSyncStateMongo.COLLECTION)
                 .onErrorResume { reactor.core.publisher.Mono.empty() }
                 .awaitSingleOrNull()
         }
@@ -56,27 +51,27 @@ class SpringDataMongoCompatibilityTest {
         template.insert(
             Document(
                 mapOf(
-                    "_id" to "1_1",
-                    "worldId" to 1L,
-                    "actionId" to 7,
-                    "latestActionMills" to 99L,
-                    "actionParam" to 123L,
+                    "_id" to "player:1",
+                    "actorKind" to "player",
+                    "actorEntityId" to "1",
+                    "revision" to "r1",
+                    "updatedAt" to 99L,
                 ),
             ),
-            WorldActionMongo.COLLECTION,
+            ActorConfigSyncStateMongo.COLLECTION,
         ).awaitSingle()
 
         val loaded = template.findOne(
-            query(where("_id").`is`("1_1")),
-            WorldAction::class.java,
-            WorldActionMongo.COLLECTION,
+            query(where("_id").`is`("player:1")),
+            ActorConfigSyncState::class.java,
+            ActorConfigSyncStateMongo.COLLECTION,
         ).awaitSingle()
 
-        assertEquals("1_1", loaded.id)
-        assertEquals(1L, loaded.worldId)
-        assertEquals(7, loaded.actionId)
-        assertEquals(99L, loaded.latestActionMills)
-        assertEquals(123L, loaded.actionParam)
+        assertEquals("player:1", loaded.id)
+        assertEquals("player", loaded.actorKind)
+        assertEquals("1", loaded.actorEntityId)
+        assertEquals("r1", loaded.revision)
+        assertEquals(99L, loaded.updatedAt)
     }
 
     @Test
@@ -84,25 +79,25 @@ class SpringDataMongoCompatibilityTest {
         template.insert(
             Document(
                 mapOf(
-                    "_id" to "1_2",
-                    "worldId" to 1L,
-                    "actionId" to 8,
+                    "_id" to "world:1",
+                    "actorKind" to "world",
+                    "actorEntityId" to "1",
                 ),
             ),
-            WorldActionMongo.COLLECTION,
+            ActorConfigSyncStateMongo.COLLECTION,
         ).awaitSingle()
 
         val loaded = template.findOne(
-            query(where("_id").`is`("1_2")),
-            WorldAction::class.java,
-            WorldActionMongo.COLLECTION,
+            query(where("_id").`is`("world:1")),
+            ActorConfigSyncState::class.java,
+            ActorConfigSyncStateMongo.COLLECTION,
         ).awaitSingle()
 
-        assertEquals("1_2", loaded.id)
-        assertEquals(1L, loaded.worldId)
-        assertEquals(8, loaded.actionId)
-        assertEquals(0L, loaded.latestActionMills)
-        assertEquals(0L, loaded.actionParam)
+        assertEquals("world:1", loaded.id)
+        assertEquals("world", loaded.actorKind)
+        assertEquals("1", loaded.actorEntityId)
+        assertEquals("", loaded.revision)
+        assertEquals(0L, loaded.updatedAt)
     }
 
     @Test
@@ -110,27 +105,27 @@ class SpringDataMongoCompatibilityTest {
         template.insert(
             Document(
                 mapOf(
-                    "_id" to "1_3",
-                    "worldId" to 1L,
-                    "actionId" to 9,
-                    "latestActionMills" to null,
-                    "actionParam" to null,
+                    "_id" to "world:2",
+                    "actorKind" to "world",
+                    "actorEntityId" to "2",
+                    "revision" to null,
+                    "updatedAt" to null,
                 ),
             ),
-            WorldActionMongo.COLLECTION,
+            ActorConfigSyncStateMongo.COLLECTION,
         ).awaitSingle()
 
         val loaded = template.findOne(
-            query(where("_id").`is`("1_3")),
-            WorldAction::class.java,
-            WorldActionMongo.COLLECTION,
+            query(where("_id").`is`("world:2")),
+            ActorConfigSyncState::class.java,
+            ActorConfigSyncStateMongo.COLLECTION,
         ).awaitSingle()
 
-        assertEquals("1_3", loaded.id)
-        assertEquals(1L, loaded.worldId)
-        assertEquals(9, loaded.actionId)
-        assertEquals(0L, loaded.latestActionMills)
-        assertEquals(0L, loaded.actionParam)
+        assertEquals("world:2", loaded.id)
+        assertEquals("world", loaded.actorKind)
+        assertEquals("2", loaded.actorEntityId)
+        assertEquals("", loaded.revision)
+        assertEquals(0L, loaded.updatedAt)
     }
 
     @Test
@@ -138,57 +133,29 @@ class SpringDataMongoCompatibilityTest {
         template.insert(
             Document(
                 mapOf(
-                    "_id" to "1_4",
-                    "worldId" to 1L,
-                    "actionId" to 10,
-                    "latestActionMills" to 7L,
-                    "actionParam" to 8L,
+                    "_id" to "player:2",
+                    "actorKind" to "player",
+                    "actorEntityId" to "2",
+                    "revision" to "r2",
+                    "updatedAt" to 7L,
                     "legacyField" to "legacy",
                     "debugFlag" to true,
                     "nestedExtra" to Document(mapOf("a" to 1, "b" to "x")),
                 ),
             ),
-            WorldActionMongo.COLLECTION,
+            ActorConfigSyncStateMongo.COLLECTION,
         ).awaitSingle()
 
         val loaded = template.findOne(
-            query(where("_id").`is`("1_4")),
-            WorldAction::class.java,
-            WorldActionMongo.COLLECTION,
+            query(where("_id").`is`("player:2")),
+            ActorConfigSyncState::class.java,
+            ActorConfigSyncStateMongo.COLLECTION,
         ).awaitSingle()
 
-        assertEquals("1_4", loaded.id)
-        assertEquals(1L, loaded.worldId)
-        assertEquals(10, loaded.actionId)
-        assertEquals(7L, loaded.latestActionMills)
-        assertEquals(8L, loaded.actionParam)
-    }
-
-    @Test
-    fun playerActivityLegacyDocumentMissingDuplicatedFieldsShouldApplyDefaults() = runBlocking {
-        template.insert(
-            Document(
-                mapOf(
-                    "_id" to "7_daily_login",
-                    "playerId" to 7L,
-                    "activityId" to "daily_login",
-                ),
-            ),
-            PlayerActivityMongo.COLLECTION,
-        ).awaitSingle()
-
-        val loaded = template.findOne(
-            query(where("_id").`is`("7_daily_login")),
-            PlayerActivity::class.java,
-            PlayerActivityMongo.COLLECTION,
-        ).awaitSingle()
-
-        assertEquals("7_daily_login", loaded.id)
-        assertEquals(7L, loaded.playerId)
-        assertEquals("daily_login", loaded.activityId)
-        assertEquals("", loaded.activityName)
-        assertEquals(0, loaded.unlockLevel)
-        assertEquals("", loaded.conditionSummary)
-        assertEquals("", loaded.rewardSummary)
+        assertEquals("player:2", loaded.id)
+        assertEquals("player", loaded.actorKind)
+        assertEquals("2", loaded.actorEntityId)
+        assertEquals("r2", loaded.revision)
+        assertEquals(7L, loaded.updatedAt)
     }
 }

@@ -1,7 +1,6 @@
 package com.mikai233.world.handler.message.world
 
 import com.mikai233.common.annotation.AllOpen
-import com.mikai233.common.entity.PlayerAbstract
 import com.mikai233.common.extension.encodeActorRef
 import com.mikai233.common.extension.unixTimestamp
 import com.mikai233.common.message.DispatcherKeys
@@ -12,6 +11,7 @@ import com.mikai233.protocol.ProtoRpcPlayer.*
 import com.mikai233.world.WorldHandlerContext
 import com.mikai233.world.WorldMessageHandler
 import com.mikai233.world.data.PlayerAbstractMem
+import com.mikai233.world.entity.PlayerAbstract
 import io.github.realmlabs.asteria.message.AsteriaGatewayRoute
 import io.github.realmlabs.asteria.message.AsteriaMessageHandler
 

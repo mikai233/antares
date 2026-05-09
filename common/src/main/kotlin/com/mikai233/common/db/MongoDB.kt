@@ -2,7 +2,7 @@ package com.mikai233.common.db
 
 import com.mikai233.common.config.DataSourceConfig
 import com.mikai233.common.config.MongoDeploymentMode
-import com.mikai233.common.entity.*
+import com.mikai233.common.entity.ActorConfigSyncStateMongo
 import com.mongodb.*
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import kotlinx.coroutines.flow.toList
@@ -56,7 +56,7 @@ class MongoDB(
         }
         validateRequiredCollections(validation.requiredCollections)
         if (validation.ensureIndexes) {
-            ensureIndexes()
+            ensureCommonIndexes()
         }
     }
 
@@ -105,25 +105,21 @@ class MongoDB(
         }
     }
 
-    private suspend fun ensureIndexes() {
-        ensureAscendingIndex(PlayerActionMongo.COLLECTION, "playerId")
-        ensureAscendingIndex(PlayerActivityMongo.COLLECTION, "playerId")
-        ensureAscendingIndex(PlayerAbstractMongo.COLLECTION, "worldId")
-        ensureAscendingIndex(WorldActionMongo.COLLECTION, "worldId")
-        ensureAscendingIndex(ChatMessageLog.COLLECTION, "sentAt")
-        ensureAscendingIndex(OfflinePrivateChatMessage.COLLECTION, "targetPlayerId")
-        reactiveTemplate.indexOps(ActorConfigSyncStateMongo.COLLECTION)
-            .ensureIndex(
-                Index()
-                    .on("actorKind", Sort.Direction.ASC)
-                    .on("actorEntityId", Sort.Direction.ASC),
-            )
-            .awaitSingle()
+    private suspend fun ensureCommonIndexes() {
+        ensureAscendingIndex(ActorConfigSyncStateMongo.COLLECTION, "actorKind", "actorEntityId")
     }
 
-    private suspend fun ensureAscendingIndex(collectionName: String, fieldName: String) {
+    suspend fun ensureAscendingIndex(collectionName: String, vararg fieldNames: String) {
+        val validation = gameDataSourceConfig.validation
+        if (!validation.enabled || !validation.ensureIndexes) {
+            return
+        }
+        require(fieldNames.isNotEmpty()) { "Mongo index fields must not be empty" }
+        val index = fieldNames.fold(Index()) { current, fieldName ->
+            current.on(fieldName, Sort.Direction.ASC)
+        }
         reactiveTemplate.indexOps(collectionName)
-            .ensureIndex(Index().on(fieldName, Sort.Direction.ASC))
+            .ensureIndex(index)
             .awaitSingle()
     }
 
