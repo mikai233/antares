@@ -6,9 +6,9 @@ import com.mikai233.common.event.PlayerCreateEvent
 import com.mikai233.common.event.PlayerLoginEvent
 import com.mikai233.common.extension.ask
 import com.mikai233.common.message.Message
-import com.mikai233.common.message.player.HandoffPlayer
-import com.mikai233.common.message.player.PlayerTick
 import com.mikai233.common.runtime.system
+import com.mikai233.player.message.HandoffPlayer
+import com.mikai233.player.message.PlayerTick
 import com.mikai233.protocol.ProtoLogin
 import com.mikai233.protocol.ProtoRpcGate.ChannelExpiredReq
 import com.mikai233.protocol.ProtoRpcPlayer.PlayerShutdownAck

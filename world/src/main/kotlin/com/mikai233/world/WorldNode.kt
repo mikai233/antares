@@ -5,7 +5,6 @@ import com.beust.jcommander.Parameter
 import com.mikai233.common.conf.RuntimeEnv
 import com.mikai233.common.conf.ServerMode
 import com.mikai233.common.config.SYSTEM_NAME
-import com.mikai233.common.message.world.HandoffWorld
 import com.mikai233.common.rpc.DefaultRpcEntityIdResolver
 import com.mikai233.common.rpc.GameRpcProtocol
 import com.mikai233.common.rpc.RpcEntityIdResolver
@@ -15,6 +14,7 @@ import com.mikai233.protocol.ProtoRpcWorld.WorldWakeupReq
 import com.mikai233.protocol.ProtoRpcWorld.WorldWakeupResp
 import com.mikai233.world.generated.GeneratedWorldConfigChangeHandlers
 import com.mikai233.world.generated.GeneratedWorldNodeDispatchers
+import com.mikai233.world.message.HandoffWorld
 import com.mikai233.world.service.WorldService
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory

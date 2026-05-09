@@ -11,10 +11,6 @@ fun formatMessage(message: Any): String {
             "${message::class.simpleName} ${ProtobufPrinter.print(message)}"
         }
 
-        is ClientProtobuf -> {
-            "${message.message::class.simpleName} ${ProtobufPrinter.print(message.message)}"
-        }
-
         else -> message.toString()
     }
 }

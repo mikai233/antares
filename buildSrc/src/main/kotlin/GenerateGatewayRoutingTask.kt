@@ -79,7 +79,7 @@ abstract class GenerateGatewayRoutingTask : DefaultTask() {
         val mapType = Map::class.asClassName().parameterizedBy(Int::class.asClassName(), routeSpecType)
         val gatewaySessionContext = ClassName("io.github.realmlabs.asteria.gateway", "GatewaySessionContext")
         val gatewayRoute = ClassName("io.github.realmlabs.asteria.gateway", "GatewayRoute")
-        val clientProtobuf = ClassName("com.mikai233.common.message", "ClientProtobuf")
+        val clientProtobuf = ClassName("com.mikai233.gate.message", "ClientProtobuf")
 
         files += FileSpec.builder("com.mikai233.gate.generated", "GeneratedGatewayRouting")
             .addType(
@@ -308,7 +308,7 @@ abstract class GenerateGatewayRoutingTask : DefaultTask() {
         val routeSpecType =
             ClassName("com.mikai233.gate.generated", "GeneratedGatewayRouting", "GeneratedGatewayRouteSpec")
         val gatewaySessionContext = ClassName("io.github.realmlabs.asteria.gateway", "GatewaySessionContext")
-        val clientProtobuf = ClassName("com.mikai233.common.message", "ClientProtobuf")
+        val clientProtobuf = ClassName("com.mikai233.gate.message", "ClientProtobuf")
         val gatewayRoute = ClassName("io.github.realmlabs.asteria.gateway", "GatewayRoute")
         return FunSpec.builder("resolveEntityId")
             .addModifiers(com.squareup.kotlinpoet.KModifier.PRIVATE)
@@ -324,7 +324,7 @@ abstract class GenerateGatewayRoutingTask : DefaultTask() {
     private fun buildResolveLongSourceHelper(): FunSpec {
         val gatewayRoute = ClassName("io.github.realmlabs.asteria.gateway", "GatewayRoute")
         val gatewaySessionContext = ClassName("io.github.realmlabs.asteria.gateway", "GatewaySessionContext")
-        val clientProtobuf = ClassName("com.mikai233.common.message", "ClientProtobuf")
+        val clientProtobuf = ClassName("com.mikai233.gate.message", "ClientProtobuf")
         val gatewayRouteSources = ClassName("com.mikai233.common.message", "GatewayRouteSources")
         return FunSpec.builder("resolveLongSource")
             .addModifiers(com.squareup.kotlinpoet.KModifier.PRIVATE)

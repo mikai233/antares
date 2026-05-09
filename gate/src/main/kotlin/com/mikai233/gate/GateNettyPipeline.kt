@@ -1,8 +1,8 @@
 package com.mikai233.gate
 
-import com.mikai233.common.message.ClientProtobuf
 import com.mikai233.gate.codec.*
 import com.mikai233.gate.crypto.AESCipher
+import com.mikai233.gate.message.ClientProtobuf
 import io.github.realmlabs.asteria.gateway.GatewayCloseReason
 import io.github.realmlabs.asteria.gateway.GatewaySession
 import io.github.realmlabs.asteria.gateway.GatewaySessionAttributeKey

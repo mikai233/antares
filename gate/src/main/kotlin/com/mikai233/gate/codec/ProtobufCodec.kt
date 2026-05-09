@@ -1,7 +1,7 @@
 package com.mikai233.gate.codec
 
 import com.google.protobuf.GeneratedMessage
-import com.mikai233.common.message.ClientProtobuf
+import com.mikai233.gate.message.ClientProtobuf
 import com.mikai233.protocol.idForServerMessage
 import com.mikai233.protocol.parserForClientMessage
 import io.netty.buffer.ByteBufInputStream

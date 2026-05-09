@@ -1,7 +1,5 @@
-package com.mikai233.common.message.player
+package com.mikai233.player.message
 
 import org.apache.pekko.actor.NotInfluenceReceiveTimeout
-
-data object HandoffPlayer
 
 data object PlayerTick : NotInfluenceReceiveTimeout

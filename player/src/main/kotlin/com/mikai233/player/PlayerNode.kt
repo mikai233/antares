@@ -4,13 +4,13 @@ import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
 import com.mikai233.common.conf.RuntimeEnv
 import com.mikai233.common.config.SYSTEM_NAME
-import com.mikai233.common.message.player.HandoffPlayer
 import com.mikai233.common.rpc.DefaultRpcEntityIdResolver
 import com.mikai233.common.rpc.GameRpcProtocol
 import com.mikai233.common.rpc.RpcEntityIdResolver
 import com.mikai233.common.runtime.*
 import com.mikai233.player.generated.GeneratedPlayerConfigChangeHandlers
 import com.mikai233.player.generated.GeneratedPlayerNodeDispatchers
+import com.mikai233.player.message.HandoffPlayer
 import com.mikai233.player.service.ChatService
 import com.mikai233.player.service.LoginService
 import com.typesafe.config.Config

@@ -7,14 +7,14 @@ import com.mikai233.common.event.WorldActiveEvent
 import com.mikai233.common.extension.ask
 import com.mikai233.common.extension.tell
 import com.mikai233.common.message.Message
-import com.mikai233.common.message.world.HandoffWorld
-import com.mikai233.common.message.world.WorldTick
 import com.mikai233.common.runtime.broadcastRouter
 import com.mikai233.common.runtime.gameWorldIds
 import com.mikai233.common.runtime.system
-import com.mikai233.protocol.ProtoSystem.GmReq
 import com.mikai233.protocol.ProtoRpcWorld.WorldShutdownAck
+import com.mikai233.protocol.ProtoSystem.GmReq
 import com.mikai233.protocol.idForServerMessage
+import com.mikai233.world.message.HandoffWorld
+import com.mikai233.world.message.WorldTick
 import io.github.realmlabs.asteria.actor.ActorLifecycleGate
 import io.github.realmlabs.asteria.actor.ActorTimerSupport
 import io.github.realmlabs.asteria.actor.AsteriaActor
