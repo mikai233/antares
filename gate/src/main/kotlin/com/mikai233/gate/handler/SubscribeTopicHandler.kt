@@ -1,4 +1,4 @@
-package com.mikai233.gate.handler.channel
+package com.mikai233.gate.handler
 
 import com.mikai233.common.annotation.AllOpen
 import com.mikai233.common.message.DispatcherKeys
