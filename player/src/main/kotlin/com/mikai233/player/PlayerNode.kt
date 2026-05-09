@@ -10,7 +10,6 @@ import com.mikai233.common.rpc.GameRpcProtocol
 import com.mikai233.common.rpc.RpcEntityIdResolver
 import com.mikai233.common.runtime.*
 import com.mikai233.player.generated.GeneratedPlayerConfigChangeHandlers
-import com.mikai233.player.generated.GeneratedPlayerMessageCatalog
 import com.mikai233.player.generated.GeneratedPlayerNodeDispatchers
 import com.mikai233.player.service.ChatService
 import com.mikai233.player.service.LoginService
@@ -24,7 +23,6 @@ import io.github.realmlabs.asteria.core.NodeState
 import io.github.realmlabs.asteria.core.RoleKey
 import io.github.realmlabs.asteria.core.ServiceRegistry
 import io.github.realmlabs.asteria.id.IdGenerator
-import io.github.realmlabs.asteria.message.MessageCatalog
 import io.github.realmlabs.asteria.patch.PatchableServiceRegistry
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.cluster.sharding.ShardCoordinator
@@ -71,8 +69,6 @@ class PlayerNode(
         GeneratedPlayerConfigChangeHandlers.ALL,
     )
 
-    val messageCatalog: MessageCatalog
-        get() = GeneratedPlayerMessageCatalog
     val internalDispatcher = GeneratedPlayerNodeDispatchers.INTERNAL
 
     init {

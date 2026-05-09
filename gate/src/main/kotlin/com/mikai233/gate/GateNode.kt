@@ -8,7 +8,6 @@ import com.mikai233.common.rpc.DefaultRpcEntityIdResolver
 import com.mikai233.common.rpc.GameRpcProtocol
 import com.mikai233.common.rpc.RpcEntityIdResolver
 import com.mikai233.common.runtime.*
-import com.mikai233.gate.generated.GeneratedGateMessageCatalog
 import com.mikai233.gate.generated.GeneratedGateNodeDispatchers
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
@@ -16,7 +15,6 @@ import io.github.realmlabs.asteria.cluster.pekko.extractor
 import io.github.realmlabs.asteria.core.NodeState
 import io.github.realmlabs.asteria.core.RoleKey
 import io.github.realmlabs.asteria.core.ServiceRegistry
-import io.github.realmlabs.asteria.message.MessageCatalog
 import io.github.realmlabs.asteria.patch.PatchableServiceRegistry
 import org.apache.pekko.actor.ActorRef
 import java.net.InetSocketAddress
@@ -54,9 +52,6 @@ class GateNode(
     val gatewayRouter: GateGatewayRouter by lazy { GateGatewayRouter(this) }
 
     val connectionDrainer = GateConnectionDrainer()
-
-    val messageCatalog: MessageCatalog
-        get() = GeneratedGateMessageCatalog
 
     init {
         val patchableServices = PatchableServiceRegistry().apply {

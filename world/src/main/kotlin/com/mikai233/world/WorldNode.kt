@@ -14,7 +14,6 @@ import com.mikai233.common.runtime.module.WORLD_WAKE_TASK
 import com.mikai233.protocol.ProtoRpcWorld.WorldWakeupReq
 import com.mikai233.protocol.ProtoRpcWorld.WorldWakeupResp
 import com.mikai233.world.generated.GeneratedWorldConfigChangeHandlers
-import com.mikai233.world.generated.GeneratedWorldMessageCatalog
 import com.mikai233.world.generated.GeneratedWorldNodeDispatchers
 import com.mikai233.world.service.WorldService
 import com.typesafe.config.Config
@@ -28,7 +27,6 @@ import io.github.realmlabs.asteria.core.NodeState
 import io.github.realmlabs.asteria.core.RoleKey
 import io.github.realmlabs.asteria.core.ServiceRegistry
 import io.github.realmlabs.asteria.id.IdGenerator
-import io.github.realmlabs.asteria.message.MessageCatalog
 import io.github.realmlabs.asteria.patch.PatchableServiceRegistry
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.cluster.sharding.ShardCoordinator
@@ -75,8 +73,6 @@ class WorldNode(
         GeneratedWorldConfigChangeHandlers.ALL,
     )
 
-    val messageCatalog: MessageCatalog
-        get() = GeneratedWorldMessageCatalog
     val internalDispatcher = GeneratedWorldNodeDispatchers.INTERNAL
 
     init {
