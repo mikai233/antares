@@ -7,10 +7,7 @@ import com.mikai233.common.event.WorldActiveEvent
 import com.mikai233.common.extension.ask
 import com.mikai233.common.extension.tell
 import com.mikai233.common.message.Message
-import com.mikai233.common.runtime.broadcastRouter
-import com.mikai233.common.runtime.gameTimeSource
-import com.mikai233.common.runtime.gameWorldIds
-import com.mikai233.common.runtime.system
+import com.mikai233.common.runtime.*
 import com.mikai233.common.time.ActorGameTime
 import com.mikai233.protocol.ProtoRpcWorld.WorldShutdownAck
 import com.mikai233.protocol.ProtoSystem.GmReq
@@ -53,6 +50,7 @@ class WorldActor(val node: WorldNode) : AsteriaActor<WorldNode>(node) {
 
     override fun preStart() {
         super.preStart()
+        node.localEntityRegistry.register(GameEntityKinds.WorldActor, worldId.toString(), self)
         timers.start()
         node.system.eventStream.subscribe(self, GameConfigChangedEvent::class.java)
         lifecycle.startLoading()
@@ -61,6 +59,7 @@ class WorldActor(val node: WorldNode) : AsteriaActor<WorldNode>(node) {
 
     override fun postStop() {
         super.postStop()
+        node.localEntityRegistry.unregister(GameEntityKinds.WorldActor, worldId.toString(), self)
         logger.info("{} stopped", self)
     }
 

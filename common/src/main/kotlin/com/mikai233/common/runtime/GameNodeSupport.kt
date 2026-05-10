@@ -7,6 +7,7 @@ import com.mikai233.common.config.WORKER_IDS
 import com.mikai233.common.db.MongoDB
 import com.mikai233.common.extension.asyncZookeeperClient
 import com.mikai233.common.runtime.module.*
+import com.mikai233.common.time.GameTimeOverrideStore
 import com.mikai233.common.time.GameTimeSource
 import com.typesafe.config.Config
 import io.github.realmlabs.asteria.cluster.pekko.EntityShardRegistry
@@ -79,6 +80,12 @@ val NodeRuntime.mongoDB: MongoDB
 val NodeRuntime.gameTimeSource: GameTimeSource
     get() = services.get(GameTimeSource::class)
 
+val NodeRuntime.gameTimeOverrideStore: GameTimeOverrideStore
+    get() = services.get(GameTimeOverrideStore::class)
+
+val NodeRuntime.localEntityRegistry: LocalEntityRegistry
+    get() = services.get(LocalEntityRegistry::class)
+
 val NodeRuntime.gameWorldIds: Set<Long>
     get() = gameWorldConfigService.worldIds
 
@@ -142,7 +149,7 @@ class ClusterNodeBootstrap(
                 sameJvm = sameJvm,
                 commonModules = commonModules(),
                 beforeClusterModules = beforeClusterModules,
-                afterClusterModules = afterClusterModules,
+                afterClusterModules = afterClusterModules + GameTimeReloadModule(nodeId),
                 configure = configure,
             ),
         )
@@ -170,6 +177,7 @@ class ClusterNodeBootstrap(
                 client(zookeeper)
             },
             GameTimeModule(config),
+            LocalEntityRegistryModule(),
             PrometheusMetricsModule(addr.port + 1000),
             MongoDbModule(),
             GameWorldConfigModule(),

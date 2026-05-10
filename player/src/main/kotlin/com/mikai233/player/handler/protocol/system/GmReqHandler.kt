@@ -4,6 +4,7 @@ import com.mikai233.common.annotation.AllOpen
 import com.mikai233.common.conf.ServerMode
 import com.mikai233.common.extension.invokeOnTargetMode
 import com.mikai233.common.message.DispatcherKeys
+import com.mikai233.common.runtime.gameTimeOverrideStore
 import com.mikai233.common.runtime.gameTimeSource
 import com.mikai233.player.PlayerActor
 import com.mikai233.player.PlayerHandlerContext
@@ -87,14 +88,36 @@ class GmReqHandler(
     private fun handleGameTimeCommand(actor: PlayerActor, message: GmReq): Boolean {
         when (message.cmd) {
             "setGlobalTimeOffsetMillis" -> {
-                actor.node.gameTimeSource.setGlobalOffset(requiredMillis(message).milliseconds)
+                val offsetMillis = requiredMillis(message)
+                actor.launch {
+                    actor.node.gameTimeOverrideStore.updateGlobalOffset(offsetMillis)
+                    actor.node.gameTimeSource.setGlobalOffset(offsetMillis.milliseconds)
+                    actor.sendGameTimeResp()
+                }
+                return true
             }
 
             "addGlobalTimeOffsetMillis" -> {
-                actor.node.gameTimeSource.addGlobalOffset(requiredMillis(message).milliseconds)
+                val deltaMillis = requiredMillis(message)
+                actor.launch {
+                    val current = actor.node.gameTimeOverrideStore.current()
+                    val nextOffsetMillis = current.globalOffsetMillis + deltaMillis
+                    actor.node.gameTimeOverrideStore.updateGlobalOffset(nextOffsetMillis)
+                    actor.node.gameTimeSource.setGlobalOffset(nextOffsetMillis.milliseconds)
+                    actor.sendGameTimeResp()
+                }
+                return true
             }
 
-            "resetGlobalTimeOffset" -> actor.node.gameTimeSource.resetGlobalOffset()
+            "resetGlobalTimeOffset" -> {
+                actor.launch {
+                    actor.node.gameTimeOverrideStore.updateGlobalOffset(0)
+                    actor.node.gameTimeSource.resetGlobalOffset()
+                    actor.sendGameTimeResp()
+                }
+                return true
+            }
+
             "setActorTimeOffsetMillis" -> actor.gameTime.setActorOffset(requiredMillis(message).milliseconds)
             "addActorTimeOffsetMillis" -> actor.gameTime.addActorOffset(requiredMillis(message).milliseconds)
             "resetActorTimeOffset" -> actor.gameTime.resetActorOffset()

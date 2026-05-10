@@ -60,6 +60,7 @@ class GlobalNode(
             register(RpcEntityIdResolver::class, DefaultRpcEntityIdResolver(GameRpcProtocol.protocol))
         }
         services.register(PatchableServiceRegistry::class, patchableServices)
+        services.register(StartupLikeReloadPlan::class, GlobalGameTimeReloadPlan(this))
     }
 
     override suspend fun launch() {
@@ -78,7 +79,14 @@ class GlobalNode(
             singleton(GameSingletons.Worker) {
                 role(GameRoles.Global)
                 handoffMessage = HandoffWorker
-                actor { runtime, _ -> WorkerActor.props(runtime as GlobalNode) }
+                actor { runtime, _ ->
+                    SingletonChildSupervisorActor.props(
+                        childName = "worker",
+                        childProps = WorkerActor.props(runtime as GlobalNode),
+                        childStopMessage = HandoffWorker,
+                        handoffMessageType = HandoffWorker::class.java,
+                    )
+                }
             }
             singleton(GameSingletons.ShutdownCoordinator) {
                 role(GameRoles.Global)

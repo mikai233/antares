@@ -6,7 +6,9 @@ import com.mikai233.common.event.PlayerCreateEvent
 import com.mikai233.common.event.PlayerLoginEvent
 import com.mikai233.common.extension.ask
 import com.mikai233.common.message.Message
+import com.mikai233.common.runtime.GameEntityKinds
 import com.mikai233.common.runtime.gameTimeSource
+import com.mikai233.common.runtime.localEntityRegistry
 import com.mikai233.common.runtime.system
 import com.mikai233.common.time.ActorGameTime
 import com.mikai233.player.message.HandoffPlayer
@@ -50,6 +52,7 @@ class PlayerActor(val node: PlayerNode) : AsteriaActor<PlayerNode>(node) {
 
     override fun preStart() {
         super.preStart()
+        node.localEntityRegistry.register(GameEntityKinds.PlayerActor, playerId.toString(), self)
         timers.start()
         node.system.eventStream.subscribe(self, GameConfigChangedEvent::class.java)
         lifecycle.startLoading()
@@ -58,6 +61,7 @@ class PlayerActor(val node: PlayerNode) : AsteriaActor<PlayerNode>(node) {
 
     override fun postStop() {
         super.postStop()
+        node.localEntityRegistry.unregister(GameEntityKinds.PlayerActor, playerId.toString(), self)
         logger.info("{} stopped", self)
     }
 

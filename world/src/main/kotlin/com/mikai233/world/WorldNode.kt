@@ -81,6 +81,7 @@ class WorldNode(
             register(RpcEntityIdResolver::class, DefaultRpcEntityIdResolver(GameRpcProtocol.protocol))
         }
         services.register(PatchableServiceRegistry::class, patchableServices)
+        services.register(StartupLikeReloadPlan::class, WorldGameTimeReloadPlan(this))
     }
 
     override suspend fun launch() {

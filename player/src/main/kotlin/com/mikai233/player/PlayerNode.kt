@@ -78,6 +78,7 @@ class PlayerNode(
             register(RpcEntityIdResolver::class, DefaultRpcEntityIdResolver(GameRpcProtocol.protocol))
         }
         services.register(PatchableServiceRegistry::class, patchableServices)
+        services.register(StartupLikeReloadPlan::class, PlayerGameTimeReloadPlan(this))
     }
 
     override suspend fun launch() {
