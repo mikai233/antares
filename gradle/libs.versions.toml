@@ -1,5 +1,5 @@
 [versions]
-asteria = "0.3.12"
+asteria = "0.5.2"
 coroutines = "1.10.2"
 curator = "5.9.0"
 datetime = "0.7.1"
@@ -29,6 +29,8 @@ asteria-config-ksp = { module = "io.github.realm-labs.asteria:config-ksp", versi
 asteria-config-luban = { module = "io.github.realm-labs.asteria:config-luban", version.ref = "asteria" }
 asteria-config-publisher = { module = "io.github.realm-labs.asteria:config-publisher", version.ref = "asteria" }
 asteria-foundation-actor = { module = "io.github.realm-labs.asteria:foundation-actor", version.ref = "asteria" }
+asteria-foundation-contribution = { module = "io.github.realm-labs.asteria:foundation-contribution", version.ref = "asteria" }
+asteria-foundation-contribution-ksp = { module = "io.github.realm-labs.asteria:foundation-contribution-ksp", version.ref = "asteria" }
 asteria-foundation-core = { module = "io.github.realm-labs.asteria:foundation-core", version.ref = "asteria" }
 asteria-foundation-id = { module = "io.github.realm-labs.asteria:foundation-id", version.ref = "asteria" }
 asteria-foundation-id-zookeeper = { module = "io.github.realm-labs.asteria:foundation-id-zookeeper", version.ref = "asteria" }
@@ -115,6 +117,7 @@ asteria-foundation = [
     "asteria-foundation-core",
     "asteria-foundation-message",
     "asteria-foundation-actor",
+    "asteria-foundation-contribution",
     "asteria-foundation-id",
 ]
 asteria-persistence = [

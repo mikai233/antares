@@ -175,10 +175,10 @@ the common operational patterns stay concrete.
 Game configuration is loaded through the project's configured publication/fetch path, not from source-tree artifacts.
 Runtime nodes deserialize config snapshots, build derived query components, and run validation in the same load path.
 
-That path currently goes through `GameConfigSnapshotLoader`, which does three things:
+That path currently goes through Asteria's `ConfigModule`, which does three things:
 
 1. load raw tables
-2. build derived snapshot-level components such as `GameConfigQueries`
+2. build derived snapshot-level query components
 3. run validators
 
 This matters because it means:
@@ -187,15 +187,18 @@ This matters because it means:
 - a bundle that passes local checks can still fail at runtime if the server code changed, and that failure happens
   during real snapshot loading rather than much later
 
-### Global config queries
+### Global config query components
 
-`GameConfigQueries` is the global query layer built after tables are deserialized. It is for shared, snapshot-level
-lookup structures such as:
+Global config query components are built after tables are deserialized. They are split by table or domain area instead
+of being accumulated in one large query object. Current query components include:
 
-- `itemsByType`
-- `monstersBySceneId`
-- `activitiesByUnlockLevel`
-- `dropEntriesByItemId`
+- `ItemConfigQueries.itemsByType`
+- `MonsterConfigQueries.monstersBySceneId`
+- `ActivityConfigQueries.activitiesByUnlockLevel`
+- `DropPoolConfigQueries.dropEntriesByItemId`
+
+Query builders live under `common/src/main/kotlin/com/mikai233/common/config/luban/query` and are auto-collected through
+`@AsteriaContribution`.
 
 This is intentionally different from actor-local config repair logic.
 
@@ -254,7 +257,7 @@ Common commands:
 # Validate tables and custom business rules
 ./gradlew :common:validateLubanConfigTables
 
-# Validate that derived GameConfigQueries can be constructed
+# Validate that derived game config query components can be constructed
 ./gradlew :common:validateLubanConfigQueries
 
 # Package a server-consumable config bundle

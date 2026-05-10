@@ -81,6 +81,7 @@ dependencies {
     implementation(libs.spring.data.mongodb)
     implementation(libs.bundles.prometheus)
     implementation(project(":proto"))
+    ksp(libs.asteria.foundation.contribution.ksp)
     ksp(libs.asteria.config.ksp)
     ksp(libs.asteria.persistence.mongodb.ksp)
 }
@@ -156,7 +157,7 @@ tasks.register<JavaExec>("validateLubanConfigTables") {
 
 tasks.register<JavaExec>("validateLubanConfigQueries") {
     group = "luban"
-    description = "Load exported Luban binaries and verify derived GameConfigQueries can be built."
+    description = "Load exported Luban binaries and verify derived game config query components can be built."
     dependsOn("refreshLubanConfig", "classes")
     mainClass = "com.mikai233.common.config.luban.GameConfigValidationCliKt"
     classpath = sourceSets["main"].runtimeClasspath

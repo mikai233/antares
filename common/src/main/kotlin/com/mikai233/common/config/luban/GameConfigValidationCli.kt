@@ -1,7 +1,8 @@
 package com.mikai233.common.config.luban
 
-import io.github.realmlabs.asteria.config.ConfigSnapshot
-import io.github.realmlabs.asteria.config.component
+import com.mikai233.common.config.luban.query.GameConfigQueryBuilders
+import com.mikai233.common.config.luban.validation.GameConfigValidators
+import io.github.realmlabs.asteria.config.ConfigService
 import io.github.realmlabs.asteria.config.luban.LubanBinaryConfigLoader
 import io.github.realmlabs.asteria.config.luban.MemoryLubanDataSource
 import kotlinx.coroutines.runBlocking
@@ -20,13 +21,10 @@ fun main(args: Array<String>) = runBlocking {
     }
     val mode = ValidationMode.valueOf(args[0].uppercase())
     val generatedDataDir = args.getOrNull(1)?.let(Path::of) ?: defaultGeneratedDataDir()
-    val snapshot = loadSnapshot(generatedDataDir, includeQueries = mode == ValidationMode.QUERIES)
-    if (mode == ValidationMode.QUERIES) {
-        snapshot.component<GameConfigQueries>()
-    }
+    loadSnapshot(generatedDataDir, includeQueries = mode == ValidationMode.QUERIES)
 }
 
-private suspend fun loadSnapshot(generatedDataDir: Path, includeQueries: Boolean): ConfigSnapshot {
+private suspend fun loadSnapshot(generatedDataDir: Path, includeQueries: Boolean) {
     check(generatedDataDir.exists()) {
         "Generated Luban data directory not found: $generatedDataDir. Run :common:exportLubanConfig first."
     }
@@ -34,18 +32,20 @@ private suspend fun loadSnapshot(generatedDataDir: Path, includeQueries: Boolean
         Files.readAllBytes(generatedDataDir.resolve(file))
     }
     val builders = if (includeQueries) {
-        GameConfigDerivedComponents.defaultBuilders
+        GameConfigQueryBuilders.defaultBuilders
     } else {
         emptyList()
     }
-    return GameConfigSnapshotLoader(
-        delegate = LubanBinaryConfigLoader(
+    val service = ConfigService(
+        loader = LubanBinaryConfigLoader(
             tablesType = GameTables::class,
             dataSource = MemoryLubanDataSource(bytesByPath),
             bridge = GameTablesSnapshotBridge,
         ),
+        validators = GameConfigValidators.defaultValidators,
         componentBuilders = builders,
-    ).load()
+    )
+    service.load()
 }
 
 private fun defaultGeneratedDataDir(): Path {

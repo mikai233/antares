@@ -2,10 +2,12 @@ package com.mikai233.tools.config
 
 import com.mikai233.common.config.GAME_CONFIG_PUBLICATION
 import com.mikai233.common.config.luban.GameConfigPublicationZipLoader
-import com.mikai233.common.config.luban.GameConfigSnapshotLoader
 import com.mikai233.common.config.luban.GameTables
 import com.mikai233.common.config.luban.GameTablesSnapshotBridge
+import com.mikai233.common.config.luban.query.GameConfigQueryBuilders
+import com.mikai233.common.config.luban.validation.GameConfigValidators
 import io.github.realmlabs.asteria.config.ConfigRevision
+import io.github.realmlabs.asteria.config.ConfigService
 import io.github.realmlabs.asteria.config.center.zookeeper.ZookeeperConfigStore
 import io.github.realmlabs.asteria.config.luban.LubanBinaryConfigLoader
 import io.github.realmlabs.asteria.config.luban.MemoryLubanDataSource
@@ -19,30 +21,32 @@ object LocalGameConfigPublisher {
     ) {
         val layout = ConfigPublicationLayout(GAME_CONFIG_PUBLICATION)
         ConfigPublisher(
-            loader = GameConfigSnapshotLoader(
-                LubanBinaryConfigLoader(
-                    tablesType = GameTables::class,
-                    dataSource = MemoryLubanDataSource(
-                        LubanPublishBundleArtifacts.unpackBundle(LubanPublishBundleArtifacts.bundleBytes()),
-                    ),
-                    bridge = GameTablesSnapshotBridge,
-                    revisionFactory = { report ->
-                        ConfigRevision(
-                            version = options.version ?: report.checksum,
-                            checksum = report.checksum,
-                        )
-                    },
+            loader = LubanBinaryConfigLoader(
+                tablesType = GameTables::class,
+                dataSource = MemoryLubanDataSource(
+                    LubanPublishBundleArtifacts.unpackBundle(LubanPublishBundleArtifacts.bundleBytes()),
                 ),
+                bridge = GameTablesSnapshotBridge,
+                revisionFactory = { report ->
+                    ConfigRevision(
+                        version = options.version ?: report.checksum,
+                        checksum = report.checksum,
+                    )
+                },
             ),
             artifactSource = { listOf(LubanPublishBundleArtifacts.bundleArtifact()) },
             store = store,
             layout = layout,
+            validators = GameConfigValidators.defaultValidators,
+            componentBuilders = GameConfigQueryBuilders.defaultBuilders,
         ).publish()
-        GameConfigSnapshotLoader(
-            GameConfigPublicationZipLoader(
+        ConfigService(
+            loader = GameConfigPublicationZipLoader(
                 store = store,
                 layout = layout,
             ),
+            validators = GameConfigValidators.defaultValidators,
+            componentBuilders = GameConfigQueryBuilders.defaultBuilders,
         ).load()
     }
 }

@@ -5,13 +5,11 @@ import io.github.realmlabs.asteria.patch.PatchId
 import io.github.realmlabs.asteria.patch.PatchOrder
 import kotlin.reflect.KClass
 
-private const val SCRIPT_PATCH_PRIORITY = 10_000
-private const val SCRIPT_PATCH_SEQUENCE = 1L
+private const val SCRIPT_PATCH_REVISION = Long.MAX_VALUE
 
 fun NodeRuntime.scriptPatchOrder(id: String): PatchOrder {
     return PatchOrder(
-        priority = SCRIPT_PATCH_PRIORITY,
-        sequence = SCRIPT_PATCH_SEQUENCE,
+        revision = SCRIPT_PATCH_REVISION,
         id = PatchId(id),
     )
 }

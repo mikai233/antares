@@ -1,6 +1,9 @@
 package com.mikai233.common.test
 
 import com.mikai233.common.config.luban.*
+import com.mikai233.common.config.luban.query.*
+import com.mikai233.common.config.luban.validation.GameConfigValidators
+import io.github.realmlabs.asteria.config.ConfigService
 import io.github.realmlabs.asteria.config.component
 import io.github.realmlabs.asteria.config.luban.LubanBinaryConfigLoader
 import io.github.realmlabs.asteria.config.luban.MemoryLubanDataSource
@@ -12,16 +15,22 @@ import org.junit.jupiter.api.Test
 class GameTablesTest {
     @Test
     fun generatedLubanTablesLoadFromPublishedArtifacts() = runBlocking {
-        val snapshot = GameConfigSnapshotLoader(
-            LubanBinaryConfigLoader(
+        val service = ConfigService(
+            loader = LubanBinaryConfigLoader(
                 tablesType = GameTables::class,
                 dataSource = MemoryLubanDataSource(
                     LubanTestConfigArtifacts.unpackBundle(LubanTestConfigArtifacts.bundleBytes()),
                 ),
                 bridge = GameTablesSnapshotBridge,
             ),
-        ).load()
-        val queries = snapshot.component<GameConfigQueries>()
+            validators = GameConfigValidators.defaultValidators,
+            componentBuilders = GameConfigQueryBuilders.defaultBuilders,
+        )
+        val snapshot = service.load().current
+        val activityQueries = snapshot.component<ActivityConfigQueries>()
+        val dropPoolQueries = snapshot.component<DropPoolConfigQueries>()
+        val itemQueries = snapshot.component<ItemConfigQueries>()
+        val monsterQueries = snapshot.component<MonsterConfigQueries>()
 
         val sword = snapshot.tbItem.require(3001)
         val wolf = snapshot.tbMonster.require(101)
@@ -56,8 +65,10 @@ class GameTablesTest {
                 row.type == com.mikai233.common.config.luban.gen.item.ItemType.Equipment
             },
         )
-        assertEquals(1, queries.itemsByType[com.mikai233.common.config.luban.gen.item.ItemType.Equipment]?.size)
-        assertEquals(1, queries.monstersBySceneId[1]?.size)
+        assertEquals(1, itemQueries.itemsByType[com.mikai233.common.config.luban.gen.item.ItemType.Equipment]?.size)
+        assertEquals(1, monsterQueries.monstersBySceneId[1]?.size)
+        assertEquals(1, activityQueries.activitiesByUnlockLevel[1]?.size)
+        assertEquals(2, dropPoolQueries.dropEntriesByItemId[3001]?.size)
         assertNotNull(snapshot.tbActivity.get("daily_login"))
     }
 }

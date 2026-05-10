@@ -2,7 +2,8 @@ package com.mikai233.common.runtime.module
 
 import com.mikai233.common.config.GAME_CONFIG_PUBLICATION
 import com.mikai233.common.config.luban.GameConfigPublicationZipLoader
-import com.mikai233.common.config.luban.GameConfigSnapshotLoader
+import com.mikai233.common.config.luban.query.GameConfigQueryBuilders
+import com.mikai233.common.config.luban.validation.GameConfigValidators
 import com.mikai233.common.event.GameConfigChangedEvent
 import io.github.realmlabs.asteria.config.ConfigModule
 import io.github.realmlabs.asteria.config.center.ConfigCenterReloadTrigger
@@ -24,13 +25,13 @@ class GameConfigModule : AsteriaModule {
         val store = context.services.get(ConfigStore::class)
         delegate = ConfigModule {
             loader(
-                GameConfigSnapshotLoader(
-                    GameConfigPublicationZipLoader(
-                        store = store,
-                        layout = ConfigPublicationLayout(GAME_CONFIG_PUBLICATION),
-                    ),
+                GameConfigPublicationZipLoader(
+                    store = store,
+                    layout = ConfigPublicationLayout(GAME_CONFIG_PUBLICATION),
                 ),
             )
+            GameConfigQueryBuilders.defaultBuilders.forEach { component(it) }
+            validators(GameConfigValidators.defaultValidators)
             onReload { result ->
                 val event = result.changeEventOrNull() ?: return@onReload
                 context.services.find(ActorSystem::class)?.eventStream?.publish(GameConfigChangedEvent.from(event))
