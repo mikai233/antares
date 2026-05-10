@@ -68,7 +68,21 @@ class PlayerNode(
     val protobufDispatcher = GeneratedPlayerNodeDispatchers.PROTOBUF
 
     val configChangeDispatcher = ConfigChangeDispatcher(
-        GeneratedPlayerConfigChangeHandlers.ALL,
+        handlers = GeneratedPlayerConfigChangeHandlers.ALL,
+        executor = { actor, task ->
+            actor.execute("config-change:${task.handler}") {
+                task.run()
+            }
+        },
+        failureHandler = { actor, failure ->
+            actor.logger.error(
+                failure.cause,
+                "player:{} config change handler:{} failed revision:{}",
+                actor.playerId,
+                failure.handler,
+                failure.revision.version,
+            )
+        },
     )
 
     val internalDispatcher = GeneratedPlayerNodeDispatchers.INTERNAL

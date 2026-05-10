@@ -16,6 +16,6 @@ class PlayerLoginEventHandler : PlayerMessageHandler<PlayerLoginEvent> {
         val actor = context.actor
         val snapshot = actor.node.services.get(ConfigService::class).current()
         val sync = actor.manager.get<ActorConfigSyncMem>()
-        actor.node.configChangeDispatcher.catchUpIfNew(actor, snapshot, sync)
+        actor.node.configChangeDispatcher.dispatchIfNew(actor, snapshot, sync)
     }
 }

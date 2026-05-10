@@ -70,7 +70,21 @@ class WorldNode(
     val protobufDispatcher = GeneratedWorldNodeDispatchers.PROTOBUF
 
     val configChangeDispatcher = ConfigChangeDispatcher(
-        GeneratedWorldConfigChangeHandlers.ALL,
+        handlers = GeneratedWorldConfigChangeHandlers.ALL,
+        executor = { actor, task ->
+            actor.execute("config-change:${task.handler}") {
+                task.run()
+            }
+        },
+        failureHandler = { actor, failure ->
+            actor.logger.error(
+                failure.cause,
+                "world:{} config change handler:{} failed revision:{}",
+                actor.worldId,
+                failure.handler,
+                failure.revision.version,
+            )
+        },
     )
 
     val internalDispatcher = GeneratedWorldNodeDispatchers.INTERNAL
