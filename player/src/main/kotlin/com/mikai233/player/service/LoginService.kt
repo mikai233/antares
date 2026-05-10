@@ -10,11 +10,6 @@ import com.mikai233.protocol.ProtoRpcPlayer.PlayerCreateReq
 import com.mikai233.protocol.loginResp
 import com.mikai233.protocol.playerData
 
-/**
- * @author mikai233
- * @email dreamfever2017@yahoo.com
- * @date 2023/5/17
- */
 @AllOpen
 class LoginService {
     fun createPlayer(player: PlayerActor, playerCreateReq: PlayerCreateReq) {

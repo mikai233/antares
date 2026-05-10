@@ -16,11 +16,6 @@ import kotlin.reflect.full.*
 import kotlin.reflect.jvm.javaField
 import kotlin.reflect.jvm.jvmErasure
 
-/**
- * @author mikai233
- * @email dreamfever2017@yahoo.com
- * @date 2025/1/8
- */
 class EntityTest {
 
     @Test

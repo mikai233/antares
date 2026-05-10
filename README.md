@@ -82,13 +82,13 @@ If you changed Luban schema or table structure, refresh generated sources first:
 Project version is centralized in `gradle.properties` as `projectVersion`. Code package metadata, default game config
 publication revision, and Docker image tags all read that value unless explicitly overridden.
 
-If you prefer to debug a single process, each node still has its own `main` entry:
+Each node can also be launched directly:
 
-- `gate/.../GateNode.kt`
-- `player/.../PlayerNode.kt`
-- `world/.../WorldNode.kt`
-- `global/.../GlobalNode.kt`
-- `gm/.../GmNode.kt`
+- `gate/src/main/kotlin/com/mikai233/gate/GateNode.kt`
+- `player/src/main/kotlin/com/mikai233/player/PlayerNode.kt`
+- `world/src/main/kotlin/com/mikai233/world/WorldNode.kt`
+- `global/src/main/kotlin/com/mikai233/global/GlobalNode.kt`
+- `gm/src/main/kotlin/com/mikai233/gm/GmNode.kt`
 
 ## Covered Capabilities
 
@@ -101,11 +101,11 @@ If you prefer to debug a single process, each node still has its own `main` entr
 
 ### Generated message dispatch
 
-Message handlers are no longer registered by hand. The project uses:
+Message dispatch uses generated registration artifacts:
 
 - Asteria `@AsteriaMessageHandler` for protobuf/internal message handlers
 - generated `Generated*NodeDispatchers`
-- generated `Generated*MessageCatalog`
+- generated patchable dispatcher registries such as `PROTOBUF_REGISTRY` and `INTERNAL_REGISTRY`
 
 This keeps node bootstrap code small and makes handler registration explicit, typed, and reviewable without runtime
 reflection.
@@ -118,9 +118,8 @@ Gateway routing is generated from handler annotations plus project-side aggregat
 - route metadata is generated during build
 - `gate` aggregates metadata into `GeneratedGatewayRouting`
 
-The generated route layer covers the regular static cases. The remaining manual path is intentionally narrow: GM
-commands share one client protobuf message, so the gate resolves the command string to the target actor type before
-forwarding.
+The generated route layer covers regular static cases. GM commands share one client protobuf message, so Gate resolves
+the command string to the target actor type before forwarding.
 
 ### Rust battle service integration
 
@@ -137,9 +136,8 @@ for development or environments without discovered battle instances.
 
 ### Runtime patching and scripts
 
-Patchable services live in `PatchableServiceRegistry`, but production hotfixes should be installed through the GM patch
-flow so patch revision, target selection, status, audit, and rollback all stay in one model. The project no longer
-exposes a separate "script patch" entrypoint for replacing services.
+Patchable services live in `PatchableServiceRegistry`, and production hotfixes are installed through the GM patch flow
+so patch revision, target selection, status, audit, and rollback stay in one model.
 
 Runtime patch plugins use Asteria's `RuntimePatchPlugin` and `RuntimePatchInstallContext`. Each node registers a
 module-local `GamePatchBindings` service that exposes the registries that can be replaced on that node. A player-side
@@ -181,20 +179,21 @@ GM publishes patch descriptors and artifacts into the shared config center, and 
 same store. The GM HTTP entrypoints are:
 
 ```bash
-curl -F id=fix-login \
-  -F roles=Player \
-  -F file=@player/build/libs/antares_player_LoginServiceHotfixPatch.jar \
-  http://127.0.0.1:8080/gm/api/patches/publish-and-apply
+curl -X POST http://127.0.0.1:8080/gm/api/patches/publish-and-apply \
+  -F 'request={
+    "id":"fix-login",
+    "roles":["Player"],
+    "requiredRoles":["Player"]
+  };type=application/json' \
+  -F 'file=@player/build/libs/antares_player_LoginServiceHotfixPatch.jar'
 
 curl -X POST http://127.0.0.1:8080/gm/api/patches/fix-login/disable
 ```
 
-Use `roles` to keep module-specific patch JARs on nodes that have the required runtime classes. Publishing a new
-artifact with the same patch id updates the stored descriptor revision, but a direct `apply(id)` call does not refresh
-an already-applied in-memory layer; nodes must reconcile enabled patches, or operators should disable and apply again.
+Use `roles` to select target nodes and `requiredRoles`, `requiredModules`, or `requiredCapabilities` to declare runtime
+requirements for the patch artifact.
 
-Internal protobuf RPC shard routing normally relies on generated protobuf entity-id metadata. If routing metadata is
-wrong, fix the proto declaration and deploy a normal patch instead of installing script-level field overrides.
+Internal protobuf RPC shard routing uses generated protobuf entity-id metadata.
 
 #### Actor and node scripts
 
@@ -213,7 +212,7 @@ tasks; long-lived code replacement should use the GM patch path.
 Game configuration is loaded through the project's configured publication/fetch path, not from source-tree artifacts.
 Runtime nodes deserialize config snapshots, build derived query components, and run validation in the same load path.
 
-That path currently goes through Asteria's `ConfigModule`, which does three things:
+That path goes through Asteria's `ConfigModule`, which does three things:
 
 1. load raw tables
 2. build derived snapshot-level query components
@@ -227,8 +226,8 @@ This matters because it means:
 
 ### Global config query components
 
-Global config query components are built after tables are deserialized. They are split by table or domain area instead
-of being accumulated in one large query object. Current query components include:
+Global config query components are built after tables are deserialized and organized by table or domain area. Query
+components include:
 
 - `ItemConfigQueries.itemsByType`
 - `MonsterConfigQueries.monstersBySceneId`
@@ -237,8 +236,6 @@ of being accumulated in one large query object. Current query components include
 
 Query builders live under `common/src/main/kotlin/com/mikai233/common/config/luban/query` and are auto-collected through
 `@AsteriaContribution`.
-
-This is intentionally different from actor-local config repair logic.
 
 ### Actor memory repair after config reload
 
@@ -258,24 +255,23 @@ The flow is:
 9. handler failures are reported through the dispatcher's failure handler
 
 Actors also catch up when they become active. Player login and world activation read the current `ConfigSnapshot` from
-`ConfigService` and call `dispatchIfNew(actor, snapshot, sync)`. There is no separate `catchUp` method; handlers remain
-small, idempotent `handle(actor, snapshot)` implementations.
+`ConfigService` and call `dispatchIfNew(actor, snapshot, sync)`, so handlers remain small, idempotent
+`handle(actor, snapshot)` implementations.
 
-The current player-side example is `PlayerActivityConfigChangeHandler`: it watches `TbActivity`, reads the player level
-from actor memory, and reconciles `PlayerActivityMem` from the current table rows.
+Example: `PlayerActivityConfigChangeHandler` watches `TbActivity`, reads the player level from actor memory, and
+reconciles `PlayerActivityMem` from the active table rows.
 
 Player/world config-change handlers are also auto-collected during build through Asteria's
 `@AsteriaConfigChangeHandler` annotation.
 
 ### Config validation
 
-Validation is split by business area instead of being kept in one large file. Current validators live under:
+Validation is organized by business area. Validators live under:
 
 - `common/src/main/kotlin/com/mikai233/common/config/luban/validation`
 
-The model is intended to scale by adding more validators per table or per domain area rather than accumulating one
-monolithic rules file. Validators are auto-collected through Asteria contribution generation and passed to
-`ConfigModule` as `GameConfigValidators.defaultValidators`.
+Add validators by table or domain area. Validators are auto-collected through Asteria contribution generation and
+passed to `ConfigModule` as `GameConfigValidators.defaultValidators`.
 
 ### Adjustable game time
 
@@ -333,7 +329,7 @@ lubanDataDir=config/luban/Datas
 # lubanToolRoot=/path/to/luban/tool/root
 ```
 
-Use Gradle properties or environment variables for temporary overrides: `-PlubanDataDir=/path/to/Datas`,
+Use Gradle properties or environment variables to override local paths: `-PlubanDataDir=/path/to/Datas`,
 `LUBAN_DATA_DIR=/path/to/Datas`, `-PlubanToolRoot=/path/to/luban/tool/root`, or
 `LUBAN_TOOL_ROOT=/path/to/luban/tool/root`.
 
@@ -354,14 +350,12 @@ The project keeps centralized internal RPC id allocation in:
 - `proto/protocol/rpc-protocol.json`
 
 That registry is generated from the proto descriptor set and then consumed by Asteria-side protocol generation.
-Entity-id extraction for shard-routed internal RPC messages still comes from protobuf metadata. Missing entity-id
-metadata should be fixed in proto definitions and deployed through the normal patch path.
+Entity-id extraction for shard-routed internal RPC messages comes from protobuf metadata.
 
 ## Persistence Patterns
 
 The scaffold keeps Mongo-backed entity and memdata flow, including compatibility-oriented patterns for loading
-historical documents while preserving strict business constructors. That is one of the main reasons this project is kept
-as a richer scaffold instead of a minimal sample.
+historical documents while preserving strict business constructors.
 
 ## Debug Client
 
