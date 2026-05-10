@@ -3,17 +3,9 @@ package com.mikai233.gm.web.ops
 import com.mikai233.common.annotation.AllOpen
 import com.mikai233.common.extension.ask
 import com.mikai233.gm.GmNode
-import com.mikai233.protocol.ProtoRpcShutdown.ShutdownPhase
-import com.mikai233.protocol.ProtoRpcShutdown.ShutdownStartReq
-import com.mikai233.protocol.ProtoRpcShutdown.ShutdownStatusReq
-import com.mikai233.protocol.ProtoRpcShutdown.ShutdownStatusResp
-import kotlinx.coroutines.runBlocking
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
-import java.util.UUID
+import com.mikai233.protocol.ProtoRpcShutdown.*
+import org.springframework.web.bind.annotation.*
+import java.util.*
 
 @AllOpen
 @RestController
@@ -22,15 +14,15 @@ class ShutdownController(
     private val node: GmNode,
 ) {
     @GetMapping("/status")
-    fun status(): ShutdownStatusResponse = runBlocking {
-        node.shutdownCoordinator.ask<ShutdownStatusResp>(
+    suspend fun status(): ShutdownStatusResponse {
+        return node.shutdownCoordinator.ask<ShutdownStatusResp>(
             ShutdownStatusReq.getDefaultInstance(),
         ).getOrThrow().toResponse()
     }
 
     @PostMapping("/start")
-    fun start(@RequestBody(required = false) request: StartShutdownRequest?): ShutdownStatusResponse = runBlocking {
-        node.shutdownCoordinator.ask<ShutdownStatusResp>(
+    suspend fun start(@RequestBody(required = false) request: StartShutdownRequest?): ShutdownStatusResponse {
+        return node.shutdownCoordinator.ask<ShutdownStatusResp>(
             ShutdownStartReq.newBuilder()
                 .setPlanId(request?.planId?.takeIf(String::isNotBlank) ?: UUID.randomUUID().toString())
                 .setRequestedBy(request?.requestedBy?.takeIf(String::isNotBlank) ?: "gm")

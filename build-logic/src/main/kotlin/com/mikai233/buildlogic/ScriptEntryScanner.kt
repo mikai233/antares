@@ -10,6 +10,7 @@ internal data class ScriptEntry(
 internal class ScriptEntryScanner(
     private val projectDir: File,
     private val sourceSetName: String,
+    private val baseTypeRegex: Regex = Regex("""\b(NodeScript|ActorScript)\b"""),
 ) {
     fun discover(): List<ScriptEntry> {
         val sourceRoot = projectDir.resolve("src/$sourceSetName")
@@ -35,7 +36,7 @@ internal class ScriptEntryScanner(
         }
         return entryRegex.findAll(text).mapNotNull { match ->
             val baseType = match.groupValues[2]
-            if (!SCRIPT_BASE_TYPE_REGEX.containsMatchIn(baseType)) {
+            if (!baseTypeRegex.containsMatchIn(baseType)) {
                 return@mapNotNull null
             }
             val simpleName = match.groupValues[1]
@@ -53,6 +54,5 @@ internal class ScriptEntryScanner(
             Regex("""(?m)^\s*(?:\w+\s+)*(?:class|object)\s+([A-Za-z_]\w*)\s*:\s*([^{\n]+)""")
         val GROOVY_SCRIPT_ENTRY_REGEX =
             Regex("""(?m)^\s*(?:\w+\s+)*class\s+([A-Za-z_]\w*)\s+extends\s+([^{\n]+)""")
-        val SCRIPT_BASE_TYPE_REGEX = Regex("""\b(NodeScript|ActorScript)\b""")
     }
 }

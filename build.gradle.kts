@@ -11,6 +11,7 @@ plugins {
     alias(libs.plugins.boot) apply false
     alias(libs.plugins.version.catalog.update)
     id("antares-script-conventions") apply false
+    id("antares-patch-conventions") apply false
 }
 
 idea {
@@ -76,6 +77,7 @@ subprojects {
     }
     if (Boot.contains(project.name) || project.name == "common") {
         apply(plugin = "antares-script-conventions")
+        apply(plugin = "antares-patch-conventions")
     }
     tasks.register("generateVersionFile") {
         group = "version"

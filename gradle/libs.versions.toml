@@ -1,5 +1,5 @@
 [versions]
-asteria = "0.5.3"
+asteria = "0.5.5"
 coroutines = "1.10.2"
 curator = "5.9.0"
 datetime = "0.7.1"
@@ -39,6 +39,9 @@ asteria-gateway-core = { module = "io.github.realm-labs.asteria:gateway-core", v
 asteria-gateway-netty = { module = "io.github.realm-labs.asteria:gateway-netty", version.ref = "asteria" }
 asteria-gateway-pekko = { module = "io.github.realm-labs.asteria:gateway-pekko", version.ref = "asteria" }
 asteria-gm-script-spring-boot-starter = { module = "io.github.realm-labs.asteria:gm-script-spring-boot-starter", version.ref = "asteria" }
+asteria-patch-core = { module = "io.github.realm-labs.asteria:patch-core", version.ref = "asteria" }
+asteria-patch-jar = { module = "io.github.realm-labs.asteria:patch-jar", version.ref = "asteria" }
+asteria-patch-pekko = { module = "io.github.realm-labs.asteria:patch-pekko", version.ref = "asteria" }
 asteria-persistence-core = { module = "io.github.realm-labs.asteria:persistence-core", version.ref = "asteria" }
 asteria-persistence-mongodb = { module = "io.github.realm-labs.asteria:persistence-mongodb", version.ref = "asteria" }
 asteria-persistence-mongodb-ksp = { module = "io.github.realm-labs.asteria:persistence-mongodb-ksp", version.ref = "asteria" }
@@ -119,6 +122,9 @@ asteria-foundation = [
     "asteria-foundation-actor",
     "asteria-foundation-contribution",
     "asteria-foundation-id",
+    "asteria-patch-core",
+    "asteria-patch-jar",
+    "asteria-patch-pekko",
 ]
 asteria-persistence = [
     "asteria-persistence-core",

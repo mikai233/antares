@@ -94,6 +94,14 @@ class WorldNode(
             register(WorldService::class, WorldService())
             register(RpcEntityIdResolver::class, DefaultRpcEntityIdResolver(GameRpcProtocol.protocol))
         }
+        services.register(
+            GamePatchBindings::class,
+            GamePatchBindings(
+                services = patchableServices,
+                worldMessageRegistry = GeneratedWorldNodeDispatchers.PROTOBUF_REGISTRY,
+                worldInternalMessageRegistry = GeneratedWorldNodeDispatchers.INTERNAL_REGISTRY,
+            ),
+        )
         services.register(PatchableServiceRegistry::class, patchableServices)
         services.register(StartupLikeReloadPlan::class, WorldGameTimeReloadPlan(this))
     }

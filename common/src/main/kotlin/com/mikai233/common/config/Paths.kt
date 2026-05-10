@@ -20,6 +20,14 @@ val GAME_TIME_RELOAD_ACKS: ConfigPath = ROOT / "game-time-reload-acks"
 
 val BATTLE_INSTANCES: ConfigPath = ROOT / "battle" / "instances"
 
+val PATCHES: ConfigPath = ROOT / "patches"
+
+val PATCH_DESCRIPTORS: ConfigPath = PATCHES / "descriptors"
+
+val PATCH_REVISION: ConfigPath = PATCHES / "revision"
+
+val PATCH_ARTIFACTS: ConfigPath = PATCHES / "artifacts"
+
 const val WORKER_IDS = "/$SYSTEM_NAME/worker-ids"
 
 val NETTY_CONFIGS: ConfigPath = ROOT / "netty"

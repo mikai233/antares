@@ -1,14 +1,11 @@
 package com.mikai233.common.rpc
 
 import com.google.protobuf.GeneratedMessage
-import com.mikai233.common.runtime.patchableServices
-import com.mikai233.common.runtime.replacePatchableService
 import com.mikai233.protocol.ProtoChat.ChatHistoryReq
 import com.mikai233.protocol.ProtoChat.ChatSendReq
 import com.mikai233.protocol.ProtoLogin.LoginReq
 import com.mikai233.protocol.ProtoSystem.GmReq
 import com.mikai233.protocol.ProtoTest.TestReq
-import io.github.realmlabs.asteria.core.NodeRuntime
 import io.github.realmlabs.asteria.rpc.protobuf.MissingProtobufRpcEntityIdException
 import io.github.realmlabs.asteria.rpc.protobuf.ProtobufRpcProtocol
 
@@ -64,18 +61,6 @@ class FieldOverrideRpcEntityIdResolver(
             else -> error("protobuf field '$fieldName' on ${message.javaClass.name} must resolve to string/number")
         }
     }
-}
-
-fun NodeRuntime.installRpcEntityIdFieldOverrides(
-    playerFieldOverrides: Map<String, String> = emptyMap(),
-    worldFieldOverrides: Map<String, String> = emptyMap(),
-) {
-    val current = patchableServices.require(RpcEntityIdResolver::class)
-    replacePatchableService(
-        RpcEntityIdResolver::class,
-        FieldOverrideRpcEntityIdResolver(current, playerFieldOverrides, worldFieldOverrides),
-        patchId = "script:rpc-entity-id-resolver-hotfix",
-    )
 }
 
 private fun io.github.realmlabs.asteria.rpc.protobuf.ProtobufRpcEntityIdRegistry.findEntityIdOrNull(

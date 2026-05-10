@@ -1,11 +1,11 @@
 package com.mikai233.buildlogic
 
+import org.junit.jupiter.api.io.TempDir
+import java.nio.file.Path
 import kotlin.io.path.createDirectories
 import kotlin.io.path.writeText
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import org.junit.jupiter.api.io.TempDir
-import java.nio.file.Path
 
 class ScriptEntryScannerTest {
     @TempDir
@@ -53,6 +53,59 @@ class ScriptEntryScannerTest {
 
         assertEquals(
             listOf(ScriptEntry("TestGroovyScript", "com.mikai233.player.script.TestGroovyScript")),
+            entries,
+        )
+    }
+
+    @Test
+    fun `discovers runtime patch plugins when base type is configured`() {
+        projectDir.resolve("src/patch/kotlin/com/mikai233/player/patch").createDirectories()
+            .resolve("PlayerPatches.kt")
+            .writeText(
+                """
+                package com.mikai233.player.patch
+
+                class LoginPatch : RuntimePatchPlugin {
+                }
+                object RpcPatch : RuntimePatchPlugin {
+                }
+                class Helper : NodeScript<PlayerNode>()
+                """.trimIndent(),
+            )
+
+        val entries = ScriptEntryScanner(
+            projectDir = projectDir.toFile(),
+            sourceSetName = "patch",
+            baseTypeRegex = Regex("""\bRuntimePatchPlugin\b"""),
+        ).discover()
+
+        assertEquals(
+            listOf(
+                ScriptEntry("LoginPatch", "com.mikai233.player.patch.LoginPatch"),
+                ScriptEntry("RpcPatch", "com.mikai233.player.patch.RpcPatch"),
+            ),
+            entries,
+        )
+    }
+
+    @Test
+    fun `script scanner ignores runtime patch plugins by default`() {
+        projectDir.resolve("src/script/kotlin/com/mikai233/player/script").createDirectories()
+            .resolve("MixedEntries.kt")
+            .writeText(
+                """
+                package com.mikai233.player.script
+
+                class LoginPatch : RuntimePatchPlugin {
+                }
+                class PlayerScript : NodeScript<PlayerNode>()
+                """.trimIndent(),
+            )
+
+        val entries = ScriptEntryScanner(projectDir.toFile(), "script").discover()
+
+        assertEquals(
+            listOf(ScriptEntry("PlayerScript", "com.mikai233.player.script.PlayerScript")),
             entries,
         )
     }

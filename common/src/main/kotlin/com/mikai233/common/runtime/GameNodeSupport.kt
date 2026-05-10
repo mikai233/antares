@@ -2,11 +2,13 @@ package com.mikai233.common.runtime
 
 import com.google.common.io.Resources
 import com.mikai233.common.broadcast.PlayerBroadcastEventBus
-import com.mikai233.common.config.GameWorldConfig
-import com.mikai233.common.config.WORKER_IDS
+import com.mikai233.common.config.*
 import com.mikai233.common.db.MongoDB
 import com.mikai233.common.extension.asyncZookeeperClient
 import com.mikai233.common.runtime.module.*
+import com.mikai233.common.runtime.patch.ConfigCenterPatchArtifactStore
+import com.mikai233.common.runtime.patch.ConfigCenterRuntimePatchRepository
+import com.mikai233.common.runtime.patch.GamePatchStoreModule
 import com.mikai233.common.time.GameTimeOverrideStore
 import com.mikai233.common.time.GameTimeSource
 import com.typesafe.config.Config
@@ -16,12 +18,16 @@ import io.github.realmlabs.asteria.cluster.pekko.addSuspendTask
 import io.github.realmlabs.asteria.config.ConfigService
 import io.github.realmlabs.asteria.config.ConfigSnapshot
 import io.github.realmlabs.asteria.config.center.zookeeper.ZookeeperConfigCenterModule
+import io.github.realmlabs.asteria.config.center.zookeeper.ZookeeperConfigStore
 import io.github.realmlabs.asteria.core.*
 import io.github.realmlabs.asteria.id.WorkerIdModule
 import io.github.realmlabs.asteria.id.WorkerIdModuleOptions
 import io.github.realmlabs.asteria.id.WorkerIdOwner
 import io.github.realmlabs.asteria.id.zookeeper.ZookeeperWorkerIdRepository
+import io.github.realmlabs.asteria.patch.PatchModule
 import io.github.realmlabs.asteria.patch.PatchableServiceRegistry
+import io.github.realmlabs.asteria.patch.jar.JarRuntimePatchPluginResolver
+import io.github.realmlabs.asteria.patch.pekko.PekkoPatchEnvironmentProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.future.await
@@ -172,6 +178,8 @@ class ClusterNodeBootstrap(
     }
 
     private fun commonModules(): List<AsteriaModule> {
+        val patchStore = ZookeeperConfigStore(zookeeper)
+        val patchArtifacts = ConfigCenterPatchArtifactStore(patchStore, PATCH_ARTIFACTS)
         return listOf(
             ZookeeperConfigCenterModule {
                 client(zookeeper)
@@ -179,6 +187,12 @@ class ClusterNodeBootstrap(
             GameTimeModule(config),
             LocalEntityRegistryModule(),
             PrometheusMetricsModule(addr.port + 1000),
+            GamePatchStoreModule(patchArtifacts),
+            PatchModule {
+                environment(PekkoPatchEnvironmentProvider(versionText()))
+                repository(ConfigCenterRuntimePatchRepository(patchStore, PATCH_DESCRIPTORS, PATCH_REVISION))
+                resolver(JarRuntimePatchPluginResolver(patchArtifacts))
+            },
             MongoDbModule(),
             GameWorldConfigModule(),
             GameConfigModule(),

@@ -59,6 +59,10 @@ class GlobalNode(
         val patchableServices = PatchableServiceRegistry().apply {
             register(RpcEntityIdResolver::class, DefaultRpcEntityIdResolver(GameRpcProtocol.protocol))
         }
+        services.register(
+            GamePatchBindings::class,
+            GamePatchBindings(services = patchableServices),
+        )
         services.register(PatchableServiceRegistry::class, patchableServices)
         services.register(StartupLikeReloadPlan::class, GlobalGameTimeReloadPlan(this))
     }

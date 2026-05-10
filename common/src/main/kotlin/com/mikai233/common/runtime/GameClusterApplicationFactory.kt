@@ -7,6 +7,7 @@ import io.github.realmlabs.asteria.core.AsteriaApplication
 import io.github.realmlabs.asteria.core.AsteriaApplicationBuilder
 import io.github.realmlabs.asteria.core.AsteriaModule
 import io.github.realmlabs.asteria.core.NodeRuntime
+import io.github.realmlabs.asteria.patch.pekko.PekkoPatchControlModule
 import io.github.realmlabs.asteria.script.engine.groovy.GroovyScriptEngine
 import io.github.realmlabs.asteria.script.engine.jar.JarScriptEngine
 import io.github.realmlabs.asteria.script.pekko.ScriptModule
@@ -68,5 +69,6 @@ internal fun AsteriaApplicationBuilder.installGameNodeModules(request: GameClust
             allowActorScripts = true
         },
     )
+    install(PekkoPatchControlModule())
     request.afterClusterModules.forEach(::install)
 }

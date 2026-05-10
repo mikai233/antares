@@ -96,6 +96,14 @@ class PlayerNode(
             register(ChatService::class, ChatService())
             register(RpcEntityIdResolver::class, DefaultRpcEntityIdResolver(GameRpcProtocol.protocol))
         }
+        services.register(
+            GamePatchBindings::class,
+            GamePatchBindings(
+                services = patchableServices,
+                playerMessageRegistry = GeneratedPlayerNodeDispatchers.PROTOBUF_REGISTRY,
+                playerInternalMessageRegistry = GeneratedPlayerNodeDispatchers.INTERNAL_REGISTRY,
+            ),
+        )
         services.register(BattleSessionRegistry::class, battleEndpointRegistry)
         services.register(
             BattleControlClient::class,

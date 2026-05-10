@@ -8,6 +8,10 @@ gradlePlugin {
             id = "antares-script-conventions"
             implementationClass = "com.mikai233.buildlogic.AntaresScriptConventionsPlugin"
         }
+        register("antaresPatchConventions") {
+            id = "antares-patch-conventions"
+            implementationClass = "com.mikai233.buildlogic.AntaresPatchConventionsPlugin"
+        }
     }
 }
 

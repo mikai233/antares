@@ -2,8 +2,8 @@
 
 Antares is a game server scaffold built on top of [Asteria](https://github.com/realm-labs/Asteria). It keeps a
 non-trivial demo domain in place and focuses on the parts that usually become painful in real projects: clustered
-routing, generated message dispatch, scriptable hotfixes, configuration publication, config reload, and historical-data
-compatibility.
+routing, generated message dispatch, runtime patching policy, configuration publication, config reload, and
+historical-data compatibility.
 
 Main modules:
 
@@ -13,7 +13,7 @@ Main modules:
 - `global`: shared cluster services and singleton-style runtime pieces
 - `gm`: admin backend and script entrypoints
 - `proto`: client/internal protobuf contracts and generated protocol support
-- `common`: shared runtime, config, routing, hotfix, and persistence abstractions
+- `common`: shared runtime, config, routing, patching, and persistence abstractions
 - `tools`: local topology/config bootstrap helpers
 - `stardust`: local all-in-one development launcher
 - `battle`: Rust stateful battle service prototype with direct client data-plane access
@@ -135,43 +135,66 @@ The `battle` workspace is a Rust prototype for stateful real-time combat. The JV
 This keeps the latency-sensitive battle data plane out of Gate. Static `game.battle.endpoints` is only a local fallback
 for development or environments without discovered battle instances.
 
-### Scriptable hotfixes
+### Runtime patching and scripts
 
-The scaffold already covers several hotfix patterns.
+Patchable services live in `PatchableServiceRegistry`, but production hotfixes should be installed through the GM patch
+flow so patch revision, target selection, status, audit, and rollback all stay in one model. The project no longer
+exposes a separate "script patch" entrypoint for replacing services.
 
-#### Service hotfix
-
-Patchable services live in `PatchableServiceRegistry` and can be replaced from node scripts.
-
-Typical example:
+Runtime patch plugins use Asteria's `RuntimePatchPlugin` and `RuntimePatchInstallContext`. Each node registers a
+module-local `GamePatchBindings` service that exposes the registries that can be replaced on that node. A player-side
+handler patch looks like this:
 
 ```kotlin
-context.runtime.replacePatchableService(
+class FixLoginPatch : RuntimePatchPlugin {
+    override suspend fun install(context: RuntimePatchInstallContext) {
+        val bindings = context.runtime.services.get<GamePatchBindings>()
+
+        context.messageHandlers.replace(
+            bindings.playerMessageRegistry,
+            LoginReq::class,
+            PatchedLoginHandler(),
+        )
+    }
+}
+```
+
+Service patches use the same patch lifecycle and order:
+
+```kotlin
+context.services.replace(
+    bindings.services,
     LoginService::class,
-    LoginServiceHotfix(),
-    patchId = "script:login-service-hotfix",
+    PatchedLoginService(),
 )
 ```
 
-This is the preferred way to hotfix service-level behavior without restarting the node.
+Patch implementations live in `src/patch/kotlin` and are packaged separately from the node runtime JARs. Use the
+module-level `patchJars` task to build patch artifacts; each generated JAR declares its entrypoint through the
+`Patch-Class` manifest attribute. For example:
 
-#### Routing hotfix
-
-Internal protobuf RPC shard routing normally relies on generated protobuf entity-id metadata. For the rare case where a
-message is missing that declaration, the project provides a scriptable override layer through `RpcEntityIdResolver`.
-
-Node scripts can install temporary field-based overrides, for example:
-
-```kotlin
-context.runtime.installRpcEntityIdFieldOverrides(
-    worldFieldOverrides = mapOf(
-        "com.mikai233.protocol.ProtoRpcWorld.WorldWakeupReq" to "world_id",
-    ),
-)
+```bash
+./gradlew :player:patchJars
 ```
 
-This gives a production hotfix path for routing mistakes without adding a dedicated config-center format just for rare
-emergency cases.
+GM publishes patch descriptors and artifacts into the shared config center, and nodes load executable plugins from the
+same store. The GM HTTP entrypoints are:
+
+```bash
+curl -F id=fix-login \
+  -F roles=Player \
+  -F file=@player/build/libs/antares_player_LoginServiceHotfixPatch.jar \
+  http://127.0.0.1:8080/gm/api/patches/publish-and-apply
+
+curl -X POST http://127.0.0.1:8080/gm/api/patches/fix-login/disable
+```
+
+Use `roles` to keep module-specific patch JARs on nodes that have the required runtime classes. Publishing a new
+artifact with the same patch id updates the stored descriptor revision, but a direct `apply(id)` call does not refresh
+an already-applied in-memory layer; nodes must reconcile enabled patches, or operators should disable and apply again.
+
+Internal protobuf RPC shard routing normally relies on generated protobuf entity-id metadata. If routing metadata is
+wrong, fix the proto declaration and deploy a normal patch instead of installing script-level field overrides.
 
 #### Actor and node scripts
 
@@ -180,8 +203,8 @@ The runtime enables both:
 - node scripts
 - actor scripts
 
-through Asteria's script module. The project keeps script templates for both service hotfixes and routing hotfixes so
-the common operational patterns stay concrete.
+through Asteria's script module. Scripts are kept for diagnostics, operational commands, and short-lived development
+tasks; long-lived code replacement should use the GM patch path.
 
 ## Configuration Model
 
@@ -331,8 +354,8 @@ The project keeps centralized internal RPC id allocation in:
 - `proto/protocol/rpc-protocol.json`
 
 That registry is generated from the proto descriptor set and then consumed by Asteria-side protocol generation.
-Entity-id extraction for shard-routed internal RPC messages still comes from protobuf metadata, with the additional
-project-side hotfix layer described above.
+Entity-id extraction for shard-routed internal RPC messages still comes from protobuf metadata. Missing entity-id
+metadata should be fixed in proto definitions and deployed through the normal patch path.
 
 ## Persistence Patterns
 

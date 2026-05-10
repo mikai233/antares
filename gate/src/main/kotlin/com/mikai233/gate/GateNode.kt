@@ -57,6 +57,13 @@ class GateNode(
         val patchableServices = PatchableServiceRegistry().apply {
             register(RpcEntityIdResolver::class, DefaultRpcEntityIdResolver(GameRpcProtocol.protocol))
         }
+        services.register(
+            GamePatchBindings::class,
+            GamePatchBindings(
+                services = patchableServices,
+                gateMessageRegistry = GeneratedGateNodeDispatchers.PROTOBUF_REGISTRY,
+            ),
+        )
         services.register(PatchableServiceRegistry::class, patchableServices)
     }
 

@@ -4,13 +4,7 @@ import com.mikai233.common.annotation.AllOpen
 import com.mikai233.common.runtime.gameTimeOverrideStore
 import com.mikai233.common.runtime.gameTimeSource
 import com.mikai233.gm.GmNode
-import kotlinx.coroutines.runBlocking
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 import kotlin.time.Duration.Companion.milliseconds
 
 @AllOpen
@@ -20,9 +14,9 @@ class GameTimeController(
     private val node: GmNode,
 ) {
     @GetMapping("/override")
-    fun current(): GameTimeOverrideResponse = runBlocking {
+    suspend fun current(): GameTimeOverrideResponse {
         val override = node.gameTimeOverrideStore.current()
-        GameTimeOverrideResponse(
+        return GameTimeOverrideResponse(
             epoch = override.epoch,
             globalOffsetMillis = override.globalOffsetMillis,
             currentMillis = node.gameTimeSource.nowMillis(),
@@ -30,10 +24,10 @@ class GameTimeController(
     }
 
     @PostMapping("/override")
-    fun update(@RequestBody request: UpdateGameTimeOverrideRequest): GameTimeOverrideResponse = runBlocking {
+    suspend fun update(@RequestBody request: UpdateGameTimeOverrideRequest): GameTimeOverrideResponse {
         val override = node.gameTimeOverrideStore.updateGlobalOffset(request.globalOffsetMillis)
         node.gameTimeSource.setGlobalOffset(override.globalOffsetMillis.milliseconds)
-        GameTimeOverrideResponse(
+        return GameTimeOverrideResponse(
             epoch = override.epoch,
             globalOffsetMillis = override.globalOffsetMillis,
             currentMillis = node.gameTimeSource.nowMillis(),
@@ -41,8 +35,8 @@ class GameTimeController(
     }
 
     @GetMapping("/reload-status")
-    fun reloadStatus(@RequestParam epoch: Long): GameTimeReloadStatusResponse = runBlocking {
-        GameTimeReloadStatusResponse(
+    suspend fun reloadStatus(@RequestParam epoch: Long): GameTimeReloadStatusResponse {
+        return GameTimeReloadStatusResponse(
             epoch = epoch,
             acks = node.gameTimeOverrideStore.acks(epoch).map {
                 GameTimeReloadAckResponse(
