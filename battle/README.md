@@ -7,7 +7,6 @@ The JVM cluster remains the control plane:
 - Player/World actors create and authorize battles.
 - Player returns a battle endpoint and short-lived token to the client.
 - Clients connect directly to the battle server for real-time frames.
-- Gate can still forward authorized battle frames as a fallback/debug path.
 - Battle servers own in-memory battle sessions and publish final results back to the JVM side.
 
 Current first slice:

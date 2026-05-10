@@ -16,6 +16,7 @@ Main modules:
 - `common`: shared runtime, config, routing, hotfix, and persistence abstractions
 - `tools`: local topology/config bootstrap helpers
 - `stardust`: local all-in-one development launcher
+- `battle`: Rust stateful battle service prototype with direct client data-plane access
 
 ## Requirements
 
@@ -117,8 +118,22 @@ Gateway routing is generated from handler annotations plus project-side aggregat
 - route metadata is generated during build
 - `gate` aggregates metadata into `GeneratedGatewayRouting`
 
-The generated route layer covers the regular static cases, while the project still keeps a small manual fallback path
-for conditional business routes that are not worth forcing into the generic model.
+The generated route layer covers the regular static cases. The remaining manual path is intentionally narrow: GM
+commands share one client protobuf message, so the gate resolves the command string to the target actor type before
+forwarding.
+
+### Rust battle service integration
+
+The `battle` workspace is a Rust prototype for stateful real-time combat. The JVM cluster remains the control plane:
+
+- client sends `BattleStartReq` through Gate to Player
+- Player selects a battle endpoint, creates a short-lived token, and returns `BattleStartResp`
+- client connects directly to the battle server for frame traffic
+- battle instances register themselves under `/antares/battle/instances`
+- Player nodes watch that path through `BattleDiscoveryModule`
+
+This keeps the latency-sensitive battle data plane out of Gate. Static `game.battle.endpoints` is only a local fallback
+for development or environments without discovered battle instances.
 
 ### Scriptable hotfixes
 
@@ -210,12 +225,21 @@ publication changes.
 The flow is:
 
 1. config publication changes
-2. runtime loads a new `ConfigSnapshot`
-3. actor-side `ConfigChangeDispatcher` finds the handlers watching the changed tables
-4. those handlers update actor memory
+2. `GameConfigModule` loads and validates the new `ConfigSnapshot`
+3. derived query components are rebuilt for the snapshot
+4. a `GameConfigChangedEvent` is published on the local ActorSystem event stream
+5. player/world actors receive the event through normal internal message handlers
+6. `ConfigChangeDispatcher.dispatchIfNew` compares the actor's `ActorConfigSyncMem` revision
+7. matching `ConfigChangeHandler` tasks are submitted through `ConfigChangeExecutor`
+8. the executor posts each handler to `actor.execute(...)`, so repair runs as normal actor mailbox work
+9. handler failures are reported through the dispatcher's failure handler
 
-Handlers can also implement `catchUp(actor, snapshot)` so an actor can rebuild its relevant derived state when it starts
-or resynchronizes.
+Actors also catch up when they become active. Player login and world activation read the current `ConfigSnapshot` from
+`ConfigService` and call `dispatchIfNew(actor, snapshot, sync)`. There is no separate `catchUp` method; handlers remain
+small, idempotent `handle(actor, snapshot)` implementations.
+
+The current player-side example is `PlayerActivityConfigChangeHandler`: it watches `TbActivity`, reads the player level
+from actor memory, and reconciles `PlayerActivityMem` from the current table rows.
 
 Player/world config-change handlers are also auto-collected during build through Asteria's
 `@AsteriaConfigChangeHandler` annotation.
@@ -227,7 +251,22 @@ Validation is split by business area instead of being kept in one large file. Cu
 - `common/src/main/kotlin/com/mikai233/common/config/luban/validation`
 
 The model is intended to scale by adding more validators per table or per domain area rather than accumulating one
-monolithic rules file.
+monolithic rules file. Validators are auto-collected through Asteria contribution generation and passed to
+`ConfigModule` as `GameConfigValidators.defaultValidators`.
+
+### Adjustable game time
+
+Business code should read time through actor-level `GameTime`, not direct system time. `GameTime` implements Kotlin
+`Clock`, carries the configured time zone, and exposes helpers such as `nowLocal()` and `today()`.
+
+The effective time offset is:
+
+- global offset from config center
+- plus optional actor-local offset
+
+When the global offset changes, `GameTimeReloadModule` applies it and runs the node's `StartupLikeReloadPlan`. Player
+and World nodes stop local active actors so they restart through the same path as node startup; sharded actors are not
+eagerly pulled up beyond the node's normal wakeup behavior.
 
 ## Luban Pipeline
 
