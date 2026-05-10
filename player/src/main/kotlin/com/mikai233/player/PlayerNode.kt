@@ -2,12 +2,14 @@ package com.mikai233.player
 
 import com.beust.jcommander.JCommander
 import com.beust.jcommander.Parameter
+import com.mikai233.common.battle.*
 import com.mikai233.common.conf.RuntimeEnv
 import com.mikai233.common.config.SYSTEM_NAME
 import com.mikai233.common.rpc.DefaultRpcEntityIdResolver
 import com.mikai233.common.rpc.GameRpcProtocol
 import com.mikai233.common.rpc.RpcEntityIdResolver
 import com.mikai233.common.runtime.*
+import com.mikai233.common.runtime.module.BattleDiscoveryModule
 import com.mikai233.player.generated.GeneratedPlayerConfigChangeHandlers
 import com.mikai233.player.generated.GeneratedPlayerNodeDispatchers
 import com.mikai233.player.message.HandoffPlayer
@@ -71,12 +73,25 @@ class PlayerNode(
 
     val internalDispatcher = GeneratedPlayerNodeDispatchers.INTERNAL
 
+    private val battleConfig = BattleConfig.load(config)
+    private val battleEndpointRegistry = BattleEndpointRegistry(battleConfig.endpoints)
+
     init {
         val patchableServices = PatchableServiceRegistry().apply {
             register(LoginService::class, LoginService())
             register(ChatService::class, ChatService())
             register(RpcEntityIdResolver::class, DefaultRpcEntityIdResolver(GameRpcProtocol.protocol))
         }
+        services.register(BattleSessionRegistry::class, battleEndpointRegistry)
+        services.register(
+            BattleControlClient::class,
+            DirectBattleControlClient(
+                registry = battleEndpointRegistry,
+                tokenCodec = BattleTokenCodec(battleConfig.tokenSecret),
+                battleIdGenerator = { idGenerator.nextId() },
+                tokenTtl = battleConfig.tokenTtl,
+            ),
+        )
         services.register(PatchableServiceRegistry::class, patchableServices)
         services.register(StartupLikeReloadPlan::class, PlayerGameTimeReloadPlan(this))
     }
@@ -84,6 +99,7 @@ class PlayerNode(
     override suspend fun launch() {
         clusterNode.launch(
             beforeClusterModules = listOf(PlayerMongoIndexModule(), clusterNode.workerIdModule()),
+            afterClusterModules = listOf(BattleDiscoveryModule(battleEndpointRegistry)),
             onStateChange = ::updateState,
         ) {
             role(GameRoles.Player)

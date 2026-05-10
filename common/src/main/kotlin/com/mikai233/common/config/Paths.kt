@@ -18,6 +18,8 @@ val GAME_TIME_OVERRIDE: ConfigPath = GAME_TIME / "override"
 
 val GAME_TIME_RELOAD_ACKS: ConfigPath = ROOT / "game-time-reload-acks"
 
+val BATTLE_INSTANCES: ConfigPath = ROOT / "battle" / "instances"
+
 const val WORKER_IDS = "/$SYSTEM_NAME/worker-ids"
 
 val NETTY_CONFIGS: ConfigPath = ROOT / "netty"

@@ -53,6 +53,14 @@
       "type": "com.mikai233.protocol.ProtoChat.ChatHistoryResp"
     },
     {
+      "id": 100016,
+      "type": "com.mikai233.protocol.ProtoBattle.BattleStartReq"
+    },
+    {
+      "id": 100017,
+      "type": "com.mikai233.protocol.ProtoBattle.BattleStartResp"
+    },
+    {
       "id": 110001,
       "type": "com.mikai233.protocol.ProtoRpcPlayer.PlayerCreateReq"
     },

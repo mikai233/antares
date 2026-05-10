@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package com.mikai233.protocol;
+
+enum BattleFrameKind {
+  BattleFrameKindUnspecified = 0;
+  BattleInput = 1;
+  BattleState = 2;
+  BattleAck = 3;
+  BattleError = 4;
+  BattleClosed = 5;
+}
+
+enum BattleStartResult {
+  BattleStartSuccess = 0;
+  BattleStartUnavailable = 1;
+  BattleStartRejected = 2;
+}
+
+message BattleEndpoint {
+  string instance_id = 1;
+  string host = 2;
+  int32 port = 3;
+  string transport = 4;
+}
+
+message BattleStartReq {
+  int64 player_id = 1;
+  string mode = 2;
+  int64 client_seq = 3;
+}
+
+message BattleStartResp {
+  int64 client_seq = 1;
+  BattleStartResult result = 2;
+  int64 battle_id = 3;
+  BattleEndpoint endpoint = 4;
+  string token = 5;
+  int64 token_expires_at = 6;
+  string reason = 7;
+}
+
+message BattleFrameReq {
+  int64 battle_id = 1;
+  int64 player_id = 2;
+  int64 sequence = 3;
+  BattleFrameKind kind = 4;
+  bytes payload = 5;
+  string token = 6;
+}
+
+message BattleFrameNotify {
+  int64 battle_id = 1;
+  int64 player_id = 2;
+  int64 sequence = 3;
+  BattleFrameKind kind = 4;
+  bytes payload = 5;
+  string error = 6;
+}

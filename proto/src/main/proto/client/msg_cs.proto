@@ -3,6 +3,7 @@ import "client/proto_system.proto";
 import "client/proto_login.proto";
 import "client/proto_test.proto";
 import "client/proto_chat.proto";
+import "client/proto_battle.proto";
 
 package com.mikai233.protocol;
 
@@ -13,4 +14,5 @@ message MessageClientToServer{
   LoginReq login_req = 10001;
   ChatSendReq chat_send_req = 10002;
   ChatHistoryReq chat_history_req = 10003;
+  BattleStartReq battle_start_req = 10004;
 }

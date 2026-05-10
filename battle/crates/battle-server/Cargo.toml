@@ -1,0 +1,22 @@
+[package]
+edition.workspace = true
+name = "battle-server"
+version.workspace = true
+
+[dependencies]
+anyhow = "1.0.102"
+base64 = "0.22.1"
+battle-core = { path = "../battle-core" }
+clap = { version = "4.6.0", features = ["derive"] }
+hmac = "0.12.1"
+prost = "0.14.1"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+sha2 = "0.10.9"
+tokio = { version = "1.52.1", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+zookeeper = "0.8.0"
+
+[build-dependencies]
+prost-build = "0.14.1"

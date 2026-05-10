@@ -1,0 +1,6 @@
+[package]
+edition.workspace = true
+name = "battle-core"
+version.workspace = true
+
+[dependencies]
