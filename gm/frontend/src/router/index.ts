@@ -18,5 +18,25 @@ export const router = createRouter({
             component: () => import('@/views/ScriptJobsView.vue'),
             meta: {title: '任务记录'},
         },
+        {
+            path: '/patches',
+            component: () => import('@/views/PatchView.vue'),
+            meta: {title: '运行补丁'},
+        },
+        {
+            path: '/config',
+            component: () => import('@/views/ConfigView.vue'),
+            meta: {title: '配置中心'},
+        },
+        {
+            path: '/cluster',
+            component: () => import('@/views/ClusterView.vue'),
+            meta: {title: '集群管理'},
+        },
+        {
+            path: '/gm-metadata',
+            component: () => import('@/views/GmMetadataView.vue'),
+            meta: {title: 'GM 元数据'},
+        },
     ],
 })

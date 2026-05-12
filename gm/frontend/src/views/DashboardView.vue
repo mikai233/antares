@@ -16,7 +16,7 @@ const gm = useGmStore()
     </article>
     <article class="panel-card metric">
       <span>Primary Flow</span>
-      <strong>Script</strong>
+      <strong>GM API</strong>
     </article>
   </section>
 
@@ -27,9 +27,9 @@ const gm = useGmStore()
     </div>
     <el-space wrap>
       <el-tag>脚本任务</el-tag>
-      <el-tag type="success">节点状态</el-tag>
-      <el-tag type="warning">操作审计</el-tag>
-      <el-tag type="info">权限接入</el-tag>
+      <el-tag type="success">配置 reload</el-tag>
+      <el-tag type="warning">运行补丁</el-tag>
+      <el-tag type="info">集群状态</el-tag>
     </el-space>
   </section>
 </template>

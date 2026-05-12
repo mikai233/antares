@@ -178,6 +178,69 @@ textarea {
     gap: 16px;
 }
 
+.page-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.65fr);
+    gap: 16px;
+    align-items: start;
+}
+
+.two-column-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.eyebrow,
+.section-heading h2,
+.panel-card h2 {
+    margin: 0;
+}
+
+.eyebrow {
+    color: var(--gm-muted);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+}
+
+.section-heading h2,
+.panel-card h2 {
+    margin-top: 6px;
+    font-size: 28px;
+    letter-spacing: -0.04em;
+}
+
+.inline-form {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(160px, 1fr));
+    gap: 12px;
+    align-items: end;
+}
+
+.raw-output {
+    min-height: 120px;
+    max-height: 360px;
+    margin: 0;
+    overflow: auto;
+    border: 1px solid var(--gm-line);
+    border-radius: 16px;
+    padding: 14px;
+    color: #d8efe7;
+    background: #111a21;
+    font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.55;
+}
+
 @media (max-width: 960px) {
     .app-shell {
         grid-template-columns: 1fr;
@@ -188,6 +251,12 @@ textarea {
     }
 
     .section-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .page-grid,
+    .two-column-grid,
+    .inline-form {
         grid-template-columns: 1fr;
     }
 }
