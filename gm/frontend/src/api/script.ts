@@ -31,7 +31,7 @@ export interface GmScriptJobCommand {
 }
 
 export interface ScriptJob {
-    id: string
+    id: string | { value: string }
     command: GmScriptJobCommand
     status: string
     attempt: number
@@ -63,8 +63,8 @@ export interface ScriptJobItemAttempt {
 }
 
 export interface ScriptJobItem {
-    id: string
-    jobId: string
+    id: string | { value: string }
+    jobId: string | { value: string }
     target: unknown
     status: string
     results: ScriptJobResultEntry[]
@@ -162,18 +162,74 @@ export async function listScriptJobs() {
     return response.data
 }
 
-export async function getScriptJob(id: string) {
-    const response = await http.get<ScriptJob>(`/gm/api/scripts/jobs/${id}`)
+export async function cancelScriptJob(id: string, reason?: string) {
+    const response = await http.post<ScriptJob>(`/gm/api/scripts/jobs/${encodeURIComponent(id)}/cancel`, {
+        reason: blankToUndefined(reason),
+    })
     return response.data
 }
 
-export async function listScriptJobItems(id: string) {
-    const response = await http.get<ScriptJobItemPage>(`/gm/api/scripts/jobs/${id}/items`)
+export async function exportScriptJobResults(id: string, status?: string) {
+    const response = await http.get<string>(`/gm/api/scripts/jobs/${encodeURIComponent(id)}/results.csv`, {
+        params: {status: blankToUndefined(status)},
+        responseType: 'text',
+    })
+    return response.data
+}
+
+export async function getScriptJob(id: string) {
+    const response = await http.get<ScriptJob>(`/gm/api/scripts/jobs/${encodeURIComponent(id)}`)
+    return response.data
+}
+
+export async function listScriptJobItems(id: string, params: {
+    status?: string
+    offset?: number
+    limit?: number
+} = {}) {
+    const response = await http.get<ScriptJobItemPage>(`/gm/api/scripts/jobs/${encodeURIComponent(id)}/items`, {
+        params: blankObjectToUndefined(params),
+    })
     return response.data
 }
 
 export async function getScriptJobSummary(id: string) {
-    const response = await http.get<ScriptJobResultSummary>(`/gm/api/scripts/jobs/${id}/summary`)
+    const response = await http.get<ScriptJobResultSummary>(`/gm/api/scripts/jobs/${encodeURIComponent(id)}/summary`)
+    return response.data
+}
+
+export async function getScriptJobItem(jobId: string, itemId: string) {
+    const response = await http.get<ScriptJobItem>(
+        `/gm/api/scripts/jobs/${encodeURIComponent(jobId)}/items/${encodeURIComponent(itemId)}`,
+    )
+    return response.data
+}
+
+export async function cancelScriptJobItem(jobId: string, itemId: string, reason?: string) {
+    const response = await http.post<ScriptJobItem>(
+        `/gm/api/scripts/jobs/${encodeURIComponent(jobId)}/items/${encodeURIComponent(itemId)}/cancel`,
+        {reason: blankToUndefined(reason)},
+    )
+    return response.data
+}
+
+export async function retryScriptJobItem(jobId: string, itemId: string, timeoutMillis = 3_000) {
+    const response = await http.post<ScriptJobItem>(
+        `/gm/api/scripts/jobs/${encodeURIComponent(jobId)}/items/${encodeURIComponent(itemId)}/retry`,
+        {timeoutMillis},
+    )
+    return response.data
+}
+
+export async function retryFailedScriptJobItems(id: string, request: {
+    error?: string
+    limit?: number
+    timeoutMillis?: number
+} = {}) {
+    const response = await http.post<ScriptJobItem[]>(
+        `/gm/api/scripts/jobs/${encodeURIComponent(id)}/failed-items/retry`,
+        blankObjectToUndefined(request),
+    )
     return response.data
 }
 
@@ -227,6 +283,31 @@ export function targetTypeLabel(target: unknown): string {
 export function itemError(item: ScriptJobItem): string | undefined {
     const failedAttempt = [...item.attempts].reverse().find(attempt => attempt.error)
     return failedAttempt?.error ?? item.results.find(entry => entry.error)?.error ?? undefined
+}
+
+export function scriptIdValue(value: string | { value: string }): string {
+    return typeof value === 'string' ? value : value.value
+}
+
+export function downloadCsv(fileName: string, content: string) {
+    const blob = new Blob([content], {type: 'text/csv;charset=utf-8'})
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    link.click()
+    URL.revokeObjectURL(url)
+}
+
+function blankToUndefined(value?: string) {
+    const trimmed = value?.trim()
+    return trimmed ? trimmed : undefined
+}
+
+function blankObjectToUndefined<T extends Record<string, unknown>>(value: T) {
+    return Object.fromEntries(
+        Object.entries(value).filter(([, item]) => item !== undefined && item !== null && item !== ''),
+    )
 }
 
 function nestedValue(value: unknown): string | undefined {

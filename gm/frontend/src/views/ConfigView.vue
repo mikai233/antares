@@ -6,10 +6,11 @@ import {
   getClusterConfigStatus,
   getConfigMetadata,
   getConfigReloadStatus,
+  getConfigRow,
   getConfigTableSchema,
+  listConfigRows,
   listConfigReloadHistory,
   listConfigTables,
-  queryConfigRows,
   reloadClusterConfig,
   reloadLocalConfig,
   revisionText,
@@ -32,6 +33,7 @@ const tables = ref<GmConfigTableSummary[]>([])
 const selectedTable = ref('')
 const schema = ref<GmConfigTableDescriptor>()
 const rows = ref<GmConfigRowPage>()
+const selectedRow = ref<GmConfigRow>()
 const clusterStatuses = ref<unknown[]>([])
 const consistency = ref<unknown>()
 const clusterReloadResult = ref<ClusterConfigReloadResult>()
@@ -40,6 +42,7 @@ const query = reactive({
   keyword: '',
   offset: 0,
   limit: 50,
+  rowId: '',
 })
 
 const clusterReloadForm = reactive({
@@ -117,12 +120,13 @@ async function loadSelectedTable(resetOffset = false) {
   }
   if (resetOffset) {
     query.offset = 0
+    selectedRow.value = undefined
   }
   tableLoading.value = true
   try {
     const [nextSchema, nextRows] = await Promise.all([
       getConfigTableSchema(selectedTable.value),
-      queryConfigRows(selectedTable.value, {
+      listConfigRows(selectedTable.value, {
         keyword: query.keyword || null,
         offset: query.offset,
         limit: query.limit,
@@ -132,6 +136,21 @@ async function loadSelectedTable(resetOffset = false) {
     rows.value = nextRows
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '加载配置表失败')
+  } finally {
+    tableLoading.value = false
+  }
+}
+
+async function loadConfigRow(id = query.rowId) {
+  if (!selectedTable.value || !id.trim()) {
+    return
+  }
+  tableLoading.value = true
+  try {
+    selectedRow.value = await getConfigRow(selectedTable.value, id.trim())
+    query.rowId = id.trim()
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '加载配置行失败')
   } finally {
     tableLoading.value = false
   }
@@ -229,7 +248,7 @@ onMounted(async () => {
             <el-descriptions-item label="Size">{{ selectedSummary.size }}</el-descriptions-item>
           </el-descriptions>
 
-          <el-table v-loading="tableLoading" :data="rows?.rows ?? []" border>
+          <el-table v-loading="tableLoading" :data="rows?.rows ?? []" border @row-click="(row: GmConfigRow) => loadConfigRow(row.id)">
             <el-table-column prop="id" label="ID" min-width="140" fixed />
             <el-table-column
               v-for="field in schema?.fields ?? []"
@@ -306,6 +325,21 @@ onMounted(async () => {
               {{ reloadStatus?.lastFailure?.message ?? '-' }}
             </el-descriptions-item>
           </el-descriptions>
+        </div>
+
+        <div class="panel-card stack">
+          <div>
+            <p class="eyebrow">Row Detail</p>
+            <h2>单行查询</h2>
+          </div>
+          <el-form class="stack" label-position="top">
+            <el-form-item label="Row ID">
+              <el-input v-model="query.rowId" @keyup.enter="loadConfigRow()" />
+            </el-form-item>
+            <el-button :loading="tableLoading" @click="loadConfigRow()">加载行</el-button>
+          </el-form>
+          <el-empty v-if="!selectedRow" description="暂无行详情" />
+          <pre v-else class="raw-output">{{ jsonText(selectedRow) }}</pre>
         </div>
 
         <div class="panel-card stack">

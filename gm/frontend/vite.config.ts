@@ -25,7 +25,7 @@ export default defineConfig({
         proxy: {
             '/actuator': 'http://127.0.0.1:8080',
             '/gm/api': 'http://127.0.0.1:8080',
-            '/script': 'http://127.0.0.1:8080',
+            '^/script(?:/|$)': 'http://127.0.0.1:8080',
         },
     },
 })

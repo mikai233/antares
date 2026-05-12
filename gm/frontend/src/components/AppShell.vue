@@ -1,9 +1,30 @@
 <script setup lang="ts">
-import { Box, Coin, Connection, DocumentChecked, Files, Monitor, Operation, SetUp } from '@element-plus/icons-vue'
+import { Box, Coin, Connection, DocumentChecked, Files, Monitor, Moon, Operation, SetUp, Sunny, SwitchButton, Timer } from '@element-plus/icons-vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
 const router = useRouter()
+const theme = ref<'light' | 'dark'>('light')
+const isDark = computed(() => theme.value === 'dark')
+
+function toggleTheme() {
+  theme.value = isDark.value ? 'light' : 'dark'
+}
+
+function applyTheme(nextTheme: 'light' | 'dark') {
+  document.documentElement.dataset.theme = nextTheme
+  document.documentElement.classList.toggle('dark', nextTheme === 'dark')
+  localStorage.setItem('gm-theme', nextTheme)
+}
+
+watch(theme, applyTheme)
+
+onMounted(() => {
+  const savedTheme = localStorage.getItem('gm-theme')
+  theme.value = savedTheme === 'dark' ? 'dark' : 'light'
+  applyTheme(theme.value)
+})
 </script>
 
 <template>
@@ -47,6 +68,14 @@ const router = useRouter()
           <el-icon><Connection /></el-icon>
           <span>集群管理</span>
         </el-menu-item>
+        <el-menu-item index="/game-time">
+          <el-icon><Timer /></el-icon>
+          <span>游戏时间</span>
+        </el-menu-item>
+        <el-menu-item index="/shutdown">
+          <el-icon><SwitchButton /></el-icon>
+          <span>停服控制</span>
+        </el-menu-item>
         <el-menu-item index="/gm-metadata">
           <el-icon><Files /></el-icon>
           <span>GM 元数据</span>
@@ -64,7 +93,15 @@ const router = useRouter()
           <p>GM 后台</p>
           <h1>{{ route.meta.title }}</h1>
         </div>
-        <el-tag effect="dark" type="success">Spring Boot API</el-tag>
+        <div class="topbar-actions">
+          <el-button circle :aria-label="isDark ? '切换亮色模式' : '切换暗色模式'" @click="toggleTheme">
+            <el-icon>
+              <Sunny v-if="isDark" />
+              <Moon v-else />
+            </el-icon>
+          </el-button>
+          <el-tag effect="plain" type="success">Spring Boot API</el-tag>
+        </div>
       </header>
 
       <router-view />

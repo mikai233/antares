@@ -149,6 +149,18 @@ export async function getConfigTableSchema(table: string) {
   return response.data
 }
 
+export async function listConfigRows(table: string, params: {
+  keyword?: string | null
+  offset?: number
+  limit?: number
+}) {
+  const response = await http.get<GmConfigRowPage>(
+    `/gm/api/config/tables/${encodeURIComponent(table)}/rows`,
+    { params },
+  )
+  return response.data
+}
+
 export async function queryConfigRows(table: string, query: GmConfigRowQuery) {
   const response = await http.post<GmConfigRowPage>(
     `/gm/api/config/tables/${encodeURIComponent(table)}/query`,

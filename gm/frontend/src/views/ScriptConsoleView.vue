@@ -8,6 +8,7 @@ import {
   getScriptMetadata,
   itemError,
   listScriptJobItems,
+  scriptIdValue,
   type GmScriptMetadata,
   type GmScriptTargetRequest,
   type GmScriptTargetType,
@@ -122,7 +123,7 @@ async function submitScript() {
       maxConcurrentItems: form.maxConcurrentItems,
     })
     job.value = createdJob
-    items.value = (await listScriptJobItems(createdJob.id)).items
+    items.value = (await listScriptJobItems(scriptIdValue(createdJob.id))).items
     ElMessage.success('脚本任务已创建')
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '脚本任务提交失败')
@@ -261,7 +262,7 @@ onMounted(loadMetadata)
       <template v-else>
         <el-descriptions :column="1" border>
           <el-descriptions-item label="Job ID">
-            <el-text tag="code">{{ job.id }}</el-text>
+            <el-text tag="code">{{ scriptIdValue(job.id) }}</el-text>
           </el-descriptions-item>
           <el-descriptions-item label="Status">
             <el-tag>{{ job.status }}</el-tag>
@@ -299,8 +300,9 @@ onMounted(loadMetadata)
 <style scoped>
 .script-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(360px, 0.8fr);
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
   gap: 16px;
+  min-width: 0;
 }
 
 .result-panel {
@@ -323,8 +325,8 @@ onMounted(loadMetadata)
 
 .result-panel h2 {
   margin-top: 6px;
-  font-size: 30px;
-  letter-spacing: -0.04em;
+  font-size: 18px;
+  letter-spacing: 0;
 }
 
 @media (max-width: 1180px) {

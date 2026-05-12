@@ -58,8 +58,8 @@ const gm = useGmStore()
 
 .dashboard-note h2 {
   margin-top: 6px;
-  font-size: 28px;
-  letter-spacing: -0.04em;
+  font-size: 18px;
+  letter-spacing: 0;
 }
 
 @media (max-width: 760px) {

@@ -8,6 +8,7 @@ import {
   describePatchTarget,
   disablePatch,
   expireIncompatiblePatches,
+  getPatch,
   listPatchNodeResults,
   listPatches,
   patchIdValue,
@@ -22,6 +23,7 @@ const createLoading = ref(false)
 const patches = ref<RuntimePatchDescriptor[]>([])
 const nodeResults = ref<RuntimePatchNodeResult[]>([])
 const lastApply = ref<PatchClusterApplyResult | PatchClusterApplyResult[]>()
+const selectedPatch = ref<RuntimePatchDescriptor>()
 
 const filters = reactive({
   status: '',
@@ -135,6 +137,14 @@ async function runApply(id: string) {
   }
 }
 
+async function loadPatchDetail(id: string) {
+  try {
+    selectedPatch.value = await getPatch(id)
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '加载补丁详情失败')
+  }
+}
+
 async function runDisable(id: string) {
   loading.value = true
   try {
@@ -199,6 +209,10 @@ function itemText(value: unknown) {
     return itemText((value as { value?: unknown }).value)
   }
   return String(value)
+}
+
+function jsonText(value: unknown) {
+  return value == null ? '-' : JSON.stringify(value, null, 2)
 }
 
 onMounted(async () => {
@@ -269,8 +283,11 @@ onMounted(async () => {
               capabilities={{ requirementText(row.requirements.capabilities) }}
             </template>
           </el-table-column>
-          <el-table-column label="Actions" width="180" fixed="right">
+          <el-table-column label="Actions" width="250" fixed="right">
             <template #default="{ row }">
+              <el-button size="small" @click="loadPatchDetail(patchIdValue(row.id))">
+                Detail
+              </el-button>
               <el-button size="small" :loading="loading" @click="runApply(patchIdValue(row.id))">
                 Apply
               </el-button>
@@ -383,6 +400,24 @@ onMounted(async () => {
         </el-form-item>
         <el-button type="primary" :loading="createLoading" @click="submitPatch">发布</el-button>
       </el-form>
+
+      <div class="panel-card stack">
+        <div>
+          <p class="eyebrow">Patch Detail</p>
+          <h2>补丁详情</h2>
+        </div>
+        <el-empty v-if="!selectedPatch" description="选择补丁查看详情" />
+        <template v-else>
+          <el-descriptions :column="1" border>
+            <el-descriptions-item label="ID">{{ patchIdValue(selectedPatch.id) }}</el-descriptions-item>
+            <el-descriptions-item label="Name">{{ selectedPatch.name }}</el-descriptions-item>
+            <el-descriptions-item label="Status">{{ selectedPatch.status }}</el-descriptions-item>
+            <el-descriptions-item label="Target">{{ describePatchTarget(selectedPatch.target) }}</el-descriptions-item>
+            <el-descriptions-item label="Revision">{{ selectedPatch.revision }}</el-descriptions-item>
+          </el-descriptions>
+          <pre class="raw-output">{{ jsonText(selectedPatch) }}</pre>
+        </template>
+      </div>
 
       <div class="panel-card stack">
         <div>

@@ -102,6 +102,11 @@ export async function createPatch(payload: CreatePatchPayload) {
   return response.data
 }
 
+export async function getPatch(id: string) {
+  const response = await http.get<RuntimePatchDescriptor>(`/gm/api/patches/${encodeURIComponent(id)}`)
+  return response.data
+}
+
 export async function applyPatch(id: string) {
   const response = await http.post<PatchClusterApplyResult>(`/gm/api/patches/${encodeURIComponent(id)}/apply`)
   return response.data
