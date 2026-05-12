@@ -6,7 +6,7 @@ import io.github.realmlabs.asteria.config.center.ConfigRevisionMismatchException
 import io.github.realmlabs.asteria.config.center.RuntimeConfigEvent
 import io.github.realmlabs.asteria.config.center.RuntimeConfigRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.map
 import org.apache.zookeeper.KeeperException
 
 class ConfigCenterGameTimeOverrideStore(
@@ -18,7 +18,7 @@ class ConfigCenterGameTimeOverrideStore(
 
     override fun watch(): Flow<GameTimeOverride> {
         return repository.watchValue<GameTimeOverride>(GAME_TIME_OVERRIDE)
-            .mapNotNull { event ->
+            .map { event ->
                 when (event) {
                     is RuntimeConfigEvent.Upserted -> event.value.value
                     is RuntimeConfigEvent.Deleted -> DEFAULT
