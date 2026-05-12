@@ -2,10 +2,7 @@ package com.mikai233.common.runtime
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import io.github.realmlabs.asteria.cluster.pekko.PekkoClusterJoin
-import io.github.realmlabs.asteria.cluster.pekko.PekkoClusterStartPlan
-import io.github.realmlabs.asteria.cluster.pekko.PekkoClusterStartup
-import io.github.realmlabs.asteria.cluster.pekko.PekkoRuntimeModule
+import io.github.realmlabs.asteria.cluster.pekko.*
 import io.github.realmlabs.asteria.core.AsteriaApplication
 import io.github.realmlabs.asteria.core.ModuleContext
 import io.github.realmlabs.asteria.core.RoleKey
@@ -21,6 +18,7 @@ internal object KubernetesGameClusterApplicationFactory : GameClusterApplication
         return gameApplication {
             installGameNodeModules(request)
             install(PekkoRuntimeModule(KubernetesPekkoClusterStartup(request.runtimeConfig(), request.addr)))
+            install(PekkoClusterConfigControlModule())
             install(GameServerStartupSummaryModule("kubernetes"))
         }
     }
