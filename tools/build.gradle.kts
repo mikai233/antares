@@ -18,6 +18,7 @@ dependencies {
     implementation(libs.kotlinx.core)
     implementation(libs.bundles.curator)
     implementation(project(":common"))
+    implementation(project(":config"))
 }
 
 tasks.test {
@@ -36,7 +37,7 @@ tasks.register<JavaExec>("publishLocalGameConfig") {
     group = "antares config"
     description =
         "Regenerate the Luban binary bundle and publish game config to local Zookeeper. Defaults to projectVersion; use -PgameConfigVersion=x.y.z to override."
-    dependsOn(":common:packageLubanConfigBundle", "classes")
+    dependsOn(":config:packageLubanConfigBundle", "classes")
     mainClass = "com.mikai233.tools.config.PublishLocalGameConfigKt"
     classpath = sourceSets["main"].runtimeClasspath
     forwardGameConfigVersion()
@@ -46,7 +47,7 @@ tasks.register<JavaExec>("initializeLocalRuntimeConfig") {
     group = "antares local"
     description =
         "Initialize local topology/runtime config and publish game config. Defaults to projectVersion; use -PgameConfigVersion=x.y.z to override."
-    dependsOn(":common:packageLubanConfigBundle", "classes")
+    dependsOn(":config:packageLubanConfigBundle", "classes")
     mainClass = "com.mikai233.tools.zookeeper.ZookeeperInitializerKt"
     classpath = sourceSets["main"].runtimeClasspath
     forwardGameConfigVersion()

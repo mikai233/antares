@@ -11,8 +11,8 @@ if [ -z "${LUBAN_TOOL_ROOT:-}" ]; then
 fi
 LUBAN_DLL="$LUBAN_TOOL_ROOT/Tools/Luban/Luban.dll"
 JAVA_CORELIB="$LUBAN_TOOL_ROOT/Projects/Java_bin/src/main/corelib/luban"
-OUTPUT_CODE_DIR="$ROOT/common/src/generated/luban/java"
-OUTPUT_DATA_DIR="$ROOT/common/build/generated/luban/resources/luban"
+OUTPUT_CODE_DIR="$ROOT/config/src/generated/luban/java"
+OUTPUT_DATA_DIR="$ROOT/config/build/generated/luban/resources/luban"
 
 if [ ! -f "$LUBAN_DLL" ]; then
   echo "Luban tool not found: $LUBAN_DLL" >&2

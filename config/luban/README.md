@@ -9,8 +9,8 @@ The flow is:
 1. Edit the Excel files under the configured `lubanDataDir`.
 2. Run `config/luban/generate.sh` / `config/luban/generate.ps1` or the Gradle tasks below.
 3. Luban generates:
-    - Java model/table code into `common/src/generated/luban/java`
-    - binary table files into `common/build/generated/luban/resources/luban`
+    - Java model/table code into `config/src/generated/luban/java`
+    - binary table files into `config/build/generated/luban/resources/luban`
 4. The project checks in the generated Java sources plus Kotlin Luban metadata/bridge sources. Asteria KSP generates
    table accessors during build. The generated `.bytes` files are local build artifacts used by tests and publication
    tooling, not runtime source files. Runtime nodes consume the packaged `game-config.zip` publication artifact from
@@ -26,13 +26,13 @@ Common commands:
 
 ```bash
 # Export Luban Java code and raw .bytes
-./gradlew :common:exportLubanConfig
+./gradlew :config:exportLubanConfig
 
 # Export Luban Java/.bytes and refresh the generated Kotlin metadata/bridge
-./gradlew :common:refreshLubanConfig
+./gradlew :config:refreshLubanConfig
 
 # Build a server-consumable binary bundle
-./gradlew :common:packageLubanConfigBundle
+./gradlew :config:packageLubanConfigBundle
 ```
 
 Publishing to the local config center defaults the publication revision to `projectVersion` from the root
@@ -54,7 +54,7 @@ publication manifest.
 Default bundle output:
 
 ```text
-common/build/generated/luban/bundles/game-config.zip
+config/build/generated/luban/bundles/game-config.zip
 ```
 
 Common configuration in the root `gradle.properties`:
@@ -67,10 +67,10 @@ lubanDataDir=config/luban/Datas
 Temporary overrides are also supported:
 
 ```bash
-./gradlew :common:refreshLubanConfig -PlubanDataDir=/path/to/Datas
-./gradlew :common:refreshLubanConfig -PlubanToolRoot=/path/to/luban/tool/root
-LUBAN_DATA_DIR=/path/to/Datas ./gradlew :common:refreshLubanConfig
-LUBAN_TOOL_ROOT=/path/to/luban/tool/root ./gradlew :common:refreshLubanConfig
+./gradlew :config:refreshLubanConfig -PlubanDataDir=/path/to/Datas
+./gradlew :config:refreshLubanConfig -PlubanToolRoot=/path/to/luban/tool/root
+LUBAN_DATA_DIR=/path/to/Datas ./gradlew :config:refreshLubanConfig
+LUBAN_TOOL_ROOT=/path/to/luban/tool/root ./gradlew :config:refreshLubanConfig
 ```
 
 The generator expects an existing Luban examples checkout because it reuses the official tool and Java corelib:

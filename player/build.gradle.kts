@@ -29,6 +29,7 @@ dependencies {
     implementation(libs.jcommander)
     implementation(libs.spring.data.mongodb)
     implementation(project(":common"))
+    implementation(project(":config"))
     implementation(project(":proto"))
     ksp(libs.asteria.config.ksp)
     ksp(libs.asteria.persistence.mongodb.ksp)

@@ -1,7 +1,7 @@
 package com.mikai233.player.config
 
-import com.mikai233.common.config.luban.GameConfigTables
-import com.mikai233.common.config.luban.tbActivity
+import com.mikai233.config.luban.GameConfigTables
+import com.mikai233.config.luban.tbActivity
 import com.mikai233.player.PlayerActor
 import com.mikai233.player.data.PlayerActivityMem
 import com.mikai233.player.data.PlayerMem

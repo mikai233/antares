@@ -9,8 +9,8 @@ if (-not $env:LUBAN_TOOL_ROOT) {
 }
 $LubanDll = Join-Path $env:LUBAN_TOOL_ROOT "Tools/Luban/Luban.dll"
 $JavaCorelib = Join-Path $env:LUBAN_TOOL_ROOT "Projects/Java_bin/src/main/corelib/luban"
-$OutputCodeDir = Join-Path $Root "common/src/generated/luban/java"
-$OutputDataDir = Join-Path $Root "common/build/generated/luban/resources/luban"
+$OutputCodeDir = Join-Path $Root "config/src/generated/luban/java"
+$OutputDataDir = Join-Path $Root "config/build/generated/luban/resources/luban"
 
 if (-not (Test-Path $LubanDll -PathType Leaf)) {
     Write-Error "Luban tool not found: $LubanDll`nSet LUBAN_TOOL_ROOT to a Luban checkout that contains Tools/Luban/Luban.dll"

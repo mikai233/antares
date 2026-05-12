@@ -1,11 +1,11 @@
 package com.mikai233.tools.config
 
 import com.mikai233.common.config.GAME_CONFIG_PUBLICATION
-import com.mikai233.common.config.luban.GameConfigPublicationZipLoader
-import com.mikai233.common.config.luban.GameTables
-import com.mikai233.common.config.luban.GameTablesSnapshotBridge
-import com.mikai233.common.config.luban.query.GameConfigQueryBuilders
-import com.mikai233.common.config.luban.validation.GameConfigValidators
+import com.mikai233.config.luban.GameConfigPublicationZipLoader
+import com.mikai233.config.luban.GameTables
+import com.mikai233.config.luban.GameTablesSnapshotBridge
+import com.mikai233.config.luban.query.GameConfigQueryBuilders
+import com.mikai233.config.luban.validation.GameConfigValidators
 import io.github.realmlabs.asteria.config.ConfigRevision
 import io.github.realmlabs.asteria.config.ConfigService
 import io.github.realmlabs.asteria.config.center.zookeeper.ZookeeperConfigStore

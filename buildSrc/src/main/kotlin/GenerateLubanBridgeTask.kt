@@ -124,9 +124,9 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
 
     private fun renderGeneratedGameTables(): String {
         return """
-            |package com.mikai233.common.config.luban
+            |package com.mikai233.config.luban
             |
-            |import com.mikai233.common.config.luban.gen.GameTablesGen
+            |import com.mikai233.config.luban.gen.GameTablesGen
             |import luban.ByteBuf
             |import java.io.IOException
             |
@@ -148,7 +148,7 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
             "typealias ${it.rowAlias} = ${it.rowFqcn}"
         }
         return """
-            |package com.mikai233.common.config.luban
+            |package com.mikai233.config.luban
             |
             |$typeAliases
             |""".trimMargin()
@@ -171,7 +171,7 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
 
     private fun renderGeneratedGameTablesSnapshotBridge(indices: IntRange): String {
         return """
-            |package com.mikai233.common.config.luban
+            |package com.mikai233.config.luban
             |
             |import io.github.realmlabs.asteria.config.SnapshotEntry
             |import io.github.realmlabs.asteria.config.luban.LubanSnapshotBridge
@@ -203,7 +203,7 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
         entries: List<TableEntry>,
     ): String {
         return """
-            |package com.mikai233.common.config.luban
+            |package com.mikai233.config.luban
             |
             |import io.github.realmlabs.asteria.config.SnapshotEntry
             |import io.github.realmlabs.asteria.config.listConfigTable
@@ -277,7 +277,7 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
 
     private fun renderGeneratedLubanMetadata(indices: IntRange): String {
         return """
-            |package com.mikai233.common.config.luban
+            |package com.mikai233.config.luban
             |
             |object GeneratedLubanMetadata {
             |    val files: List<String> = buildList {
@@ -299,7 +299,7 @@ abstract class GenerateLubanBridgeTask : DefaultTask() {
     ): String {
         val joined = files.joinToString(",\n") { "        \"$it\"" }
         return """
-            |package com.mikai233.common.config.luban
+            |package com.mikai233.config.luban
             |
             |internal fun generatedLubanMetadataFilesChunk$index(): List<String> {
             |    return listOf(

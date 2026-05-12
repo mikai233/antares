@@ -98,6 +98,7 @@ spring-data-commons = { module = "org.springframework.data:spring-data-commons",
 spring-data-mongodb = { module = "org.springframework.data:spring-data-mongodb", version.ref = "spring-data" }
 test-junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 test-junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+test-junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 testcontainers-mongodb = { module = "org.testcontainers:mongodb", version.ref = "testcontainers" }
 
 [bundles]

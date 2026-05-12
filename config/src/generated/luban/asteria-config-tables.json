@@ -1,0 +1,72 @@
+{
+  "tables": [
+    {
+      "name": "game_tbrotationmessage",
+      "shape": "LIST",
+      "rowType": "com.mikai233.config.luban.gen.game.RotationMessage",
+      "tableType": "io.github.realmlabs.asteria.config.ListConfigTable",
+      "refName": "TbRotationMessage",
+      "propertyName": "tbRotationMessage",
+      "markerName": "RotationMessageConfigTable"
+    },
+    {
+      "name": "game_tbgameglobal",
+      "shape": "SINGLETON",
+      "rowType": "com.mikai233.config.luban.gen.game.GameGlobal",
+      "tableType": "io.github.realmlabs.asteria.config.SingleConfigTable",
+      "refName": "TbGameGlobal",
+      "propertyName": "tbGameGlobal",
+      "markerName": "GameGlobalConfigTable"
+    },
+    {
+      "name": "game_tbactivity",
+      "shape": "KEYED",
+      "keyType": "kotlin.String",
+      "rowType": "com.mikai233.config.luban.gen.game.activity",
+      "tableType": "io.github.realmlabs.asteria.config.OrderedMapConfigTable",
+      "refName": "TbActivity",
+      "propertyName": "tbActivity",
+      "markerName": "ActivityConfigTable"
+    },
+    {
+      "name": "game_tbdroppool",
+      "shape": "KEYED",
+      "keyType": "kotlin.Int",
+      "rowType": "com.mikai233.config.luban.gen.game.droppool",
+      "tableType": "io.github.realmlabs.asteria.config.OrderedMapConfigTable",
+      "refName": "TbDroppool",
+      "propertyName": "tbDroppool",
+      "markerName": "DroppoolConfigTable"
+    },
+    {
+      "name": "game_tbmonster",
+      "shape": "KEYED",
+      "keyType": "kotlin.Int",
+      "rowType": "com.mikai233.config.luban.gen.game.monster",
+      "tableType": "io.github.realmlabs.asteria.config.OrderedMapConfigTable",
+      "refName": "TbMonster",
+      "propertyName": "tbMonster",
+      "markerName": "MonsterConfigTable"
+    },
+    {
+      "name": "game_tbitem",
+      "shape": "KEYED",
+      "keyType": "kotlin.Int",
+      "rowType": "com.mikai233.config.luban.gen.game.item",
+      "tableType": "io.github.realmlabs.asteria.config.OrderedMapConfigTable",
+      "refName": "TbItem",
+      "propertyName": "tbItem",
+      "markerName": "ItemConfigTable"
+    },
+    {
+      "name": "game_tbscene",
+      "shape": "KEYED",
+      "keyType": "kotlin.Int",
+      "rowType": "com.mikai233.config.luban.gen.game.scene",
+      "tableType": "io.github.realmlabs.asteria.config.OrderedMapConfigTable",
+      "refName": "TbScene",
+      "propertyName": "tbScene",
+      "markerName": "SceneConfigTable"
+    }
+  ]
+}

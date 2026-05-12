@@ -17,6 +17,7 @@ dependencyResolutionManagement {
 }
 
 include("common")
+include("config")
 include("gate")
 include("stardust")
 include("tools")

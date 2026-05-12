@@ -27,6 +27,7 @@
             <option value="$PROJECT_DIR$/build-logic" />
             <option value="$PROJECT_DIR$/buildSrc" />
             <option value="$PROJECT_DIR$/common" />
+            <option value="$PROJECT_DIR$/config" />
             <option value="$PROJECT_DIR$/gate" />
             <option value="$PROJECT_DIR$/global" />
             <option value="$PROJECT_DIR$/gm" />

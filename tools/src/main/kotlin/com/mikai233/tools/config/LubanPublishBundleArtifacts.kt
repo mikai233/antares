@@ -1,7 +1,7 @@
 package com.mikai233.tools.config
 
-import com.mikai233.common.config.luban.GeneratedLubanMetadata
-import com.mikai233.common.config.luban.unpackZipEntries
+import com.mikai233.config.luban.GeneratedLubanMetadata
+import com.mikai233.config.luban.unpackZipEntries
 import io.github.realmlabs.asteria.config.publisher.ConfigPublicationArtifact
 import java.io.ByteArrayOutputStream
 import java.nio.file.Files
@@ -45,14 +45,14 @@ object LubanPublishBundleArtifacts {
 
     private fun requireGeneratedDataDir(): Path {
         val dir = requireProjectRoot()
-            .resolve("common")
+            .resolve("config")
             .resolve("build")
             .resolve("generated")
             .resolve("luban")
             .resolve("resources")
             .resolve("luban")
         check(dir.exists()) {
-            "Generated Luban data directory not found: $dir. Run :common:refreshLubanConfig first."
+            "Generated Luban data directory not found: $dir. Run :config:refreshLubanConfig first."
         }
         return dir
     }

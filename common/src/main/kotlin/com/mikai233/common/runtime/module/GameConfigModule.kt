@@ -1,10 +1,10 @@
 package com.mikai233.common.runtime.module
 
 import com.mikai233.common.config.GAME_CONFIG_PUBLICATION
-import com.mikai233.common.config.luban.GameConfigPublicationZipLoader
-import com.mikai233.common.config.luban.query.GameConfigQueryBuilders
-import com.mikai233.common.config.luban.validation.GameConfigValidators
 import com.mikai233.common.event.GameConfigChangedEvent
+import com.mikai233.config.luban.GameConfigPublicationZipLoader
+import com.mikai233.config.luban.query.GameConfigQueryBuilders
+import com.mikai233.config.luban.validation.GameConfigValidators
 import io.github.realmlabs.asteria.config.ConfigModule
 import io.github.realmlabs.asteria.config.center.ConfigCenterReloadTrigger
 import io.github.realmlabs.asteria.config.center.ConfigStore

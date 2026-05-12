@@ -75,7 +75,7 @@ Useful local tasks:
 If you changed Luban schema or table structure, refresh generated sources first:
 
 ```bash
-./gradlew :common:refreshLubanConfig
+./gradlew :config:refreshLubanConfig
 ./gradlew :tools:publishLocalGameConfig
 ```
 
@@ -234,7 +234,7 @@ components include:
 - `ActivityConfigQueries.activitiesByUnlockLevel`
 - `DropPoolConfigQueries.dropEntriesByItemId`
 
-Query builders live under `common/src/main/kotlin/com/mikai233/common/config/luban/query` and are auto-collected through
+Query builders live under `config/src/main/kotlin/com/mikai233/config/luban/query` and are auto-collected through
 `@AsteriaContribution`.
 
 ### Actor memory repair after config reload
@@ -268,7 +268,7 @@ Player/world config-change handlers are also auto-collected during build through
 
 Validation is organized by business area. Validators live under:
 
-- `common/src/main/kotlin/com/mikai233/common/config/luban/validation`
+- `config/src/main/kotlin/com/mikai233/config/luban/validation`
 
 Add validators by table or domain area. Validators are auto-collected through Asteria contribution generation and
 passed to `ConfigModule` as `GameConfigValidators.defaultValidators`.
@@ -293,11 +293,11 @@ Excel is the source of truth for demo game config. The default Excel directory i
 root `gradle.properties`.
 
 - Excel source: `config/luban/Datas`
-- generated Java table/model code: `common/src/generated/luban/java`
-- generated Kotlin Luban metadata/bridge: `common/src/generated/luban/kotlin`
-- generated table accessors: `common/build/generated/ksp/main/kotlin`
-- generated raw `.bytes`: `common/build/generated/luban/resources/luban`
-- packaged publication artifact: `common/build/generated/luban/bundles/game-config.zip`
+- generated Java table/model code: `config/src/generated/luban/java`
+- generated Kotlin Luban metadata/bridge: `config/src/generated/luban/kotlin`
+- generated table accessors: `config/build/generated/ksp/main/kotlin`
+- generated raw `.bytes`: `config/build/generated/luban/resources/luban`
+- packaged publication artifact: `config/build/generated/luban/bundles/game-config.zip`
 
 The generated Java/Kotlin source is checked into the repo. Raw `.bytes` files are local build outputs and are not part
 of the runtime classpath. Runtime nodes consume a single `game-config.zip` publication artifact from the config center
@@ -307,19 +307,19 @@ Common commands:
 
 ```bash
 # Export Luban Java code and raw .bytes
-./gradlew :common:exportLubanConfig
+./gradlew :config:exportLubanConfig
 
 # Export Luban Java/.bytes and refresh the generated Kotlin metadata/bridge
-./gradlew :common:refreshLubanConfig
+./gradlew :config:refreshLubanConfig
 
 # Validate tables and custom business rules
-./gradlew :common:validateLubanConfigTables
+./gradlew :config:validateLubanConfigTables
 
 # Validate that derived game config query components can be constructed
-./gradlew :common:validateLubanConfigQueries
+./gradlew :config:validateLubanConfigQueries
 
 # Package a server-consumable config bundle
-./gradlew :common:packageLubanConfigBundle
+./gradlew :config:packageLubanConfigBundle
 ```
 
 Common configuration:
