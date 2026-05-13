@@ -4,6 +4,12 @@ export interface GameTimeOverrideResponse {
   epoch: number
   globalOffsetMillis: number
   currentMillis: number
+  zoneId: string
+}
+
+export interface GameTimeZoneResponse {
+  zoneId: string
+  currentMillis: number
 }
 
 export interface GameTimeReloadStatusResponse {
@@ -20,6 +26,11 @@ export interface GameTimeReloadAckResponse {
 
 export async function getGameTimeOverride() {
   const response = await http.get<GameTimeOverrideResponse>('/gm/api/game-time/override')
+  return response.data
+}
+
+export async function getGameTimeZone() {
+  const response = await http.get<GameTimeZoneResponse>('/gm/api/game-time/time-zone')
   return response.data
 }
 

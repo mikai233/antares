@@ -5,6 +5,7 @@ export const enUS: Record<string, string> = {
   'API 正常': 'API Ready',
   'API 检查中': 'Checking API',
   'API 离线': 'API Offline',
+  '服务器时区': 'Server Time Zone',
   '{count} 个问题': '{count} issues',
   '切换亮色模式': 'Switch to light mode',
   '切换暗色模式': 'Switch to dark mode',

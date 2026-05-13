@@ -17,6 +17,7 @@ dependencies {
     implementation(libs.asteria.script.job.mongodb.spring.boot.starter)
     implementation(libs.bundles.pekko.common)
     implementation(libs.kotlinx.core)
+    implementation(libs.kotlinx.datetime)
     implementation(libs.kotlinx.reactor)
     implementation(libs.bundles.spring.boot.web)
     implementation(libs.jcommander)

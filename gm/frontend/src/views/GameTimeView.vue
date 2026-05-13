@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { showError, showSuccess } from '@/utils/feedback'
+import { applyServerTimeZone, formatServerDateTime, serverTimeZoneText } from '@/utils/serverTime'
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -42,12 +43,12 @@ const estimatedServerNowMillis = computed(() => {
 })
 
 const currentTimeText = computed(() => {
-  return liveCurrentMillis.value == null ? '-' : new Date(liveCurrentMillis.value).toLocaleString()
+  return formatServerDateTime(liveCurrentMillis.value)
 })
 
 const targetTimeText = computed(() => {
   const targetMillis = targetMillisValue()
-  return targetMillis == null ? '-' : new Date(targetMillis).toLocaleString()
+  return formatServerDateTime(targetMillis)
 })
 
 const ackSuccessCount = computed(() => reloadStatus.value?.acks.filter(ack => ack.success).length ?? 0)
@@ -114,6 +115,7 @@ async function loadReloadStatus(silent = false) {
 
 function applyOverride(nextOverride: GameTimeOverrideResponse) {
   override.value = nextOverride
+  applyServerTimeZone(nextOverride.zoneId, nextOverride.currentMillis)
   overrideFetchedAt.value = Date.now()
   nowTick.value = overrideFetchedAt.value
   form.globalOffsetMillis = nextOverride.globalOffsetMillis
@@ -211,7 +213,10 @@ onBeforeUnmount(() => {
           <p class="eyebrow">{{ t('游戏时间') }}</p>
           <h2>{{ t('全局时间偏移') }}</h2>
         </div>
-        <el-button :loading="loading" @click="refresh">{{ t('刷新') }}</el-button>
+        <el-space wrap>
+          <el-tag type="info" effect="plain">{{ t('服务器时区') }}: {{ serverTimeZoneText() }}</el-tag>
+          <el-button :loading="loading" @click="refresh">{{ t('刷新') }}</el-button>
+        </el-space>
       </div>
 
       <el-form-item :label="t('全局偏移（毫秒）')">

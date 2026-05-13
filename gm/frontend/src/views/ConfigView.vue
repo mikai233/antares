@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { showError, showSuccess } from '@/utils/feedback'
+import { formatServerDateTime } from '@/utils/serverTime'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -582,7 +583,7 @@ onMounted(async () => {
             {{ revisionText(reloadStatus?.currentRevision) }}
           </el-descriptions-item>
           <el-descriptions-item :label="t('最近成功')">
-            {{ reloadStatus?.lastSuccess?.occurredAt ?? '-' }}
+            {{ formatServerDateTime(reloadStatus?.lastSuccess?.occurredAt) }}
           </el-descriptions-item>
           <el-descriptions-item :label="t('最近失败')">
             {{ reloadStatus?.lastFailure?.message ?? '-' }}
@@ -633,7 +634,11 @@ onMounted(async () => {
       <el-table :data="reloadHistory" border>
         <el-table-column prop="id" label="ID" width="90" />
         <el-table-column prop="status" :label="t('状态')" width="120" />
-        <el-table-column prop="occurredAt" :label="t('时间')" min-width="220" />
+        <el-table-column :label="t('时间')" min-width="220">
+          <template #default="{ row }">
+            {{ formatServerDateTime(row.occurredAt) }}
+          </template>
+        </el-table-column>
         <el-table-column prop="message" :label="t('消息')" min-width="220" />
       </el-table>
     </div>

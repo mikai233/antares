@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { showError, showSuccess } from '@/utils/feedback'
+import { formatServerDateTime } from '@/utils/serverTime'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -164,10 +165,6 @@ async function runRetryItem() {
   }
 }
 
-function formatTime(millis: number) {
-  return new Date(millis).toLocaleString()
-}
-
 function scriptJobStatusText(status: string) {
   const labels: Record<string, string> = {
     Pending: t('等待中'),
@@ -245,7 +242,7 @@ onMounted(refreshJobs)
             <el-tag>{{ scriptJobStatusText(selectedJob.status) }}</el-tag>
           </el-descriptions-item>
           <el-descriptions-item :label="t('创建时间')">
-            {{ formatTime(selectedJob.createdAtMillis) }}
+            {{ formatServerDateTime(selectedJob.createdAtMillis) }}
           </el-descriptions-item>
         </el-descriptions>
 

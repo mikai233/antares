@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { backendHealth, checkBackendHealth } from '@/api/backendHealth'
 import { toggleLocale } from '@/i18n'
+import { loadServerTimeZone, serverTimeZoneText } from '@/utils/serverTime'
 
 const route = useRoute()
 const router = useRouter()
@@ -47,6 +48,7 @@ onMounted(() => {
   theme.value = savedTheme === 'dark' ? 'dark' : 'light'
   applyTheme(theme.value)
   void checkBackendHealth()
+  void loadServerTimeZone()
   healthTimer = window.setInterval(() => {
     void checkBackendHealth()
   }, 10_000)
@@ -137,6 +139,9 @@ onBeforeUnmount(() => {
           </el-button>
           <el-tag effect="plain" :type="apiStatusType" :title="backendHealth.message">
             {{ apiStatusText }}
+          </el-tag>
+          <el-tag effect="plain" type="info">
+            {{ t('服务器时区') }}: {{ serverTimeZoneText() }}
           </el-tag>
         </div>
       </header>

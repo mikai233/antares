@@ -20,6 +20,7 @@ class GameTimeController(
             epoch = override.epoch,
             globalOffsetMillis = override.globalOffsetMillis,
             currentMillis = node.gameTimeSource.nowMillis(),
+            zoneId = node.gameTimeSource.timeZone.id,
         )
     }
 
@@ -30,6 +31,15 @@ class GameTimeController(
         return GameTimeOverrideResponse(
             epoch = override.epoch,
             globalOffsetMillis = override.globalOffsetMillis,
+            currentMillis = node.gameTimeSource.nowMillis(),
+            zoneId = node.gameTimeSource.timeZone.id,
+        )
+    }
+
+    @GetMapping("/time-zone")
+    fun timeZone(): GameTimeZoneResponse {
+        return GameTimeZoneResponse(
+            zoneId = node.gameTimeSource.timeZone.id,
             currentMillis = node.gameTimeSource.nowMillis(),
         )
     }
@@ -57,6 +67,12 @@ data class UpdateGameTimeOverrideRequest(
 data class GameTimeOverrideResponse(
     val epoch: Long,
     val globalOffsetMillis: Long,
+    val currentMillis: Long,
+    val zoneId: String,
+)
+
+data class GameTimeZoneResponse(
+    val zoneId: String,
     val currentMillis: Long,
 )
 
