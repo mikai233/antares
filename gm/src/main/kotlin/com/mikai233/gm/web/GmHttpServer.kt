@@ -1,6 +1,7 @@
 package com.mikai233.gm.web
 
 import com.mikai233.common.config.DataSourceConfig
+import com.mikai233.common.config.ROOT
 import com.mikai233.common.config.mongoUri
 import com.mikai233.gm.GmNode
 import com.typesafe.config.Config
@@ -53,6 +54,7 @@ class GmHttpServer(
             "asteria.script.job.mongodb.database" to dataSource.databaseName,
             "asteria.script.job.mongodb.ensure-indexes" to true,
             "asteria.script.job.in-memory-repository-enabled" to false,
+            "asteria.gm.config-center.allowed-roots[0]" to ROOT.value,
             "management.endpoints.web.exposure.include" to "health,info,metrics",
         )
     }

@@ -128,6 +128,36 @@ export interface ClusterConfigRevisionConsistency {
   consistent: boolean
 }
 
+export interface GmConfigCenterEntrySummary {
+  path: string
+  name: string
+  revision: string
+  revisionMetadata: Record<string, string>
+  size: number
+}
+
+export interface GmConfigCenterTreeResponse {
+  path: string
+  exists: boolean
+  revision?: string | null
+  revisionMetadata: Record<string, string>
+  size?: number | null
+  children: GmConfigCenterEntrySummary[]
+}
+
+export interface GmConfigCenterEntryResponse {
+  path: string
+  exists: boolean
+  revision?: string | null
+  revisionMetadata: Record<string, string>
+  size?: number | null
+  contentType?: string | null
+  encoding?: string | null
+  preview?: string | null
+  truncated: boolean
+  checksum?: string | null
+}
+
 export async function getConfigMetadata() {
   const response = await http.get<GmConfigMetadata>('/gm/api/config/metadata')
   return response.data
@@ -199,6 +229,20 @@ export async function getConfigRow(table: string, id: string) {
   const response = await http.get<GmConfigRow>(
     `/gm/api/config/tables/${encodeURIComponent(table)}/rows/${encodeURIComponent(id)}`,
   )
+  return response.data
+}
+
+export async function getConfigCenterTree(path = '/') {
+  const response = await http.get<GmConfigCenterTreeResponse>('/gm/api/config-center/tree', {
+    params: { path },
+  })
+  return response.data
+}
+
+export async function getConfigCenterEntry(path = '/') {
+  const response = await http.get<GmConfigCenterEntryResponse>('/gm/api/config-center/entry', {
+    params: { path },
+  })
   return response.data
 }
 

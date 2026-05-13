@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ElMessage } from 'element-plus'
+import { showError } from '@/utils/feedback'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -35,7 +35,7 @@ async function refresh() {
     routes.value = nextRoutes
     actions.value = nextActions
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('加载 GM 元数据失败'))
+    showError(error, t('加载 GM 元数据失败'))
   } finally {
     loading.value = false
   }

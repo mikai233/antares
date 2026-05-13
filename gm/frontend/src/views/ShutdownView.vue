@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ElMessage } from 'element-plus'
+import { showError, showSuccess } from '@/utils/feedback'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -34,7 +34,7 @@ async function refresh() {
   try {
     status.value = await getShutdownStatus()
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('加载停服状态失败'))
+    showError(error, t('加载停服状态失败'))
   } finally {
     loading.value = false
   }
@@ -47,9 +47,9 @@ async function submitShutdown() {
       planId: form.planId || null,
       requestedBy: form.requestedBy || null,
     })
-    ElMessage.success(t('停服流程已启动'))
+    showSuccess(t('停服流程已启动'))
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('启动停服失败'))
+    showError(error, t('启动停服失败'))
   } finally {
     loading.value = false
   }

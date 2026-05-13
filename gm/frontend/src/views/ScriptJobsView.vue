@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ElMessage } from 'element-plus'
+import { showError, showSuccess } from '@/utils/feedback'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -56,7 +56,7 @@ async function refreshJobs() {
       await selectJob(scriptIdValue(selectedJob.value.id))
     }
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('加载脚本任务失败'))
+    showError(error, t('加载脚本任务失败'))
   } finally {
     loading.value = false
   }
@@ -75,7 +75,7 @@ async function selectJob(jobOrId: ScriptJob | string) {
     selectedSummary.value = summary
     selectedItem.value = undefined
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('加载任务详情失败'))
+    showError(error, t('加载任务详情失败'))
   }
 }
 
@@ -91,10 +91,10 @@ async function runCancelJob() {
   }
   try {
     selectedJob.value = await cancelScriptJob(selectedJobId.value, jobActionForm.cancelReason)
-    ElMessage.success(t('任务已提交取消'))
+    showSuccess(t('任务已提交取消'))
     await reloadSelectedJob()
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('取消任务失败'))
+    showError(error, t('取消任务失败'))
   }
 }
 
@@ -108,10 +108,10 @@ async function runRetryFailedItems() {
       limit: jobActionForm.retryLimit,
       timeoutMillis: jobActionForm.retryTimeoutMillis,
     })
-    ElMessage.success(t('失败项已提交重试'))
+    showSuccess(t('失败项已提交重试'))
     await reloadSelectedJob()
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('重试失败项失败'))
+    showError(error, t('重试失败项失败'))
   }
 }
 
@@ -123,7 +123,7 @@ async function runExportResults() {
     const csv = await exportScriptJobResults(selectedJobId.value, jobActionForm.exportStatus)
     downloadCsv(`script-job-${selectedJobId.value}.csv`, csv)
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('导出结果失败'))
+    showError(error, t('导出结果失败'))
   }
 }
 
@@ -134,7 +134,7 @@ async function selectItem(item: ScriptJobItem) {
   try {
     selectedItem.value = await getScriptJobItem(selectedJobId.value, scriptIdValue(item.id))
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('加载任务项详情失败'))
+    showError(error, t('加载任务项详情失败'))
   }
 }
 
@@ -144,10 +144,10 @@ async function runCancelItem() {
   }
   try {
     selectedItem.value = await cancelScriptJobItem(selectedJobId.value, selectedItemId.value, itemActionForm.cancelReason)
-    ElMessage.success(t('任务项已提交取消'))
+    showSuccess(t('任务项已提交取消'))
     await reloadSelectedJob()
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('取消任务项失败'))
+    showError(error, t('取消任务项失败'))
   }
 }
 
@@ -157,10 +157,10 @@ async function runRetryItem() {
   }
   try {
     selectedItem.value = await retryScriptJobItem(selectedJobId.value, selectedItemId.value, itemActionForm.retryTimeoutMillis)
-    ElMessage.success(t('任务项已提交重试'))
+    showSuccess(t('任务项已提交重试'))
     await reloadSelectedJob()
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('重试任务项失败'))
+    showError(error, t('重试任务项失败'))
   }
 }
 

@@ -11,6 +11,7 @@ dependencies {
     implementation(libs.asteria.gm.script.spring.boot.starter)
     implementation(libs.asteria.gm.patch.spring.boot.starter)
     implementation(libs.asteria.gm.config.spring.boot.starter)
+    implementation(libs.asteria.gm.config.center.spring.boot.starter)
     implementation(libs.asteria.gm.cluster.spring.boot.starter)
     implementation(libs.asteria.gm.cluster.pekko)
     implementation(libs.asteria.script.job.mongodb.spring.boot.starter)

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ElMessage } from 'element-plus'
+import { showError, showSuccess } from '@/utils/feedback'
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -69,7 +69,7 @@ async function refresh() {
       await loadReloadStatus(true)
     }
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('加载游戏时间失败'))
+    showError(error, t('加载游戏时间失败'))
   } finally {
     loading.value = false
   }
@@ -79,10 +79,10 @@ async function submitOffset() {
   loading.value = true
   try {
     applyOverride(await updateGameTimeOverride(form.globalOffsetMillis))
-    ElMessage.success(t('全局时间偏移已更新'))
+    showSuccess(t('全局时间偏移已更新'))
     await loadReloadStatus(true)
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('更新时间偏移失败'))
+    showError(error, t('更新时间偏移失败'))
   } finally {
     loading.value = false
   }
@@ -105,7 +105,7 @@ async function loadReloadStatus(silent = false) {
     reloadStatus.value = await getGameTimeReloadStatus(form.reloadEpoch)
   } catch (error) {
     if (!silent) {
-      ElMessage.error(error instanceof Error ? error.message : t('加载 Reload Ack 失败'))
+      showError(error, t('加载 Reload Ack 失败'))
     }
   } finally {
     ackLoading.value = false

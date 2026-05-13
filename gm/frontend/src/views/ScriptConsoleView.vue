@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ElMessage } from 'element-plus'
+import { showError, showSuccess, showWarning } from '@/utils/feedback'
 import { UploadFilled } from '@element-plus/icons-vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -114,13 +114,13 @@ async function loadMetadata() {
       form.actorName = metadata.value.singletons[0]
     }
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('加载脚本元数据失败'))
+    showError(error, t('加载脚本元数据失败'))
   }
 }
 
 async function submitScript() {
   if (!form.scriptFile) {
-    ElMessage.warning(t('请选择脚本文件'))
+    showWarning(t('请选择脚本文件'))
     return
   }
 
@@ -137,9 +137,9 @@ async function submitScript() {
     })
     job.value = createdJob
     items.value = (await listScriptJobItems(scriptIdValue(createdJob.id))).items
-    ElMessage.success(t('脚本任务已创建'))
+    showSuccess(t('脚本任务已创建'))
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('脚本任务提交失败'))
+    showError(error, t('脚本任务提交失败'))
   } finally {
     loading.value = false
   }

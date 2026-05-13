@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ElMessage } from 'element-plus'
+import { showError, showSuccess, showWarning } from '@/utils/feedback'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -69,7 +69,7 @@ async function refreshPatches() {
   try {
     patches.value = await listPatches(filters)
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('加载补丁列表失败'))
+    showError(error, t('加载补丁列表失败'))
   } finally {
     loading.value = false
   }
@@ -79,7 +79,7 @@ async function refreshNodeResults() {
   try {
     nodeResults.value = await listPatchNodeResults(resultFilters)
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('加载节点结果失败'))
+    showError(error, t('加载节点结果失败'))
   }
 }
 
@@ -95,7 +95,7 @@ function onPatchFileChange(uploadFile: { raw?: File }) {
 
 async function submitPatch() {
   if (!form.file) {
-    ElMessage.warning(t('请选择补丁 jar'))
+    showWarning(t('请选择补丁 jar'))
     return
   }
   createLoading.value = true
@@ -116,10 +116,10 @@ async function submitPatch() {
       requiredCapabilities: csv(form.requiredCapabilities),
       status: form.status,
     })
-    ElMessage.success(t('补丁已发布'))
+    showSuccess(t('补丁已发布'))
     await refreshPatches()
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('发布补丁失败'))
+    showError(error, t('发布补丁失败'))
   } finally {
     createLoading.value = false
   }
@@ -129,11 +129,11 @@ async function runApply(id: string) {
   loading.value = true
   try {
     lastApply.value = await applyPatch(id)
-    ElMessage.success(t('补丁 apply 已提交'))
+    showSuccess(t('补丁 apply 已提交'))
     resultFilters.patchId = id
     await Promise.all([refreshPatches(), refreshNodeResults()])
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('补丁 apply 失败'))
+    showError(error, t('补丁 apply 失败'))
   } finally {
     loading.value = false
   }
@@ -143,7 +143,7 @@ async function loadPatchDetail(id: string) {
   try {
     selectedPatch.value = await getPatch(id)
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('加载补丁详情失败'))
+    showError(error, t('加载补丁详情失败'))
   }
 }
 
@@ -151,11 +151,11 @@ async function runDisable(id: string) {
   loading.value = true
   try {
     await disablePatch(id)
-    ElMessage.success(t('补丁已禁用'))
+    showSuccess(t('补丁已禁用'))
     resultFilters.patchId = id
     await Promise.all([refreshPatches(), refreshNodeResults()])
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('禁用补丁失败'))
+    showError(error, t('禁用补丁失败'))
   } finally {
     loading.value = false
   }
@@ -165,10 +165,10 @@ async function runApplyEnabled() {
   loading.value = true
   try {
     lastApply.value = await applyEnabledPatches()
-    ElMessage.success(t('已 apply 所有启用补丁'))
+    showSuccess(t('已 apply 所有启用补丁'))
     await refreshNodeResults()
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('apply 启用补丁失败'))
+    showError(error, t('apply 启用补丁失败'))
   } finally {
     loading.value = false
   }
@@ -178,10 +178,10 @@ async function runExpireIncompatible() {
   loading.value = true
   try {
     await expireIncompatiblePatches()
-    ElMessage.success(t('已过期不兼容补丁'))
+    showSuccess(t('已过期不兼容补丁'))
     await refreshPatches()
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('过期补丁失败'))
+    showError(error, t('过期补丁失败'))
   } finally {
     loading.value = false
   }

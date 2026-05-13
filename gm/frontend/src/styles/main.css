@@ -1,3 +1,5 @@
+@import 'element-plus/theme-chalk/el-message.css';
+@import 'element-plus/theme-chalk/el-notification.css';
 @import 'element-plus/theme-chalk/dark/css-vars.css';
 
 :root {
@@ -395,6 +397,37 @@ textarea {
 
 .el-space {
     min-width: 0;
+}
+
+.el-message {
+    max-width: min(680px, calc(100vw - 32px));
+    border-radius: 8px;
+    box-shadow: 0 14px 38px rgba(15, 23, 42, 0.16);
+}
+
+.el-message .el-message__content {
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+.gm-error-notification.el-notification {
+    width: min(520px, calc(100vw - 32px));
+    border: 1px solid var(--el-color-danger-light-5);
+    border-radius: 8px;
+    box-shadow: 0 16px 42px rgba(15, 23, 42, 0.18);
+}
+
+.gm-error-notification .el-notification__title {
+    color: var(--gm-text);
+    font-size: 14px;
+}
+
+.gm-error-notification .el-notification__content {
+    color: var(--gm-muted);
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+    white-space: normal;
 }
 
 @media (max-width: 1180px) {

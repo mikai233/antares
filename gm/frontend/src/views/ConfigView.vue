@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ElMessage } from 'element-plus'
+import { showError, showSuccess } from '@/utils/feedback'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   getClusterConfigConsistency,
   getClusterConfigStatus,
+  getConfigCenterEntry,
+  getConfigCenterTree,
   getConfigMetadata,
   getConfigReloadStatus,
   getConfigRow,
@@ -19,6 +21,8 @@ import {
   type ClusterConfigNodeStatus,
   type ClusterConfigRevisionConsistency,
   type ConfigRevision,
+  type GmConfigCenterEntryResponse,
+  type GmConfigCenterTreeResponse,
   type GmConfigMetadata,
   type GmConfigReloadRecord,
   type GmConfigReloadStatus,
@@ -30,6 +34,8 @@ import {
 
 const loading = ref(false)
 const tableLoading = ref(false)
+const configCenterLoading = ref(false)
+const ConfigCenterRootPath = '/antares'
 const { t } = useI18n()
 const metadata = ref<GmConfigMetadata>()
 const reloadStatus = ref<GmConfigReloadStatus>()
@@ -42,12 +48,18 @@ const selectedRow = ref<GmConfigRow>()
 const clusterStatuses = ref<ClusterConfigNodeStatus[]>([])
 const consistency = ref<ClusterConfigRevisionConsistency>()
 const clusterReloadResult = ref<ClusterConfigReloadResult>()
+const configCenterTree = ref<GmConfigCenterTreeResponse>()
+const configCenterEntry = ref<GmConfigCenterEntryResponse>()
 
 const query = reactive({
   keyword: '',
   offset: 0,
   limit: 50,
   rowId: '',
+})
+
+const configCenterForm = reactive({
+  path: ConfigCenterRootPath,
 })
 
 const clusterReloadForm = reactive({
@@ -82,6 +94,16 @@ const consistencyRows = computed(() => {
   }))
 })
 
+const configCenterParent = computed(() => parentConfigCenterPath(configCenterTree.value?.path ?? configCenterForm.path))
+const configCenterEntryName = computed(() => {
+  const path = configCenterEntry.value?.path ?? configCenterTree.value?.path ?? ConfigCenterRootPath
+  if (path === ConfigCenterRootPath) {
+    return ConfigCenterRootPath
+  }
+  const segments = path.split('/').filter(Boolean)
+  return segments.at(-1) ?? '/'
+})
+
 async function refreshOverview() {
   loading.value = true
   try {
@@ -103,7 +125,7 @@ async function refreshOverview() {
       selectedTable.value = nextTables[0].name
     }
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('加载配置状态失败'))
+    showError(error, t('加载配置状态失败'))
   } finally {
     loading.value = false
   }
@@ -113,10 +135,10 @@ async function reloadLocal() {
   loading.value = true
   try {
     await reloadLocalConfig()
-    ElMessage.success(t('本节点配置已 reload'))
+    showSuccess(t('本节点配置已 reload'))
     await refreshOverview()
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('本节点 reload 失败'))
+    showError(error, t('本节点 reload 失败'))
   } finally {
     loading.value = false
   }
@@ -132,10 +154,10 @@ async function reloadCluster() {
       addresses: lines(clusterReloadForm.addresses),
       timeoutMillis: clusterReloadForm.timeoutMillis,
     })
-    ElMessage.success(t('集群配置 reload 已提交'))
+    showSuccess(t('集群配置 reload 已提交'))
     await refreshOverview()
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('集群配置 reload 失败'))
+    showError(error, t('集群配置 reload 失败'))
   } finally {
     loading.value = false
   }
@@ -162,7 +184,7 @@ async function loadSelectedTable(resetOffset = false) {
     schema.value = nextSchema
     rows.value = nextRows
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('加载配置表失败'))
+    showError(error, t('加载配置表失败'))
   } finally {
     tableLoading.value = false
   }
@@ -177,7 +199,7 @@ async function loadConfigRow(id = query.rowId) {
     selectedRow.value = await getConfigRow(selectedTable.value, id.trim())
     query.rowId = id.trim()
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('加载配置行失败'))
+    showError(error, t('加载配置行失败'))
   } finally {
     tableLoading.value = false
   }
@@ -211,6 +233,56 @@ function configRevisionText(value?: ConfigRevision | null) {
     return '-'
   }
   return value.checksum ? `${value.version} (${value.checksum.slice(0, 8)})` : value.version
+}
+
+async function loadConfigCenter(path = configCenterForm.path) {
+  configCenterLoading.value = true
+  try {
+    const nextPath = normalizeConfigCenterPath(path)
+    const nextTree = await getConfigCenterTree(nextPath)
+    const nextEntry = await getConfigCenterEntry(nextPath)
+    configCenterTree.value = nextTree
+    configCenterEntry.value = nextEntry
+    configCenterForm.path = nextTree.path
+  } catch (error) {
+    showError(error, t('加载 ConfigCenter 数据失败'))
+  } finally {
+    configCenterLoading.value = false
+  }
+}
+
+function openConfigCenterPath(path: string) {
+  configCenterForm.path = path
+  void loadConfigCenter(path)
+}
+
+function entryPreview(entry?: GmConfigCenterEntryResponse | null) {
+  if (!entry || !entry.exists) {
+    return t('无内容')
+  }
+  if (entry.preview == null) {
+    return t('二进制或空内容')
+  }
+  return entry.truncated ? `${entry.preview}\n... ${t('已截断')}` : entry.preview
+}
+
+function normalizeConfigCenterPath(path: string) {
+  const trimmed = path.trim()
+  if (!trimmed || trimmed === '/') {
+    return ConfigCenterRootPath
+  }
+  const rooted = trimmed.startsWith('/') ? trimmed : `/${trimmed}`
+  return rooted.replace(/\/+$/, '') || ConfigCenterRootPath
+}
+
+function parentConfigCenterPath(path: string) {
+  const normalized = normalizeConfigCenterPath(path)
+  if (normalized === ConfigCenterRootPath || !normalized.startsWith(`${ConfigCenterRootPath}/`)) {
+    return null
+  }
+  const index = normalized.lastIndexOf('/')
+  const parent = index <= 0 ? ConfigCenterRootPath : normalized.slice(0, index)
+  return parent.length < ConfigCenterRootPath.length ? ConfigCenterRootPath : parent
 }
 
 function successText(value: boolean) {
@@ -260,6 +332,7 @@ watch(selectedTable, () => {
 onMounted(async () => {
   await refreshOverview()
   await loadSelectedTable()
+  await loadConfigCenter()
 })
 </script>
 
@@ -397,6 +470,74 @@ onMounted(async () => {
           </template>
         </el-table-column>
       </el-table>
+    </div>
+
+    <div class="panel-card stack">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">ConfigCenter</p>
+          <h2>{{ t('ConfigCenter 数据') }}</h2>
+        </div>
+        <el-button :loading="configCenterLoading" @click="loadConfigCenter()">{{ t('刷新') }}</el-button>
+      </div>
+
+      <el-form class="inline-form" label-position="top">
+        <el-form-item :label="t('浏览路径')">
+          <el-input v-model="configCenterForm.path" @keyup.enter="loadConfigCenter()" />
+        </el-form-item>
+        <el-form-item label=" ">
+          <el-space wrap>
+            <el-button :loading="configCenterLoading" @click="loadConfigCenter()">{{ t('查询') }}</el-button>
+            <el-button @click="openConfigCenterPath(ConfigCenterRootPath)">{{ t('根路径') }}</el-button>
+            <el-button
+              :disabled="!configCenterParent"
+              @click="configCenterParent && openConfigCenterPath(configCenterParent)"
+            >
+              {{ t('父级') }}
+            </el-button>
+          </el-space>
+        </el-form-item>
+      </el-form>
+
+      <el-descriptions v-if="configCenterEntry?.exists" :column="3" border>
+        <el-descriptions-item :label="t('当前节点')">{{ configCenterEntry.path }}</el-descriptions-item>
+        <el-descriptions-item :label="t('字节')">{{ configCenterEntry.size ?? '-' }}</el-descriptions-item>
+        <el-descriptions-item label="Revision">{{ configCenterEntry.revision ?? '-' }}</el-descriptions-item>
+      </el-descriptions>
+      <el-alert
+        v-else
+        :title="t('当前路径没有直接数据')"
+        type="info"
+        :closable="false"
+        show-icon
+      />
+
+      <div class="config-center-browser-grid">
+        <div class="stack">
+          <div>
+            <p class="eyebrow">{{ t('子节点') }}</p>
+            <h2>{{ configCenterTree?.path ?? ConfigCenterRootPath }}</h2>
+          </div>
+          <el-table v-loading="configCenterLoading" :data="configCenterTree?.children ?? []" border>
+            <el-table-column prop="name" :label="t('名称')" min-width="180" />
+            <el-table-column prop="size" :label="t('字节')" width="100" />
+            <el-table-column prop="revision" label="Revision" width="120" />
+            <el-table-column :label="t('操作')" width="110">
+              <template #default="{ row }">
+                <el-button size="small" @click="openConfigCenterPath(row.path)">{{ t('打开') }}</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+
+        <div class="stack">
+          <div>
+            <p class="eyebrow">{{ t('内容预览') }}</p>
+            <h2>{{ configCenterEntryName }}</h2>
+          </div>
+          <pre class="raw-output">{{ entryPreview(configCenterEntry) }}</pre>
+        </div>
+      </div>
     </div>
 
     <div class="config-work-grid">
@@ -576,12 +717,21 @@ onMounted(async () => {
   min-width: 0;
 }
 
+.config-center-browser-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.8fr);
+  gap: 14px;
+  align-items: start;
+  min-width: 0;
+}
+
 @media (max-width: 760px) {
   .consistency-summary {
     grid-template-columns: 1fr;
   }
 
-  .config-work-grid {
+  .config-work-grid,
+  .config-center-browser-grid {
     grid-template-columns: 1fr;
   }
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ElMessage } from 'element-plus'
+import { showError, showSuccess } from '@/utils/feedback'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -49,7 +49,7 @@ async function refreshStatus() {
   try {
     status.value = await getClusterStatus()
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('加载集群状态失败'))
+    showError(error, t('加载集群状态失败'))
   } finally {
     loading.value = false
   }
@@ -60,7 +60,7 @@ async function loadRawStatus() {
   try {
     rawStatus.value = await getRawClusterStatus()
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('加载原始状态失败'))
+    showError(error, t('加载原始状态失败'))
   } finally {
     rawLoading.value = false
   }
@@ -88,10 +88,10 @@ async function runOperation(operation: () => Promise<GmClusterOperationResult>) 
   loading.value = true
   try {
     lastOperation.value = await operation()
-    ElMessage.success(t('集群操作已提交'))
+    showSuccess(t('集群操作已提交'))
     await refreshStatus()
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('集群操作失败'))
+    showError(error, t('集群操作失败'))
   } finally {
     loading.value = false
   }

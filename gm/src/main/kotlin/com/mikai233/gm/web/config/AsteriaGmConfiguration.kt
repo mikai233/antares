@@ -8,6 +8,7 @@ import io.github.realmlabs.asteria.cluster.pekko.EntityShardRegistry
 import io.github.realmlabs.asteria.cluster.pekko.SingletonActorRegistry
 import io.github.realmlabs.asteria.config.ConfigReloadMonitor
 import io.github.realmlabs.asteria.config.ConfigService
+import io.github.realmlabs.asteria.config.center.ConfigStore
 import io.github.realmlabs.asteria.gm.core.AllowAllGmAuthorizationPolicy
 import io.github.realmlabs.asteria.gm.core.GmAuthorizationPolicy
 import io.github.realmlabs.asteria.gm.core.GmPrincipal
@@ -45,6 +46,11 @@ class AsteriaGmConfiguration {
     @Bean
     fun clusterConfigControlService(node: GmNode): ClusterConfigControlService {
         return node.services.get(ClusterConfigControlService::class)
+    }
+
+    @Bean
+    fun configStore(node: GmNode): ConfigStore {
+        return node.services.get(ConfigStore::class)
     }
 
     @Bean
