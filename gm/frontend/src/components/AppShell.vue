@@ -130,6 +130,10 @@ onBeforeUnmount(() => {
           <el-icon><Connection /></el-icon>
           <span>{{ t('集群管理') }}</span>
         </el-menu-item>
+        <el-menu-item index="/worlds">
+          <el-icon><SetUp /></el-icon>
+          <span>{{ t('World 状态') }}</span>
+        </el-menu-item>
         <el-menu-item index="/game-time">
           <el-icon><Timer /></el-icon>
           <span>{{ t('游戏时间') }}</span>

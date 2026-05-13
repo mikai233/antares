@@ -92,6 +92,9 @@ val NodeRuntime.gameTimeOverrideStore: GameTimeOverrideStore
 val NodeRuntime.localEntityRegistry: LocalEntityRegistry
     get() = services.get(LocalEntityRegistry::class)
 
+val NodeRuntime.worldRuntimeStateStore: WorldRuntimeStateStore
+    get() = services.get(WorldRuntimeStateStore::class)
+
 val NodeRuntime.gameWorldIds: Set<Long>
     get() = gameWorldConfigService.worldIds
 
@@ -195,6 +198,7 @@ class ClusterNodeBootstrap(
             },
             MongoDbModule(),
             GameWorldConfigModule(),
+            WorldRuntimeStateModule(),
             GameConfigModule(),
             PlayerBroadcastModule(),
         )

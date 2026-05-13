@@ -10,6 +10,8 @@ val DATA_SOURCE_GAME: ConfigPath = ROOT / "data-source" / "game"
 
 val GAME_WORLDS: ConfigPath = ROOT / "game-worlds"
 
+val WORLD_RUNTIME_STATES: ConfigPath = ROOT / "world-runtime-states"
+
 val GAME_CONFIG_PUBLICATION: ConfigPath = ROOT / "game-config"
 
 val GAME_TIME: ConfigPath = ROOT / "game-time"
@@ -37,3 +39,5 @@ fun nettyConfigPath(nodeId: String): ConfigPath = NETTY_CONFIGS / nodeId
 fun gameTimeReloadAckPath(epoch: Long): ConfigPath = GAME_TIME_RELOAD_ACKS / epoch.toString()
 
 fun gameTimeReloadAckPath(epoch: Long, nodeId: String): ConfigPath = gameTimeReloadAckPath(epoch) / nodeId
+
+fun worldRuntimeStatePath(worldId: Long): ConfigPath = WORLD_RUNTIME_STATES / worldId.toString()

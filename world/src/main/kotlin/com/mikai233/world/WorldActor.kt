@@ -19,6 +19,7 @@ import io.github.realmlabs.asteria.actor.ActorTimerSupport
 import io.github.realmlabs.asteria.actor.AsteriaActor
 import io.github.realmlabs.asteria.message.dispatchActor
 import io.github.realmlabs.asteria.script.pekko.ActorScriptSupport
+import kotlinx.coroutines.launch
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.actor.Props
 import org.apache.pekko.cluster.sharding.ShardRegion
@@ -27,6 +28,7 @@ import kotlin.time.Duration.Companion.seconds
 class WorldActor(val node: WorldNode) : AsteriaActor<WorldNode>(node) {
     companion object {
         val WorldTickDuration = 1.seconds
+        private const val STATUS_HEARTBEAT_INTERVAL_MILLIS = 10_000L
 
         fun props(node: WorldNode): Props = Props.create(WorldActor::class.java, node)
     }
@@ -39,6 +41,7 @@ class WorldActor(val node: WorldNode) : AsteriaActor<WorldNode>(node) {
     val sessionManager = WorldSessionManager(this)
     val manager = WorldDataManager(this)
     private var shutdownStarted = false
+    private var lastStatusHeartbeatMillis = 0L
     private val lifecycle = ActorLifecycleGate(
         owner = this,
         load = {
@@ -53,13 +56,15 @@ class WorldActor(val node: WorldNode) : AsteriaActor<WorldNode>(node) {
         node.localEntityRegistry.register(GameEntityKinds.WorldActor, worldId.toString(), self)
         timers.start()
         node.system.eventStream.subscribe(self, GameConfigChangedEvent::class.java)
+        reportRuntimeState(WorldRuntimeStatus.Loading, force = true)
         lifecycle.startLoading()
         logger.info("{} started", self)
     }
 
     override fun postStop() {
-        super.postStop()
+        reportRuntimeState(WorldRuntimeStatus.Down, force = true)
         node.localEntityRegistry.unregister(GameEntityKinds.WorldActor, worldId.toString(), self)
+        super.postStop()
         logger.info("{} stopped", self)
     }
 
@@ -70,13 +75,20 @@ class WorldActor(val node: WorldNode) : AsteriaActor<WorldNode>(node) {
     private fun running(): Receive {
         timers.startTimerWithFixedDelay(WorldTick, WorldTick, WorldTickDuration)
         self tell WorldActiveEvent
+        reportRuntimeState(WorldRuntimeStatus.Up, force = true)
         return active()
     }
 
     private fun active(): Receive {
         return receiveBuilder()
-            .match(HandoffWorld::class.java) { lifecycle.beginStop() }
-            .match(WorldTick::class.java) { manager.tick() }
+            .match(HandoffWorld::class.java) {
+                reportRuntimeState(WorldRuntimeStatus.Stopping, force = true)
+                lifecycle.beginStop()
+            }
+            .match(WorldTick::class.java) {
+                manager.tick()
+                reportRuntimeState(WorldRuntimeStatus.Up)
+            }
             .match(GeneratedMessage::class.java) { handleProtobufMessage(it) }
             .match(GameConfigChangedEvent::class.java) { handleWorldMessage(it) }
             .match(Message::class.java) { handleWorldMessage(it) }
@@ -116,6 +128,7 @@ class WorldActor(val node: WorldNode) : AsteriaActor<WorldNode>(node) {
             return
         }
         shutdownStarted = true
+        reportRuntimeState(WorldRuntimeStatus.Stopping, force = true)
         sessionManager.clear()
         context.become(receiveBuilder().build())
         launch(timeout = null) {
@@ -161,6 +174,28 @@ class WorldActor(val node: WorldNode) : AsteriaActor<WorldNode>(node) {
 
     private fun canInitialize(): Boolean {
         return worldId in node.gameWorldIds
+    }
+
+    private fun reportRuntimeState(status: WorldRuntimeStatus, force: Boolean = false) {
+        val now = System.currentTimeMillis()
+        if (!force && now - lastStatusHeartbeatMillis < STATUS_HEARTBEAT_INTERVAL_MILLIS) {
+            return
+        }
+        lastStatusHeartbeatMillis = now
+        val state = WorldRuntimeState(
+            worldId = worldId,
+            status = status,
+            nodeId = node.nodeId,
+            nodeAddress = "${node.addr.hostString}:${node.addr.port}",
+            updatedAtMillis = now,
+        )
+        node.coroutineScope.launch {
+            runCatching {
+                node.worldRuntimeStateStore.put(state)
+            }.onFailure { error ->
+                logger.error(error, "world:{} report runtime state:{} failed", worldId, status)
+            }
+        }
     }
 
     fun broadcast(message: GeneratedMessage, topic: String, include: Set<Long>, exclude: Set<Long>) {
