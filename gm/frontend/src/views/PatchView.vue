@@ -245,8 +245,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section class="page-grid">
-    <div class="stack">
+  <section class="stack">
       <div class="panel-card stack">
         <div class="section-heading">
           <div>
@@ -368,9 +367,8 @@ onMounted(async () => {
           <el-table-column prop="message" :label="t('消息')" min-width="220" />
         </el-table>
       </div>
-    </div>
 
-    <aside class="stack">
+    <div class="two-column-grid">
       <el-form class="panel-card stack" label-position="top">
         <div>
           <p class="eyebrow">{{ t('发布') }}</p>
@@ -467,6 +465,6 @@ onMounted(async () => {
           <el-table-column prop="message" :label="t('消息')" min-width="180" />
         </el-table>
       </div>
-    </aside>
+    </div>
   </section>
 </template>

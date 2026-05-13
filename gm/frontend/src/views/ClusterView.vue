@@ -113,8 +113,7 @@ onMounted(refreshStatus)
 </script>
 
 <template>
-  <section class="page-grid">
-    <div class="stack">
+  <section class="stack">
       <div class="panel-card stack">
         <div class="section-heading">
           <div>
@@ -155,9 +154,8 @@ onMounted(refreshStatus)
         </div>
         <pre class="raw-output">{{ rawStatus || t('暂无数据') }}</pre>
       </div>
-    </div>
 
-    <aside class="stack">
+    <div class="two-column-grid">
       <div class="panel-card stack">
         <div>
           <p class="eyebrow">Role</p>
@@ -220,6 +218,6 @@ onMounted(refreshStatus)
           <el-descriptions-item :label="t('消息')">{{ lastOperation.message }}</el-descriptions-item>
         </el-descriptions>
       </div>
-    </aside>
+    </div>
   </section>
 </template>

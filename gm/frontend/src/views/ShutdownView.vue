@@ -66,8 +66,7 @@ onMounted(refresh)
 </script>
 
 <template>
-  <section class="page-grid">
-    <div class="stack">
+  <section class="stack">
       <div class="section-grid">
         <article class="panel-card metric">
           <span>{{ t('阶段') }}</span>
@@ -120,9 +119,8 @@ onMounted(refresh)
           :closable="false"
         />
       </div>
-    </div>
 
-    <aside class="stack">
+    <div class="two-column-grid">
       <el-form class="panel-card stack" label-position="top">
         <div>
           <p class="eyebrow">{{ t('启动') }}</p>
@@ -144,6 +142,6 @@ onMounted(refresh)
         </div>
         <pre class="raw-output">{{ status ? JSON.stringify(status, null, 2) : '-' }}</pre>
       </div>
-    </aside>
+    </div>
   </section>
 </template>

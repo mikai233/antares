@@ -183,7 +183,7 @@ onMounted(refreshJobs)
 </script>
 
 <template>
-  <section class="job-layout">
+  <section class="stack">
     <div class="panel-card stack">
       <div class="job-heading">
         <div>
@@ -223,7 +223,7 @@ onMounted(refreshJobs)
       </el-table>
     </div>
 
-    <aside class="panel-card stack">
+    <div class="panel-card stack">
       <div>
         <p class="eyebrow">{{ t('详情') }}</p>
         <h2>{{ t('任务详情') }}</h2>
@@ -361,18 +361,11 @@ onMounted(refreshJobs)
           </template>
         </div>
       </template>
-    </aside>
+    </div>
   </section>
 </template>
 
 <style scoped>
-.job-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
-  gap: 16px;
-  min-width: 0;
-}
-
 .job-heading {
   display: flex;
   align-items: center;
@@ -445,12 +438,6 @@ h2 {
   margin-top: 6px;
   font-size: 18px;
   letter-spacing: 0;
-}
-
-@media (max-width: 1180px) {
-  .job-layout {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (max-width: 760px) {

@@ -149,7 +149,7 @@ onMounted(loadMetadata)
 </script>
 
 <template>
-  <section class="script-layout">
+  <section class="stack">
     <el-form class="panel-card stack" label-position="top">
       <el-form-item :label="t('执行目标')">
         <el-segmented
@@ -265,7 +265,7 @@ onMounted(loadMetadata)
       </el-button>
     </el-form>
 
-    <aside class="panel-card stack result-panel">
+    <div class="panel-card stack result-panel">
       <div>
         <p class="eyebrow">{{ t('结果') }}</p>
         <h2>{{ t('脚本任务') }}</h2>
@@ -310,21 +310,13 @@ onMounted(loadMetadata)
           </el-table-column>
         </el-table>
       </template>
-    </aside>
+    </div>
   </section>
 </template>
 
 <style scoped>
-.script-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
-  gap: 16px;
-  min-width: 0;
-}
-
 .result-panel {
-  align-self: start;
-  min-height: 420px;
+  min-height: 320px;
 }
 
 .eyebrow,
@@ -346,9 +338,4 @@ onMounted(loadMetadata)
   letter-spacing: 0;
 }
 
-@media (max-width: 1180px) {
-  .script-layout {
-    grid-template-columns: 1fr;
-  }
-}
 </style>

@@ -87,8 +87,7 @@ onMounted(refresh)
 </script>
 
 <template>
-  <section class="page-grid">
-    <div class="stack">
+  <section class="stack">
       <div class="section-grid">
         <article class="panel-card metric">
           <span>Epoch</span>
@@ -120,9 +119,8 @@ onMounted(refresh)
           <el-button :loading="loading" @click="resetOffset">{{ t('重置为 0') }}</el-button>
         </el-space>
       </el-form>
-    </div>
 
-    <aside class="stack">
+    <div class="two-column-grid">
       <el-form class="panel-card stack" label-position="top">
         <div>
           <p class="eyebrow">Reload Ack</p>
@@ -147,6 +145,6 @@ onMounted(refresh)
           <el-table-column prop="error" :label="t('错误')" min-width="180" />
         </el-table>
       </div>
-    </aside>
+    </div>
   </section>
 </template>
