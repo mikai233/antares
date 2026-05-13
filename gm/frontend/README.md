@@ -10,7 +10,7 @@ npm run dev
 npm run build
 ```
 
-The Vite dev server proxies `/script` and `/actuator` to `http://127.0.0.1:8080`.
+The Vite dev server proxies `/gm/api`, `/script`, and `/actuator` to `http://127.0.0.1:18080`.
 
 ## Structure
 

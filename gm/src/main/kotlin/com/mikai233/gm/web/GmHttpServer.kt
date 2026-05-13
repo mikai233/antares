@@ -38,7 +38,7 @@ class GmHttpServer(
         return linkedMapOf(
             "spring.application.name" to "gm",
             "server.address" to node.config.getStringOrDefault("gm.web.host", "ktor.deployment.host", "0.0.0.0"),
-            "server.port" to node.config.getIntOrDefault("gm.web.port", "ktor.deployment.port", 8080),
+            "server.port" to node.config.getIntOrDefault("gm.web.port", "ktor.deployment.port", 18080),
             "spring.servlet.multipart.max-file-size" to
                     node.config.getStringOrDefault(
                         "gm.web.multipart.max-file-size",

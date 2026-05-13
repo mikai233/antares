@@ -1,4 +1,5 @@
 import { http } from './http'
+import { i18n } from '@/i18n'
 
 export type PatchStatus = 'Draft' | 'Enabled' | 'Disabled' | 'Expired' | 'Failed'
 
@@ -142,20 +143,21 @@ export function patchIdValue(value: string | { value: string }): string {
 }
 
 export function describePatchTarget(target: unknown): string {
+  const t = i18n.global.t
   if (!target || typeof target !== 'object') {
-    return target == null ? 'all nodes' : String(target)
+    return target == null ? t('全部节点') : String(target)
   }
   const record = target as Record<string, unknown>
   if (Array.isArray(record.roles)) {
-    return `roles: ${record.roles.join(', ')}`
+    return `Role: ${record.roles.join(', ')}`
   }
   if (Array.isArray(record.addresses)) {
-    return `nodes: ${record.addresses.join(', ')}`
+    return `${t('节点')}: ${record.addresses.join(', ')}`
   }
   if ('type' in record) {
     return String(record.type)
   }
-  return 'all nodes'
+  return t('全部节点')
 }
 
 function appendOptional(form: FormData, name: string, value?: string) {

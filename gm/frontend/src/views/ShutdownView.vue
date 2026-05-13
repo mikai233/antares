@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   getShutdownStatus,
   startShutdown,
@@ -9,6 +10,7 @@ import {
 
 const loading = ref(false)
 const status = ref<ShutdownStatusResponse>()
+const { t } = useI18n()
 
 const form = reactive({
   planId: '',
@@ -21,9 +23,9 @@ const progressRows = computed(() => {
     return []
   }
   return [
-    { name: 'Gate Drained', done: value.drainedGateCount, expected: value.expectedGateCount },
-    { name: 'Player Flushed', done: value.flushedPlayerCount, expected: value.expectedPlayerCount },
-    { name: 'World Flushed', done: value.flushedWorldCount, expected: value.expectedWorldCount },
+    { name: t('Gate 排空'), done: value.drainedGateCount, expected: value.expectedGateCount },
+    { name: t('Player 刷盘'), done: value.flushedPlayerCount, expected: value.expectedPlayerCount },
+    { name: t('World 刷盘'), done: value.flushedWorldCount, expected: value.expectedWorldCount },
   ]
 })
 
@@ -32,7 +34,7 @@ async function refresh() {
   try {
     status.value = await getShutdownStatus()
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '加载停服状态失败')
+    ElMessage.error(error instanceof Error ? error.message : t('加载停服状态失败'))
   } finally {
     loading.value = false
   }
@@ -45,9 +47,9 @@ async function submitShutdown() {
       planId: form.planId || null,
       requestedBy: form.requestedBy || null,
     })
-    ElMessage.success('停服流程已启动')
+    ElMessage.success(t('停服流程已启动'))
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '启动停服失败')
+    ElMessage.error(error instanceof Error ? error.message : t('启动停服失败'))
   } finally {
     loading.value = false
   }
@@ -68,15 +70,15 @@ onMounted(refresh)
     <div class="stack">
       <div class="section-grid">
         <article class="panel-card metric">
-          <span>Phase</span>
+          <span>{{ t('阶段') }}</span>
           <strong>{{ status?.phase ?? '-' }}</strong>
         </article>
         <article class="panel-card metric">
-          <span>Plan</span>
+          <span>{{ t('计划') }}</span>
           <strong>{{ status?.planId ?? '-' }}</strong>
         </article>
         <article class="panel-card metric">
-          <span>Requester</span>
+          <span>{{ t('发起人') }}</span>
           <strong>{{ status?.requestedBy ?? '-' }}</strong>
         </article>
       </div>
@@ -84,19 +86,19 @@ onMounted(refresh)
       <div class="panel-card stack">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">Graceful Shutdown</p>
-            <h2>停服进度</h2>
+            <p class="eyebrow">{{ t('平滑停服') }}</p>
+            <h2>{{ t('停服进度') }}</h2>
           </div>
-          <el-button :loading="loading" @click="refresh">刷新</el-button>
+          <el-button :loading="loading" @click="refresh">{{ t('刷新') }}</el-button>
         </div>
         <el-table :data="progressRows" border>
-          <el-table-column prop="name" label="Stage" min-width="160" />
-          <el-table-column label="Progress" min-width="220">
+          <el-table-column prop="name" :label="t('阶段')" min-width="160" />
+          <el-table-column :label="t('进度')" min-width="220">
             <template #default="{ row }">
               <el-progress :percentage="percentage(row)" />
             </template>
           </el-table-column>
-          <el-table-column label="Count" width="130">
+          <el-table-column :label="t('数量')" width="130">
             <template #default="{ row }">
               {{ row.done }} / {{ row.expected }}
             </template>
@@ -106,10 +108,10 @@ onMounted(refresh)
 
       <div class="panel-card stack">
         <div>
-          <p class="eyebrow">Errors</p>
-          <h2>错误信息</h2>
+          <p class="eyebrow">{{ t('错误') }}</p>
+          <h2>{{ t('错误信息') }}</h2>
         </div>
-        <el-empty v-if="!status?.errors.length" description="暂无错误" />
+        <el-empty v-if="!status?.errors.length" :description="t('暂无错误')" />
         <el-alert
           v-for="error in status?.errors ?? []"
           :key="error"
@@ -123,22 +125,22 @@ onMounted(refresh)
     <aside class="stack">
       <el-form class="panel-card stack" label-position="top">
         <div>
-          <p class="eyebrow">Start</p>
-          <h2>启动停服</h2>
+          <p class="eyebrow">{{ t('启动') }}</p>
+          <h2>{{ t('启动停服') }}</h2>
         </div>
-        <el-form-item label="Plan ID">
-          <el-input v-model="form.planId" placeholder="留空自动生成" />
+        <el-form-item :label="t('计划 ID')">
+          <el-input v-model="form.planId" :placeholder="t('留空自动生成')" />
         </el-form-item>
-        <el-form-item label="Requested By">
+        <el-form-item :label="t('发起人')">
           <el-input v-model="form.requestedBy" />
         </el-form-item>
-        <el-button type="danger" :loading="loading" @click="submitShutdown">启动停服</el-button>
+        <el-button type="danger" :loading="loading" @click="submitShutdown">{{ t('启动停服') }}</el-button>
       </el-form>
 
       <div class="panel-card stack">
         <div>
-          <p class="eyebrow">Raw</p>
-          <h2>原始状态</h2>
+          <p class="eyebrow">{{ t('原始数据') }}</p>
+          <h2>{{ t('原始状态') }}</h2>
         </div>
         <pre class="raw-output">{{ status ? JSON.stringify(status, null, 2) : '-' }}</pre>
       </div>

@@ -1,4 +1,5 @@
 import {http} from './http'
+import { i18n } from '@/i18n'
 
 export interface GmScriptMetadata {
     engines: string[]
@@ -234,9 +235,10 @@ export async function retryFailedScriptJobItems(id: string, request: {
 }
 
 export function describeScriptTarget(target: unknown): string {
+    const t = i18n.global.t
     const value = target as Record<string, unknown> | null
     if (!value) {
-        return 'unknown'
+        return t('未知')
     }
     if ('addresses' in value && Array.isArray(value.addresses)) {
         return (value.addresses as string[]).join(', ')
@@ -246,38 +248,39 @@ export function describeScriptTarget(target: unknown): string {
     }
     if ('ids' in value && Array.isArray(value.ids)) {
         const kind = nestedValue(value.kind)
-        return `${kind ?? 'entity'}: ${(value.ids as string[]).join(', ')}`
+        return `${kind ?? t('实体')}: ${(value.ids as string[]).join(', ')}`
     }
     if ('name' in value) {
-        return nestedValue(value.name) ?? 'singleton'
+        return nestedValue(value.name) ?? t('单例 Actor')
     }
     if ('role' in value) {
-        return nestedValue(value.role) ?? 'role'
+        return nestedValue(value.role) ?? 'Role'
     }
-    return 'all-nodes'
+    return t('全部节点')
 }
 
 export function targetTypeLabel(target: unknown): string {
+    const t = i18n.global.t
     const value = target as Record<string, unknown> | null
     if (!value) {
-        return 'Unknown'
+        return t('未知')
     }
     if ('addresses' in value && Array.isArray(value.addresses)) {
-        return 'Nodes'
+        return t('节点')
     }
     if ('paths' in value && Array.isArray(value.paths)) {
-        return 'Actor Paths'
+        return 'Actor Path'
     }
     if ('ids' in value && Array.isArray(value.ids)) {
-        return 'Entity'
+        return t('实体 Actor')
     }
     if ('name' in value) {
-        return 'Singleton'
+        return t('单例 Actor')
     }
     if ('role' in value) {
         return 'Role'
     }
-    return 'All Nodes'
+    return t('全部节点')
 }
 
 export function itemError(item: ScriptJobItem): string | undefined {
@@ -326,7 +329,7 @@ function inferScriptEngine(fileName: string): string {
     if (extension === 'jar' || extension === 'groovy') {
         return extension
     }
-    throw new Error('脚本文件扩展名必须是 jar 或 groovy')
+    throw new Error(i18n.global.t('脚本文件扩展名必须是 jar 或 groovy'))
 }
 
 function fileNameWithoutExtension(fileName: string): string {
@@ -340,17 +343,17 @@ function fileToBase64(file: File): Promise<string> {
         reader.onload = () => {
             const dataUrl = reader.result
             if (typeof dataUrl !== 'string') {
-                reject(new Error(`文件 ${file.name} 读取失败`))
+                reject(new Error(i18n.global.t('文件 {name} 读取失败', {name: file.name})))
                 return
             }
             const content = dataUrl.split(',', 2)[1]
             if (!content) {
-                reject(new Error(`文件 ${file.name} 编码失败`))
+                reject(new Error(i18n.global.t('文件 {name} 编码失败', {name: file.name})))
                 return
             }
             resolve(content)
         }
-        reader.onerror = () => reject(reader.error ?? new Error(`文件 ${file.name} 读取失败`))
+        reader.onerror = () => reject(reader.error ?? new Error(i18n.global.t('文件 {name} 读取失败', {name: file.name})))
         reader.readAsDataURL(file)
     })
 }

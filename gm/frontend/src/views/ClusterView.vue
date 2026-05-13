@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   downClusterNode,
   getClusterStatus,
@@ -14,6 +15,7 @@ import {
 
 const loading = ref(false)
 const rawLoading = ref(false)
+const { t } = useI18n()
 const status = ref<GmClusterStatus>()
 const rawStatus = ref('')
 const lastOperation = ref<GmClusterOperationResult>()
@@ -47,7 +49,7 @@ async function refreshStatus() {
   try {
     status.value = await getClusterStatus()
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '加载集群状态失败')
+    ElMessage.error(error instanceof Error ? error.message : t('加载集群状态失败'))
   } finally {
     loading.value = false
   }
@@ -58,7 +60,7 @@ async function loadRawStatus() {
   try {
     rawStatus.value = await getRawClusterStatus()
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '加载原始状态失败')
+    ElMessage.error(error instanceof Error ? error.message : t('加载原始状态失败'))
   } finally {
     rawLoading.value = false
   }
@@ -86,10 +88,10 @@ async function runOperation(operation: () => Promise<GmClusterOperationResult>) 
   loading.value = true
   try {
     lastOperation.value = await operation()
-    ElMessage.success('集群操作已提交')
+    ElMessage.success(t('集群操作已提交'))
     await refreshStatus()
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '集群操作失败')
+    ElMessage.error(error instanceof Error ? error.message : t('集群操作失败'))
   } finally {
     loading.value = false
   }
@@ -103,6 +105,10 @@ function attributeText(node: GmClusterNode, key: string) {
   return node.attributes[key] ?? '-'
 }
 
+function acceptedText(value: boolean) {
+  return value ? t('已接受') : t('未接受')
+}
+
 onMounted(refreshStatus)
 </script>
 
@@ -112,21 +118,21 @@ onMounted(refreshStatus)
       <div class="panel-card stack">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">Cluster</p>
-            <h2>节点状态</h2>
+            <p class="eyebrow">{{ t('集群') }}</p>
+            <h2>{{ t('节点状态') }}</h2>
           </div>
-          <el-button :loading="loading" @click="refreshStatus">刷新</el-button>
+          <el-button :loading="loading" @click="refreshStatus">{{ t('刷新') }}</el-button>
         </div>
 
         <el-table v-loading="loading" :data="nodes" border>
-          <el-table-column prop="address" label="Address" min-width="260" />
-          <el-table-column prop="status" label="Status" width="120" />
-          <el-table-column label="Roles" min-width="180">
+          <el-table-column prop="address" :label="t('地址')" min-width="260" />
+          <el-table-column prop="status" :label="t('状态')" width="120" />
+          <el-table-column label="Role" min-width="180">
             <template #default="{ row }">
               {{ roleText(row) }}
             </template>
           </el-table-column>
-          <el-table-column label="Self" width="90">
+          <el-table-column :label="t('本节点')" width="90">
             <template #default="{ row }">
               {{ attributeText(row, 'self') }}
             </template>
@@ -142,76 +148,76 @@ onMounted(refreshStatus)
       <div class="panel-card stack">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">Management</p>
-            <h2>原始状态</h2>
+            <p class="eyebrow">{{ t('管理接口') }}</p>
+            <h2>{{ t('原始状态') }}</h2>
           </div>
-          <el-button :loading="rawLoading" @click="loadRawStatus">加载</el-button>
+          <el-button :loading="rawLoading" @click="loadRawStatus">{{ t('加载') }}</el-button>
         </div>
-        <pre class="raw-output">{{ rawStatus || 'empty' }}</pre>
+        <pre class="raw-output">{{ rawStatus || t('暂无数据') }}</pre>
       </div>
     </div>
 
     <aside class="stack">
       <div class="panel-card stack">
         <div>
-          <p class="eyebrow">Roles</p>
-          <h2>角色分布</h2>
+          <p class="eyebrow">Role</p>
+          <h2>{{ t('角色分布') }}</h2>
         </div>
         <el-table :data="roleRows" border>
           <el-table-column prop="role" label="Role" />
-          <el-table-column prop="count" label="Count" width="100" />
+          <el-table-column prop="count" :label="t('数量')" width="100" />
         </el-table>
       </div>
 
       <el-form class="panel-card stack" label-position="top">
         <div>
-          <p class="eyebrow">Actions</p>
-          <h2>节点操作</h2>
+          <p class="eyebrow">{{ t('操作') }}</p>
+          <h2>{{ t('节点操作') }}</h2>
         </div>
 
-        <el-divider>Leave</el-divider>
-        <el-form-item label="Address">
+        <el-divider>{{ t('Leave 节点') }}</el-divider>
+        <el-form-item :label="t('地址')">
           <el-input v-model="leaveForm.address" />
         </el-form-item>
-        <el-form-item label="Reason">
+        <el-form-item :label="t('原因')">
           <el-input v-model="leaveForm.reason" />
         </el-form-item>
-        <el-button :loading="loading" @click="runLeave">提交 Leave</el-button>
+        <el-button :loading="loading" @click="runLeave">{{ t('提交 Leave') }}</el-button>
 
-        <el-divider>Join</el-divider>
-        <el-form-item label="Node Address">
+        <el-divider>{{ t('Join 节点') }}</el-divider>
+        <el-form-item :label="t('节点地址')">
           <el-input v-model="joinForm.nodeAddress" />
         </el-form-item>
-        <el-form-item label="Seed Address">
+        <el-form-item :label="t('Seed 地址')">
           <el-input v-model="joinForm.seedAddress" />
         </el-form-item>
-        <el-form-item label="Reason">
+        <el-form-item :label="t('原因')">
           <el-input v-model="joinForm.reason" />
         </el-form-item>
-        <el-button :loading="loading" @click="runJoin">提交 Join</el-button>
+        <el-button :loading="loading" @click="runJoin">{{ t('提交 Join') }}</el-button>
 
-        <el-divider>Down</el-divider>
-        <el-form-item label="Address">
+        <el-divider>{{ t('Down 节点') }}</el-divider>
+        <el-form-item :label="t('地址')">
           <el-input v-model="downForm.address" />
         </el-form-item>
-        <el-form-item label="Reason">
+        <el-form-item :label="t('原因')">
           <el-input v-model="downForm.reason" />
         </el-form-item>
-        <el-checkbox v-model="downForm.confirmed">Confirmed</el-checkbox>
-        <el-button type="danger" :loading="loading" @click="runDown">提交 Down</el-button>
+        <el-checkbox v-model="downForm.confirmed">{{ t('已确认风险') }}</el-checkbox>
+        <el-button type="danger" :loading="loading" @click="runDown">{{ t('提交 Down') }}</el-button>
       </el-form>
 
       <div class="panel-card stack">
         <div>
-          <p class="eyebrow">Result</p>
-          <h2>最近操作</h2>
+          <p class="eyebrow">{{ t('结果') }}</p>
+          <h2>{{ t('最近操作') }}</h2>
         </div>
-        <el-empty v-if="!lastOperation" description="暂无操作结果" />
+        <el-empty v-if="!lastOperation" :description="t('暂无操作结果')" />
         <el-descriptions v-else :column="1" border>
-          <el-descriptions-item label="Action">{{ lastOperation.action }}</el-descriptions-item>
-          <el-descriptions-item label="Target">{{ lastOperation.targetAddress }}</el-descriptions-item>
-          <el-descriptions-item label="Accepted">{{ lastOperation.accepted }}</el-descriptions-item>
-          <el-descriptions-item label="Message">{{ lastOperation.message }}</el-descriptions-item>
+          <el-descriptions-item :label="t('操作')">{{ lastOperation.action }}</el-descriptions-item>
+          <el-descriptions-item :label="t('目标')">{{ lastOperation.targetAddress }}</el-descriptions-item>
+          <el-descriptions-item :label="t('是否接受')">{{ acceptedText(lastOperation.accepted) }}</el-descriptions-item>
+          <el-descriptions-item :label="t('消息')">{{ lastOperation.message }}</el-descriptions-item>
         </el-descriptions>
       </div>
     </aside>

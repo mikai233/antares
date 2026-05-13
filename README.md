@@ -179,7 +179,7 @@ GM publishes patch descriptors and artifacts into the shared config center, and 
 same store. The GM HTTP entrypoints are:
 
 ```bash
-curl -X POST http://127.0.0.1:8080/gm/api/patches/publish-and-apply \
+curl -X POST http://127.0.0.1:18080/gm/api/patches/publish-and-apply \
   -F 'request={
     "id":"fix-login",
     "roles":["Player"],
@@ -187,7 +187,7 @@ curl -X POST http://127.0.0.1:8080/gm/api/patches/publish-and-apply \
   };type=application/json' \
   -F 'file=@player/build/libs/antares_player_LoginServiceHotfixPatch.jar'
 
-curl -X POST http://127.0.0.1:8080/gm/api/patches/fix-login/disable
+curl -X POST http://127.0.0.1:18080/gm/api/patches/fix-login/disable
 ```
 
 Use `roles` to select target nodes and `requiredRoles`, `requiredModules`, or `requiredCapabilities` to declare runtime

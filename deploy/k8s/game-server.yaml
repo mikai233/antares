@@ -402,7 +402,7 @@ spec:
             - name: management
               containerPort: 4337
             - name: http
-              containerPort: 8080
+              containerPort: 18080
           startupProbe:
             httpGet:
               path: /alive
@@ -434,5 +434,5 @@ spec:
     role: gm
   ports:
     - name: http
-      port: 8080
+      port: 18080
       targetPort: http

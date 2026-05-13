@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   getClusterConfigConsistency,
   getClusterConfigStatus,
@@ -29,6 +30,7 @@ import {
 
 const loading = ref(false)
 const tableLoading = ref(false)
+const { t } = useI18n()
 const metadata = ref<GmConfigMetadata>()
 const reloadStatus = ref<GmConfigReloadStatus>()
 const reloadHistory = ref<GmConfigReloadRecord[]>([])
@@ -101,7 +103,7 @@ async function refreshOverview() {
       selectedTable.value = nextTables[0].name
     }
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '加载配置状态失败')
+    ElMessage.error(error instanceof Error ? error.message : t('加载配置状态失败'))
   } finally {
     loading.value = false
   }
@@ -111,10 +113,10 @@ async function reloadLocal() {
   loading.value = true
   try {
     await reloadLocalConfig()
-    ElMessage.success('本节点配置已 reload')
+    ElMessage.success(t('本节点配置已 reload'))
     await refreshOverview()
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '本节点 reload 失败')
+    ElMessage.error(error instanceof Error ? error.message : t('本节点 reload 失败'))
   } finally {
     loading.value = false
   }
@@ -130,10 +132,10 @@ async function reloadCluster() {
       addresses: lines(clusterReloadForm.addresses),
       timeoutMillis: clusterReloadForm.timeoutMillis,
     })
-    ElMessage.success('集群配置 reload 已提交')
+    ElMessage.success(t('集群配置 reload 已提交'))
     await refreshOverview()
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '集群配置 reload 失败')
+    ElMessage.error(error instanceof Error ? error.message : t('集群配置 reload 失败'))
   } finally {
     loading.value = false
   }
@@ -160,7 +162,7 @@ async function loadSelectedTable(resetOffset = false) {
     schema.value = nextSchema
     rows.value = nextRows
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '加载配置表失败')
+    ElMessage.error(error instanceof Error ? error.message : t('加载配置表失败'))
   } finally {
     tableLoading.value = false
   }
@@ -175,7 +177,7 @@ async function loadConfigRow(id = query.rowId) {
     selectedRow.value = await getConfigRow(selectedTable.value, id.trim())
     query.rowId = id.trim()
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '加载配置行失败')
+    ElMessage.error(error instanceof Error ? error.message : t('加载配置行失败'))
   } finally {
     tableLoading.value = false
   }
@@ -211,6 +213,10 @@ function configRevisionText(value?: ConfigRevision | null) {
   return value.checksum ? `${value.version} (${value.checksum.slice(0, 8)})` : value.version
 }
 
+function successText(value: boolean) {
+  return value ? t('成功') : t('失败')
+}
+
 function sameRevision(left?: ConfigRevision | null, right?: ConfigRevision | null) {
   return left?.version === right?.version && (left?.checksum ?? null) === (right?.checksum ?? null)
 }
@@ -223,15 +229,15 @@ function dominantRevision(current: ClusterConfigRevisionConsistency) {
 
 function consistencyStatusText(status: ClusterConfigNodeStatus, expectedRevision?: ConfigRevision | null) {
   if (!status.reachable) {
-    return 'Unreachable'
+    return t('不可达')
   }
   if (!status.revision) {
-    return 'Missing Revision'
+    return t('缺少 Revision')
   }
   if (expectedRevision && !sameRevision(status.revision, expectedRevision)) {
-    return 'Mismatch'
+    return t('不一致')
   }
-  return 'Consistent'
+  return t('一致')
 }
 
 function consistencyStatusType(status: ClusterConfigNodeStatus, expectedRevision?: ConfigRevision | null) {
@@ -265,11 +271,11 @@ onMounted(async () => {
         <strong>{{ revisionText(metadata?.revision) }}</strong>
       </article>
       <article class="panel-card metric">
-        <span>Tables</span>
+        <span>{{ t('配置表') }}</span>
         <strong>{{ metadata?.tableCount ?? 0 }}</strong>
       </article>
       <article class="panel-card metric">
-        <span>Cluster Nodes</span>
+        <span>{{ t('集群节点') }}</span>
         <strong>{{ clusterStatuses.length }}</strong>
       </article>
     </div>
@@ -277,20 +283,20 @@ onMounted(async () => {
     <div class="panel-card stack">
       <div class="section-heading">
         <div>
-          <p class="eyebrow">Consistency</p>
-          <h2>集群一致性</h2>
+          <p class="eyebrow">{{ t('一致性') }}</p>
+          <h2>{{ t('集群一致性') }}</h2>
         </div>
         <el-tag
           :type="consistency?.consistent ? 'success' : 'danger'"
           effect="dark"
         >
-          {{ consistency?.consistent ? '一致' : `${consistencyProblemCount} 个问题` }}
+          {{ consistency?.consistent ? t('一致') : t('{count} 个问题', { count: consistencyProblemCount }) }}
         </el-tag>
       </div>
 
       <el-alert
         v-if="consistency && !consistency.consistent"
-        title="集群配置修订不一致"
+        :title="t('集群配置修订不一致')"
         type="error"
         :closable="false"
         show-icon
@@ -298,15 +304,15 @@ onMounted(async () => {
 
       <div v-if="consistency" class="consistency-summary">
         <div>
-          <span>Reachable</span>
+          <span>{{ t('可达节点') }}</span>
           <strong>{{ consistency.reachableNodes.length }} / {{ consistency.statuses.length }}</strong>
         </div>
         <div>
-          <span>Revision Groups</span>
+          <span>{{ t('Revision 分组') }}</span>
           <strong>{{ consistency.revisionGroups.length }}</strong>
         </div>
         <div>
-          <span>Nodes</span>
+          <span>{{ t('节点数') }}</span>
           <strong>{{ consistency.statuses.length }}</strong>
         </div>
       </div>
@@ -323,35 +329,35 @@ onMounted(async () => {
         </div>
       </div>
 
-      <el-empty v-if="!consistency" description="暂无一致性结果" />
+      <el-empty v-if="!consistency" :description="t('暂无一致性结果')" />
       <el-table v-else :data="consistencyRows" border>
-        <el-table-column label="Status" width="140">
+        <el-table-column :label="t('状态')" width="140">
           <template #default="{ row }">
             <el-tag :type="row.statusType" effect="dark">{{ row.statusText }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="nodeId" label="Node" min-width="140" />
-        <el-table-column prop="address" label="Address" min-width="220" />
-        <el-table-column prop="rolesText" label="Roles" min-width="140" />
+        <el-table-column prop="nodeId" :label="t('节点')" min-width="140" />
+        <el-table-column prop="address" :label="t('地址')" min-width="220" />
+        <el-table-column prop="rolesText" label="Role" min-width="140" />
         <el-table-column prop="revisionText" label="Revision" min-width="180" />
-        <el-table-column prop="message" label="Message" min-width="180" />
+        <el-table-column prop="message" :label="t('消息')" min-width="180" />
       </el-table>
     </div>
 
     <div class="panel-card stack">
       <div class="section-heading">
         <div>
-          <p class="eyebrow">Config</p>
-          <h2>配置表浏览</h2>
+          <p class="eyebrow">{{ t('配置') }}</p>
+          <h2>{{ t('配置表浏览') }}</h2>
         </div>
         <el-space wrap>
-          <el-button :loading="loading" @click="refreshOverview">刷新</el-button>
-          <el-button type="primary" :loading="loading" @click="reloadLocal">Reload Local</el-button>
+          <el-button :loading="loading" @click="refreshOverview">{{ t('刷新') }}</el-button>
+          <el-button type="primary" :loading="loading" @click="reloadLocal">{{ t('Reload 本节点') }}</el-button>
         </el-space>
       </div>
 
       <el-form class="inline-form" label-position="top">
-        <el-form-item label="Table">
+        <el-form-item :label="t('配置表')">
           <el-select v-model="selectedTable" filterable>
             <el-option
               v-for="table in tables"
@@ -361,21 +367,21 @@ onMounted(async () => {
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="Keyword">
+        <el-form-item :label="t('关键字')">
           <el-input v-model="query.keyword" clearable />
         </el-form-item>
-        <el-form-item label="Limit">
+        <el-form-item :label="t('数量上限')">
           <el-input-number v-model="query.limit" :min="1" :max="500" />
         </el-form-item>
         <el-form-item label=" ">
-          <el-button :loading="tableLoading" @click="loadSelectedTable(true)">查询</el-button>
+          <el-button :loading="tableLoading" @click="loadSelectedTable(true)">{{ t('查询') }}</el-button>
         </el-form-item>
       </el-form>
 
       <el-descriptions v-if="selectedSummary" :column="3" border>
-        <el-descriptions-item label="Key">{{ selectedSummary.keyType }}</el-descriptions-item>
-        <el-descriptions-item label="Row">{{ selectedSummary.rowType }}</el-descriptions-item>
-        <el-descriptions-item label="Size">{{ selectedSummary.size }}</el-descriptions-item>
+        <el-descriptions-item :label="t('Key 类型')">{{ selectedSummary.keyType }}</el-descriptions-item>
+        <el-descriptions-item :label="t('行类型')">{{ selectedSummary.rowType }}</el-descriptions-item>
+        <el-descriptions-item :label="t('行数')">{{ selectedSummary.size }}</el-descriptions-item>
       </el-descriptions>
 
       <el-table v-loading="tableLoading" :data="rows?.rows ?? []" border @row-click="(row: GmConfigRow) => loadConfigRow(row.id)">
@@ -396,48 +402,48 @@ onMounted(async () => {
     <div class="config-work-grid">
       <el-form class="panel-card stack" label-position="top">
         <div>
-          <p class="eyebrow">Cluster Reload</p>
-          <h2>集群配置</h2>
+          <p class="eyebrow">{{ t('集群 Reload') }}</p>
+          <h2>{{ t('集群配置') }}</h2>
         </div>
-        <el-form-item label="Target">
+        <el-form-item :label="t('目标')">
           <el-segmented
             v-model="clusterReloadForm.target"
             :options="[
-              { label: 'All', value: 'all' },
+              { label: t('全部'), value: 'all' },
               { label: 'Role', value: 'role' },
-              { label: 'Nodes', value: 'nodes' },
-              { label: 'Addresses', value: 'addresses' },
+              { label: t('节点'), value: 'nodes' },
+              { label: t('地址'), value: 'addresses' },
             ]"
           />
         </el-form-item>
         <el-form-item v-if="clusterReloadForm.target === 'role'" label="Role">
           <el-input v-model="clusterReloadForm.role" />
         </el-form-item>
-        <el-form-item v-if="clusterReloadForm.target === 'nodes'" label="Node IDs">
-          <el-input v-model="clusterReloadForm.nodeIds" placeholder="逗号分隔" />
+        <el-form-item v-if="clusterReloadForm.target === 'nodes'" :label="t('节点 ID')">
+          <el-input v-model="clusterReloadForm.nodeIds" :placeholder="t('逗号分隔')" />
         </el-form-item>
-        <el-form-item v-if="clusterReloadForm.target === 'addresses'" label="Addresses">
+        <el-form-item v-if="clusterReloadForm.target === 'addresses'" :label="t('地址')">
           <el-input v-model="clusterReloadForm.addresses" type="textarea" :rows="4" />
         </el-form-item>
-        <el-form-item label="Timeout Millis">
+        <el-form-item :label="t('超时（毫秒）')">
           <el-input-number v-model="clusterReloadForm.timeoutMillis" :min="1000" :step="1000" />
         </el-form-item>
-        <el-button type="primary" :loading="loading" @click="reloadCluster">Reload Cluster</el-button>
+        <el-button type="primary" :loading="loading" @click="reloadCluster">{{ t('Reload 集群') }}</el-button>
       </el-form>
 
       <div class="panel-card stack">
         <div>
-          <p class="eyebrow">Status</p>
-          <h2>Reload 状态</h2>
+          <p class="eyebrow">{{ t('状态') }}</p>
+          <h2>{{ t('Reload 状态') }}</h2>
         </div>
         <el-descriptions :column="1" border>
-          <el-descriptions-item label="Current">
+          <el-descriptions-item :label="t('当前 Revision')">
             {{ revisionText(reloadStatus?.currentRevision) }}
           </el-descriptions-item>
-          <el-descriptions-item label="Last Success">
+          <el-descriptions-item :label="t('最近成功')">
             {{ reloadStatus?.lastSuccess?.occurredAt ?? '-' }}
           </el-descriptions-item>
-          <el-descriptions-item label="Last Failure">
+          <el-descriptions-item :label="t('最近失败')">
             {{ reloadStatus?.lastFailure?.message ?? '-' }}
           </el-descriptions-item>
         </el-descriptions>
@@ -445,31 +451,35 @@ onMounted(async () => {
 
       <div class="panel-card stack">
         <div>
-          <p class="eyebrow">Row Detail</p>
-          <h2>单行查询</h2>
+          <p class="eyebrow">{{ t('行详情') }}</p>
+          <h2>{{ t('单行查询') }}</h2>
         </div>
         <el-form class="inline-form" label-position="top">
-          <el-form-item label="Row ID">
+          <el-form-item :label="t('行 ID')">
             <el-input v-model="query.rowId" @keyup.enter="loadConfigRow()" />
           </el-form-item>
           <el-form-item label=" ">
-            <el-button :loading="tableLoading" @click="loadConfigRow()">加载行</el-button>
+            <el-button :loading="tableLoading" @click="loadConfigRow()">{{ t('加载行') }}</el-button>
           </el-form-item>
         </el-form>
-        <el-empty v-if="!selectedRow" description="暂无行详情" :image-size="96" />
+        <el-empty v-if="!selectedRow" :description="t('暂无行详情')" :image-size="96" />
         <pre v-else class="raw-output">{{ jsonText(selectedRow) }}</pre>
       </div>
 
       <div class="panel-card stack">
         <div>
-          <p class="eyebrow">Cluster Result</p>
-          <h2>执行结果</h2>
+          <p class="eyebrow">{{ t('集群结果') }}</p>
+          <h2>{{ t('执行结果') }}</h2>
         </div>
-        <el-empty v-if="!clusterReloadResult" description="暂无结果" :image-size="96" />
+        <el-empty v-if="!clusterReloadResult" :description="t('暂无结果')" :image-size="96" />
         <el-table v-else :data="clusterReloadResult.results" border>
-          <el-table-column prop="address" label="Address" min-width="160" />
-          <el-table-column prop="success" label="Success" width="100" />
-          <el-table-column prop="message" label="Message" min-width="180" />
+          <el-table-column prop="address" :label="t('地址')" min-width="160" />
+          <el-table-column :label="t('是否成功')" width="100">
+            <template #default="{ row }">
+              {{ successText(row.success) }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="message" :label="t('消息')" min-width="180" />
         </el-table>
       </div>
     </div>
@@ -477,13 +487,13 @@ onMounted(async () => {
     <div class="panel-card stack">
       <div>
         <p class="eyebrow">Reload</p>
-        <h2>Reload 记录</h2>
+        <h2>{{ t('Reload 记录') }}</h2>
       </div>
       <el-table :data="reloadHistory" border>
         <el-table-column prop="id" label="ID" width="90" />
-        <el-table-column prop="status" label="Status" width="120" />
-        <el-table-column prop="occurredAt" label="At" min-width="220" />
-        <el-table-column prop="message" label="Message" min-width="220" />
+        <el-table-column prop="status" :label="t('状态')" width="120" />
+        <el-table-column prop="occurredAt" :label="t('时间')" min-width="220" />
+        <el-table-column prop="message" :label="t('消息')" min-width="220" />
       </el-table>
     </div>
   </section>
