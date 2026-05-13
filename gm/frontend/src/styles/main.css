@@ -399,6 +399,52 @@ textarea {
     min-width: 0;
 }
 
+.field-help {
+    margin: 6px 0 0;
+    color: var(--gm-muted);
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.field-help-list {
+    display: grid;
+    gap: 6px;
+    margin: 8px 0 0;
+    padding-left: 18px;
+    color: var(--gm-muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.field-help-list li {
+    margin: 0;
+}
+
+.help-doc {
+    display: grid;
+    gap: 16px;
+}
+
+.help-doc h3,
+.help-doc p,
+.help-doc ul {
+    margin-top: 0;
+}
+
+.help-doc h3 {
+    margin-bottom: 8px;
+    color: var(--gm-text);
+    font-size: 15px;
+    letter-spacing: 0;
+}
+
+.help-doc p,
+.help-doc li {
+    color: var(--gm-muted);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
 .el-message {
     max-width: min(680px, calc(100vw - 32px));
     border-radius: 8px;

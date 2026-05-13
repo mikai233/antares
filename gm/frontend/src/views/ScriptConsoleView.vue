@@ -122,7 +122,13 @@ async function loadMetadata() {
 }
 
 async function submitScript() {
-  if (!form.scriptFile) {
+  const validationError = validateScriptForm()
+  if (validationError) {
+    showWarning(validationError)
+    return
+  }
+  const scriptFile = form.scriptFile
+  if (!scriptFile) {
     showWarning(t('请选择脚本文件'))
     return
   }
@@ -133,7 +139,7 @@ async function submitScript() {
 
   try {
     const createdJob = await createScriptJob({
-      script: form.scriptFile,
+      script: scriptFile,
       extra: form.extraFile,
       target: createTarget(),
       maxConcurrentItems: form.maxConcurrentItems,
@@ -146,6 +152,26 @@ async function submitScript() {
   } finally {
     loading.value = false
   }
+}
+
+function validateScriptForm() {
+  const missing: string[] = []
+  if (!form.scriptFile) {
+    missing.push(t('脚本文件'))
+  }
+  if (form.target === 'entity' && splitCsv(form.ids).length === 0) {
+    missing.push(t('实体 ID'))
+  }
+  if (form.target === 'singleton' && !form.actorName.trim()) {
+    missing.push(t('单例 Actor'))
+  }
+  if (form.target === 'actor-paths' && splitLines(form.actorPaths).length === 0) {
+    missing.push('Actor Path')
+  }
+  if (form.target === 'nodes' && splitLines(form.addresses).length === 0) {
+    missing.push(t('地址'))
+  }
+  return missing.length > 0 ? t('请填写必填项：{fields}', { fields: missing.join(', ') }) : ''
 }
 
 onMounted(loadMetadata)
@@ -166,6 +192,7 @@ onMounted(loadMetadata)
             { label: t('全节点'), value: 'all-nodes' },
           ]"
         />
+        <p class="field-help">{{ t('执行目标决定脚本会发往哪些 Actor 或节点；目标范围越大，执行影响面越大。') }}</p>
       </el-form-item>
 
       <template v-if="form.target === 'entity'">
@@ -179,12 +206,13 @@ onMounted(loadMetadata)
             />
           </el-select>
         </el-form-item>
-        <el-form-item :label="t('实体 ID')">
+        <el-form-item :label="t('实体 ID')" required>
           <el-input v-model="form.ids" :placeholder="t('多个 id 用逗号分隔，例如 10001,10002')" />
+          <p class="field-help">{{ t('实体 ID 会被解析为目标 Actor，填错会导致脚本发到错误实体或找不到目标。') }}</p>
         </el-form-item>
       </template>
 
-      <el-form-item v-if="form.target === 'singleton'" :label="t('单例 Actor')">
+      <el-form-item v-if="form.target === 'singleton'" :label="t('单例 Actor')" required>
         <el-select v-model="form.actorName" filterable allow-create default-first-option>
           <el-option
             v-for="singleton in singletonOptions"
@@ -193,19 +221,21 @@ onMounted(loadMetadata)
             :value="singleton"
           />
         </el-select>
+        <p class="field-help">{{ t('单例 Actor 名称必须和服务端注册名一致，填错会找不到目标。') }}</p>
       </el-form-item>
 
-      <el-form-item v-if="form.target === 'actor-paths'" label="Actor Path">
+      <el-form-item v-if="form.target === 'actor-paths'" label="Actor Path" required>
         <el-input
           v-model="form.actorPaths"
           type="textarea"
           :rows="4"
           :placeholder="t('每行一个 actor path')"
         />
+        <p class="field-help">{{ t('Actor Path 是精确投递地址，请逐行填写完整路径。') }}</p>
       </el-form-item>
 
       <template v-if="form.target === 'nodes' || form.target === 'role'">
-        <el-form-item v-if="form.target === 'role'" label="Role">
+        <el-form-item v-if="form.target === 'role'" label="Role" required>
           <el-select v-model="form.role">
             <el-option
               v-for="role in roleOptions"
@@ -214,8 +244,9 @@ onMounted(loadMetadata)
               :value="role"
             />
           </el-select>
+          <p class="field-help">{{ t('Role 目标会在当前集群内匹配所有对应角色节点。') }}</p>
         </el-form-item>
-        <el-form-item v-if="form.target === 'nodes'" :label="t('地址')">
+        <el-form-item v-if="form.target === 'nodes'" :label="t('地址')" required>
           <el-input
             v-model="form.addresses"
             type="textarea"
@@ -226,6 +257,7 @@ onMounted(loadMetadata)
                 : t('每行一个 Pekko 地址')
             "
           />
+          <p class="field-help">{{ t('节点地址按行填写，填错会导致该节点不会执行脚本。') }}</p>
         </el-form-item>
         <el-alert
           v-if="form.target === 'role'"
@@ -237,9 +269,10 @@ onMounted(loadMetadata)
 
       <el-form-item :label="t('最大并发项')">
         <el-input-number v-model="form.maxConcurrentItems" :min="1" :step="1" />
+        <p class="field-help">{{ t('限制同一个脚本任务同时执行的任务项数量，值越大执行越快但对集群压力越高。') }}</p>
       </el-form-item>
 
-      <el-form-item :label="t('脚本文件')">
+      <el-form-item :label="t('脚本文件')" required>
         <el-upload
           drag
           action="#"
@@ -250,6 +283,7 @@ onMounted(loadMetadata)
           <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
           <div class="el-upload__text">{{ t('拖入 jar/groovy 文件，或点击选择') }}</div>
         </el-upload>
+        <p class="field-help">{{ t('脚本文件是实际执行内容，仅支持 jar 或 groovy。') }}</p>
       </el-form-item>
 
       <el-form-item :label="t('额外附件')">
@@ -261,6 +295,7 @@ onMounted(loadMetadata)
         >
           <el-button>{{ t('选择附件') }}</el-button>
         </el-upload>
+        <p class="field-help">{{ t('额外附件会随脚本一起提交，供脚本运行时读取。') }}</p>
       </el-form-item>
 
       <el-button type="primary" size="large" :loading="loading" @click="submitScript">

@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { showError, showSuccess, showWarning } from '@/utils/feedback'
+import { Document } from '@element-plus/icons-vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { getClusterStatus, type GmClusterNode } from '@/api/cluster'
 import {
   applyEnabledPatches,
   applyPatch,
@@ -21,7 +23,10 @@ import {
 
 const loading = ref(false)
 const createLoading = ref(false)
+const clusterChoicesLoading = ref(false)
+const patchHelpVisible = ref(false)
 const patches = ref<RuntimePatchDescriptor[]>([])
+const clusterNodes = ref<GmClusterNode[]>([])
 const nodeResults = ref<RuntimePatchNodeResult[]>([])
 const lastApply = ref<PatchClusterApplyResult | PatchClusterApplyResult[]>()
 const selectedPatch = ref<RuntimePatchDescriptor>()
@@ -47,14 +52,34 @@ const form = reactive({
   artifactName: '',
   artifactVersion: '',
   targetType: 'all-nodes' as 'all-nodes' | 'roles' | 'nodes',
-  roles: '',
-  addresses: '',
-  requiredRoles: '',
-  requiredModules: '',
-  requiredCapabilities: '',
+  roles: [] as string[],
+  addresses: [] as string[],
+  requiredRoles: [] as string[],
+  requiredModules: [] as string[],
+  requiredCapabilities: [] as string[],
   status: 'Draft' as PatchStatus,
   file: undefined as File | undefined,
 })
+
+const roleOptions = computed(() => uniqueSorted([
+  ...clusterNodes.value.flatMap(node => node.roles ?? []),
+  ...nodeResults.value.flatMap(result => result.roles ?? []),
+]))
+
+const nodeAddressOptions = computed(() => uniqueSorted([
+  ...clusterNodes.value.map(node => node.address),
+  ...nodeResults.value.map(result => result.address),
+]))
+
+const moduleOptions = computed(() => uniqueSorted([
+  ...clusterNodes.value.flatMap(node => splitKnownValues(node.attributes?.['patch.modules'])),
+  ...nodeResults.value.flatMap(result => result.modules ?? []),
+]))
+
+const capabilityOptions = computed(() => uniqueSorted([
+  ...clusterNodes.value.flatMap(node => splitKnownValues(node.attributes?.['patch.capabilities'])),
+  ...nodeResults.value.flatMap(result => result.capabilities ?? []),
+]))
 
 const applyResultRows = computed(() => {
   const result = lastApply.value
@@ -83,6 +108,18 @@ async function refreshNodeResults() {
   }
 }
 
+async function refreshClusterChoices() {
+  clusterChoicesLoading.value = true
+  try {
+    const status = await getClusterStatus()
+    clusterNodes.value = status.nodes ?? []
+  } catch (error) {
+    showError(error, t('加载补丁选项失败'))
+  } finally {
+    clusterChoicesLoading.value = false
+  }
+}
+
 function onPatchFileChange(uploadFile: { raw?: File }) {
   form.file = uploadFile.raw
   if (!form.id && uploadFile.raw) {
@@ -94,14 +131,20 @@ function onPatchFileChange(uploadFile: { raw?: File }) {
 }
 
 async function submitPatch() {
-  if (!form.file) {
+  const validationError = validatePatchForm()
+  if (validationError) {
+    showWarning(validationError)
+    return
+  }
+  const patchFile = form.file
+  if (!patchFile) {
     showWarning(t('请选择补丁 jar'))
     return
   }
   createLoading.value = true
   try {
     await createPatch({
-      file: form.file,
+      file: patchFile,
       id: form.id,
       name: form.name || form.id,
       appName: form.appName,
@@ -109,11 +152,11 @@ async function submitPatch() {
       artifactName: form.artifactName,
       artifactVersion: form.artifactVersion,
       targetType: form.targetType,
-      roles: csv(form.roles),
-      addresses: lines(form.addresses),
-      requiredRoles: csv(form.requiredRoles),
-      requiredModules: csv(form.requiredModules),
-      requiredCapabilities: csv(form.requiredCapabilities),
+      roles: form.roles,
+      addresses: form.addresses,
+      requiredRoles: form.requiredRoles,
+      requiredModules: form.requiredModules,
+      requiredCapabilities: form.requiredCapabilities,
       status: form.status,
     })
     showSuccess(t('补丁已发布'))
@@ -191,8 +234,16 @@ function csv(raw: string) {
   return raw.split(',').map(item => item.trim()).filter(Boolean)
 }
 
-function lines(raw: string) {
-  return raw.split('\n').map(item => item.trim()).filter(Boolean)
+function splitKnownValues(raw?: string | null) {
+  return (raw ?? '')
+    .replace(/^[\[\(]|[\]\)]$/g, '')
+    .split(/[,\s;]+/)
+    .map(item => item.trim().replace(/^["']|["']$/g, ''))
+    .filter(Boolean)
+}
+
+function uniqueSorted(values: string[]) {
+  return [...new Set(values.map(value => value.trim()).filter(Boolean))].sort((left, right) => left.localeCompare(right))
 }
 
 function versionsText(patch: RuntimePatchDescriptor) {
@@ -215,6 +266,29 @@ function itemText(value: unknown) {
 
 function jsonText(value: unknown) {
   return value == null ? '-' : JSON.stringify(value, null, 2)
+}
+
+function validatePatchForm() {
+  if (!form.file) {
+    return t('请选择补丁 jar')
+  }
+  const missing: string[] = []
+  if (!form.id.trim()) {
+    missing.push('ID')
+  }
+  if (!form.appName.trim()) {
+    missing.push(t('应用名称'))
+  }
+  if (csv(form.versions).length === 0) {
+    missing.push(t('版本'))
+  }
+  if (form.targetType === 'roles' && form.roles.length === 0) {
+    missing.push(t('目标 Role'))
+  }
+  if (form.targetType === 'nodes' && form.addresses.length === 0) {
+    missing.push(t('目标地址'))
+  }
+  return missing.length > 0 ? t('请填写必填项：{fields}', { fields: missing.join(', ') }) : ''
 }
 
 function patchStatusText(status: string) {
@@ -240,7 +314,7 @@ function nodeResultStatusText(status: string) {
 }
 
 onMounted(async () => {
-  await Promise.all([refreshPatches(), refreshNodeResults()])
+  await Promise.all([refreshPatches(), refreshNodeResults(), refreshClusterChoices()])
 })
 </script>
 
@@ -370,32 +444,45 @@ onMounted(async () => {
 
     <div class="two-column-grid">
       <el-form class="panel-card stack" label-position="top">
-        <div>
-          <p class="eyebrow">{{ t('发布') }}</p>
-          <h2>{{ t('发布补丁') }}</h2>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">{{ t('发布') }}</p>
+            <h2>{{ t('发布补丁') }}</h2>
+          </div>
+          <el-space wrap>
+            <el-button :loading="clusterChoicesLoading" @click="refreshClusterChoices">{{ t('刷新选项') }}</el-button>
+            <el-button :icon="Document" @click="patchHelpVisible = true">{{ t('详细说明') }}</el-button>
+          </el-space>
         </div>
-        <el-form-item label="Patch Jar">
+        <el-form-item label="Patch Jar" required>
           <el-upload action="#" :auto-upload="false" :limit="1" :on-change="onPatchFileChange">
             <el-button>{{ t('选择 jar') }}</el-button>
           </el-upload>
+          <p class="field-help">{{ t('补丁 jar 是实际要发布的运行时代码包，选择后会自动带出默认 ID 和名称。') }}</p>
         </el-form-item>
-        <el-form-item label="ID">
-          <el-input v-model="form.id" />
+        <el-form-item label="ID" required>
+          <el-input v-model="form.id" :placeholder="t('全局唯一，例如 hotfix-battle-20260513')" />
+          <p class="field-help">{{ t('ID 是补丁的稳定唯一标识，后续 apply、禁用、节点结果查询都会使用它；重复 ID 会覆盖或更新同一个补丁记录。') }}</p>
         </el-form-item>
         <el-form-item :label="t('名称')">
-          <el-input v-model="form.name" />
+          <el-input v-model="form.name" :placeholder="t('留空使用 ID')" />
+          <p class="field-help">{{ t('名称用于列表展示和人工识别，不参与补丁匹配；留空会使用 ID。') }}</p>
         </el-form-item>
-        <el-form-item :label="t('应用名称')">
+        <el-form-item :label="t('应用名称')" required>
           <el-input v-model="form.appName" />
+          <p class="field-help">{{ t('应用名称必须和目标节点运行时的应用名一致，不一致时补丁会被判定为不兼容。') }}</p>
         </el-form-item>
-        <el-form-item :label="t('版本')">
+        <el-form-item :label="t('版本')" required>
           <el-input v-model="form.versions" :placeholder="t('逗号分隔')" />
+          <p class="field-help">{{ t('版本是允许应用补丁的服务端版本列表；目标节点版本不在列表中会被忽略或过期。') }}</p>
         </el-form-item>
         <el-form-item :label="t('Artifact 名称')">
-          <el-input v-model="form.artifactName" />
+          <el-input v-model="form.artifactName" :placeholder="t('留空使用补丁 ID')" />
+          <p class="field-help">{{ t('Artifact 是补丁 jar 在存储层里的产物记录；名称用于标识这份 jar，通常填构建产物名或模块名，不决定下发目标。') }}</p>
         </el-form-item>
         <el-form-item :label="t('Artifact 版本')">
           <el-input v-model="form.artifactVersion" />
+          <p class="field-help">{{ t('Artifact 版本用于标记这份 jar 的产物版本，便于审计、回溯和排查；是否能应用仍由应用名称、服务端版本和运行要求决定。') }}</p>
         </el-form-item>
         <el-form-item :label="t('目标')">
           <el-segmented
@@ -406,27 +493,79 @@ onMounted(async () => {
               { label: t('节点'), value: 'nodes' },
             ]"
           />
+          <p class="field-help">{{ t('目标决定补丁会尝试下发到哪些节点；选择范围过大会让所有匹配节点都执行 apply。') }}</p>
         </el-form-item>
-        <el-form-item v-if="form.targetType === 'roles'" :label="t('目标 Role')">
-          <el-input v-model="form.roles" :placeholder="t('逗号分隔')" />
+        <el-form-item v-if="form.targetType === 'roles'" :label="t('目标 Role')" required>
+          <el-select
+            v-model="form.roles"
+            multiple
+            filterable
+            allow-create
+            default-first-option
+            :placeholder="t('选择 Role')"
+          >
+            <el-option v-for="role in roleOptions" :key="role" :label="role" :value="role" />
+          </el-select>
+          <p class="field-help">{{ t('可从当前集群已知 Role 中选择，也可以手动输入未来或暂未上线的 Role。') }}</p>
         </el-form-item>
-        <el-form-item v-if="form.targetType === 'nodes'" :label="t('目标地址')">
-          <el-input v-model="form.addresses" type="textarea" :rows="3" />
+        <el-form-item v-if="form.targetType === 'nodes'" :label="t('目标地址')" required>
+          <el-select
+            v-model="form.addresses"
+            multiple
+            filterable
+            allow-create
+            default-first-option
+            :placeholder="t('选择节点地址')"
+          >
+            <el-option v-for="address in nodeAddressOptions" :key="address" :label="address" :value="address" />
+          </el-select>
+          <p class="field-help">{{ t('可从当前集群节点地址中选择，也可以手动输入尚未被发现的地址。') }}</p>
         </el-form-item>
         <el-form-item :label="t('要求 Role')">
-          <el-input v-model="form.requiredRoles" :placeholder="t('逗号分隔')" />
+          <el-select
+            v-model="form.requiredRoles"
+            multiple
+            filterable
+            allow-create
+            default-first-option
+            :placeholder="t('选择 Role')"
+          >
+            <el-option v-for="role in roleOptions" :key="role" :label="role" :value="role" />
+          </el-select>
+          <p class="field-help">{{ t('要求 Role 是 apply 前的二次校验，目标节点必须同时具备这些 Role；通常用于确保补丁只在具备特定职责的节点生效。') }}</p>
         </el-form-item>
         <el-form-item :label="t('要求模块')">
-          <el-input v-model="form.requiredModules" :placeholder="t('逗号分隔')" />
+          <el-select
+            v-model="form.requiredModules"
+            multiple
+            filterable
+            allow-create
+            default-first-option
+            :placeholder="t('选择模块')"
+          >
+            <el-option v-for="module in moduleOptions" :key="module" :label="module" :value="module" />
+          </el-select>
+          <p class="field-help">{{ t('模块选项来自节点上报的 patch.modules；没有选项时说明当前节点未上报，可以手动输入或留空。') }}</p>
         </el-form-item>
         <el-form-item :label="t('要求能力')">
-          <el-input v-model="form.requiredCapabilities" :placeholder="t('逗号分隔')" />
+          <el-select
+            v-model="form.requiredCapabilities"
+            multiple
+            filterable
+            allow-create
+            default-first-option
+            :placeholder="t('选择能力')"
+          >
+            <el-option v-for="capability in capabilityOptions" :key="capability" :label="capability" :value="capability" />
+          </el-select>
+          <p class="field-help">{{ t('能力选项来自节点上报的 patch.capabilities；没有选项时说明当前节点未上报，可以手动输入或留空。') }}</p>
         </el-form-item>
         <el-form-item :label="t('状态')">
           <el-select v-model="form.status">
             <el-option :label="t('草稿')" value="Draft" />
             <el-option :label="t('已启用')" value="Enabled" />
           </el-select>
+          <p class="field-help">{{ t('草稿只保存记录，不会被批量 apply；已启用会参与“Apply 已启用补丁”。') }}</p>
         </el-form-item>
         <el-button type="primary" :loading="createLoading" @click="submitPatch">{{ t('发布') }}</el-button>
       </el-form>
@@ -466,5 +605,44 @@ onMounted(async () => {
         </el-table>
       </div>
     </div>
+
+    <el-drawer v-model="patchHelpVisible" :title="t('运行补丁说明')" size="420px">
+      <div class="help-doc">
+        <section>
+          <h3>{{ t('发布前检查') }}</h3>
+          <ul>
+            <li>{{ t('确认补丁 jar 来自正确分支和版本，避免把不兼容代码发布到线上节点。') }}</li>
+            <li>{{ t('确认应用名称和版本列表能覆盖目标节点，否则补丁会被兼容性检查跳过。') }}</li>
+            <li>{{ t('先以草稿发布并查看详情，确认 ID、目标和要求无误后再启用。') }}</li>
+          </ul>
+        </section>
+        <section>
+          <h3>{{ t('Artifact 是什么') }}</h3>
+          <ul>
+            <li>{{ t('Patch ID 是 GM 仓库里的补丁记录 ID；Artifact 是补丁 jar 在 artifact store 里的产物信息。') }}</li>
+            <li>{{ t('发布时后端会保存 jar，生成 checksum，并把 Artifact 名称、版本和 checksum 写入补丁描述。') }}</li>
+            <li>{{ t('节点 apply 时会通过 Artifact 找到 jar 内容并校验 checksum；Artifact 名称和版本主要用于识别、审计和排查。') }}</li>
+          </ul>
+        </section>
+        <section>
+          <h3>{{ t('目标和运行要求') }}</h3>
+          <ul>
+            <li>{{ t('目标是第一层筛选：全部节点、指定 Role、或指定节点地址，决定补丁会尝试发给谁。') }}</li>
+            <li>{{ t('运行要求是第二层筛选：目标节点必须同时满足要求 Role、要求模块、要求能力，才会真正 apply。') }}</li>
+            <li>{{ t('要求模块来自节点上报的 patch.modules，要求能力来自节点上报的 patch.capabilities，字段值需要完全一致。') }}</li>
+            <li>{{ t('如果补丁 jar manifest 中声明了 Asteria-Patch-Roles、Asteria-Patch-Modules、Asteria-Patch-Capabilities，框架也会使用这些信息作为要求。') }}</li>
+          </ul>
+        </section>
+        <section>
+          <h3>{{ t('填错后的影响') }}</h3>
+          <ul>
+            <li>{{ t('应用名称或版本填错会让节点判定不兼容，补丁不会生效。') }}</li>
+            <li>{{ t('目标地址或 Role 填错会让补丁发到错误范围，可能漏发或误发。') }}</li>
+            <li>{{ t('要求模块或要求能力填错会导致节点不满足要求，即使目标命中了也会跳过 apply。') }}</li>
+            <li>{{ t('运行要求留空表示不做这层限制，适合无法确认节点上报模块/能力时先以目标范围控制。') }}</li>
+          </ul>
+        </section>
+      </div>
+    </el-drawer>
   </section>
 </template>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { showError, showSuccess } from '@/utils/feedback'
+import { showError, showSuccess, showWarning } from '@/utils/feedback'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -67,10 +67,18 @@ async function loadRawStatus() {
 }
 
 async function runLeave() {
+  if (!leaveForm.address.trim()) {
+    showWarning(t('请填写必填项：{fields}', { fields: t('地址') }))
+    return
+  }
   await runOperation(() => leaveClusterNode(leaveForm))
 }
 
 async function runJoin() {
+  if (!joinForm.nodeAddress.trim()) {
+    showWarning(t('请填写必填项：{fields}', { fields: t('节点地址') }))
+    return
+  }
   await runOperation(() =>
     joinClusterNode({
       nodeAddress: joinForm.nodeAddress,
@@ -81,6 +89,10 @@ async function runJoin() {
 }
 
 async function runDown() {
+  if (!downForm.address.trim()) {
+    showWarning(t('请填写必填项：{fields}', { fields: t('地址') }))
+    return
+  }
   await runOperation(() => downClusterNode(downForm))
 }
 
@@ -174,20 +186,24 @@ onMounted(refreshStatus)
         </div>
 
         <el-divider>{{ t('Leave 节点') }}</el-divider>
-        <el-form-item :label="t('地址')">
+        <el-form-item :label="t('地址')" required>
           <el-input v-model="leaveForm.address" />
+          <p class="field-help">{{ t('Leave 会让指定节点主动离开集群，适合计划内下线。') }}</p>
         </el-form-item>
         <el-form-item :label="t('原因')">
           <el-input v-model="leaveForm.reason" />
+          <p class="field-help">{{ t('原因会进入操作记录，建议写明工单或变更背景。') }}</p>
         </el-form-item>
         <el-button :loading="loading" @click="runLeave">{{ t('提交 Leave') }}</el-button>
 
         <el-divider>{{ t('Join 节点') }}</el-divider>
-        <el-form-item :label="t('节点地址')">
+        <el-form-item :label="t('节点地址')" required>
           <el-input v-model="joinForm.nodeAddress" />
+          <p class="field-help">{{ t('节点地址是要加入集群的目标节点地址。') }}</p>
         </el-form-item>
         <el-form-item :label="t('Seed 地址')">
           <el-input v-model="joinForm.seedAddress" />
+          <p class="field-help">{{ t('Seed 地址可选；留空时由后端按当前集群状态处理。') }}</p>
         </el-form-item>
         <el-form-item :label="t('原因')">
           <el-input v-model="joinForm.reason" />
@@ -195,11 +211,13 @@ onMounted(refreshStatus)
         <el-button :loading="loading" @click="runJoin">{{ t('提交 Join') }}</el-button>
 
         <el-divider>{{ t('Down 节点') }}</el-divider>
-        <el-form-item :label="t('地址')">
+        <el-form-item :label="t('地址')" required>
           <el-input v-model="downForm.address" />
+          <p class="field-help">{{ t('Down 会把节点标记为不可用，适合节点失联后的人工摘除。') }}</p>
         </el-form-item>
         <el-form-item :label="t('原因')">
           <el-input v-model="downForm.reason" />
+          <p class="field-help">{{ t('请在确认节点无法恢复或必须摘除后再执行 Down。') }}</p>
         </el-form-item>
         <el-checkbox v-model="downForm.confirmed">{{ t('已确认风险') }}</el-checkbox>
         <el-button type="danger" :loading="loading" @click="runDown">{{ t('提交 Down') }}</el-button>

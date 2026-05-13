@@ -221,6 +221,7 @@ onBeforeUnmount(() => {
 
       <el-form-item :label="t('全局偏移（毫秒）')">
         <el-input-number v-model="form.globalOffsetMillis" :step="60_000" />
+        <p class="field-help">{{ t('全局偏移会改变游戏服务器看到的当前时间，影响依赖游戏时间的活动、刷新和定时逻辑。') }}</p>
       </el-form-item>
 
       <el-form-item :label="t('目标游戏时间')">
@@ -237,6 +238,7 @@ onBeforeUnmount(() => {
           <el-button @click="shiftTarget(86_400_000)">+1d</el-button>
         </div>
         <p class="form-hint">{{ t('目标时间') }}: {{ targetTimeText }}</p>
+        <p class="field-help">{{ t('选择目标游戏时间后，前端会自动计算需要设置的全局偏移。') }}</p>
       </el-form-item>
 
       <el-space wrap>
@@ -256,9 +258,11 @@ onBeforeUnmount(() => {
         </div>
         <el-form-item label="Epoch">
           <el-input-number v-model="form.reloadEpoch" :min="0" />
+          <p class="field-help">{{ t('Epoch 是一次时间变更的版本号，用于查询各节点是否确认应用。') }}</p>
         </el-form-item>
         <el-form-item :label="t('自动刷新')">
           <el-switch v-model="form.autoRefreshAcks" />
+          <p class="field-help">{{ t('开启后会定期刷新当前 Epoch 的节点确认结果。') }}</p>
         </el-form-item>
         <el-button :loading="ackLoading" @click="loadReloadStatus()">{{ t('刷新确认') }}</el-button>
       </el-form>

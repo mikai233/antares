@@ -128,9 +128,11 @@ onMounted(refresh)
         </div>
         <el-form-item :label="t('计划 ID')">
           <el-input v-model="form.planId" :placeholder="t('留空自动生成')" />
+          <p class="field-help">{{ t('计划 ID 用于追踪一次停服流程；留空会由后端生成。重复使用可能关联到已有流程。') }}</p>
         </el-form-item>
-        <el-form-item :label="t('发起人')">
+        <el-form-item :label="t('发起人')" required>
           <el-input v-model="form.requestedBy" />
+          <p class="field-help">{{ t('发起人会写入停服记录，便于审计和排查。') }}</p>
         </el-form-item>
         <el-button type="danger" :loading="loading" @click="submitShutdown">{{ t('启动停服') }}</el-button>
       </el-form>

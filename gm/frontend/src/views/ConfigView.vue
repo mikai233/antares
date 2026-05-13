@@ -485,6 +485,7 @@ onMounted(async () => {
       <el-form class="inline-form" label-position="top">
         <el-form-item :label="t('浏览路径')">
           <el-input v-model="configCenterForm.path" @keyup.enter="loadConfigCenter()" />
+          <p class="field-help">{{ t('浏览路径是 ConfigCenter 中的完整路径，错误路径会返回空节点或读取失败。') }}</p>
         </el-form-item>
         <el-form-item label=" ">
           <el-space wrap>
@@ -557,18 +558,23 @@ onMounted(async () => {
               { label: t('地址'), value: 'addresses' },
             ]"
           />
+          <p class="field-help">{{ t('Reload 目标决定哪些节点重新加载配置，范围越大影响面越大。') }}</p>
         </el-form-item>
         <el-form-item v-if="clusterReloadForm.target === 'role'" label="Role">
           <el-input v-model="clusterReloadForm.role" />
+          <p class="field-help">{{ t('只对包含该 Role 的节点执行配置 reload。') }}</p>
         </el-form-item>
         <el-form-item v-if="clusterReloadForm.target === 'nodes'" :label="t('节点 ID')">
           <el-input v-model="clusterReloadForm.nodeIds" :placeholder="t('逗号分隔')" />
+          <p class="field-help">{{ t('节点 ID 填错会导致目标节点不会收到 reload 请求。') }}</p>
         </el-form-item>
         <el-form-item v-if="clusterReloadForm.target === 'addresses'" :label="t('地址')">
           <el-input v-model="clusterReloadForm.addresses" type="textarea" :rows="4" />
+          <p class="field-help">{{ t('地址按行填写，用于精确选择需要 reload 的节点。') }}</p>
         </el-form-item>
         <el-form-item :label="t('超时（毫秒）')">
           <el-input-number v-model="clusterReloadForm.timeoutMillis" :min="1000" :step="1000" />
+          <p class="field-help">{{ t('超时过短可能导致慢节点被误判失败；过长会让页面等待更久。') }}</p>
         </el-form-item>
         <el-button type="primary" :loading="loading" @click="reloadCluster">{{ t('Reload 集群') }}</el-button>
       </el-form>
@@ -599,6 +605,7 @@ onMounted(async () => {
         <el-form class="inline-form" label-position="top">
           <el-form-item :label="t('行 ID')">
             <el-input v-model="query.rowId" @keyup.enter="loadConfigRow()" />
+            <p class="field-help">{{ t('行 ID 使用配置表的主键格式，填错会查不到行详情。') }}</p>
           </el-form-item>
           <el-form-item label=" ">
             <el-button :loading="tableLoading" @click="loadConfigRow()">{{ t('加载行') }}</el-button>
