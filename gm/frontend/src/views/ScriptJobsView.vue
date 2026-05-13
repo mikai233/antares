@@ -319,7 +319,7 @@ onMounted(refreshJobs)
           </el-table-column>
           <el-table-column :label="t('结果数')" width="100">
             <template #default="{ row }">
-              {{ row.results.length }}
+              {{ row.results?.length ?? 0 }}
             </template>
           </el-table-column>
           <el-table-column :label="t('错误')" min-width="220">
@@ -342,7 +342,7 @@ onMounted(refreshJobs)
               </el-descriptions-item>
               <el-descriptions-item :label="t('状态')">{{ scriptJobStatusText(selectedItem.status) }}</el-descriptions-item>
               <el-descriptions-item :label="t('目标')">{{ describeScriptTarget(selectedItem.target) }}</el-descriptions-item>
-              <el-descriptions-item :label="t('尝试次数')">{{ selectedItem.attempts.length }}</el-descriptions-item>
+              <el-descriptions-item :label="t('尝试次数')">{{ selectedItem.attempts?.length ?? 0 }}</el-descriptions-item>
               <el-descriptions-item :label="t('错误')">{{ itemError(selectedItem) ?? '-' }}</el-descriptions-item>
             </el-descriptions>
             <el-form class="job-actions" label-position="top">

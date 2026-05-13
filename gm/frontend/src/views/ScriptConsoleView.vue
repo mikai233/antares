@@ -113,6 +113,9 @@ async function loadMetadata() {
     if (metadata.value.singletons.length > 0 && !metadata.value.singletons.includes(form.actorName)) {
       form.actorName = metadata.value.singletons[0]
     }
+    if (form.maxConcurrentItems == null) {
+      form.maxConcurrentItems = metadata.value.defaultMaxConcurrentItems
+    }
   } catch (error) {
     showError(error, t('加载脚本元数据失败'))
   }
@@ -300,7 +303,7 @@ onMounted(loadMetadata)
           </el-table-column>
           <el-table-column :label="t('结果数')" width="100">
             <template #default="{ row }">
-              {{ row.results.length }}
+              {{ row.results?.length ?? 0 }}
             </template>
           </el-table-column>
           <el-table-column :label="t('错误')" min-width="220">

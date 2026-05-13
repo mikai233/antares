@@ -8,12 +8,23 @@ export interface GmScriptMetadata {
     entityKinds: string[]
     singletons: string[]
     nodeAddresses: string[]
+    defaultMaxConcurrentItems: number
     templates: Array<{
         id: string
         name: string
         engine: string
     }>
 }
+
+export interface GmScriptSettings {
+    defaultMaxConcurrentItems: number
+}
+
+const DefaultScriptRoles = ['Gate', 'Global', 'Gm', 'Player', 'World']
+const DefaultEntityKinds = ['PlayerActor', 'WorldActor']
+const DefaultSingletons = ['worker']
+const DefaultTargetTypes = ['all-nodes', 'role', 'nodes', 'actor-paths', 'entity', 'singleton']
+const DefaultMaxConcurrentItems = 256
 
 export interface ScriptArtifact {
     name: string
@@ -132,8 +143,11 @@ export interface CreateScriptJobPayload {
 }
 
 export async function getScriptMetadata() {
-    const response = await http.get<GmScriptMetadata>('/gm/api/scripts/metadata')
-    return response.data
+    const [metadataResponse, settings] = await Promise.all([
+        http.get<GmScriptMetadata>('/gm/api/scripts/metadata'),
+        getScriptSettingsOrDefault(),
+    ])
+    return normalizeScriptMetadata(metadataResponse.data, settings)
 }
 
 export async function createScriptJob(payload: CreateScriptJobPayload) {
@@ -284,8 +298,10 @@ export function targetTypeLabel(target: unknown): string {
 }
 
 export function itemError(item: ScriptJobItem): string | undefined {
-    const failedAttempt = [...item.attempts].reverse().find(attempt => attempt.error)
-    return failedAttempt?.error ?? item.results.find(entry => entry.error)?.error ?? undefined
+    const attempts = item.attempts ?? []
+    const results = item.results ?? []
+    const failedAttempt = [...attempts].reverse().find(attempt => attempt.error)
+    return failedAttempt?.error ?? results.find(entry => entry.error)?.error ?? undefined
 }
 
 export function scriptIdValue(value: string | { value: string }): string {
@@ -356,4 +372,41 @@ function fileToBase64(file: File): Promise<string> {
         reader.onerror = () => reject(reader.error ?? new Error(i18n.global.t('文件 {name} 读取失败', {name: file.name})))
         reader.readAsDataURL(file)
     })
+}
+
+async function getScriptSettingsOrDefault() {
+    try {
+        const response = await http.get<GmScriptSettings>('/gm/api/scripts/settings')
+        return response.data
+    } catch {
+        return {defaultMaxConcurrentItems: DefaultMaxConcurrentItems}
+    }
+}
+
+function normalizeScriptMetadata(data: Partial<GmScriptMetadata>, settings: GmScriptSettings): GmScriptMetadata {
+    return {
+        engines: stringArrayOrDefault(data.engines, []),
+        targetTypes: stringArrayOrDefault(data.targetTypes, DefaultTargetTypes),
+        roles: stringArrayOrDefault(data.roles, DefaultScriptRoles),
+        entityKinds: stringArrayOrDefault(data.entityKinds, DefaultEntityKinds),
+        singletons: stringArrayOrDefault(data.singletons, DefaultSingletons),
+        nodeAddresses: stringArrayOrDefault(data.nodeAddresses, []),
+        defaultMaxConcurrentItems: positiveNumberOrDefault(
+            data.defaultMaxConcurrentItems ?? settings.defaultMaxConcurrentItems,
+            DefaultMaxConcurrentItems,
+        ),
+        templates: Array.isArray(data.templates) ? data.templates : [],
+    }
+}
+
+function stringArrayOrDefault(value: unknown, fallback: string[]) {
+    if (!Array.isArray(value)) {
+        return fallback
+    }
+    const items = value.filter(item => typeof item === 'string')
+    return items.length > 0 ? items : fallback
+}
+
+function positiveNumberOrDefault(value: unknown, fallback: number) {
+    return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : fallback
 }
