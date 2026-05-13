@@ -1,12 +1,12 @@
 import { http } from './http'
 
 export interface GmConfigMetadata {
-  revision: unknown
+  revision: ConfigRevision
   tableCount: number
 }
 
 export interface GmConfigReloadStatus {
-  currentRevision?: unknown
+  currentRevision?: ConfigRevision | null
   lastSuccess?: GmConfigReloadRecord | null
   lastFailure?: GmConfigReloadRecord | null
   recent: GmConfigReloadRecord[]
@@ -16,8 +16,8 @@ export interface GmConfigReloadRecord {
   id: number
   status: string
   occurredAt: string
-  previousRevision?: unknown
-  currentRevision?: unknown
+  previousRevision?: ConfigRevision | null
+  currentRevision?: ConfigRevision | null
   addedTables: GmConfigChangedTable[]
   removedTables: GmConfigChangedTable[]
   changedTables: GmConfigChangedTable[]
@@ -102,6 +102,32 @@ export interface ClusterConfigReloadResult {
   }>
 }
 
+export interface ConfigRevision {
+  version: string
+  checksum?: string | null
+}
+
+export interface ClusterConfigNodeStatus {
+  nodeId?: string | null
+  address: string
+  roles: string[]
+  revision?: ConfigRevision | null
+  reachable: boolean
+  message?: string | null
+}
+
+export interface ClusterConfigRevisionGroup {
+  revision?: ConfigRevision | null
+  nodes: ClusterConfigNodeStatus[]
+}
+
+export interface ClusterConfigRevisionConsistency {
+  statuses: ClusterConfigNodeStatus[]
+  reachableNodes: ClusterConfigNodeStatus[]
+  revisionGroups: ClusterConfigRevisionGroup[]
+  consistent: boolean
+}
+
 export async function getConfigMetadata() {
   const response = await http.get<GmConfigMetadata>('/gm/api/config/metadata')
   return response.data
@@ -125,12 +151,12 @@ export async function reloadLocalConfig() {
 }
 
 export async function getClusterConfigStatus() {
-  const response = await http.get<unknown[]>('/gm/api/config/cluster/status')
+  const response = await http.get<ClusterConfigNodeStatus[]>('/gm/api/config/cluster/status')
   return response.data
 }
 
 export async function getClusterConfigConsistency() {
-  const response = await http.get<unknown>('/gm/api/config/cluster/consistency')
+  const response = await http.get<ClusterConfigRevisionConsistency>('/gm/api/config/cluster/consistency')
   return response.data
 }
 
@@ -185,6 +211,14 @@ export function revisionText(value: unknown): string {
   }
   if (typeof value === 'object' && 'value' in value) {
     return revisionText((value as { value?: unknown }).value)
+  }
+  if (typeof value === 'object' && 'version' in value) {
+    const revision = value as { version?: unknown; checksum?: unknown }
+    const version = revision.version == null ? '-' : String(revision.version)
+    const checksum = typeof revision.checksum === 'string' && revision.checksum
+      ? ` (${revision.checksum.slice(0, 8)})`
+      : ''
+    return `${version}${checksum}`
   }
   return JSON.stringify(value)
 }

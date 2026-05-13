@@ -15,6 +15,9 @@ import {
   reloadLocalConfig,
   revisionText,
   type ClusterConfigReloadResult,
+  type ClusterConfigNodeStatus,
+  type ClusterConfigRevisionConsistency,
+  type ConfigRevision,
   type GmConfigMetadata,
   type GmConfigReloadRecord,
   type GmConfigReloadStatus,
@@ -34,8 +37,8 @@ const selectedTable = ref('')
 const schema = ref<GmConfigTableDescriptor>()
 const rows = ref<GmConfigRowPage>()
 const selectedRow = ref<GmConfigRow>()
-const clusterStatuses = ref<unknown[]>([])
-const consistency = ref<unknown>()
+const clusterStatuses = ref<ClusterConfigNodeStatus[]>([])
+const consistency = ref<ClusterConfigRevisionConsistency>()
 const clusterReloadResult = ref<ClusterConfigReloadResult>()
 
 const query = reactive({
@@ -54,6 +57,28 @@ const clusterReloadForm = reactive({
 })
 
 const selectedSummary = computed(() => tables.value.find(table => table.name === selectedTable.value))
+const consistencyProblemCount = computed(() => {
+  const current = consistency.value
+  if (!current) {
+    return 0
+  }
+  return current.statuses.filter(status => consistencyStatusType(status) !== 'success').length
+})
+
+const consistencyRows = computed(() => {
+  const current = consistency.value
+  if (!current) {
+    return []
+  }
+  const expectedRevision = dominantRevision(current)
+  return current.statuses.map(status => ({
+    ...status,
+    revisionText: configRevisionText(status.revision),
+    rolesText: status.roles.join(', ') || '-',
+    statusText: consistencyStatusText(status, expectedRevision),
+    statusType: consistencyStatusType(status, expectedRevision),
+  }))
+})
 
 async function refreshOverview() {
   loading.value = true
@@ -179,6 +204,49 @@ function jsonText(value: unknown) {
   return value == null ? '-' : JSON.stringify(value, null, 2)
 }
 
+function configRevisionText(value?: ConfigRevision | null) {
+  if (!value) {
+    return '-'
+  }
+  return value.checksum ? `${value.version} (${value.checksum.slice(0, 8)})` : value.version
+}
+
+function sameRevision(left?: ConfigRevision | null, right?: ConfigRevision | null) {
+  return left?.version === right?.version && (left?.checksum ?? null) === (right?.checksum ?? null)
+}
+
+function dominantRevision(current: ClusterConfigRevisionConsistency) {
+  return [...current.revisionGroups]
+    .sort((left, right) => right.nodes.length - left.nodes.length)[0]
+    ?.revision
+}
+
+function consistencyStatusText(status: ClusterConfigNodeStatus, expectedRevision?: ConfigRevision | null) {
+  if (!status.reachable) {
+    return 'Unreachable'
+  }
+  if (!status.revision) {
+    return 'Missing Revision'
+  }
+  if (expectedRevision && !sameRevision(status.revision, expectedRevision)) {
+    return 'Mismatch'
+  }
+  return 'Consistent'
+}
+
+function consistencyStatusType(status: ClusterConfigNodeStatus, expectedRevision?: ConfigRevision | null) {
+  if (!status.reachable) {
+    return 'danger'
+  }
+  if (!status.revision) {
+    return 'warning'
+  }
+  if (expectedRevision && !sameRevision(status.revision, expectedRevision)) {
+    return 'danger'
+  }
+  return 'success'
+}
+
 watch(selectedTable, () => {
   void loadSelectedTable(true)
 })
@@ -206,163 +274,305 @@ onMounted(async () => {
       </article>
     </div>
 
-    <section class="page-grid">
-      <div class="stack">
-        <div class="panel-card stack">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">Config</p>
-              <h2>配置表浏览</h2>
-            </div>
-            <el-space wrap>
-              <el-button :loading="loading" @click="refreshOverview">刷新</el-button>
-              <el-button type="primary" :loading="loading" @click="reloadLocal">Reload Local</el-button>
-            </el-space>
-          </div>
-
-          <el-form class="inline-form" label-position="top">
-            <el-form-item label="Table">
-              <el-select v-model="selectedTable" filterable>
-                <el-option
-                  v-for="table in tables"
-                  :key="table.name"
-                  :label="table.name"
-                  :value="table.name"
-                />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="Keyword">
-              <el-input v-model="query.keyword" clearable />
-            </el-form-item>
-            <el-form-item label="Limit">
-              <el-input-number v-model="query.limit" :min="1" :max="500" />
-            </el-form-item>
-            <el-form-item label=" ">
-              <el-button :loading="tableLoading" @click="loadSelectedTable(true)">查询</el-button>
-            </el-form-item>
-          </el-form>
-
-          <el-descriptions v-if="selectedSummary" :column="3" border>
-            <el-descriptions-item label="Key">{{ selectedSummary.keyType }}</el-descriptions-item>
-            <el-descriptions-item label="Row">{{ selectedSummary.rowType }}</el-descriptions-item>
-            <el-descriptions-item label="Size">{{ selectedSummary.size }}</el-descriptions-item>
-          </el-descriptions>
-
-          <el-table v-loading="tableLoading" :data="rows?.rows ?? []" border @row-click="(row: GmConfigRow) => loadConfigRow(row.id)">
-            <el-table-column prop="id" label="ID" min-width="140" fixed />
-            <el-table-column
-              v-for="field in schema?.fields ?? []"
-              :key="field.name"
-              :label="field.name"
-              min-width="180"
-            >
-              <template #default="{ row }">
-                {{ cellText(row, field.name) }}
-              </template>
-            </el-table-column>
-          </el-table>
+    <div class="panel-card stack">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Consistency</p>
+          <h2>集群一致性</h2>
         </div>
+        <el-tag
+          :type="consistency?.consistent ? 'success' : 'danger'"
+          effect="dark"
+        >
+          {{ consistency?.consistent ? '一致' : `${consistencyProblemCount} 个问题` }}
+        </el-tag>
+      </div>
 
-        <div class="panel-card stack">
-          <div>
-            <p class="eyebrow">Reload</p>
-            <h2>Reload 记录</h2>
-          </div>
-          <el-table :data="reloadHistory" border>
-            <el-table-column prop="id" label="ID" width="90" />
-            <el-table-column prop="status" label="Status" width="120" />
-            <el-table-column prop="occurredAt" label="At" min-width="220" />
-            <el-table-column prop="message" label="Message" min-width="220" />
-          </el-table>
+      <el-alert
+        v-if="consistency && !consistency.consistent"
+        title="集群配置修订不一致"
+        type="error"
+        :closable="false"
+        show-icon
+      />
+
+      <div v-if="consistency" class="consistency-summary">
+        <div>
+          <span>Reachable</span>
+          <strong>{{ consistency.reachableNodes.length }} / {{ consistency.statuses.length }}</strong>
+        </div>
+        <div>
+          <span>Revision Groups</span>
+          <strong>{{ consistency.revisionGroups.length }}</strong>
+        </div>
+        <div>
+          <span>Nodes</span>
+          <strong>{{ consistency.statuses.length }}</strong>
         </div>
       </div>
 
-      <aside class="stack">
-        <el-form class="panel-card stack" label-position="top">
-          <div>
-            <p class="eyebrow">Cluster Reload</p>
-            <h2>集群配置</h2>
-          </div>
-          <el-form-item label="Target">
-            <el-segmented
-              v-model="clusterReloadForm.target"
-              :options="[
-                { label: 'All', value: 'all' },
-                { label: 'Role', value: 'role' },
-                { label: 'Nodes', value: 'nodes' },
-                { label: 'Addresses', value: 'addresses' },
-              ]"
+      <div v-if="consistency" class="revision-groups">
+        <div
+          v-for="group in consistency.revisionGroups"
+          :key="configRevisionText(group.revision)"
+          class="revision-group"
+          :class="{ 'revision-group-problem': !consistency.consistent }"
+        >
+          <span>{{ configRevisionText(group.revision) }}</span>
+          <strong>{{ group.nodes.length }}</strong>
+        </div>
+      </div>
+
+      <el-empty v-if="!consistency" description="暂无一致性结果" />
+      <el-table v-else :data="consistencyRows" border>
+        <el-table-column label="Status" width="140">
+          <template #default="{ row }">
+            <el-tag :type="row.statusType" effect="dark">{{ row.statusText }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="nodeId" label="Node" min-width="140" />
+        <el-table-column prop="address" label="Address" min-width="220" />
+        <el-table-column prop="rolesText" label="Roles" min-width="140" />
+        <el-table-column prop="revisionText" label="Revision" min-width="180" />
+        <el-table-column prop="message" label="Message" min-width="180" />
+      </el-table>
+    </div>
+
+    <div class="panel-card stack">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Config</p>
+          <h2>配置表浏览</h2>
+        </div>
+        <el-space wrap>
+          <el-button :loading="loading" @click="refreshOverview">刷新</el-button>
+          <el-button type="primary" :loading="loading" @click="reloadLocal">Reload Local</el-button>
+        </el-space>
+      </div>
+
+      <el-form class="inline-form" label-position="top">
+        <el-form-item label="Table">
+          <el-select v-model="selectedTable" filterable>
+            <el-option
+              v-for="table in tables"
+              :key="table.name"
+              :label="table.name"
+              :value="table.name"
             />
-          </el-form-item>
-          <el-form-item v-if="clusterReloadForm.target === 'role'" label="Role">
-            <el-input v-model="clusterReloadForm.role" />
-          </el-form-item>
-          <el-form-item v-if="clusterReloadForm.target === 'nodes'" label="Node IDs">
-            <el-input v-model="clusterReloadForm.nodeIds" placeholder="逗号分隔" />
-          </el-form-item>
-          <el-form-item v-if="clusterReloadForm.target === 'addresses'" label="Addresses">
-            <el-input v-model="clusterReloadForm.addresses" type="textarea" :rows="4" />
-          </el-form-item>
-          <el-form-item label="Timeout Millis">
-            <el-input-number v-model="clusterReloadForm.timeoutMillis" :min="1000" :step="1000" />
-          </el-form-item>
-          <el-button type="primary" :loading="loading" @click="reloadCluster">Reload Cluster</el-button>
-        </el-form>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="Keyword">
+          <el-input v-model="query.keyword" clearable />
+        </el-form-item>
+        <el-form-item label="Limit">
+          <el-input-number v-model="query.limit" :min="1" :max="500" />
+        </el-form-item>
+        <el-form-item label=" ">
+          <el-button :loading="tableLoading" @click="loadSelectedTable(true)">查询</el-button>
+        </el-form-item>
+      </el-form>
 
-        <div class="panel-card stack">
-          <div>
-            <p class="eyebrow">Status</p>
-            <h2>Reload 状态</h2>
-          </div>
-          <el-descriptions :column="1" border>
-            <el-descriptions-item label="Current">
-              {{ revisionText(reloadStatus?.currentRevision) }}
-            </el-descriptions-item>
-            <el-descriptions-item label="Last Success">
-              {{ reloadStatus?.lastSuccess?.occurredAt ?? '-' }}
-            </el-descriptions-item>
-            <el-descriptions-item label="Last Failure">
-              {{ reloadStatus?.lastFailure?.message ?? '-' }}
-            </el-descriptions-item>
-          </el-descriptions>
+      <el-descriptions v-if="selectedSummary" :column="3" border>
+        <el-descriptions-item label="Key">{{ selectedSummary.keyType }}</el-descriptions-item>
+        <el-descriptions-item label="Row">{{ selectedSummary.rowType }}</el-descriptions-item>
+        <el-descriptions-item label="Size">{{ selectedSummary.size }}</el-descriptions-item>
+      </el-descriptions>
+
+      <el-table v-loading="tableLoading" :data="rows?.rows ?? []" border @row-click="(row: GmConfigRow) => loadConfigRow(row.id)">
+        <el-table-column prop="id" label="ID" min-width="140" fixed />
+        <el-table-column
+          v-for="field in schema?.fields ?? []"
+          :key="field.name"
+          :label="field.name"
+          min-width="180"
+        >
+          <template #default="{ row }">
+            {{ cellText(row, field.name) }}
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
+
+    <div class="config-work-grid">
+      <el-form class="panel-card stack" label-position="top">
+        <div>
+          <p class="eyebrow">Cluster Reload</p>
+          <h2>集群配置</h2>
         </div>
+        <el-form-item label="Target">
+          <el-segmented
+            v-model="clusterReloadForm.target"
+            :options="[
+              { label: 'All', value: 'all' },
+              { label: 'Role', value: 'role' },
+              { label: 'Nodes', value: 'nodes' },
+              { label: 'Addresses', value: 'addresses' },
+            ]"
+          />
+        </el-form-item>
+        <el-form-item v-if="clusterReloadForm.target === 'role'" label="Role">
+          <el-input v-model="clusterReloadForm.role" />
+        </el-form-item>
+        <el-form-item v-if="clusterReloadForm.target === 'nodes'" label="Node IDs">
+          <el-input v-model="clusterReloadForm.nodeIds" placeholder="逗号分隔" />
+        </el-form-item>
+        <el-form-item v-if="clusterReloadForm.target === 'addresses'" label="Addresses">
+          <el-input v-model="clusterReloadForm.addresses" type="textarea" :rows="4" />
+        </el-form-item>
+        <el-form-item label="Timeout Millis">
+          <el-input-number v-model="clusterReloadForm.timeoutMillis" :min="1000" :step="1000" />
+        </el-form-item>
+        <el-button type="primary" :loading="loading" @click="reloadCluster">Reload Cluster</el-button>
+      </el-form>
 
-        <div class="panel-card stack">
-          <div>
-            <p class="eyebrow">Row Detail</p>
-            <h2>单行查询</h2>
-          </div>
-          <el-form class="stack" label-position="top">
-            <el-form-item label="Row ID">
-              <el-input v-model="query.rowId" @keyup.enter="loadConfigRow()" />
-            </el-form-item>
+      <div class="panel-card stack">
+        <div>
+          <p class="eyebrow">Status</p>
+          <h2>Reload 状态</h2>
+        </div>
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="Current">
+            {{ revisionText(reloadStatus?.currentRevision) }}
+          </el-descriptions-item>
+          <el-descriptions-item label="Last Success">
+            {{ reloadStatus?.lastSuccess?.occurredAt ?? '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="Last Failure">
+            {{ reloadStatus?.lastFailure?.message ?? '-' }}
+          </el-descriptions-item>
+        </el-descriptions>
+      </div>
+
+      <div class="panel-card stack">
+        <div>
+          <p class="eyebrow">Row Detail</p>
+          <h2>单行查询</h2>
+        </div>
+        <el-form class="inline-form" label-position="top">
+          <el-form-item label="Row ID">
+            <el-input v-model="query.rowId" @keyup.enter="loadConfigRow()" />
+          </el-form-item>
+          <el-form-item label=" ">
             <el-button :loading="tableLoading" @click="loadConfigRow()">加载行</el-button>
-          </el-form>
-          <el-empty v-if="!selectedRow" description="暂无行详情" />
-          <pre v-else class="raw-output">{{ jsonText(selectedRow) }}</pre>
-        </div>
+          </el-form-item>
+        </el-form>
+        <el-empty v-if="!selectedRow" description="暂无行详情" :image-size="96" />
+        <pre v-else class="raw-output">{{ jsonText(selectedRow) }}</pre>
+      </div>
 
-        <div class="panel-card stack">
-          <div>
-            <p class="eyebrow">Consistency</p>
-            <h2>一致性</h2>
-          </div>
-          <pre class="raw-output">{{ jsonText(consistency) }}</pre>
+      <div class="panel-card stack">
+        <div>
+          <p class="eyebrow">Cluster Result</p>
+          <h2>执行结果</h2>
         </div>
+        <el-empty v-if="!clusterReloadResult" description="暂无结果" :image-size="96" />
+        <el-table v-else :data="clusterReloadResult.results" border>
+          <el-table-column prop="address" label="Address" min-width="160" />
+          <el-table-column prop="success" label="Success" width="100" />
+          <el-table-column prop="message" label="Message" min-width="180" />
+        </el-table>
+      </div>
+    </div>
 
-        <div class="panel-card stack">
-          <div>
-            <p class="eyebrow">Cluster Result</p>
-            <h2>执行结果</h2>
-          </div>
-          <el-empty v-if="!clusterReloadResult" description="暂无结果" />
-          <el-table v-else :data="clusterReloadResult.results" border>
-            <el-table-column prop="address" label="Address" min-width="160" />
-            <el-table-column prop="success" label="Success" width="100" />
-            <el-table-column prop="message" label="Message" min-width="180" />
-          </el-table>
-        </div>
-      </aside>
-    </section>
+    <div class="panel-card stack">
+      <div>
+        <p class="eyebrow">Reload</p>
+        <h2>Reload 记录</h2>
+      </div>
+      <el-table :data="reloadHistory" border>
+        <el-table-column prop="id" label="ID" width="90" />
+        <el-table-column prop="status" label="Status" width="120" />
+        <el-table-column prop="occurredAt" label="At" min-width="220" />
+        <el-table-column prop="message" label="Message" min-width="220" />
+      </el-table>
+    </div>
   </section>
 </template>
+
+<style scoped>
+.consistency-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.consistency-summary > div {
+  border: 1px solid var(--gm-line);
+  border-radius: var(--gm-radius);
+  padding: 10px 12px;
+  background: var(--gm-surface-soft);
+}
+
+.consistency-summary span,
+.consistency-summary strong {
+  display: block;
+}
+
+.consistency-summary span {
+  color: var(--gm-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.consistency-summary strong {
+  margin-top: 6px;
+  color: var(--gm-text);
+  font-size: 18px;
+}
+
+.revision-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.revision-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  border: 1px solid var(--gm-line);
+  border-radius: var(--gm-radius);
+  padding: 10px 12px;
+  background: var(--gm-surface-soft);
+}
+
+.revision-group span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--gm-text);
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.revision-group strong {
+  color: var(--gm-muted);
+  font-size: 14px;
+}
+
+.revision-group-problem {
+  border-color: var(--el-color-danger-light-5);
+  background: var(--el-color-danger-light-9);
+}
+
+.config-work-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+  min-width: 0;
+}
+
+@media (max-width: 760px) {
+  .consistency-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .config-work-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
