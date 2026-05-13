@@ -246,36 +246,51 @@ onMounted(refreshJobs)
           </el-descriptions-item>
         </el-descriptions>
 
-        <el-form class="job-actions" label-position="top">
-          <el-form-item :label="t('取消原因')">
-            <el-input v-model="jobActionForm.cancelReason" />
-          </el-form-item>
-          <el-button type="warning" @click="runCancelJob">{{ t('取消任务') }}</el-button>
+        <div class="job-action-grid">
+          <section class="action-panel">
+            <h3>{{ t('取消任务') }}</h3>
+            <el-form class="action-form" label-position="top">
+              <el-form-item :label="t('取消原因')">
+                <el-input v-model="jobActionForm.cancelReason" />
+              </el-form-item>
+              <el-button class="action-button" type="warning" @click="runCancelJob">{{ t('取消任务') }}</el-button>
+            </el-form>
+          </section>
 
-          <el-divider>{{ t('导出') }}</el-divider>
-          <el-form-item :label="t('状态')">
-            <el-select v-model="jobActionForm.exportStatus" clearable>
-              <el-option :label="t('等待中')" value="Pending" />
-              <el-option :label="t('执行中')" value="Running" />
-              <el-option :label="t('已完成')" value="Completed" />
-              <el-option :label="t('失败')" value="Failed" />
-              <el-option :label="t('已取消')" value="Cancelled" />
-            </el-select>
-          </el-form-item>
-          <el-button @click="runExportResults">{{ t('导出 CSV') }}</el-button>
+          <section class="action-panel">
+            <h3>{{ t('导出') }}</h3>
+            <el-form class="action-form" label-position="top">
+              <el-form-item :label="t('状态')">
+                <el-select v-model="jobActionForm.exportStatus" clearable>
+                  <el-option :label="t('等待中')" value="Pending" />
+                  <el-option :label="t('执行中')" value="Running" />
+                  <el-option :label="t('已完成')" value="Completed" />
+                  <el-option :label="t('失败')" value="Failed" />
+                  <el-option :label="t('已取消')" value="Cancelled" />
+                </el-select>
+              </el-form-item>
+              <el-button class="action-button" @click="runExportResults">{{ t('导出 CSV') }}</el-button>
+            </el-form>
+          </section>
 
-          <el-divider>{{ t('重试失败项') }}</el-divider>
-          <el-form-item :label="t('错误')">
-            <el-input v-model="jobActionForm.retryError" clearable />
-          </el-form-item>
-          <el-form-item :label="t('数量上限')">
-            <el-input-number v-model="jobActionForm.retryLimit" :min="1" />
-          </el-form-item>
-          <el-form-item :label="t('超时（毫秒）')">
-            <el-input-number v-model="jobActionForm.retryTimeoutMillis" :min="1000" :step="1000" />
-          </el-form-item>
-          <el-button type="primary" @click="runRetryFailedItems">{{ t('重试失败项') }}</el-button>
-        </el-form>
+          <section class="action-panel">
+            <h3>{{ t('重试失败项') }}</h3>
+            <el-form class="action-form" label-position="top">
+              <div class="action-fields">
+                <el-form-item :label="t('错误')">
+                  <el-input v-model="jobActionForm.retryError" clearable />
+                </el-form-item>
+                <el-form-item :label="t('数量上限')">
+                  <el-input-number v-model="jobActionForm.retryLimit" :min="1" />
+                </el-form-item>
+                <el-form-item :label="t('超时（毫秒）')">
+                  <el-input-number v-model="jobActionForm.retryTimeoutMillis" :min="1000" :step="1000" />
+                </el-form-item>
+              </div>
+              <el-button class="action-button" type="primary" @click="runRetryFailedItems">{{ t('重试失败项') }}</el-button>
+            </el-form>
+          </section>
+        </div>
 
         <div v-if="selectedSummary" class="summary-grid">
           <div class="summary-card">
@@ -329,7 +344,7 @@ onMounted(refreshJobs)
           </el-table-column>
         </el-table>
 
-        <div class="panel-card stack nested-card">
+        <section class="item-detail-section stack">
           <div>
             <p class="eyebrow">{{ t('任务项') }}</p>
             <h2>{{ t('任务项详情') }}</h2>
@@ -345,18 +360,28 @@ onMounted(refreshJobs)
               <el-descriptions-item :label="t('尝试次数')">{{ selectedItem.attempts?.length ?? 0 }}</el-descriptions-item>
               <el-descriptions-item :label="t('错误')">{{ itemError(selectedItem) ?? '-' }}</el-descriptions-item>
             </el-descriptions>
-            <el-form class="job-actions" label-position="top">
-              <el-form-item :label="t('取消原因')">
-                <el-input v-model="itemActionForm.cancelReason" />
-              </el-form-item>
-              <el-button type="warning" @click="runCancelItem">{{ t('取消任务项') }}</el-button>
-              <el-form-item :label="t('重试超时（毫秒）')">
-                <el-input-number v-model="itemActionForm.retryTimeoutMillis" :min="1000" :step="1000" />
-              </el-form-item>
-              <el-button type="primary" @click="runRetryItem">{{ t('重试任务项') }}</el-button>
-            </el-form>
+            <div class="item-action-grid">
+              <section class="action-panel">
+                <h3>{{ t('取消任务项') }}</h3>
+                <el-form class="action-form" label-position="top">
+                  <el-form-item :label="t('取消原因')">
+                    <el-input v-model="itemActionForm.cancelReason" />
+                  </el-form-item>
+                  <el-button class="action-button" type="warning" @click="runCancelItem">{{ t('取消任务项') }}</el-button>
+                </el-form>
+              </section>
+              <section class="action-panel">
+                <h3>{{ t('重试任务项') }}</h3>
+                <el-form class="action-form" label-position="top">
+                  <el-form-item :label="t('重试超时（毫秒）')">
+                    <el-input-number v-model="itemActionForm.retryTimeoutMillis" :min="1000" :step="1000" />
+                  </el-form-item>
+                  <el-button class="action-button" type="primary" @click="runRetryItem">{{ t('重试任务项') }}</el-button>
+                </el-form>
+              </section>
+            </div>
           </template>
-        </div>
+        </section>
       </template>
     </div>
   </section>
@@ -372,7 +397,7 @@ onMounted(refreshJobs)
 
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -398,15 +423,60 @@ onMounted(refreshJobs)
   font-size: 24px;
 }
 
-.job-actions {
+.job-action-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.9fr) minmax(220px, 0.9fr) minmax(300px, 1.2fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.item-action-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
-.job-actions .el-divider {
+.action-panel {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 12px;
+  min-width: 0;
+  border: 1px solid var(--gm-line);
+  border-radius: var(--gm-radius);
+  padding: 14px;
+  background: var(--gm-surface-soft);
+}
+
+.action-panel h3 {
+  margin: 0;
+  color: var(--gm-text);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.35;
+}
+
+.action-form {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 12px;
+  min-width: 0;
+}
+
+.action-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-content: start;
+  min-width: 0;
+}
+
+.action-fields .el-form-item:first-child {
   grid-column: 1 / -1;
-  margin: 4px 0;
+}
+
+.action-button {
+  width: 100%;
 }
 
 .item-toolbar {
@@ -414,8 +484,13 @@ onMounted(refreshJobs)
   justify-content: flex-end;
 }
 
-.nested-card {
-  box-shadow: none;
+.item-toolbar .el-select {
+  width: min(240px, 100%);
+}
+
+.item-detail-section {
+  border-top: 1px solid var(--gm-line-soft);
+  padding-top: 14px;
 }
 
 .eyebrow,
@@ -438,7 +513,15 @@ h2 {
 }
 
 @media (max-width: 760px) {
-  .job-actions {
+  .job-action-grid,
+  .item-action-grid,
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1180px) {
+  .job-action-grid {
     grid-template-columns: 1fr;
   }
 }
