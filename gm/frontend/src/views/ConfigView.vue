@@ -80,7 +80,6 @@ const configCenterForm = reactive({
 })
 
 const publicationForm = reactive({
-  version: '',
   timeoutMillis: 10_000,
 })
 
@@ -229,7 +228,7 @@ async function validatePublication() {
   }
   publicationLoading.value = true
   try {
-    publicationValidation.value = await validateConfigPublication(file, publicationForm.version || null)
+    publicationValidation.value = await validateConfigPublication(file)
     showSuccess(t('配置包已校验'))
   } catch (error) {
     showError(error, t('校验配置包失败'))
@@ -246,8 +245,8 @@ async function publishPublication(reload: boolean) {
   publicationLoading.value = true
   try {
     publicationPublishResult.value = reload
-      ? await publishAndReloadConfigPublication(file, publicationForm.timeoutMillis, publicationForm.version || null)
-      : await publishConfigPublication(file, publicationForm.version || null)
+      ? await publishAndReloadConfigPublication(file, publicationForm.timeoutMillis)
+      : await publishConfigPublication(file)
     if (publicationPublishResult.value.reload) {
       clusterReloadResult.value = publicationPublishResult.value.reload
     }
@@ -515,10 +514,7 @@ onMounted(async () => {
               >
                 <el-button>{{ t('选择 game-config.zip') }}</el-button>
               </el-upload>
-              <p class="field-help">{{ t('配置包会先按运行时同样的校验流程加载，发布成功后会切换 ConfigCenter current 指针。') }}</p>
-            </el-form-item>
-            <el-form-item :label="t('版本')">
-              <el-input v-model="publicationForm.version" clearable :placeholder="t('留空使用内容 checksum')" />
+              <p class="field-help">{{ t('配置包必须包含版本元数据，发布成功后会切换 ConfigCenter current 指针。') }}</p>
             </el-form-item>
             <el-form-item :label="t('Reload 超时（毫秒）')">
               <el-input-number v-model="publicationForm.timeoutMillis" :min="1000" :step="1000" />

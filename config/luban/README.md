@@ -31,25 +31,27 @@ Common commands:
 # Export Luban Java/.bytes and refresh the generated Kotlin metadata/bridge
 ./gradlew :config:refreshLubanConfig
 
-# Build a server-consumable binary bundle
+# Build a server-consumable binary bundle. The zip contains Luban .bytes plus
+# META-INF/antares/game-config.properties with the config revision version.
 ./gradlew :config:packageLubanConfigBundle
 ```
 
-Publishing to the local config center defaults the publication revision to `projectVersion` from the root
-`gradle.properties`:
+Packaging and publishing default the config revision to `projectVersion` from the root `gradle.properties`:
 
 ```bash
 ./gradlew :tools:publishLocalGameConfig
 ```
 
-Use `-PgameConfigVersion` only when intentionally publishing a config revision that differs from the code version:
+Use `-PgameConfigVersion` only when intentionally packaging or publishing a config revision that differs from the code
+version:
 
 ```bash
+./gradlew :config:packageLubanConfigBundle -PgameConfigVersion=4.3.0
 ./gradlew :tools:publishLocalGameConfig -PgameConfigVersion=4.3.0
 ```
 
-That writes paths such as `/antares/game-config/revisions/4.3.0/...` while keeping the content checksum in the
-publication manifest.
+That writes `version=4.3.0` into the zip metadata and publishes paths such as
+`/antares/game-config/revisions/4.3.0/...` while keeping the content checksum in the publication manifest.
 
 Default bundle output:
 

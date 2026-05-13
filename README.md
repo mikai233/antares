@@ -301,7 +301,8 @@ root `gradle.properties`.
 
 The generated Java/Kotlin source is checked into the repo. Raw `.bytes` files are local build outputs and are not part
 of the runtime classpath. Runtime nodes consume a single `game-config.zip` publication artifact from the config center
-and unpack it in memory before loading Luban tables.
+and unpack it in memory before loading Luban tables. Each bundle includes
+`META-INF/antares/game-config.properties`, which defines the config publication revision.
 
 Common commands:
 

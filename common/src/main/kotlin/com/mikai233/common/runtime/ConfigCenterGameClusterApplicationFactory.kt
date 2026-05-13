@@ -64,7 +64,7 @@ private class ConfigCenterPekkoClusterStartup(
         val managementPort = addr.port + PEKKO_MANAGEMENT_PORT_OFFSET
         return ConfigFactory.parseMap(
             mapOf(
-                "pekko.cluster.app-version" to versionText(),
+                "pekko.cluster.app-version" to runtimeVersion(),
                 "pekko.management.http.hostname" to addr.hostString,
                 "pekko.management.http.port" to managementPort,
                 "pekko.management.http.bind-hostname" to "0.0.0.0",

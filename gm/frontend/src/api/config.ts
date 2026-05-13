@@ -295,29 +295,27 @@ export async function listConfigPublications() {
     return response.data
 }
 
-export async function validateConfigPublication(file: File, version?: string | null) {
+export async function validateConfigPublication(file: File) {
     const form = new FormData()
     form.append('file', file)
     const response = await http.post<ConfigPublicationValidationResponse>(
         '/gm/api/config/publications/validate',
         form,
-        {params: version ? {version} : undefined},
     )
     return response.data
 }
 
-export async function publishConfigPublication(file: File, version?: string | null) {
+export async function publishConfigPublication(file: File) {
     const form = new FormData()
     form.append('file', file)
     const response = await http.post<ConfigPublicationPublishResponse>(
         '/gm/api/config/publications/publish',
         form,
-        {params: version ? {version} : undefined},
     )
     return response.data
 }
 
-export async function publishAndReloadConfigPublication(file: File, timeoutMillis: number, version?: string | null) {
+export async function publishAndReloadConfigPublication(file: File, timeoutMillis: number) {
     const form = new FormData()
     form.append('file', file)
     const response = await http.post<ConfigPublicationPublishResponse>(
@@ -326,7 +324,6 @@ export async function publishAndReloadConfigPublication(file: File, timeoutMilli
         {
             params: {
                 timeoutMillis,
-                ...(version ? {version} : {}),
             },
         },
     )

@@ -3,7 +3,6 @@ package com.mikai233.tools.zookeeper
 import com.mikai233.common.conf.RuntimeEnv
 import com.mikai233.common.config.*
 import com.mikai233.common.extension.asyncZookeeperClient
-import com.mikai233.tools.config.GameConfigPublishOptions
 import com.mikai233.tools.config.LocalGameConfigPublisher
 import io.github.realmlabs.asteria.cluster.config.ClusterConfigLayout
 import io.github.realmlabs.asteria.cluster.config.ClusterTopology
@@ -55,7 +54,7 @@ fun main() = runBlocking {
         repository.put(GAME_WORLDS / world.id.toString(), world)
     }
 
-    LocalGameConfigPublisher.publish(store, GameConfigPublishOptions.fromEnvironment())
+    LocalGameConfigPublisher.publish(store)
 }
 
 private fun generateGameWorld(worldId: Long): GameWorldConfig {

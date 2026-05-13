@@ -1,5 +1,7 @@
 package com.mikai233.config.test
 
+import com.mikai233.config.luban.GAME_CONFIG_BUNDLE_METADATA_PATH
+import com.mikai233.config.luban.gameConfigBundleMetadata
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -20,6 +22,7 @@ class LubanGameConfigArtifactsTest {
 
         assertEquals(
             listOf(
+                GAME_CONFIG_BUNDLE_METADATA_PATH,
                 "game_tbactivity.bytes",
                 "game_tbgameglobal.bytes",
                 "game_tbitem.bytes",
@@ -31,5 +34,6 @@ class LubanGameConfigArtifactsTest {
             filesByPath.keys.sorted(),
         )
         assertTrue(filesByPath.values.all { it.isNotEmpty() })
+        assertEquals(LubanTestConfigArtifacts.BUNDLE_VERSION, gameConfigBundleMetadata(filesByPath).version)
     }
 }

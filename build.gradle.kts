@@ -81,23 +81,32 @@ subprojects {
     }
     tasks.register("generateVersionFile") {
         group = "version"
-        description = "Generate a version resource file for ${project.path}."
+        description = "Generate build-info resource files for ${project.path}."
 
         val resourcesDir = file("${layout.buildDirectory.get()}/generated/resources/")
-        val versionFile = File(resourcesDir, "version")
+        val buildInfoFile = File(resourcesDir, "META-INF/antares/build-info.properties")
 
         inputs.property("version", project.version.toString())
-        outputs.file(versionFile)
+        inputs.property("appName", rootProject.name)
+        outputs.file(buildInfoFile)
         doLast {
             if (!resourcesDir.exists()) {
                 resourcesDir.mkdirs()
             }
-            versionFile.writeText("${project.version}")
+            if (!buildInfoFile.parentFile.exists()) {
+                buildInfoFile.parentFile.mkdirs()
+            }
+            buildInfoFile.writeText(
+                """
+                appName=${rootProject.name}
+                version=${project.version}
+                """.trimIndent(),
+            )
         }
     }
     tasks.named<ProcessResources>("processResources") {
         from("${layout.buildDirectory.get()}/generated/resources") {
-            include("version")
+            include("META-INF/antares/build-info.properties")
         }
     }
     tasks.named("processResources") {

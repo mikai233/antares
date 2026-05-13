@@ -56,7 +56,7 @@ private class KubernetesPekkoClusterStartup(
         val podLabelSelector = System.getenv("PEKKO_DISCOVERY_POD_LABEL_SELECTOR") ?: "app=%s"
         return mapOf(
             "pekko.actor.provider" to "cluster",
-            "pekko.cluster.app-version" to versionText(),
+            "pekko.cluster.app-version" to runtimeVersion(),
             "pekko.remote.artery.canonical.hostname" to addr.hostString,
             "pekko.remote.artery.canonical.port" to addr.port,
             "pekko.remote.artery.bind.hostname" to "0.0.0.0",

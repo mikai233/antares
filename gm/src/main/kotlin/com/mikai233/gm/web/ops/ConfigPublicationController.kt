@@ -4,9 +4,10 @@ import com.mikai233.common.annotation.AllOpen
 import com.mikai233.common.config.GAME_CONFIG_PUBLICATION
 import com.mikai233.config.luban.GameTables
 import com.mikai233.config.luban.GameTablesSnapshotBridge
+import com.mikai233.config.luban.gameConfigBundleMetadata
 import com.mikai233.config.luban.query.GameConfigQueryBuilders
-import com.mikai233.config.luban.validation.GameConfigValidators
 import com.mikai233.config.luban.unpackZipEntries
+import com.mikai233.config.luban.validation.GameConfigValidators
 import io.github.realmlabs.asteria.cluster.config.ClusterConfigControlService
 import io.github.realmlabs.asteria.cluster.config.ClusterConfigReloadResult
 import io.github.realmlabs.asteria.cluster.config.ClusterConfigReloadTarget
@@ -17,20 +18,8 @@ import io.github.realmlabs.asteria.config.center.ConfigStore
 import io.github.realmlabs.asteria.config.luban.LubanBinaryConfigLoader
 import io.github.realmlabs.asteria.config.luban.LubanBinaryLoadReport
 import io.github.realmlabs.asteria.config.luban.MemoryLubanDataSource
-import io.github.realmlabs.asteria.config.publisher.ConfigArtifactSource
-import io.github.realmlabs.asteria.config.publisher.ConfigPublicationArtifact
-import io.github.realmlabs.asteria.config.publisher.ConfigPublicationArtifactManifest
-import io.github.realmlabs.asteria.config.publisher.ConfigPublicationComponentManifest
-import io.github.realmlabs.asteria.config.publisher.ConfigPublicationLayout
-import io.github.realmlabs.asteria.config.publisher.ConfigPublicationManifest
-import io.github.realmlabs.asteria.config.publisher.ConfigPublicationOperations
-import io.github.realmlabs.asteria.config.publisher.ConfigPublicationRecord
-import io.github.realmlabs.asteria.config.publisher.ConfigPublisher
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import io.github.realmlabs.asteria.config.publisher.*
+import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 import java.time.Instant
 import kotlin.time.Duration.Companion.milliseconds
@@ -68,10 +57,9 @@ class ConfigPublicationController(
     @PostMapping("/validate")
     suspend fun validate(
         @RequestParam file: MultipartFile,
-        @RequestParam(required = false) version: String?,
     ): ConfigPublicationValidationResponse {
         val bytes = readConfigZip(file)
-        val snapshot = loadSnapshot(bytes, version)
+        val snapshot = loadSnapshot(bytes)
         return ConfigPublicationValidationResponse(
             revision = snapshot.revision,
             tableCount = snapshot.tables().size,
@@ -85,9 +73,8 @@ class ConfigPublicationController(
     @PostMapping("/publish")
     suspend fun publish(
         @RequestParam file: MultipartFile,
-        @RequestParam(required = false) version: String?,
     ): ConfigPublicationPublishResponse {
-        val publication = publishConfig(readConfigZip(file), version)
+        val publication = publishConfig(readConfigZip(file))
         return ConfigPublicationPublishResponse(
             publication = publication,
             reload = null,
@@ -97,11 +84,10 @@ class ConfigPublicationController(
     @PostMapping("/publish-and-reload")
     suspend fun publishAndReload(
         @RequestParam file: MultipartFile,
-        @RequestParam(required = false) version: String?,
         @RequestParam(defaultValue = "10000") timeoutMillis: Long,
     ): ConfigPublicationPublishResponse {
         require(timeoutMillis > 0) { "timeoutMillis must be greater than zero" }
-        val publication = publishConfig(readConfigZip(file), version)
+        val publication = publishConfig(readConfigZip(file))
         val control = clusterControl ?: error("cluster config control service is not configured")
         val reload = control.reload(ClusterConfigReloadTarget.All, timeoutMillis.milliseconds)
         return ConfigPublicationPublishResponse(
@@ -121,9 +107,9 @@ class ConfigPublicationController(
         return manifest.toResponse(current = true, publishedAt = current.publishedAt)
     }
 
-    private suspend fun publishConfig(bytes: ByteArray, version: String?): ConfigPublicationResponse {
+    private suspend fun publishConfig(bytes: ByteArray): ConfigPublicationResponse {
         val result = ConfigPublisher(
-            loader = loader(bytes, version),
+            loader = loader(bytes),
             artifactSource = ConfigArtifactSource {
                 listOf(ConfigPublicationArtifact(CONFIG_ZIP_ARTIFACT, bytes))
             },
@@ -135,9 +121,9 @@ class ConfigPublicationController(
         return result.manifest.toResponse(current = true, publishedAt = result.manifest.generatedAt)
     }
 
-    private suspend fun loadSnapshot(bytes: ByteArray, version: String?): ConfigSnapshot {
+    private suspend fun loadSnapshot(bytes: ByteArray): ConfigSnapshot {
         return ConfigService(
-            loader = loader(bytes, version),
+            loader = loader(bytes),
             validators = GameConfigValidators.defaultValidators,
             componentBuilders = GameConfigQueryBuilders.defaultBuilders,
         ).load().current
@@ -145,21 +131,20 @@ class ConfigPublicationController(
 
     private fun loader(
         bytes: ByteArray,
-        version: String?,
     ): LubanBinaryConfigLoader<GameTables, GameTables.IByteBufLoader> {
         val entries = unpackZipEntries(bytes)
+        val metadata = gameConfigBundleMetadata(entries)
         return LubanBinaryConfigLoader(
             tablesType = GameTables::class,
             dataSource = MemoryLubanDataSource(entries),
             bridge = GameTablesSnapshotBridge,
-            revisionFactory = { report -> revision(report, version) },
+            revisionFactory = { report -> revision(report, metadata.version) },
         )
     }
 
-    private fun revision(report: LubanBinaryLoadReport, version: String?): ConfigRevision {
-        val normalizedVersion = version?.trim()?.takeIf { it.isNotEmpty() }
+    private fun revision(report: LubanBinaryLoadReport, version: String): ConfigRevision {
         return ConfigRevision(
-            version = normalizedVersion ?: report.checksum,
+            version = version,
             checksum = report.checksum,
         )
     }
