@@ -20,6 +20,7 @@ class WorldStatusController(
     private val node: GmNode,
 ) {
     @GetMapping("/status")
+    @Suppress("LongParameterList")
     suspend fun status(
         @RequestParam(defaultValue = "1") page: Int,
         @RequestParam(defaultValue = "20") pageSize: Int,

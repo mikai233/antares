@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { showError, showSuccess } from '@/utils/feedback'
 import { formatServerDateTime } from '@/utils/serverTime'
+import type { UploadFile } from 'element-plus'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
+  getCurrentConfigPublication,
   getClusterConfigConsistency,
   getClusterConfigStatus,
   getConfigCenterEntry,
@@ -12,15 +14,23 @@ import {
   getConfigReloadStatus,
   getConfigRow,
   getConfigTableSchema,
+  listConfigPublications,
   listConfigRows,
   listConfigReloadHistory,
   listConfigTables,
+  promoteConfigPublication,
+  publishAndReloadConfigPublication,
+  publishConfigPublication,
   reloadClusterConfig,
   reloadLocalConfig,
   revisionText,
+  validateConfigPublication,
   type ClusterConfigReloadResult,
   type ClusterConfigNodeStatus,
   type ClusterConfigRevisionConsistency,
+  type ConfigPublicationPublishResponse,
+  type ConfigPublicationResponse,
+  type ConfigPublicationValidationResponse,
   type ConfigRevision,
   type GmConfigCenterEntryResponse,
   type GmConfigCenterTreeResponse,
@@ -36,6 +46,7 @@ import {
 const loading = ref(false)
 const tableLoading = ref(false)
 const configCenterLoading = ref(false)
+const publicationLoading = ref(false)
 const ConfigCenterRootPath = '/antares'
 const { t } = useI18n()
 const metadata = ref<GmConfigMetadata>()
@@ -51,6 +62,11 @@ const consistency = ref<ClusterConfigRevisionConsistency>()
 const clusterReloadResult = ref<ClusterConfigReloadResult>()
 const configCenterTree = ref<GmConfigCenterTreeResponse>()
 const configCenterEntry = ref<GmConfigCenterEntryResponse>()
+const publicationFile = ref<File>()
+const publicationCurrent = ref<ConfigPublicationResponse | null>(null)
+const publicationHistory = ref<ConfigPublicationResponse[]>([])
+const publicationValidation = ref<ConfigPublicationValidationResponse>()
+const publicationPublishResult = ref<ConfigPublicationPublishResponse>()
 
 const query = reactive({
   keyword: '',
@@ -61,6 +77,11 @@ const query = reactive({
 
 const configCenterForm = reactive({
   path: ConfigCenterRootPath,
+})
+
+const publicationForm = reactive({
+  version: '',
+  timeoutMillis: 10_000,
 })
 
 const clusterReloadForm = reactive({
@@ -164,6 +185,100 @@ async function reloadCluster() {
   }
 }
 
+async function refreshPublications() {
+  publicationLoading.value = true
+  try {
+    const [nextCurrent, nextHistory] = await Promise.all([
+      getCurrentConfigPublication(),
+      listConfigPublications(),
+    ])
+    publicationCurrent.value = nextCurrent
+    publicationHistory.value = nextHistory
+  } catch (error) {
+    showError(error, t('加载配置发布失败'))
+  } finally {
+    publicationLoading.value = false
+  }
+}
+
+function onConfigBundleChange(uploadFile: UploadFile) {
+  publicationFile.value = uploadFile.raw
+  publicationValidation.value = undefined
+  publicationPublishResult.value = undefined
+}
+
+function onConfigBundleRemove() {
+  publicationFile.value = undefined
+  publicationValidation.value = undefined
+  publicationPublishResult.value = undefined
+}
+
+function selectedPublicationFile() {
+  const file = publicationFile.value
+  if (!file) {
+    showError(t('请选择配置包'), t('请选择配置包'))
+    return null
+  }
+  return file
+}
+
+async function validatePublication() {
+  const file = selectedPublicationFile()
+  if (!file) {
+    return
+  }
+  publicationLoading.value = true
+  try {
+    publicationValidation.value = await validateConfigPublication(file, publicationForm.version || null)
+    showSuccess(t('配置包已校验'))
+  } catch (error) {
+    showError(error, t('校验配置包失败'))
+  } finally {
+    publicationLoading.value = false
+  }
+}
+
+async function publishPublication(reload: boolean) {
+  const file = selectedPublicationFile()
+  if (!file) {
+    return
+  }
+  publicationLoading.value = true
+  try {
+    publicationPublishResult.value = reload
+      ? await publishAndReloadConfigPublication(file, publicationForm.timeoutMillis, publicationForm.version || null)
+      : await publishConfigPublication(file, publicationForm.version || null)
+    if (publicationPublishResult.value.reload) {
+      clusterReloadResult.value = publicationPublishResult.value.reload
+    }
+    showSuccess(reload ? t('配置包已发布并触发 reload') : t('配置包已发布'))
+    await Promise.all([
+      refreshPublications(),
+      refreshOverview(),
+    ])
+  } catch (error) {
+    showError(error, t('发布配置包失败'))
+  } finally {
+    publicationLoading.value = false
+  }
+}
+
+async function promotePublication(row: ConfigPublicationResponse) {
+  publicationLoading.value = true
+  try {
+    publicationCurrent.value = await promoteConfigPublication(row.revision)
+    showSuccess(t('发布已切换'))
+    await Promise.all([
+      refreshPublications(),
+      refreshOverview(),
+    ])
+  } catch (error) {
+    showError(error, t('提升发布失败'))
+  } finally {
+    publicationLoading.value = false
+  }
+}
+
 async function loadSelectedTable(resetOffset = false) {
   if (!selectedTable.value) {
     return
@@ -234,6 +349,19 @@ function configRevisionText(value?: ConfigRevision | null) {
     return '-'
   }
   return value.checksum ? `${value.version} (${value.checksum.slice(0, 8)})` : value.version
+}
+
+function formatBytes(bytes?: number | null) {
+  if (bytes == null) {
+    return '-'
+  }
+  if (bytes < 1024) {
+    return `${bytes} B`
+  }
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KiB`
+  }
+  return `${(bytes / 1024 / 1024).toFixed(1)} MiB`
 }
 
 async function loadConfigCenter(path = configCenterForm.path) {
@@ -332,6 +460,7 @@ watch(selectedTable, () => {
 
 onMounted(async () => {
   await refreshOverview()
+  await refreshPublications()
   await loadSelectedTable()
   await loadConfigCenter()
 })
@@ -352,6 +481,143 @@ onMounted(async () => {
         <span>{{ t('集群节点') }}</span>
         <strong>{{ clusterStatuses.length }}</strong>
       </article>
+    </div>
+
+    <div class="panel-card stack">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">{{ t('发布') }}</p>
+          <h2>{{ t('配置发布') }}</h2>
+        </div>
+        <el-space wrap>
+          <el-button :loading="publicationLoading" @click="refreshPublications">{{ t('刷新') }}</el-button>
+          <el-button :loading="publicationLoading" @click="validatePublication">{{ t('校验配置包') }}</el-button>
+          <el-button type="primary" :loading="publicationLoading" @click="publishPublication(false)">
+            {{ t('发布配置包') }}
+          </el-button>
+          <el-button type="warning" :loading="publicationLoading" @click="publishPublication(true)">
+            {{ t('发布并 Reload') }}
+          </el-button>
+        </el-space>
+      </div>
+
+      <div class="publication-grid">
+        <div class="stack">
+          <el-form class="inline-form" label-position="top">
+            <el-form-item :label="t('配置包')">
+              <el-upload
+                action="#"
+                accept=".zip"
+                :auto-upload="false"
+                :limit="1"
+                :on-change="onConfigBundleChange"
+                :on-remove="onConfigBundleRemove"
+              >
+                <el-button>{{ t('选择 game-config.zip') }}</el-button>
+              </el-upload>
+              <p class="field-help">{{ t('配置包会先按运行时同样的校验流程加载，发布成功后会切换 ConfigCenter current 指针。') }}</p>
+            </el-form-item>
+            <el-form-item :label="t('版本')">
+              <el-input v-model="publicationForm.version" clearable :placeholder="t('留空使用内容 checksum')" />
+            </el-form-item>
+            <el-form-item :label="t('Reload 超时（毫秒）')">
+              <el-input-number v-model="publicationForm.timeoutMillis" :min="1000" :step="1000" />
+            </el-form-item>
+          </el-form>
+
+          <el-descriptions v-if="publicationValidation" :column="2" border>
+            <el-descriptions-item label="Revision">
+              {{ revisionText(publicationValidation.revision) }}
+            </el-descriptions-item>
+            <el-descriptions-item :label="t('配置表')">
+              {{ publicationValidation.tableCount }}
+            </el-descriptions-item>
+            <el-descriptions-item :label="t('组件数量')">
+              {{ publicationValidation.componentCount }}
+            </el-descriptions-item>
+            <el-descriptions-item :label="t('总字节')">
+              {{ formatBytes(publicationValidation.totalArtifactBytes) }}
+            </el-descriptions-item>
+          </el-descriptions>
+
+          <el-alert
+            v-if="publicationPublishResult"
+            :title="t('最近发布')"
+            type="success"
+            :closable="false"
+            show-icon
+          >
+            {{ revisionText(publicationPublishResult.publication.revision) }}
+          </el-alert>
+        </div>
+
+        <div class="stack">
+          <div>
+            <p class="eyebrow">{{ t('当前发布') }}</p>
+            <h2>{{ revisionText(publicationCurrent?.revision) }}</h2>
+          </div>
+          <el-empty v-if="!publicationCurrent" :description="t('暂无配置发布')" :image-size="96" />
+          <el-descriptions v-else :column="1" border>
+            <el-descriptions-item :label="t('发布时间')">
+              {{ formatServerDateTime(publicationCurrent.publishedAt) }}
+            </el-descriptions-item>
+            <el-descriptions-item :label="t('生成时间')">
+              {{ formatServerDateTime(publicationCurrent.generatedAt) }}
+            </el-descriptions-item>
+            <el-descriptions-item :label="t('Artifact 数')">
+              {{ publicationCurrent.artifactCount }}
+            </el-descriptions-item>
+            <el-descriptions-item :label="t('总字节')">
+              {{ formatBytes(publicationCurrent.totalArtifactBytes) }}
+            </el-descriptions-item>
+            <el-descriptions-item label="Manifest">
+              {{ publicationCurrent.manifestPath }}
+            </el-descriptions-item>
+          </el-descriptions>
+        </div>
+      </div>
+
+      <div class="stack">
+        <div>
+          <p class="eyebrow">{{ t('历史') }}</p>
+          <h2>{{ t('配置发布历史') }}</h2>
+        </div>
+        <el-table v-loading="publicationLoading" :data="publicationHistory" border>
+          <el-table-column :label="t('状态')" width="110">
+            <template #default="{ row }">
+              <el-tag v-if="row.current" type="success" effect="dark">{{ t('当前') }}</el-tag>
+              <el-tag v-else>{{ t('历史') }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="Revision" min-width="220">
+            <template #default="{ row }">
+              {{ revisionText(row.revision) }}
+            </template>
+          </el-table-column>
+          <el-table-column :label="t('发布时间')" min-width="180">
+            <template #default="{ row }">
+              {{ formatServerDateTime(row.publishedAt) }}
+            </template>
+          </el-table-column>
+          <el-table-column :label="t('Artifact 数')" width="120">
+            <template #default="{ row }">
+              {{ row.artifactCount }}
+            </template>
+          </el-table-column>
+          <el-table-column :label="t('总字节')" width="120">
+            <template #default="{ row }">
+              {{ formatBytes(row.totalArtifactBytes) }}
+            </template>
+          </el-table-column>
+          <el-table-column :label="t('操作')" width="140">
+            <template #default="{ row }">
+              <el-button size="small" :disabled="row.current" @click="promotePublication(row)">
+                {{ t('切换') }}
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
     </div>
 
     <div class="panel-card stack">
@@ -729,6 +995,14 @@ onMounted(async () => {
   min-width: 0;
 }
 
+.publication-grid {
+  display: grid;
+  grid-template-columns: minmax(360px, 0.9fr) minmax(320px, 1fr);
+  gap: 14px;
+  align-items: start;
+  min-width: 0;
+}
+
 .config-center-browser-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 0.8fr);
@@ -743,6 +1017,7 @@ onMounted(async () => {
   }
 
   .config-work-grid,
+  .publication-grid,
   .config-center-browser-grid {
     grid-template-columns: 1fr;
   }
