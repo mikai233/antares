@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { showError, showSuccess, showWarning } from '@/utils/feedback'
-import { Document } from '@element-plus/icons-vue'
+import { Document, UploadFilled } from '@element-plus/icons-vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getClusterStatus, type GmClusterNode } from '@/api/cluster'
@@ -455,8 +455,9 @@ onMounted(async () => {
           </el-space>
         </div>
         <el-form-item label="Patch Jar" required>
-          <el-upload action="#" :auto-upload="false" :limit="1" :on-change="onPatchFileChange">
-            <el-button>{{ t('选择 jar') }}</el-button>
+          <el-upload drag action="#" :auto-upload="false" :limit="1" :on-change="onPatchFileChange">
+            <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
+            <div class="el-upload__text">{{ t('拖入补丁 jar，或点击选择') }}</div>
           </el-upload>
           <p class="field-help">{{ t('补丁 jar 是实际要发布的运行时代码包，选择后会自动带出默认 ID 和名称。') }}</p>
         </el-form-item>

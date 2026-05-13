@@ -187,8 +187,20 @@ onMounted(refreshStatus)
 
         <el-divider>{{ t('Leave 节点') }}</el-divider>
         <el-form-item :label="t('地址')" required>
-          <el-input v-model="leaveForm.address" />
-          <p class="field-help">{{ t('Leave 会让指定节点主动离开集群，适合计划内下线。') }}</p>
+          <el-select
+            v-model="leaveForm.address"
+            filterable
+            :disabled="nodes.length === 0"
+            :placeholder="t('选择要 Leave 的节点')"
+          >
+            <el-option
+              v-for="node in nodes"
+              :key="node.address"
+              :label="node.address"
+              :value="node.address"
+            />
+          </el-select>
+          <p class="field-help">{{ t('Leave 只能选择当前集群状态中的已知节点；如果列表不对，请先刷新集群状态。') }}</p>
         </el-form-item>
         <el-form-item :label="t('原因')">
           <el-input v-model="leaveForm.reason" />
