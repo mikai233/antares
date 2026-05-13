@@ -353,10 +353,6 @@ onMounted(loadMetadata)
 </template>
 
 <style scoped>
-.result-panel {
-  min-height: 320px;
-}
-
 .eyebrow,
 .result-panel h2 {
   margin: 0;
