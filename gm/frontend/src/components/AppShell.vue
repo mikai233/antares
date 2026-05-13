@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { Box, Coin, Connection, DocumentChecked, Files, Monitor, Moon, Operation, SetUp, Sunny, SwitchButton, Timer } from '@element-plus/icons-vue'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
+import { backendHealth, checkBackendHealth } from '@/api/backendHealth'
 import { toggleLocale } from '@/i18n'
 
 const route = useRoute()
@@ -15,6 +16,19 @@ const pageTitle = computed(() => {
   const title = String(route.meta.title ?? '')
   return title ? t(title) : ''
 })
+const apiStatusType = computed(() => {
+  if (backendHealth.status === 'online') {
+    return 'success'
+  }
+  return backendHealth.status === 'offline' ? 'danger' : 'warning'
+})
+const apiStatusText = computed(() => {
+  if (backendHealth.status === 'online') {
+    return t('API 正常')
+  }
+  return backendHealth.status === 'offline' ? t('API 离线') : t('API 检查中')
+})
+let healthTimer: number | undefined
 
 function toggleTheme() {
   theme.value = isDark.value ? 'light' : 'dark'
@@ -32,6 +46,16 @@ onMounted(() => {
   const savedTheme = localStorage.getItem('gm-theme')
   theme.value = savedTheme === 'dark' ? 'dark' : 'light'
   applyTheme(theme.value)
+  void checkBackendHealth()
+  healthTimer = window.setInterval(() => {
+    void checkBackendHealth()
+  }, 10_000)
+})
+
+onBeforeUnmount(() => {
+  if (healthTimer != null) {
+    window.clearInterval(healthTimer)
+  }
 })
 </script>
 
@@ -111,7 +135,9 @@ onMounted(() => {
               <Moon v-else />
             </el-icon>
           </el-button>
-          <el-tag effect="plain" type="success">{{ t('API 正常') }}</el-tag>
+          <el-tag effect="plain" :type="apiStatusType" :title="backendHealth.message">
+            {{ apiStatusText }}
+          </el-tag>
         </div>
       </header>
 

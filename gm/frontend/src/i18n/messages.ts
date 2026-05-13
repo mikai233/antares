@@ -3,6 +3,8 @@ export const enUS: Record<string, string> = {
   'GM 后台': 'GM Console',
   '集群运维后台': 'Cluster operations',
   'API 正常': 'API Ready',
+  'API 检查中': 'Checking API',
+  'API 离线': 'API Offline',
   '{count} 个问题': '{count} issues',
   '切换亮色模式': 'Switch to light mode',
   '切换暗色模式': 'Switch to dark mode',
