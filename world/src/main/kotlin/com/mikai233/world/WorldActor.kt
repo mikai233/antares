@@ -45,7 +45,7 @@ class WorldActor(val node: WorldNode) : AsteriaActor<WorldNode>(node) {
             check(canInitialize()) { "WorldActor[$worldId] could not initialize" }
             manager.load()
         },
-        flush = { manager.flush() },
+        drain = { manager.drain() },
     )
 
     override fun preStart() {

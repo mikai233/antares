@@ -34,6 +34,10 @@ abstract class AsteriaTrackedMemData<E, T>(
         return runtimes.values.toList().all { it.flushSafely() }
     }
 
+    override suspend fun drain(): Boolean {
+        return flush()
+    }
+
     private fun createTrackedEntity(entity: E, enqueueCreated: Boolean): T {
         val entityId = entity.id
         require(entityId !in runtimes) { "tracked Mongo document $collectionName:$entityId is already loaded" }

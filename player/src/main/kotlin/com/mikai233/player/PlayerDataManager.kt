@@ -57,4 +57,8 @@ class PlayerDataManager(private val player: PlayerActor) {
     suspend fun flush(): Boolean {
         return dataManager.flush()
     }
+
+    suspend fun drain(): Boolean {
+        return dataManager.drain()
+    }
 }

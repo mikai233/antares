@@ -47,7 +47,7 @@ class PlayerActor(val node: PlayerNode) : AsteriaActor<PlayerNode>(node) {
     private val lifecycle = ActorLifecycleGate(
         owner = this,
         load = { manager.load() },
-        flush = { manager.flush() },
+        drain = { manager.drain() },
     )
 
     override fun preStart() {
