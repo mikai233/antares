@@ -50,12 +50,13 @@ private class KubernetesPekkoClusterStartup(
     }
 
     private fun kubernetesConfig(context: ModuleContext, roles: Set<RoleKey>): Map<String, Any> {
-        val managementPort = intEnv("PEKKO_MANAGEMENT_PORT") ?: addr.port + 2000
+        val managementPort = intEnv("PEKKO_MANAGEMENT_PORT") ?: (addr.port + 2000)
         val requiredContactPoints = intEnv("PEKKO_CLUSTER_BOOTSTRAP_REQUIRED_CONTACT_POINT_NR") ?: 1
         val serviceName = System.getenv("PEKKO_CLUSTER_BOOTSTRAP_SERVICE_NAME") ?: context.name
         val podLabelSelector = System.getenv("PEKKO_DISCOVERY_POD_LABEL_SELECTOR") ?: "app=%s"
         return mapOf(
             "pekko.actor.provider" to "cluster",
+            "pekko.cluster.app-version" to versionText(),
             "pekko.remote.artery.canonical.hostname" to addr.hostString,
             "pekko.remote.artery.canonical.port" to addr.port,
             "pekko.remote.artery.bind.hostname" to "0.0.0.0",
@@ -68,6 +69,7 @@ private class KubernetesPekkoClusterStartup(
             "pekko.management.http.port" to managementPort,
             "pekko.management.http.bind-hostname" to "0.0.0.0",
             "pekko.management.http.bind-port" to managementPort,
+            "pekko.management.http.route-providers-read-only" to false,
             "pekko.management.cluster.bootstrap.contact-point-discovery.service-name" to serviceName,
             "pekko.management.cluster.bootstrap.contact-point-discovery.required-contact-point-nr" to
                     requiredContactPoints,

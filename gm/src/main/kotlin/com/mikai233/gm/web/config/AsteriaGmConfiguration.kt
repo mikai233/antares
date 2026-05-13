@@ -1,7 +1,6 @@
 package com.mikai233.gm.web.config
 
 import com.mikai233.common.annotation.AllOpen
-import com.mikai233.common.runtime.system
 import com.mikai233.gm.GmNode
 import io.github.realmlabs.asteria.cluster.config.ClusterConfigControlService
 import io.github.realmlabs.asteria.cluster.pekko.EntityShardRegistry
@@ -12,15 +11,10 @@ import io.github.realmlabs.asteria.config.center.ConfigStore
 import io.github.realmlabs.asteria.gm.core.AllowAllGmAuthorizationPolicy
 import io.github.realmlabs.asteria.gm.core.GmAuthorizationPolicy
 import io.github.realmlabs.asteria.gm.core.GmPrincipal
-import io.github.realmlabs.asteria.gm.cluster.GmClusterStatusService
-import io.github.realmlabs.asteria.gm.cluster.pekko.PekkoGmClusterStatusService
 import io.github.realmlabs.asteria.gm.spring.GmPrincipalResolver
 import io.github.realmlabs.asteria.gm.spring.HeaderGmPrincipalResolver
-import io.github.realmlabs.asteria.patch.PatchApplicationService
-import io.github.realmlabs.asteria.patch.PatchClusterApplicationService
-import io.github.realmlabs.asteria.patch.PatchNodeProvider
-import io.github.realmlabs.asteria.patch.RuntimePatchRepository
-import io.github.realmlabs.asteria.patch.WritablePatchArtifactStore
+import io.github.realmlabs.asteria.patch.*
+import io.github.realmlabs.asteria.script.ScriptEngineRegistry
 import io.github.realmlabs.asteria.script.ScriptRuntime
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -31,6 +25,11 @@ class AsteriaGmConfiguration {
     @Bean
     fun asteriaScriptRuntime(node: GmNode): ScriptRuntime {
         return node.services.get(ScriptRuntime::class)
+    }
+
+    @Bean
+    fun scriptEngineRegistry(node: GmNode): ScriptEngineRegistry {
+        return node.services.get(ScriptEngineRegistry::class)
     }
 
     @Bean
@@ -51,11 +50,6 @@ class AsteriaGmConfiguration {
     @Bean
     fun configStore(node: GmNode): ConfigStore {
         return node.services.get(ConfigStore::class)
-    }
-
-    @Bean
-    fun gmClusterStatusService(node: GmNode): GmClusterStatusService {
-        return PekkoGmClusterStatusService(node.system)
     }
 
     @Bean

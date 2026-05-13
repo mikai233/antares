@@ -2,9 +2,14 @@ package com.mikai233.gm.web
 
 import com.mikai233.common.config.DataSourceConfig
 import com.mikai233.common.config.ROOT
+import com.mikai233.common.config.SYSTEM_NAME
 import com.mikai233.common.config.mongoUri
 import com.mikai233.gm.GmNode
 import com.typesafe.config.Config
+import io.github.realmlabs.asteria.cluster.config.ClusterConfigLayout
+import io.github.realmlabs.asteria.cluster.config.RuntimeNodeConfig
+import io.github.realmlabs.asteria.config.center.RuntimeConfigRepository
+import kotlinx.coroutines.runBlocking
 import org.springframework.boot.WebApplicationType
 import org.springframework.boot.builder.SpringApplicationBuilder
 import org.springframework.context.ApplicationContextInitializer
@@ -56,9 +61,53 @@ class GmHttpServer(
             "asteria.script.job.in-memory-repository-enabled" to false,
             "asteria.gm.config-center.allowed-roots[0]" to ROOT.value,
             "management.endpoints.web.exposure.include" to "health,info,metrics",
-        )
+        ) + buildPekkoManagementProperties()
+    }
+
+    private fun buildPekkoManagementProperties(): Map<String, Any> {
+        val endpoints = loadPekkoManagementEndpoints()
+        return if (endpoints.isEmpty()) {
+            mapOf(
+                "asteria.gm.cluster.pekko-management.base-url" to
+                        "http://${node.addr.hostString}:${node.addr.port + PEKKO_MANAGEMENT_PORT_OFFSET}",
+            )
+        } else {
+            buildMap {
+                endpoints.forEachIndexed { index, endpoint ->
+                    put("asteria.gm.cluster.pekko-management.endpoints[$index].base-url", endpoint.baseUrl)
+                    put("asteria.gm.cluster.pekko-management.endpoints[$index].node-address", endpoint.nodeAddress)
+                }
+            }
+        }
+    }
+
+    private fun loadPekkoManagementEndpoints(): List<PekkoManagementEndpointConfig> {
+        return runCatching {
+            val repository = node.services.get(RuntimeConfigRepository::class)
+            val layout = ClusterConfigLayout.default(SYSTEM_NAME)
+            runBlocking {
+                repository.children<RuntimeNodeConfig>(layout.nodes)
+                    .values
+                    .values
+                    .map { it.value }
+                    .sortedBy { it.nodeId }
+                    .map { config ->
+                        PekkoManagementEndpointConfig(
+                            baseUrl = "http://${config.host}:${config.port + PEKKO_MANAGEMENT_PORT_OFFSET}",
+                            nodeAddress = "pekko://${node.name}@${config.host}:${config.port}",
+                        )
+                    }
+            }
+        }.getOrDefault(emptyList())
     }
 }
+
+private data class PekkoManagementEndpointConfig(
+    val baseUrl: String,
+    val nodeAddress: String,
+)
+
+private const val PEKKO_MANAGEMENT_PORT_OFFSET: Int = 2000
 
 private fun Config.getIntOrDefault(primaryPath: String, fallbackPath: String, defaultValue: Int): Int {
     return when {
