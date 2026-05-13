@@ -7,6 +7,7 @@ import com.mikai233.common.time.GameTimeOverride
 import com.mikai233.common.time.GameTimeOverrideStore
 import com.mikai233.common.time.GameTimeReloadAck
 import com.mikai233.common.time.GameTimeSource
+import io.github.realmlabs.asteria.config.center.ConfigStore
 import io.github.realmlabs.asteria.config.center.RuntimeConfigRepository
 import io.github.realmlabs.asteria.core.AsteriaModule
 import io.github.realmlabs.asteria.core.ModuleContext
@@ -35,8 +36,9 @@ class GameTimeReloadModule(
 
     override suspend fun install(context: ModuleContext) {
         val repository = context.services.get(RuntimeConfigRepository::class)
+        val configStore = context.services.get(ConfigStore::class)
         val gameTimeSource = context.services.get(GameTimeSource::class)
-        val store = ConfigCenterGameTimeOverrideStore(repository)
+        val store = ConfigCenterGameTimeOverrideStore(repository, configStore)
         val override = store.ensureInitial(gameTimeSource.globalOffset().inWholeMilliseconds)
         gameTimeSource.setGlobalOffset(override.globalOffsetMillis.milliseconds)
         appliedEpoch.set(override.epoch)
