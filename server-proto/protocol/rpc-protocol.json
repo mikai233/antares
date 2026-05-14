@@ -1,66 +1,6 @@
 {
   "messages": [
     {
-      "id": 100001,
-      "type": "com.mikai233.protocol.ProtoSystem.PingReq"
-    },
-    {
-      "id": 100002,
-      "type": "com.mikai233.protocol.ProtoSystem.PingResp"
-    },
-    {
-      "id": 100003,
-      "type": "com.mikai233.protocol.ProtoSystem.GmReq"
-    },
-    {
-      "id": 100004,
-      "type": "com.mikai233.protocol.ProtoSystem.GmResp"
-    },
-    {
-      "id": 100005,
-      "type": "com.mikai233.protocol.ProtoTest.TestReq"
-    },
-    {
-      "id": 100006,
-      "type": "com.mikai233.protocol.ProtoTest.TestResp"
-    },
-    {
-      "id": 100007,
-      "type": "com.mikai233.protocol.ProtoLogin.LoginReq"
-    },
-    {
-      "id": 100008,
-      "type": "com.mikai233.protocol.ProtoLogin.LoginResp"
-    },
-    {
-      "id": 100009,
-      "type": "com.mikai233.protocol.ProtoChat.ChatSendReq"
-    },
-    {
-      "id": 100010,
-      "type": "com.mikai233.protocol.ProtoChat.ChatSendResp"
-    },
-    {
-      "id": 100011,
-      "type": "com.mikai233.protocol.ProtoChat.ChatMessageNotify"
-    },
-    {
-      "id": 100012,
-      "type": "com.mikai233.protocol.ProtoChat.ChatHistoryReq"
-    },
-    {
-      "id": 100013,
-      "type": "com.mikai233.protocol.ProtoChat.ChatHistoryResp"
-    },
-    {
-      "id": 100016,
-      "type": "com.mikai233.protocol.ProtoBattle.BattleStartReq"
-    },
-    {
-      "id": 100017,
-      "type": "com.mikai233.protocol.ProtoBattle.BattleStartResp"
-    },
-    {
       "id": 110001,
       "type": "com.mikai233.protocol.ProtoRpcPlayer.PlayerCreateReq"
     },
@@ -155,6 +95,10 @@
     {
       "id": 110024,
       "type": "com.mikai233.protocol.ProtoRpcChat.PlayerAllianceChangedReq"
+    },
+    {
+      "id": 110025,
+      "type": "com.mikai233.protocol.ProtoRpcPlayer.RpcLoginResp"
     }
   ]
 }

@@ -12,7 +12,8 @@ Main modules:
 - `world`: world shard, wakeup flow, cross-world topics, and broadcast examples
 - `global`: shared cluster services and singleton-style runtime pieces
 - `gm`: admin backend and script entrypoints
-- `proto`: client/internal protobuf contracts and generated protocol support
+- `client-proto`: client-facing protobuf contracts and generated client protocol support
+- `server-proto`: internal protobuf RPC contracts and generated server protocol support
 - `common`: shared runtime, config, routing, patching, and persistence abstractions
 - `tools`: local topology/config bootstrap helpers
 - `stardust`: local all-in-one development launcher
@@ -340,15 +341,15 @@ For more detail, see [config/luban/README.md](config/luban/README.md).
 
 Internal protobuf RPC messages live under:
 
-- `proto/src/main/proto/rpc`
+- `server-proto/src/main/proto/rpc`
 
 Client-facing protobuf messages live under:
 
-- `proto/src/main/proto/client`
+- `client-proto/src/main/proto/client`
 
 The project keeps centralized internal RPC id allocation in:
 
-- `proto/protocol/rpc-protocol.json`
+- `server-proto/protocol/rpc-protocol.json`
 
 That registry is generated from the proto descriptor set and then consumed by Asteria-side protocol generation.
 Entity-id extraction for shard-routed internal RPC messages comes from protobuf metadata.

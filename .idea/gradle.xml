@@ -26,13 +26,14 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/build-logic" />
             <option value="$PROJECT_DIR$/buildSrc" />
+            <option value="$PROJECT_DIR$/client-proto" />
             <option value="$PROJECT_DIR$/common" />
             <option value="$PROJECT_DIR$/config" />
             <option value="$PROJECT_DIR$/gate" />
             <option value="$PROJECT_DIR$/global" />
             <option value="$PROJECT_DIR$/gm" />
             <option value="$PROJECT_DIR$/player" />
-            <option value="$PROJECT_DIR$/proto" />
+            <option value="$PROJECT_DIR$/server-proto" />
             <option value="$PROJECT_DIR$/stardust" />
             <option value="$PROJECT_DIR$/tools" />
             <option value="$PROJECT_DIR$/world" />

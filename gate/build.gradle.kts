@@ -7,13 +7,13 @@ plugins {
 val generateGatewayRoutingTable by tasks.registering(GenerateGatewayRoutingTask::class) {
     group = "code generation"
     description = "Generate gateway routing source from Asteria gateway route metadata."
-    dependsOn(":proto:generateProto", ":gate:kspKotlin", ":player:kspKotlin", ":world:kspKotlin")
+    dependsOn(":client-proto:generateProto", ":gate:kspKotlin", ":player:kspKotlin", ":world:kspKotlin")
     metadataFiles.from(
         project(":gate").layout.buildDirectory.file("generated/ksp/main/resources/META-INF/asteria/gateway-route-hints/gate.json"),
         project(":player").layout.buildDirectory.file("generated/ksp/main/resources/META-INF/asteria/gateway-route-hints/player.json"),
         project(":world").layout.buildDirectory.file("generated/ksp/main/resources/META-INF/asteria/gateway-route-hints/world.json"),
     )
-    descriptorSetFile.set(project(":proto").layout.buildDirectory.file("descriptors/generateProto.pb"))
+    descriptorSetFile.set(project(":client-proto").layout.buildDirectory.file("descriptors/generateProto.pb"))
     outputDir.set(layout.buildDirectory.dir("generated/source/gateway/main/kotlin"))
 }
 
@@ -48,7 +48,8 @@ dependencies {
     implementation(libs.protobuf.kotlin)
     implementation(libs.jcommander)
     implementation(project(":common"))
-    implementation(project(":proto"))
+    implementation(project(":client-proto"))
+    implementation(project(":server-proto"))
 }
 
 tasks.compileKotlin {

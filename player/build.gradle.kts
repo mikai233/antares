@@ -30,7 +30,8 @@ dependencies {
     implementation(libs.spring.data.mongodb)
     implementation(project(":common"))
     implementation(project(":config"))
-    implementation(project(":proto"))
+    implementation(project(":client-proto"))
+    implementation(project(":server-proto"))
     ksp(libs.asteria.config.ksp)
     ksp(libs.asteria.persistence.mongodb.ksp)
 }

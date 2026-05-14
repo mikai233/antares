@@ -5,7 +5,9 @@ import com.mikai233.common.extension.encodeActorRef
 import com.mikai233.common.message.DispatcherKeys
 import com.mikai233.common.message.GatewayRoutes
 import com.mikai233.common.runtime.system
+import com.mikai233.protocol.ProtoLogin
 import com.mikai233.protocol.ProtoLogin.LoginReq
+import com.mikai233.protocol.ProtoPlayer
 import com.mikai233.protocol.ProtoRpcPlayer.*
 import com.mikai233.world.WorldHandlerContext
 import com.mikai233.world.WorldMessageHandler
@@ -36,7 +38,7 @@ class PlayerLoginHandler : WorldMessageHandler<LoginReq> {
                         .setChannelActor(channelActor.encodeActorRef(actor.node.system))
                         .build(),
                 ).getOrThrow()
-                channelActor.tell(response.response, actor.self)
+                channelActor.tell(response.response.toClientLoginResp(), actor.self)
                 val abstract = PlayerAbstract(
                     playerId,
                     actor.worldId,
@@ -58,8 +60,33 @@ class PlayerLoginHandler : WorldMessageHandler<LoginReq> {
                         .setChannelActor(channelActor.encodeActorRef(actor.node.system))
                         .build(),
                 ).getOrThrow()
-                channelActor.tell(response.response, actor.self)
+                channelActor.tell(response.response.toClientLoginResp(), actor.self)
             }
+        }
+    }
+
+    private fun RpcLoginResp.toClientLoginResp(): ProtoLogin.LoginResp {
+        return ProtoLogin.LoginResp.newBuilder()
+            .setResult(result.toClientLoginResult())
+            .setData(
+                ProtoPlayer.PlayerData.newBuilder()
+                    .setPlayerId(data.playerId)
+                    .setNickname(data.nickname)
+                    .build(),
+            )
+            .setServerPublicKey(serverPublicKey)
+            .setServerZone(serverZone)
+            .build()
+    }
+
+    private fun RpcLoginResult.toClientLoginResult(): ProtoLogin.LoginResult {
+        return when (this) {
+            RpcLoginResult.RpcLoginSuccess -> ProtoLogin.LoginResult.Success
+            RpcLoginResult.RpcLoginRegisterLimit -> ProtoLogin.LoginResult.RegisterLimit
+            RpcLoginResult.RpcLoginWorldNotExists -> ProtoLogin.LoginResult.WorldNotExists
+            RpcLoginResult.RpcLoginWorldClosed -> ProtoLogin.LoginResult.WorldClosed
+            RpcLoginResult.RpcLoginAccountBan -> ProtoLogin.LoginResult.AccountBan
+            RpcLoginResult.UNRECOGNIZED -> ProtoLogin.LoginResult.UNRECOGNIZED
         }
     }
 }

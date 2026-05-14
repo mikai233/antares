@@ -3,12 +3,22 @@ syntax = "proto3";
 package com.mikai233.protocol;
 
 import "asteria_rpc_options.proto";
-import "client/proto_chat.proto";
+
+message RpcChatMessage{
+  int64 message_id = 1;
+  int32 channel = 2;
+  int64 from_player_id = 3;
+  string from_name = 4;
+  int64 target_id = 5;
+  string content = 6;
+  int64 sent_at = 7;
+  int64 world_id = 8;
+}
 
 message PrivateChatDeliverReq{
   option (asteria.rpc.entity_id) = "player_id";
   int64 player_id = 1;
-  ChatMessageNotify message = 2;
+  RpcChatMessage message = 2;
 }
 
 message WorldChatBroadcastReq{
@@ -17,7 +27,7 @@ message WorldChatBroadcastReq{
   string topic = 2;
   repeated int64 include = 3;
   repeated int64 exclude = 4;
-  ChatMessageNotify message = 5;
+  RpcChatMessage message = 5;
 }
 
 message PlayerAllianceChangedReq{

@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import com.google.protobuf.DescriptorProtos
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
@@ -19,13 +21,27 @@ abstract class RpcProtocolRegistryTask : DefaultTask() {
     @get:OutputFile
     abstract val outputFile: RegularFileProperty
 
+    @get:Input
+    abstract val includeClientTypes: Property<Boolean>
+
+    @get:Input
+    abstract val includeRpcTypes: Property<Boolean>
+
     @TaskAction
     fun generate() {
         val descriptorSet = DescriptorProtos.FileDescriptorSet.parseFrom(descriptorSetFile.get().asFile.inputStream())
         val existing = loadExisting(outputFile.get().asFile)
         val generatedTypes = discoverGeneratedTypes(descriptorSet)
-        val clientTypes = discoverClientTypes(descriptorSet, generatedTypes)
-        val rpcTypes = discoverRpcTypes(descriptorSet, generatedTypes)
+        val clientTypes = if (includeClientTypes.get()) {
+            discoverClientTypes(descriptorSet, generatedTypes)
+        } else {
+            emptyList()
+        }
+        val rpcTypes = if (includeRpcTypes.get()) {
+            discoverRpcTypes(descriptorSet, generatedTypes)
+        } else {
+            emptyList()
+        }
         val discoveredTypes = LinkedHashSet<String>().apply {
             addAll(clientTypes)
             addAll(rpcTypes)
@@ -42,6 +58,11 @@ abstract class RpcProtocolRegistryTask : DefaultTask() {
 
         val messages = resultIds.entries.sortedBy { it.value }
         writeOutput(outputFile.get().asFile, messages)
+    }
+
+    init {
+        includeClientTypes.convention(true)
+        includeRpcTypes.convention(true)
     }
 
     private fun discoverGeneratedTypes(
@@ -88,7 +109,7 @@ abstract class RpcProtocolRegistryTask : DefaultTask() {
             .filter { it.name.startsWith("rpc/") }
             .sortedBy { it.name }
             .forEach { file ->
-                file.messageTypeList.forEach { message ->
+                file.messageTypeList.filter(::isRpcTransportMessage).forEach { message ->
                     val protoFullName = "${file.`package`}.${message.name}"
                     result += requireNotNull(generatedTypes[protoFullName]) {
                         "generated type for rpc message $protoFullName not found"
@@ -96,6 +117,10 @@ abstract class RpcProtocolRegistryTask : DefaultTask() {
                 }
             }
         return result
+    }
+
+    private fun isRpcTransportMessage(message: DescriptorProtos.DescriptorProto): Boolean {
+        return RPC_TRANSPORT_MESSAGE_SUFFIXES.any { suffix -> message.name.endsWith(suffix) }
     }
 
     private fun assignMissingIds(
@@ -165,5 +190,16 @@ abstract class RpcProtocolRegistryTask : DefaultTask() {
             .joinToString("") { segment ->
                 segment.replaceFirstChar { char -> char.uppercase() }
             }
+    }
+
+    private companion object {
+        private val RPC_TRANSPORT_MESSAGE_SUFFIXES = listOf(
+            "Req",
+            "Resp",
+            "Ack",
+            "Command",
+            "Envelope",
+            "Notify",
+        )
     }
 }

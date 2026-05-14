@@ -11,7 +11,7 @@ Why this file exists:
 
 Registry model:
 
-- internal RPC protobuf messages live under `proto/src/main/proto/rpc/`
+- internal RPC protobuf messages live under `server-proto/src/main/proto/rpc/`
 - shard entity-id extraction uses proto options such as `option (asteria.rpc.entity_id) = "..."`
 - protobuf RPC message ids are registered centrally in `rpc-protocol.json`
 - Asteria codegen consumes:
@@ -21,15 +21,15 @@ Registry model:
 
 What happens when adding a new internal RPC message:
 
-1. define the message in `proto/src/main/proto/rpc/`
+1. define the message in `server-proto/src/main/proto/rpc/`
 2. if the message goes through shard routing, add `entity_id` option in the proto message
-3. run `./gradlew :proto:generateRpcProtocolRegistry`
+3. run `./gradlew :server-proto:generateRpcProtocolRegistry`
 4. review and commit the updated `rpc-protocol.json`
 
 Client-facing messages that participate in internal remoting are discovered from:
 
-- `proto/src/main/proto/client/msg_cs.proto`
-- `proto/src/main/proto/client/msg_sc.proto`
+- `client-proto/src/main/proto/client/msg_cs.proto`
+- `client-proto/src/main/proto/client/msg_sc.proto`
 
 ## Framework Follow-up
 

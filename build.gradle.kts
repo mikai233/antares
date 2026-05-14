@@ -56,7 +56,7 @@ subprojects {
         annotation("com.mikai233.common.annotation.NoArg")
     }
 
-    if (project.name == "proto") {
+    if (project.name in setOf("client-proto", "server-proto")) {
         kotlin {
             sourceSets.main {
                 kotlin.srcDir("build/generated/source/proto/main/kotlin")

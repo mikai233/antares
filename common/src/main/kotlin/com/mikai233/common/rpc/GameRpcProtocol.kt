@@ -14,7 +14,7 @@ object GameRpcProtocol {
     /**
      * Generated internal protobuf RPC registry.
      *
-     * Message ids come from `proto/protocol/rpc-protocol.json`, while shard
+     * Message ids come from `server-proto/protocol/rpc-protocol.json`, while shard
      * entity-id extraction for internal RPC messages comes from proto options.
      *
      * Client-facing protobuf messages such as [LoginReq] and [TestReq] are not

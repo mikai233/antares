@@ -4,7 +4,26 @@ package com.mikai233.protocol;
 
 import "asteria_rpc_options.proto";
 import "proto_common.proto";
-import "client/proto_login.proto";
+
+enum RpcLoginResult{
+  RpcLoginSuccess = 0;
+  RpcLoginRegisterLimit = 1;
+  RpcLoginWorldNotExists = 2;
+  RpcLoginWorldClosed = 3;
+  RpcLoginAccountBan = 4;
+}
+
+message RpcPlayerData{
+  int64 player_id = 1;
+  string nickname = 2;
+}
+
+message RpcLoginResp{
+  RpcLoginResult result = 1;
+  RpcPlayerData data = 2;
+  bytes server_public_key = 3;
+  string server_zone = 4;
+}
 
 message PlayerLoginReq{
   option (asteria.rpc.entity_id) = "player_id";
@@ -15,7 +34,7 @@ message PlayerLoginReq{
 }
 
 message PlayerLoginResp{
-  LoginResp response = 1;
+  RpcLoginResp response = 1;
 }
 
 message PlayerCreateReq{
@@ -28,7 +47,7 @@ message PlayerCreateReq{
 }
 
 message PlayerCreateResp{
-  LoginResp response = 1;
+  RpcLoginResp response = 1;
 }
 
 message PlayerChannelClosedReq{

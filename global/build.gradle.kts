@@ -14,7 +14,7 @@ dependencies {
     implementation(libs.groovy.all)
     implementation(libs.jcommander)
     implementation(project(":common"))
-    implementation(project(":proto"))
+    implementation(project(":server-proto"))
 }
 
 tasks.test {

@@ -7,7 +7,7 @@
 --- @type LuaProtoc
 LuaProtoc = LuaProtoc
 
-local proto_path = "../proto/src/main/proto"
+local proto_path = "../client-proto/src/main/proto"
 
 local protos = LuaProtoc.list_protos({ proto_path })
 local protoc = LuaProtoc.parse_files(protos, { proto_path })

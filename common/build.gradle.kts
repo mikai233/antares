@@ -33,7 +33,8 @@ dependencies {
     implementation(libs.spring.data.mongodb)
     implementation(libs.bundles.prometheus)
     implementation(project(":config"))
-    implementation(project(":proto"))
+    implementation(project(":client-proto"))
+    implementation(project(":server-proto"))
     ksp(libs.asteria.persistence.mongodb.ksp)
 }
 

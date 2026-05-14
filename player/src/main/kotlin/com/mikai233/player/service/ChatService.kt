@@ -97,7 +97,7 @@ class ChatService(
         actor.tellPlayer(
             PrivateChatDeliverReq.newBuilder()
                 .setPlayerId(targetPlayerId)
-                .setMessage(notify)
+                .setMessage(notify.toRpcChatMessage())
                 .build(),
         )
         actor.send(notify)
@@ -117,7 +117,7 @@ class ChatService(
             WorldChatBroadcastReq.newBuilder()
                 .setWorldId(worldId)
                 .setTopic(topic)
-                .setMessage(notify)
+                .setMessage(notify.toRpcChatMessage())
                 .build(),
         )
         actor.send(success(request, notify.messageId))
@@ -125,9 +125,9 @@ class ChatService(
 
     fun deliverPrivate(actor: PlayerActor, request: PrivateChatDeliverReq) {
         if (actor.isOnline()) {
-            actor.send(request.message)
+            actor.send(request.message.toNotify())
         } else {
-            persistOfflinePrivateMessage(actor, request.message)
+            persistOfflinePrivateMessage(actor, request.message.toNotify())
         }
     }
 
@@ -375,6 +375,32 @@ class ChatService(
             sentAt = sentAt,
             worldId = worldId,
         )
+    }
+
+    private fun ChatMessageNotify.toRpcChatMessage(): RpcChatMessage {
+        return RpcChatMessage.newBuilder()
+            .setMessageId(messageId)
+            .setChannel(channelValue)
+            .setFromPlayerId(fromPlayerId)
+            .setFromName(fromName)
+            .setTargetId(targetId)
+            .setContent(content)
+            .setSentAt(sentAt)
+            .setWorldId(worldId)
+            .build()
+    }
+
+    private fun RpcChatMessage.toNotify(): ChatMessageNotify {
+        return ChatMessageNotify.newBuilder()
+            .setMessageId(messageId)
+            .setChannel(ChatChannel.forNumber(channel) ?: ChatChannel.UNRECOGNIZED)
+            .setFromPlayerId(fromPlayerId)
+            .setFromName(fromName)
+            .setTargetId(targetId)
+            .setContent(content)
+            .setSentAt(sentAt)
+            .setWorldId(worldId)
+            .build()
     }
 
     private fun OfflinePrivateChatMessage.toNotify(): ChatMessageNotify {

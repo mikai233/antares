@@ -7,7 +7,8 @@ COPY gradle gradle
 COPY gradlew gradlew
 COPY gradle.properties settings.gradle.kts build.gradle.kts ./
 COPY buildSrc buildSrc
-COPY proto proto
+COPY client-proto client-proto
+COPY server-proto server-proto
 COPY common common
 COPY gate gate
 COPY player player

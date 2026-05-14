@@ -11,7 +11,7 @@ The JVM cluster remains the control plane:
 
 Current first slice:
 
-- client-facing protobuf frames live in `proto/src/main/proto/client/proto_battle.proto`
+- client-facing protobuf frames live in `client-proto/src/main/proto/client/proto_battle.proto`
 - Player handles `BattleStartReq` and returns `BattleStartResp(endpoint, token)`
 - JVM-side abstractions live under `common.battle`
 - `battle-server` accepts length-delimited protobuf frames over TCP, validates the battle token, and returns `BattleFrameNotify`

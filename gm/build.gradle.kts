@@ -21,7 +21,7 @@ dependencies {
     implementation(libs.kotlin.reflect)
     implementation(project(":config"))
     implementation(project(":common"))
-    implementation(project(":proto"))
+    implementation(project(":server-proto"))
 }
 
 tasks.test {
