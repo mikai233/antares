@@ -34,6 +34,11 @@ export const router = createRouter({
             meta: {title: '集群管理'},
         },
         {
+            path: '/worlds',
+            component: () => import('@/views/WorldStatusView.vue'),
+            meta: {title: 'World 状态'},
+        },
+        {
             path: '/game-time',
             component: () => import('@/views/GameTimeView.vue'),
             meta: {title: '游戏时间'},

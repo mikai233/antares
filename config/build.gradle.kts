@@ -15,6 +15,8 @@ val lubanBundleOutputDirProvider = providers.gradleProperty("lubanBundleOutputDi
     .map { rootDir.resolveProjectPath(it) }
     .let { layout.dir(it) }
     .orElse(layout.buildDirectory.dir("generated/luban/bundles"))
+val gameConfigVersionProvider = providers.gradleProperty("gameConfigVersion")
+    .orElse(project.version.toString())
 
 kotlin {
     sourceSets.main {
@@ -142,11 +144,24 @@ tasks.register<Zip>("packageLubanConfigBundle") {
     group = "luban"
     description = "Package generated Luban binary tables into a single server-consumable bundle."
     dependsOn(exportLubanConfig)
+    val metadataFile = layout.buildDirectory.file("generated/luban/bundle-metadata/game-config.properties")
+    inputs.property("gameConfigVersion", gameConfigVersionProvider)
     from(layout.buildDirectory.dir("generated/luban/resources/luban")) {
         include("*.bytes")
     }
+    from(metadataFile) {
+        into("META-INF/antares")
+    }
     destinationDirectory.set(lubanBundleOutputDirProvider)
     archiveFileName.set("game-config.zip")
+    doFirst {
+        val version = gameConfigVersionProvider.get()
+        require(version.isNotBlank()) { "gameConfigVersion must not be blank" }
+        require('\n' !in version && '\r' !in version) { "gameConfigVersion must be single line" }
+        val file = metadataFile.get().asFile
+        file.parentFile.mkdirs()
+        file.writeText("version=$version\n")
+    }
 }
 
 tasks.matching { it.name == "kspTestKotlin" }.configureEach {

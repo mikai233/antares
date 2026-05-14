@@ -1,6 +1,5 @@
 package com.mikai233.common.runtime
 
-import com.google.common.io.Resources
 import com.mikai233.common.broadcast.PlayerBroadcastEventBus
 import com.mikai233.common.config.*
 import com.mikai233.common.db.MongoDB
@@ -92,6 +91,9 @@ val NodeRuntime.gameTimeOverrideStore: GameTimeOverrideStore
 val NodeRuntime.localEntityRegistry: LocalEntityRegistry
     get() = services.get(LocalEntityRegistry::class)
 
+val NodeRuntime.worldRuntimeStateStore: WorldRuntimeStateStore
+    get() = services.get(WorldRuntimeStateStore::class)
+
 val NodeRuntime.gameWorldIds: Set<Long>
     get() = gameWorldConfigService.worldIds
 
@@ -117,8 +119,6 @@ fun NodeRuntime.entityShard(kind: String): ActorRef {
 fun NodeRuntime.singletonActor(name: String): ActorRef {
     return services.get(SingletonActorRegistry::class)[SingletonName(name)]
 }
-
-fun versionText(): String = Resources.getResource("version").readText()
 
 private val NodeRuntime.gameWorldConfigService: GameWorldConfigService
     get() = services.get(GameWorldConfigService::class)
@@ -189,12 +189,13 @@ class ClusterNodeBootstrap(
             PrometheusMetricsModule(addr.port + 1000),
             GamePatchStoreModule(patchArtifacts),
             PatchModule {
-                environment(PekkoPatchEnvironmentProvider(versionText()))
+                environment(PekkoPatchEnvironmentProvider(runtimeVersion()))
                 repository(ConfigCenterRuntimePatchRepository(patchStore, PATCH_DESCRIPTORS, PATCH_REVISION))
                 resolver(JarRuntimePatchPluginResolver(patchArtifacts))
             },
             MongoDbModule(),
             GameWorldConfigModule(),
+            WorldRuntimeStateModule(),
             GameConfigModule(),
             PlayerBroadcastModule(),
         )

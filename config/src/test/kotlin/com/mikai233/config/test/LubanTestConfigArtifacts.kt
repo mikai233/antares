@@ -1,6 +1,8 @@
 package com.mikai233.config.test
 
+import com.mikai233.config.luban.GAME_CONFIG_BUNDLE_METADATA_PATH
 import com.mikai233.config.luban.GeneratedLubanMetadata
+import com.mikai233.config.luban.encodeGameConfigBundleMetadata
 import com.mikai233.config.luban.unpackZipEntries
 import io.github.realmlabs.asteria.config.publisher.ConfigPublicationArtifact
 import org.junit.jupiter.api.Assumptions.assumeTrue
@@ -14,6 +16,7 @@ import kotlin.io.path.exists
 object LubanTestConfigArtifacts {
     // Test-side helper: build the publication bundle from checked-in generated binary exports.
     const val BUNDLE_FILE: String = "game-config.zip"
+    const val BUNDLE_VERSION: String = "test-config"
 
     fun artifacts(): List<ConfigPublicationArtifact> {
         return listOf(bundleArtifact())
@@ -26,6 +29,9 @@ object LubanTestConfigArtifacts {
     fun bundleBytes(): ByteArray {
         return ByteArrayOutputStream().use { output ->
             ZipOutputStream(output).use { zip ->
+                zip.putNextEntry(ZipEntry(GAME_CONFIG_BUNDLE_METADATA_PATH))
+                zip.write(encodeGameConfigBundleMetadata(BUNDLE_VERSION))
+                zip.closeEntry()
                 rawBytesByPath().toSortedMap().forEach { (path, bytes) ->
                     zip.putNextEntry(ZipEntry(path))
                     zip.write(bytes)

@@ -9,6 +9,5 @@ fun main() = runBlocking {
     val zookeeperConnect = RuntimeEnv.fromSystem().zookeeperConnect
     LocalGameConfigPublisher.publish(
         ZookeeperConfigStore(asyncZookeeperClient(zookeeperConnect)),
-        GameConfigPublishOptions.fromEnvironment(),
     )
 }

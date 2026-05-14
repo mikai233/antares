@@ -25,12 +25,15 @@ tasks.test {
     useJUnitPlatform()
 }
 
-fun JavaExec.forwardGameConfigVersion() {
-    val configVersion = providers.gradleProperty("gameConfigVersion")
-        .orNull
-        ?.takeIf(String::isNotBlank)
-        ?: project.version.toString()
-    systemProperty("gameConfigVersion", configVersion)
+fun JavaExec.forwardGameConfigBundlePath() {
+    val bundlePath = providers.gradleProperty("gameConfigBundlePath")
+        .map { resolveProjectPath(it).absolutePath }
+        .orElse(
+            providers.gradleProperty("lubanBundleOutputDir")
+                .map { resolveProjectPath(it).resolve("game-config.zip").absolutePath },
+        )
+        .orElse(rootDir.resolve("config/build/generated/luban/bundles/game-config.zip").absolutePath)
+    systemProperty("gameConfigBundlePath", bundlePath)
 }
 
 tasks.register<JavaExec>("publishLocalGameConfig") {
@@ -40,7 +43,7 @@ tasks.register<JavaExec>("publishLocalGameConfig") {
     dependsOn(":config:packageLubanConfigBundle", "classes")
     mainClass = "com.mikai233.tools.config.PublishLocalGameConfigKt"
     classpath = sourceSets["main"].runtimeClasspath
-    forwardGameConfigVersion()
+    forwardGameConfigBundlePath()
 }
 
 tasks.register<JavaExec>("initializeLocalRuntimeConfig") {
@@ -50,7 +53,7 @@ tasks.register<JavaExec>("initializeLocalRuntimeConfig") {
     dependsOn(":config:packageLubanConfigBundle", "classes")
     mainClass = "com.mikai233.tools.zookeeper.ZookeeperInitializerKt"
     classpath = sourceSets["main"].runtimeClasspath
-    forwardGameConfigVersion()
+    forwardGameConfigBundlePath()
 }
 
 tasks.register<JavaExec>("initializeKubernetesRuntimeConfig") {
@@ -63,4 +66,9 @@ tasks.register<JavaExec>("initializeKubernetesRuntimeConfig") {
 
 tasks.bootJar {
     mainClass.set(application.mainClass)
+}
+
+fun resolveProjectPath(path: String): File {
+    val file = File(path)
+    return if (file.isAbsolute) file else rootDir.resolve(path)
 }

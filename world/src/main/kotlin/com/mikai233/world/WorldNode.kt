@@ -38,7 +38,7 @@ import kotlin.time.Duration.Companion.seconds
 class WorldNode(
     val addr: InetSocketAddress,
     override val name: String,
-    nodeId: String = "world-${addr.port}",
+    val nodeId: String = "world-${addr.port}",
     config: Config,
     zookeeperConnectString: String,
     sameJvm: Boolean = false,

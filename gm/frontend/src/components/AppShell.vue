@@ -30,8 +30,11 @@ const apiStatusText = computed(() => {
   return backendHealth.status === 'offline' ? t('API 离线') : t('API 检查中')
 })
 let healthTimer: number | undefined
+let themeSwitchFrame: number | undefined
+let themeSwitchSecondFrame: number | undefined
 
 function toggleTheme() {
+  suppressThemeTransition()
   theme.value = isDark.value ? 'light' : 'dark'
 }
 
@@ -39,6 +42,24 @@ function applyTheme(nextTheme: 'light' | 'dark') {
   document.documentElement.dataset.theme = nextTheme
   document.documentElement.classList.toggle('dark', nextTheme === 'dark')
   localStorage.setItem('gm-theme', nextTheme)
+}
+
+function suppressThemeTransition() {
+  const root = document.documentElement
+  root.classList.add('theme-switching')
+  if (themeSwitchFrame != null) {
+    window.cancelAnimationFrame(themeSwitchFrame)
+  }
+  if (themeSwitchSecondFrame != null) {
+    window.cancelAnimationFrame(themeSwitchSecondFrame)
+  }
+  themeSwitchFrame = window.requestAnimationFrame(() => {
+    themeSwitchSecondFrame = window.requestAnimationFrame(() => {
+      root.classList.remove('theme-switching')
+      themeSwitchFrame = undefined
+      themeSwitchSecondFrame = undefined
+    })
+  })
 }
 
 watch(theme, applyTheme)
@@ -58,6 +79,13 @@ onBeforeUnmount(() => {
   if (healthTimer != null) {
     window.clearInterval(healthTimer)
   }
+  if (themeSwitchFrame != null) {
+    window.cancelAnimationFrame(themeSwitchFrame)
+  }
+  if (themeSwitchSecondFrame != null) {
+    window.cancelAnimationFrame(themeSwitchSecondFrame)
+  }
+  document.documentElement.classList.remove('theme-switching')
 })
 </script>
 
@@ -101,6 +129,10 @@ onBeforeUnmount(() => {
         <el-menu-item index="/cluster">
           <el-icon><Connection /></el-icon>
           <span>{{ t('集群管理') }}</span>
+        </el-menu-item>
+        <el-menu-item index="/worlds">
+          <el-icon><SetUp /></el-icon>
+          <span>{{ t('World 状态') }}</span>
         </el-menu-item>
         <el-menu-item index="/game-time">
           <el-icon><Timer /></el-icon>

@@ -1,5 +1,5 @@
 [versions]
-asteria = "0.6.4"
+asteria = "0.6.6"
 coroutines = "1.10.2"
 curator = "5.9.0"
 datetime = "0.7.1"
@@ -38,13 +38,9 @@ asteria-foundation-message = { module = "io.github.realm-labs.asteria:foundation
 asteria-gateway-core = { module = "io.github.realm-labs.asteria:gateway-core", version.ref = "asteria" }
 asteria-gateway-netty = { module = "io.github.realm-labs.asteria:gateway-netty", version.ref = "asteria" }
 asteria-gateway-pekko = { module = "io.github.realm-labs.asteria:gateway-pekko", version.ref = "asteria" }
+asteria-gm-admin-spring-boot-starter = { module = "io.github.realm-labs.asteria:gm-admin-spring-boot-starter", version.ref = "asteria" }
 asteria-gm-cluster-pekko = { module = "io.github.realm-labs.asteria:gm-cluster-pekko", version.ref = "asteria" }
-asteria-gm-cluster-spring-boot-starter = { module = "io.github.realm-labs.asteria:gm-cluster-spring-boot-starter", version.ref = "asteria" }
-asteria-gm-config-center-spring-boot-starter = { module = "io.github.realm-labs.asteria:gm-config-center-spring-boot-starter", version.ref = "asteria" }
-asteria-gm-config-spring-boot-starter = { module = "io.github.realm-labs.asteria:gm-config-spring-boot-starter", version.ref = "asteria" }
-asteria-gm-patch-spring-boot-starter = { module = "io.github.realm-labs.asteria:gm-patch-spring-boot-starter", version.ref = "asteria" }
-asteria-gm-script-spring-boot-starter = { module = "io.github.realm-labs.asteria:gm-script-spring-boot-starter", version.ref = "asteria" }
-asteria-gm-spring-boot-starter = { module = "io.github.realm-labs.asteria:gm-spring-boot-starter", version.ref = "asteria" }
+asteria-gm-cluster-pekko-management-spring-boot-starter = { module = "io.github.realm-labs.asteria:gm-cluster-pekko-management-spring-boot-starter", version.ref = "asteria" }
 asteria-patch-core = { module = "io.github.realm-labs.asteria:patch-core", version.ref = "asteria" }
 asteria-patch-jar = { module = "io.github.realm-labs.asteria:patch-jar", version.ref = "asteria" }
 asteria-patch-pekko = { module = "io.github.realm-labs.asteria:patch-pekko", version.ref = "asteria" }
