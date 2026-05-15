@@ -181,12 +181,12 @@ class ClusterNodeBootstrap(
         val patchStore = ZookeeperConfigStore(zookeeper)
         val patchArtifacts = ConfigCenterPatchArtifactStore(patchStore, PATCH_ARTIFACTS)
         return listOf(
+            PrometheusMetricsModule(addr.port + 1000),
             ZookeeperConfigCenterModule {
                 client(zookeeper)
             },
             GameTimeModule(config),
             LocalEntityRegistryModule(),
-            PrometheusMetricsModule(addr.port + 1000),
             GamePatchStoreModule(patchArtifacts),
             PatchModule {
                 environment(PekkoPatchEnvironmentProvider(runtimeVersion()))

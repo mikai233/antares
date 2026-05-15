@@ -7,6 +7,8 @@ import io.github.realmlabs.asteria.core.AsteriaModule
 import io.github.realmlabs.asteria.core.ModuleContext
 import io.github.realmlabs.asteria.gateway.netty.NettyGatewayServerOptions
 import io.github.realmlabs.asteria.gateway.netty.NettyTcpGatewayServerTransport
+import io.github.realmlabs.asteria.observability.Metrics
+import io.github.realmlabs.asteria.observability.NoopMetrics
 import kotlinx.coroutines.CoroutineScope
 import org.apache.pekko.actor.ActorSystem
 
@@ -31,6 +33,7 @@ class GateGatewayTransportModule(
                 maxFrameLength = 1024 * 100,
             ),
             scope = context.services.get(CoroutineScope::class),
+            metrics = context.services.find(Metrics::class) ?: NoopMetrics,
             pipelineInstaller = GateNettyPipeline.installer(node.protocolCodec),
         )
         gatewayTransport.start(GateTransportHandler(node))

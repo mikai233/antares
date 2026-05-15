@@ -9,6 +9,7 @@ import com.mikai233.common.extension.invokeOnTargetMode
 import com.mikai233.common.extension.tell
 import com.mikai233.common.message.formatMessage
 import com.mikai233.common.runtime.gameTimeSource
+import com.mikai233.common.runtime.recordMessageDispatch
 import com.mikai233.common.runtime.playerBroadcastEventBus
 import com.mikai233.common.runtime.system
 import com.mikai233.common.time.ActorGameTime
@@ -236,7 +237,9 @@ class ChannelActor(val node: GateNode, private val session: GatewaySession) :
 
     private fun dispatchProtobufMessage(message: GeneratedMessage) {
         try {
-            node.protobufDispatcher.dispatchActor(node, this, message)
+            node.recordMessageDispatch("ChannelActor", "protobuf", message) {
+                node.protobufDispatcher.dispatchActor(node, this, message)
+            }
         } catch (e: Exception) {
             logger.error(e, "channel:{} handle protobuf message:{} failed", self, message)
         }

@@ -14,6 +14,8 @@ import io.github.realmlabs.asteria.gateway.pekko.PekkoGatewayForwarder
 import io.github.realmlabs.asteria.gateway.pekko.PekkoGatewayLocalHandler
 import io.github.realmlabs.asteria.gateway.pekko.PekkoGatewayMessageFactory
 import io.github.realmlabs.asteria.message.RouteTarget
+import io.github.realmlabs.asteria.observability.Metrics
+import io.github.realmlabs.asteria.observability.NoopMetrics
 import org.apache.pekko.actor.ActorRef
 
 val GatePlayerIdKey: GatewaySessionAttributeKey<Long> = GatewaySessionAttributeKey("gate.playerId")
@@ -36,6 +38,8 @@ class GateGatewayRouter(
     private val routeResolver = GateGatewayRouteResolver()
     private val messageFactory = GateGatewayMessageFactory()
     private val localHandler = GateGatewayLocalHandler()
+    private val metrics: Metrics
+        get() = node.services.find(Metrics::class) ?: NoopMetrics
 
     fun dispatch(
         session: GatewaySession,
@@ -50,7 +54,9 @@ class GateGatewayRouter(
                 messageFactory = messageFactory,
                 localHandler = localHandler,
                 sender = session.get(GateChannelActorKey),
+                metrics = metrics,
             ),
+            metrics = metrics,
         ).dispatch(GatewaySessionContext(session), packet)
     }
 }

@@ -9,6 +9,7 @@ import com.mikai233.common.message.Message
 import com.mikai233.common.runtime.GameEntityKinds
 import com.mikai233.common.runtime.gameTimeSource
 import com.mikai233.common.runtime.localEntityRegistry
+import com.mikai233.common.runtime.recordMessageDispatch
 import com.mikai233.common.runtime.system
 import com.mikai233.common.time.ActorGameTime
 import com.mikai233.player.message.HandoffPlayer
@@ -96,7 +97,9 @@ class PlayerActor(val node: PlayerNode) : AsteriaActor<PlayerNode>(node) {
 
     private fun handleProtobufMessage(message: GeneratedMessage) {
         try {
-            node.protobufDispatcher.dispatchActor(node, this, message)
+            node.recordMessageDispatch("PlayerActor", "protobuf", message) {
+                node.protobufDispatcher.dispatchActor(node, this, message)
+            }
         } catch (e: Exception) {
             logger.error(e, "player:{} handle protobuf message:{} failed", playerId, message)
         }
@@ -104,7 +107,9 @@ class PlayerActor(val node: PlayerNode) : AsteriaActor<PlayerNode>(node) {
 
     private fun handlePlayerMessage(message: Message) {
         try {
-            node.internalDispatcher.dispatchActor(node, this, message)
+            node.recordMessageDispatch("PlayerActor", "internal", message) {
+                node.internalDispatcher.dispatchActor(node, this, message)
+            }
         } catch (e: Exception) {
             logger.error(e, "player:{} handle message:{} failed", playerId, message)
         }

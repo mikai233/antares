@@ -12,6 +12,8 @@ import io.github.realmlabs.asteria.core.ServiceRegistry
 import io.github.realmlabs.asteria.persistence.DataManager
 import io.github.realmlabs.asteria.persistence.DataScope
 import io.github.realmlabs.asteria.persistence.MemData
+import io.github.realmlabs.asteria.observability.Metrics
+import io.github.realmlabs.asteria.observability.NoopMetrics
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate
 import kotlin.reflect.KClass
 
@@ -31,6 +33,7 @@ class WorldDataManager(private val world: WorldActor) {
             },
         ),
         WorldDataModules,
+        metrics = world.node.services.find(Metrics::class) ?: NoopMetrics,
     )
 
     suspend fun load() {

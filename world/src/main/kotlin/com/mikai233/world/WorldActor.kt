@@ -101,7 +101,9 @@ class WorldActor(val node: WorldNode) : AsteriaActor<WorldNode>(node) {
 
     private fun handleWorldMessage(message: Message) {
         try {
-            node.internalDispatcher.dispatchActor(node, this, message)
+            node.recordMessageDispatch("WorldActor", "internal", message) {
+                node.internalDispatcher.dispatchActor(node, this, message)
+            }
         } catch (e: Exception) {
             logger.error(e, "world:{} handle message:{} failed", worldId, message)
         }
@@ -113,7 +115,9 @@ class WorldActor(val node: WorldNode) : AsteriaActor<WorldNode>(node) {
             return
         }
         try {
-            node.protobufDispatcher.dispatchActor(node, this, message)
+            node.recordMessageDispatch("WorldActor", "protobuf", message) {
+                node.protobufDispatcher.dispatchActor(node, this, message)
+            }
         } catch (e: Exception) {
             logger.error(e, "world:{} handle protobuf message:{} failed", worldId, message)
         }
