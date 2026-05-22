@@ -13,14 +13,12 @@ import io.prometheus.client.Histogram as PrometheusHistogram
 class PrometheusAsteriaMetrics(
     private val registry: CollectorRegistry = CollectorRegistry.defaultRegistry,
 ) : Metrics {
-    private val counters = ConcurrentHashMap<InstrumentKey, PrometheusCounter>()
-    private val timers = ConcurrentHashMap<InstrumentKey, PrometheusHistogram>()
-    private val gauges = ConcurrentHashMap<InstrumentKey, PrometheusGauge>()
+    private val instruments = SharedInstruments.forRegistry(registry)
 
     override fun counter(name: String, tags: MetricTags): Counter {
         require(name.isNotBlank()) { "counter name must not be blank" }
         val labels = tags.labelNames()
-        val counter = counters.computeIfAbsent(InstrumentKey(counterName(name), labels)) { key ->
+        val counter = instruments.counters.computeIfAbsent(InstrumentKey(counterName(name), labels)) { key ->
             PrometheusCounter.build()
                 .name(key.name)
                 .help("Asteria counter $name")
@@ -33,7 +31,7 @@ class PrometheusAsteriaMetrics(
     override fun timer(name: String, tags: MetricTags): Timer {
         require(name.isNotBlank()) { "timer name must not be blank" }
         val labels = tags.labelNames()
-        val histogram = timers.computeIfAbsent(InstrumentKey(timerName(name), labels)) { key ->
+        val histogram = instruments.timers.computeIfAbsent(InstrumentKey(timerName(name), labels)) { key ->
             PrometheusHistogram.build()
                 .name(key.name)
                 .help("Asteria timer $name in milliseconds")
@@ -47,7 +45,7 @@ class PrometheusAsteriaMetrics(
     override fun gauge(name: String, tags: MetricTags, value: () -> Double) {
         require(name.isNotBlank()) { "gauge name must not be blank" }
         val labels = tags.labelNames()
-        val gauge = gauges.computeIfAbsent(InstrumentKey(metricName(name), labels)) { key ->
+        val gauge = instruments.gauges.computeIfAbsent(InstrumentKey(metricName(name), labels)) { key ->
             PrometheusGauge.build()
                 .name(key.name)
                 .help("Asteria gauge $name")
@@ -63,6 +61,19 @@ class PrometheusAsteriaMetrics(
         val name: String,
         val labels: List<String>,
     )
+
+    private class SharedInstruments {
+        val counters = ConcurrentHashMap<InstrumentKey, PrometheusCounter>()
+        val timers = ConcurrentHashMap<InstrumentKey, PrometheusHistogram>()
+        val gauges = ConcurrentHashMap<InstrumentKey, PrometheusGauge>()
+
+        companion object {
+            private val byRegistry = ConcurrentHashMap<CollectorRegistry, SharedInstruments>()
+
+            fun forRegistry(registry: CollectorRegistry): SharedInstruments =
+                byRegistry.computeIfAbsent(registry) { SharedInstruments() }
+        }
+    }
 
     private class PrometheusCounterAdapter(
         private val child: PrometheusCounter.Child,
