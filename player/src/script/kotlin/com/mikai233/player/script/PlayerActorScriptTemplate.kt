@@ -7,12 +7,11 @@ import com.mikai233.config.luban.tbItem
 import com.mikai233.player.PlayerActor
 import io.github.realmlabs.asteria.script.ActorScript
 import io.github.realmlabs.asteria.script.ActorScriptContext
-import io.github.realmlabs.asteria.script.ScriptExecutionResult
 
 class PlayerActorScriptTemplate : ActorScript<PlayerActor>() {
     private val logger = logger()
 
-    override fun executeActor(context: ActorScriptContext<PlayerActor>): ScriptExecutionResult? {
+    override fun executeActor(context: ActorScriptContext<PlayerActor>) {
         val player = context.actor
         logger.info("playerId:{} hello world", player.playerId)
         player.node.gameWorldConfigs.forEach { (id, config) ->
@@ -20,6 +19,5 @@ class PlayerActorScriptTemplate : ActorScript<PlayerActor>() {
         }
         val item = player.node.gameConfigSnapshot.tbItem[1001]
         logger.info("demo item config:{}", item)
-        return null
     }
 }
