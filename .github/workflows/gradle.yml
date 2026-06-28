@@ -60,7 +60,7 @@ jobs:
       # 📤 Upload test results (optional, helpful for debugging)
       - name: Upload test reports
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: test-reports
           path: build/reports/tests/
@@ -68,7 +68,7 @@ jobs:
       # 📤 Upload Detekt reports (optional)
       - name: Upload Detekt report
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: detekt-report
           path: build/reports/detekt/
